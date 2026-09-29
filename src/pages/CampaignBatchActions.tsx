@@ -362,7 +362,7 @@ export function CampaignBatchActions() {
           )}
         />
 
-        <section className="rounded-xl border border-neutral-200/50 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="rounded-xl border border-neutral-200/50 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
@@ -495,7 +495,7 @@ export function CampaignBatchActions() {
           )}
         </section>
 
-        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+        <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
               <thead className="bg-neutral-100/70 text-xs uppercase tracking-wider text-neutral-500 dark:bg-white/5 dark:text-neutral-400">
@@ -591,7 +591,7 @@ export function CampaignBatchActions() {
 
       {previewMedia && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white/95 p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/95" onClick={(event) => event.stopPropagation()}>
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-bold text-neutral-950 dark:text-white">Post Media</h2>
               <button className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>

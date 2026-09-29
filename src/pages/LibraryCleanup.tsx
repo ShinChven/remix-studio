@@ -143,7 +143,7 @@ export function LibraryCleanup() {
             return (
               <div
                 key={project.id}
-                className="flex items-center justify-between bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl rounded-xl p-4 transition-ui shadow-sm"
+                className="flex items-center justify-between bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl rounded-xl p-4 transition-ui shadow-sm"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Play className="w-4 h-4 text-green-500 flex-shrink-0" />
@@ -166,7 +166,7 @@ export function LibraryCleanup() {
           })}
 
           {allCleaned && (
-            <div className="py-12 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-3 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl">
+            <div className="py-12 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-3 bg-white dark:bg-neutral-900 backdrop-blur-3xl">
               <Unlink className="w-10 h-10 text-neutral-700" />
               <div>
                 <p className="text-base font-medium text-neutral-600 dark:text-neutral-400">{t('libraryCleanup.allCleared')}</p>

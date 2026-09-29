@@ -44,7 +44,7 @@ export function BatchSetTextModal({ postIds, onClose, onComplete }: Props) {
       }}
     >
       <div
-        className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white/90 shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900/95"
+        className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-card border border-neutral-200/50 bg-white shadow-2xl backdrop-blur-xl animate-in zoom-in-95 duration-300 dark:border-white/10 dark:bg-neutral-900"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-1 overflow-y-auto p-8">

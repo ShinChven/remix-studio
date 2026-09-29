@@ -248,7 +248,7 @@ export function MainLayout() {
               setIsMobileMenuOpen(false);
               window.dispatchEvent(new CustomEvent('open-command-palette'));
             }}
-            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
+            className={`w-full px-3 py-2.5 rounded-xl flex items-center transition-all border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm gap-3 ${isCollapsed ? 'lg:justify-center lg:gap-0' : ''}`}
             title="Search"
           >
             <Search className="w-5 h-5 flex-shrink-0" />
@@ -343,7 +343,7 @@ export function MainLayout() {
             onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center overflow-hidden rounded-xl border p-3 transition-colors ${isAccountActive
                 ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
-                : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm'
+                : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 shadow-sm'
               } ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
               }`}
           >
@@ -375,7 +375,7 @@ export function MainLayout() {
               onClick={() => setIsMobileMenuOpen(false)}
               className={`mt-3 flex items-center rounded-xl border transition-ui ${location.pathname.startsWith('/admin/')
                   ? 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-600/10'
-                  : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
+                  : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-300 hover:bg-white/60 dark:hover:bg-neutral-800/60 shadow-sm'
                 } p-3 text-sm ${isCollapsed ? 'lg:justify-center lg:gap-0' : 'w-full gap-3'
                 }`}
               title={t('sidebar.userManagement')}

@@ -13,7 +13,7 @@ import { ProjectScopePicker, isScopeValid } from './ProjectScopePicker';
 const INPUT_CLASS = 'w-full bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2.5 text-sm text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all font-medium';
 const PRIMARY_BUTTON = 'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/10 transition-all hover:bg-blue-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50';
 const SECONDARY_BUTTON = 'inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-5 py-2.5 text-sm font-bold text-neutral-600 dark:text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-white';
-const CARD = 'rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl p-5 md:p-6';
+const CARD = 'rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-5 md:p-6';
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -103,7 +103,7 @@ function DeviceForm({ initialName, initialScope, namePlaceholder, submitLabel, o
   };
 
   return (
-    <div className="space-y-4 rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/60 dark:bg-neutral-900/60 p-4 md:p-5">
+    <div className="space-y-4 rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-4 md:p-5">
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 ml-1">{t('mediaShare.common.name')}</label>
         <input
@@ -140,7 +140,7 @@ function DeviceRow({ device, icon, onEdit, onRemove }: {
     ? t('mediaShare.scope.all')
     : t('mediaShare.scope.selectedCount', { count: device.projectIds.length });
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white/70 dark:bg-neutral-900/70 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-3 rounded-xl border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-center gap-3">
         <div className="flex-shrink-0 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 p-2.5 text-neutral-500">{icon}</div>
         <div className="min-w-0 space-y-1">

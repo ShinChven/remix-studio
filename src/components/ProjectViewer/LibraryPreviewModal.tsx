@@ -30,7 +30,7 @@ function TextLibraryItem({
           setIsExpanded(!isExpanded);
         }
       }}
-      className={`bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 md:p-4 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
+      className={`bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3.5 md:p-4 cursor-pointer transition-all hover:border-emerald-500/30 hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50 group/text-item ${isExpanded ? 'shadow-xl border-emerald-500/20 ring-1 ring-emerald-500/10' : 'shadow-sm'} ${isSelectionMode ? 'hover:ring-2 hover:ring-blue-500/50' : ''}`}
     >
       <div className="flex justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -193,7 +193,7 @@ export function LibraryPreviewModal({
                     onSelect={onSelectItem} 
                   />
                 ) : (
-                  <div key={item.id} className="bg-white/50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden flex flex-col shadow-sm group/card">
+                  <div key={item.id} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl overflow-hidden flex flex-col shadow-sm group/card">
                     {library.type === 'image' && (
                       <div 
                         className={`aspect-video bg-black relative border-b border-neutral-200 dark:border-neutral-800 group/img-container cursor-pointer overflow-hidden ${isSelectionMode ? 'ring-inset hover:ring-2 hover:ring-blue-500' : ''}`}

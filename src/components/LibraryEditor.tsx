@@ -1002,7 +1002,7 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
           onClick={() => setViewingItemId(null)}
         >
           <div
-            className="bg-white dark:bg-neutral-900/90 border border-neutral-200/50 dark:border-white/5 backdrop-blur-2xl rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.3)] dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-3rem))] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col"
+            className="bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 backdrop-blur-2xl rounded-card shadow-[0_50px_100px_rgba(0,0,0,0.3)] dark:shadow-[0_50px_100px_rgba(0,0,0,0.8)] max-w-2xl w-full max-h-[calc(100dvh-1.5rem)] sm:max-h-[min(720px,calc(100dvh-3rem))] overflow-hidden animate-in zoom-in-95 duration-300 flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-5 sm:p-8 overflow-y-auto custom-scrollbar flex-1 min-h-0">

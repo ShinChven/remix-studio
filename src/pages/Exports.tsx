@@ -416,7 +416,7 @@ export function Exports() {
         actions={
           <div className="flex items-center flex-wrap gap-3">
             {/* Releases + history capsule */}
-            <div className="flex-shrink-0 flex items-center gap-3 bg-white/60 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
+            <div className="flex-shrink-0 flex items-center gap-3 bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card shadow-sm backdrop-blur-md h-[42px]">
               <Link
                 to="/exports/releases"
                 className="flex items-center gap-2 hover:opacity-80 transition"
@@ -439,7 +439,7 @@ export function Exports() {
             </div>
 
             {/* Combined Stats Pill */}
-            <div className="flex-shrink-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-4 shadow-sm backdrop-blur-md h-[42px]">
+            <div className="flex-shrink-0 bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-4 shadow-sm backdrop-blur-md h-[42px]">
               {/* Database */}
               <div className="flex items-center gap-2">
                 <List className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
@@ -467,7 +467,7 @@ export function Exports() {
       />
 
       {!loading && exports.length === 0 ? (
-        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
+        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white dark:bg-neutral-900 shadow-sm backdrop-blur-3xl">
           <List className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">{t('exports.empty.title')}</div>
           <div className="text-[8px] font-bold uppercase tracking-widest opacity-40 mb-8 max-w-[200px] mx-auto leading-relaxed">{t('exports.empty.description')}</div>
@@ -478,7 +478,7 @@ export function Exports() {
       ) : (
         <div className="space-y-3">
           {exports.length > 0 && (
-            <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white/50 p-3 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/50 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white p-3 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -528,7 +528,7 @@ export function Exports() {
             return (
               <div
                 key={task.id}
-                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
+                className={`bg-white dark:bg-neutral-900 p-4 md:p-5 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui group/task shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/10' : task.status === 'failed' ? 'border-red-500/30' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/50'}`}
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <button

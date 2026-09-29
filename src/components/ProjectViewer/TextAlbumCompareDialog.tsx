@@ -62,7 +62,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: Text
             {items.map((item, index) => (
               <article
                 key={item.id}
-                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-card sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/90 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
+                className="flex h-full w-[min(40rem,calc(100vw-1.5rem))] sm:w-[min(40rem,calc(100vw-4rem))] shrink-0 flex-col overflow-hidden rounded-card sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-2xl shadow-black/30 md:w-[min(42rem,calc(100vw-8rem))]"
               >
                 <header className="flex items-start sm:items-center justify-between gap-3 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-950/60 px-4 py-3">
                   <div className="min-w-0">

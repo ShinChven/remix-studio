@@ -15,7 +15,7 @@ const libraryTypes: Array<{ type: LibraryType; icon: typeof Type }> = [
 
 function typeButtonClasses(type: LibraryType, selected: boolean) {
   if (!selected) {
-    return 'border-neutral-200/70 dark:border-white/10 bg-white/60 dark:bg-neutral-900/50 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
+    return 'border-neutral-200/70 dark:border-white/10 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
   }
   if (type === 'image') return 'border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-emerald-500/10';
   if (type === 'video') return 'border-purple-500/60 bg-purple-500/10 text-purple-600 dark:text-purple-300 shadow-purple-500/10';
@@ -90,7 +90,7 @@ export function LibraryForm() {
         />
 
         <form onSubmit={handleSubmit} className="grid w-full gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55 md:p-6">
+          <div className="space-y-6 rounded-lg border border-neutral-200/70 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900 md:p-6">
             <section className="space-y-2">
               <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
                 <FileText className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ export function LibraryForm() {
           </div>
 
           <aside className="space-y-6">
-            <div className="rounded-lg border border-neutral-200/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/55">
+            <div className="rounded-lg border border-neutral-200/70 bg-white p-5 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
               <div className="mb-5 flex items-center gap-3">
                 <div className="rounded-lg bg-neutral-100 p-2 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                   <Folder className="h-4 w-4" />

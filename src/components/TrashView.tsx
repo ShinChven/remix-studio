@@ -136,7 +136,7 @@ export function TrashView() {
         />
 
       {/* Stays on one row on phones — stacking made this pinned bar twice as tall as it needs to be. */}
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 md:gap-4 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-2.5 md:p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-2 md:gap-4 bg-white dark:bg-neutral-900 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 p-2.5 md:p-4 rounded-card shadow-lg shadow-black/5 dark:shadow-black/20">
         {/* A phone cannot fit the totals next to the selection actions, and the count is already on the restore button. */}
         <div className={`min-w-0 items-center gap-1.5 md:gap-2 ${selectedIds.size > 0 ? 'hidden sm:flex' : 'flex'}`}>
           <span className="truncate text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest">
@@ -184,8 +184,8 @@ export function TrashView() {
       </div>
 
       {!loading && items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-neutral-900/40 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center space-y-6 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 backdrop-blur-3xl shadow-sm">
-          <div className="p-6 bg-white/50 dark:bg-neutral-900/50 rounded-full border border-neutral-200 dark:border-neutral-800">
+        <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-neutral-900 border-2 border-dashed border-neutral-200/50 dark:border-white/5 rounded-card text-center space-y-6 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 backdrop-blur-3xl shadow-sm">
+          <div className="p-6 bg-white dark:bg-neutral-900 rounded-full border border-neutral-200 dark:border-neutral-800">
             <Trash2 className="w-12 h-12 text-neutral-800" />
           </div>
           <div>
@@ -200,7 +200,7 @@ export function TrashView() {
             return (
               <div 
                 key={item.id} 
-                className={`group relative bg-white/70 dark:bg-neutral-900/70 border rounded-card overflow-hidden flex flex-col transition-ui duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 backdrop-blur-xl
+                className={`group relative bg-white dark:bg-neutral-900 border rounded-card overflow-hidden flex flex-col transition-ui duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10 backdrop-blur-xl
                   ${isSelected ? 'border-blue-500 ring-4 ring-blue-500/10 bg-blue-500/5' : 'border-neutral-200/50 dark:border-white/5 hover:border-blue-500/30'}`}
               >
                 {/* Image Section */}

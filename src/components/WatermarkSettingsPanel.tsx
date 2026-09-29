@@ -197,7 +197,7 @@ export function WatermarkSettingsPanel({
 
   return (
     <section className={cn(
-      'rounded-card border border-neutral-200/60 bg-white/50 p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900/50',
+      'rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900',
       settings.enabled && 'grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_320px]',
     )}>
       <div className="space-y-5">

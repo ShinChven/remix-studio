@@ -86,7 +86,7 @@ export function ReleaseHistory() {
         description={t('releases.history.description')}
         backLink={{ to: '/exports', label: t('releases.backToExports') }}
         actions={(
-          <div className="flex-shrink-0 bg-white/40 dark:bg-neutral-900/40 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-2 shadow-sm backdrop-blur-md h-[42px]">
+          <div className="flex-shrink-0 bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 px-4 py-2.5 rounded-card flex items-center gap-2 shadow-sm backdrop-blur-md h-[42px]">
             <List className="h-4 w-4 text-neutral-500 dark:text-neutral-500 flex-shrink-0" />
             <span className="text-[10px] font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-widest">
               {total} <span className="opacity-50 ml-0.5">{t('releases.history.stats.total')}</span>
@@ -100,7 +100,7 @@ export function ReleaseHistory() {
           <Loader2 className="w-6 h-6 text-neutral-800 dark:text-white animate-spin" />
         </div>
       ) : items.length === 0 ? (
-        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white/40 dark:bg-neutral-900/40 shadow-sm backdrop-blur-3xl">
+        <div className="py-32 text-center text-neutral-600 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card bg-white dark:bg-neutral-900 shadow-sm backdrop-blur-3xl">
           <HistoryIcon className="w-12 h-12 mx-auto opacity-10 mb-4" />
           <div className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">
             {t('releases.history.empty.title')}
@@ -121,7 +121,7 @@ export function ReleaseHistory() {
             return (
               <div
                 key={item.id}
-                className={`bg-white/70 dark:bg-neutral-900/70 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${
+                className={`bg-white dark:bg-neutral-900 p-4 md:p-5 rounded-card border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-ui shadow-sm hover:shadow-xl backdrop-blur-xl duration-300 hover:-translate-y-0.5 ${
                   isSuccess ? 'border-neutral-200/50 dark:border-white/5' : 'border-red-500/30'
                 }`}
               >

@@ -756,7 +756,7 @@ export function AlbumTab({
             animateIcon={false}
           />
         ) : isTextProject ? (
-          <div className="overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white/40 dark:bg-neutral-900/40 rounded-none border-x-0 border-t-0">
+          <div className="overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 rounded-none border-x-0 border-t-0">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               return (
@@ -820,7 +820,7 @@ export function AlbumTab({
               return (
                 <div
                   key={item.id}
-                  className={`group rounded-card border px-4 py-3 transition-ui backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 hover:border-cyan-500/30'}`}
+                  className={`group rounded-card border px-4 py-3 transition-ui backdrop-blur-xl ${isSelected ? 'border-cyan-500/50 bg-cyan-500/10 shadow-lg shadow-cyan-500/10' : 'border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 hover:border-cyan-500/30'}`}
                 >
                   <div className="flex items-center gap-2 @xl/pane:gap-3">
                     <button
@@ -909,16 +909,16 @@ export function AlbumTab({
                       />
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-[9px] font-black uppercase tracking-widest">
-                      <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{getProviderName(item.providerId)}</span>
-                      <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-cyan-500/70">{getModelName(item.providerId, item.modelConfigId)}</span>
+                      <span className="px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{getProviderName(item.providerId)}</span>
+                      <span className="px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 text-cyan-500/70">{getModelName(item.providerId, item.modelConfigId)}</span>
                       {item.format && (
-                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{item.format}</span>
+                        <span className="px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{item.format}</span>
                       )}
                       {item.size && (
-                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{(item.size / 1024).toFixed(1)} KB</span>
+                        <span className="px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{(item.size / 1024).toFixed(1)} KB</span>
                       )}
                       {item.createdAt && (
-                        <span className="px-2 py-1 rounded-md bg-white/50 dark:bg-neutral-900/50 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{formatAudioTimestamp(item.createdAt)}</span>
+                        <span className="px-2 py-1 rounded-md bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 text-neutral-600 dark:text-neutral-400">{formatAudioTimestamp(item.createdAt)}</span>
                       )}
                     </div>
                   </div>
@@ -1111,10 +1111,10 @@ export function AlbumTab({
                     </button>
                     <div className="mt-auto flex flex-col items-start gap-2 w-full">
                       <div className="grid grid-cols-1 @min-[13rem]/card:grid-cols-2 gap-1.5 p-1 bg-neutral-50/50 dark:bg-neutral-950/50 rounded-lg border border-neutral-200/50 dark:border-white/5 w-full">
-                        <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-white/50 dark:bg-neutral-900/50 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getProviderName(item.providerId)}>
+                        <span className="text-[8px] font-black text-neutral-500 dark:text-neutral-500 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-neutral-900 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getProviderName(item.providerId)}>
                           {getProviderName(item.providerId)}
                         </span>
-                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-white/50 dark:bg-neutral-900/50 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getModelName(item.providerId, item.modelConfigId)}>
+                        <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-widest px-1.5 py-0.5 bg-white dark:bg-neutral-900 rounded border border-neutral-200/50 dark:border-white/5 text-center truncate" title={getModelName(item.providerId, item.modelConfigId)}>
                           {getModelName(item.providerId, item.modelConfigId)}
                         </span>
                       </div>

@@ -391,7 +391,7 @@ export function PostForm() {
 
         <div className="grid gap-8 lg:grid-cols-3">
           <div className="min-w-0 space-y-6 lg:col-span-2">
-            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
               <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
                 <h2 className="text-lg font-semibold text-neutral-950 dark:text-white">Content & Media</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">What would you like to share?</p>
@@ -557,7 +557,7 @@ export function PostForm() {
           </div>
 
           <aside className="space-y-6 lg:col-span-1">
-            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white/70 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900/70">
+            <section className="overflow-hidden rounded-xl border border-neutral-200/50 bg-white shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900">
               <div className="border-b border-neutral-200/50 bg-neutral-100/60 p-6 dark:border-white/5 dark:bg-white/5">
                 <h2 className="text-lg font-semibold text-neutral-950 dark:text-white">Scheduling</h2>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">When should this be published?</p>

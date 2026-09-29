@@ -29,8 +29,8 @@ const accentClasses: Record<AccentColor, string> = {
 };
 
 const expandedClasses: Record<AccentColor, string> = {
-  blue: 'border-blue-500/50 bg-white/50 dark:bg-neutral-900/50 rounded-b-none',
-  emerald: 'border-emerald-500/50 bg-white/50 dark:bg-neutral-900/50 rounded-b-none',
+  blue: 'border-blue-500/50 bg-white dark:bg-neutral-900 rounded-b-none',
+  emerald: 'border-emerald-500/50 bg-white dark:bg-neutral-900 rounded-b-none',
 };
 
 const selectedTextClasses: Record<AccentColor, string> = {

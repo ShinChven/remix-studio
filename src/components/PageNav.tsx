@@ -76,7 +76,7 @@ export function PageNav({
       ? 'min-w-10 h-10 sm:min-w-11 sm:h-11 px-1 rounded-xl text-sm'
       : 'min-w-9 h-9 sm:min-w-8 sm:h-8 px-1 rounded-lg text-xs sm:text-[11px]';
   const idle =
-    'border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800';
+    'border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800';
   const control = `${base} ${idle} shrink-0 touch-manipulation select-none flex items-center justify-center font-black transition-all active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed`;
   const icon = size === 'lg' ? 'w-5 h-5' : 'w-4 h-4';
 

@@ -177,7 +177,7 @@ export function ProviderForm() {
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg border transition-ui relative group ${
                       type === t 
                         ? 'bg-amber-600 text-white border-amber-700 shadow-md shadow-amber-600/20 ring-2 ring-amber-500/20' 
-                        : 'bg-white/50 dark:bg-neutral-900/40 border-neutral-200 dark:border-white/5 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-900 backdrop-blur-xl shadow-sm'
+                        : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-white/5 text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-white dark:hover:bg-neutral-900 backdrop-blur-xl shadow-sm'
                     }`}
                   >
                     <ProviderIcon type={t} className={`w-5 h-5 transition-transform group-hover:scale-110 ${type === t ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}`} />
@@ -209,7 +209,7 @@ export function ProviderForm() {
                     value={name}
                     onChange={e => setName(e.target.value)}
                     placeholder={t('providerForm.namePlaceholder')}
-                    className="w-full bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 text-sm font-bold text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
+                    className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 text-sm font-bold text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
                     required
                   />
                 </div>
@@ -236,7 +236,7 @@ export function ProviderForm() {
                       value={apiKey}
                       onChange={e => setApiKey(e.target.value)}
                       placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : type === 'KlingAI' ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
-                      className="w-full bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 pr-12 text-sm font-mono text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
+                      className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 pr-12 text-sm font-mono text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
                     />
                     <button
                       type="button"
@@ -270,7 +270,7 @@ export function ProviderForm() {
                         value={apiSecret}
                         onChange={e => setApiSecret(e.target.value)}
                         placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
-                        className="w-full bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 pr-12 text-sm font-mono text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
+                        className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 pr-12 text-sm font-mono text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
                       />
                       <button
                         type="button"
@@ -298,7 +298,7 @@ export function ProviderForm() {
                     value={apiUrl}
                     onChange={e => setApiUrl(e.target.value)}
                     placeholder={t('providerForm.apiUrlPlaceholder')}
-                    className="w-full bg-white dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 text-sm font-mono text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
+                    className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-3.5 text-sm font-mono text-neutral-900 dark:text-neutral-200 placeholder:text-neutral-400 dark:placeholder:text-neutral-600 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/50 transition-all shadow-inner-sm"
                   />
                 </div>
 
@@ -313,7 +313,7 @@ export function ProviderForm() {
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-1 p-1 bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-inner-sm group-focus-within:border-amber-500/50 transition-all">
+                  <div className="flex items-center gap-1 p-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-inner-sm group-focus-within:border-amber-500/50 transition-all">
                     <button
                       type="button"
                       onClick={() => setConcurrency(Math.max(1, concurrency - 1))}

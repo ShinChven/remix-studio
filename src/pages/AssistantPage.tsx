@@ -1630,7 +1630,7 @@ export function AssistantPage() {
                             <>
                               {shouldRenderThoughtOutsideBubble && renderMessageContent(msg.content)}
                                 {hasRenderableAssistantBubble(msg) && (
-                                  <div className={`bg-white/70 dark:bg-neutral-900/70 backdrop-blur-xl rounded-card rounded-tl-md px-4 py-3 shadow-sm border border-white/40 dark:border-white/10 ${
+                                  <div className={`bg-white dark:bg-neutral-900 backdrop-blur-xl rounded-card rounded-tl-md px-4 py-3 shadow-sm border border-white/40 dark:border-white/10 ${
                                     msg.status === 'error' ? 'border-red-300 dark:border-red-800/40' : ''
                                   }`}>
                                     {renderMessageContent(msg.content)}

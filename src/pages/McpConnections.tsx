@@ -277,7 +277,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           />
         )}
 
-        <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl overflow-hidden relative group shadow-sm">
+        <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl overflow-hidden relative group shadow-sm">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-amber-500/5 opacity-50" />
           <div className="relative p-5 md:p-8 flex flex-col md:flex-row items-start gap-4 md:gap-6">
             <div className="flex-shrink-0 rounded-card bg-sky-500/10 p-3 text-sky-400 border border-sky-500/20 shadow-lg shadow-sky-500/5">
@@ -353,7 +353,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
                   { title: t('mcpConnections.connectSection.steps.2.title'), desc: t('mcpConnections.connectSection.steps.2.desc') },
                   { title: t('mcpConnections.connectSection.steps.3.title'), desc: t('mcpConnections.connectSection.steps.3.desc') }
                 ].map((step, i) => (
-                  <div key={i} className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md p-4 relative overflow-hidden group/step shadow-sm hover:shadow-md transition-shadow">
+                  <div key={i} className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-md p-4 relative overflow-hidden group/step shadow-sm hover:shadow-md transition-shadow">
                     <div className="absolute -right-2 -bottom-2 text-6xl font-display font-black text-neutral-800/10 select-none group-hover/step:text-sky-500/5 transition-colors">{i + 1}</div>
                     <p className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 mb-1 relative z-10">{step.title}</p>
                     <p className="text-sm text-neutral-500 dark:text-neutral-500 relative z-10 leading-relaxed">{step.desc}</p>
@@ -572,7 +572,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
 
           {/* Create PAT form */}
           {showCreatePat && (
-            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
+            <div className="p-5 md:p-6 bg-white dark:bg-neutral-900 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
               {newToken ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
@@ -652,7 +652,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-card bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
+                <div key={i} className="h-24 rounded-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
               ))
             ) : tokens.length === 0 ? (
               <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/10 shadow-sm">
@@ -668,7 +668,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
               tokens.map((token) => (
                 <div
                   key={token.id}
-                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-ui group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                  className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-ui group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover/card:scale-110 transition-transform">
@@ -746,7 +746,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           </div>
 
           {editingClient && (
-            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-4 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
+            <div className="p-5 md:p-6 bg-white dark:bg-neutral-900 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-4 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
               <div>
                 <h4 className="text-sm font-bold text-neutral-900 dark:text-white tracking-tight">{t('mcpConnections.oauth.edit.title', { name: editingClient.clientName || editingClient.clientId })}</h4>
                 <p className="mt-1 text-xs leading-relaxed text-neutral-500 dark:text-neutral-500">{t('mcpConnections.oauth.edit.description')}</p>
@@ -783,7 +783,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           )}
 
           {showCreateClient && (
-            <div className="p-5 md:p-6 bg-white/40 dark:bg-neutral-900/40 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
+            <div className="p-5 md:p-6 bg-white dark:bg-neutral-900 backdrop-blur-3xl border border-neutral-200/50 dark:border-white/5 rounded-xl space-y-5 animate-in zoom-in-95 duration-200 shadow-xl relative z-10">
               {newClientCredentials ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2.5 text-emerald-400 text-sm font-bold bg-emerald-500/5 border border-emerald-500/20 p-3 rounded-xl">
@@ -909,7 +909,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
           <div className="grid gap-4">
             {isLoading ? (
               [1, 2].map((i) => (
-                <div key={i} className="h-24 rounded-card bg-white dark:bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
+                <div key={i} className="h-24 rounded-card bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 animate-pulse" />
               ))
             ) : clients.length === 0 ? (
               <div className="py-16 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-card text-center text-neutral-500 dark:text-neutral-500 flex flex-col items-center justify-center gap-4 bg-white dark:bg-neutral-900/10 shadow-sm">
@@ -925,7 +925,7 @@ export function McpConnections({ embedded = false }: McpConnectionsProps) {
               clients.map((client) => (
                 <div
                   key={client.id}
-                  className="w-full bg-white/70 dark:bg-neutral-900/70 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-ui group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
+                  className="w-full bg-white dark:bg-neutral-900 border border-neutral-200/50 dark:border-white/5 backdrop-blur-xl hover:bg-white/80 dark:hover:bg-neutral-900/80 p-4 md:p-5 rounded-xl transition-ui group/card flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4 overflow-hidden">
                     <div className="flex-shrink-0 p-3 rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20 group-hover/card:scale-110 transition-transform">

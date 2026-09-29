@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Type, X, Save } from 'lucide-react';
 import { WorkflowItem } from '../../types';
@@ -19,8 +20,8 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
 
   if (!item) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center sm:p-4 md:p-8">
+  return createPortal(
+    <div className="fixed inset-0 z-[600] flex items-center justify-center sm:p-4 md:p-8">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300 cursor-pointer" onClick={onClose} />
 
       <div className="relative w-full max-w-5xl h-[100dvh] sm:h-[80dvh] bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 sm:border sm:rounded-card shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
@@ -73,6 +74,7 @@ export function PromptModal({ item, onClose, onSave }: PromptModalProps) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
