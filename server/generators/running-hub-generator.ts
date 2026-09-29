@@ -2,7 +2,7 @@ import { ImageGenerator, GenerateRequest, GenerateResult, CheckStatusResult } fr
 
 const SUBMIT_URL = 'https://www.runninghub.ai/openapi/v2/rhart-image-n-g31-flash/image-to-image';
 const QUERY_URL  = 'https://www.runninghub.ai/openapi/v2/query';
-const UPLOAD_URL = 'https://www.runninghub.cn/openapi/v2/media/upload/binary';
+const UPLOAD_URL = 'https://www.runninghub.ai/openapi/v2/media/upload/binary';
 
 const MAX_POLL_ATTEMPTS = 60;  // 60 × 5 s = 5 min
 const POLL_INTERVAL_MS  = 5_000;
@@ -195,8 +195,8 @@ export class RunningHubGenerator extends ImageGenerator {
       const data = json.data ?? {};
       const url: string | undefined =
         data.download_url ||
-        (data.fileName ? `https://www.runninghub.cn/view?filename=${data.fileName}&type=input` : undefined) ||
-        (data.filename ? `https://www.runninghub.cn/view?filename=${data.filename}&type=input` : undefined);
+        (data.fileName ? `https://www.runninghub.ai/view?filename=${data.fileName}&type=input` : undefined) ||
+        (data.filename ? `https://www.runninghub.ai/view?filename=${data.filename}&type=input` : undefined);
 
       if (!url) return { ok: false, error: 'No URL in upload response' };
       return { ok: true, url };
