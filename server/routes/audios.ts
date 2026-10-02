@@ -3,13 +3,14 @@ import { bodyLimit } from 'hono/body-limit';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { S3Storage } from '../storage/s3-storage';
 import { checkStorageLimit } from '../utils/storage-check';
+import { ingestMedia, MEDIA_SIZE_LIMIT_BYTES, mediaExtension } from '../services/media-ingest';
 import { IRepository } from '../db/repository';
 import { UserRepository } from '../auth/user-repository';
 import { formatError } from '../utils/error-handler';
 
 type Variables = { user: JwtPayload };
 
-const AUDIO_SIZE_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
+const AUDIO_SIZE_LIMIT_BYTES = MEDIA_SIZE_LIMIT_BYTES.audio; // 50 MB
 
 export function createAudioRouter(storage: S3Storage, exportStorage: S3Storage, repository: IRepository, userRepository: UserRepository) {
   const router = new Hono<{ Variables: Variables }>();
@@ -26,16 +27,7 @@ export function createAudioRouter(storage: S3Storage, exportStorage: S3Storage, 
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const mimeMatch = base64.match(/^data:(audio\/[\w+.-]+);base64,/);
       const mimeType = mimeMatch ? mimeMatch[1] : 'audio/mpeg';
-      const extMap: Record<string, string> = {
-        'audio/mpeg': 'mp3',
-        'audio/aac': 'aac',
-        'audio/mp4': 'm4a',
-        'audio/wav': 'wav',
-        'audio/x-wav': 'wav',
-        'audio/ogg': 'ogg',
-        'audio/webm': 'webm',
-      };
-      const ext = extMap[mimeType] ?? 'mp3';
+      const ext = mediaExtension('audio', mimeType);
       const filename = `${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
       const key = `${user.userId}/${safeProjectId}/${filename}`;
 
@@ -57,7 +49,7 @@ export function createAudioRouter(storage: S3Storage, exportStorage: S3Storage, 
         }, 403);
       }
 
-      const s3Key = await storage.save(key, buffer, mimeType);
+      const { key: s3Key } = await ingestMedia(storage, { kind: 'audio', key, ext, mimeType, buffer });
 
       return c.json({
         key: s3Key,

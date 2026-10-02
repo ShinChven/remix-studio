@@ -16,6 +16,7 @@ Available MCP capabilities include:
 - **Browse** the items inside a project album with `get_album_items`, including each item's prompt, tags, format, aspect ratio, size, and storage keys, plus a `tagCounts` roll-up of every tag in the album. Filter with `tags` and `tag_match`.
 - **Tag album items** with `tag_album_items` — `add`, `remove`, or `replace` tags on the ids given in `item_ids`, or on every item in the album with `all_items`, optionally narrowed by `filter_tags` and `aspect_ratios`.
 - **Download** stored files with `get_file_urls`, which converts internal storage keys into temporary presigned URLs (optionally as save-as download links).
+- **Upload** image, video and audio files with `create_upload`, then add them to a library (`add_files_to_library`), pin them in a project workflow (`uploadId` on `update_project` / `create_project_with_workflow` items), or post them to a campaign (`create_posts_from_files`, `add_media_to_post`). See [file uploads](#file-uploads).
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
 - **Create and update** workflow-backed projects.
 - **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
@@ -39,8 +40,33 @@ Both are queued in the background, exactly like an export started from the web i
 Read tools return **storage keys**, not links. To fetch, view, or download a file, pass those keys to `get_file_urls`:
 
 - Accepts up to 50 keys per call, with `expires_in` between 60 and 86400 seconds (default 1 hour) and `download: true` for an attachment (save-as) URL.
-- Signs a key only when it is still referenced by media the authenticated user owns — library items, album items, job outputs, or campaign post media. Everything else is returned under `denied` with a reason, and values that are already absolute URLs are rejected as needing no signing.
+- Signs a key only when it is still referenced by media the authenticated user owns — library items, album items, job outputs, project workflow items, or campaign post media. Everything else is returned under `denied` with a reason, and values that are already absolute URLs are rejected as needing no signing.
 - Returned URLs are temporary; request new ones rather than reusing expired links. When the deployment sets `S3_PUBLIC_CUSTOM_DOMAIN`, storage returns a direct public URL instead of a signed one.
+
+### File uploads
+
+File bytes never travel inside a tool call. A client that has the file on disk (a shell, a script, a code sandbox) stages it first and attaches it second:
+
+1. **Stage.** `create_upload` takes each file's `filename`, `mimeType` and exact `size` in bytes and returns an `uploadId` and a one-time `uploadUrl`, plus a ready `curl` command. It needs no confirmation, because staging changes nothing the user can see.
+2. **Send the bytes.** `PUT` the raw file to the `uploadUrl` — `curl -sS -T hero.png "<uploadUrl>"`. No `Authorization` header and no multipart encoding: the single-use token in the URL is the credential. A successful upload answers `200` with `"status": "ready"`.
+3. **Attach.** Pass the `uploadId` to one of the attach tools, which go through the normal [confirmation protocol](#write-confirmation-protocol):
+
+| Destination | Tool | What it creates |
+| :--- | :--- | :--- |
+| Image, video or audio library | `add_files_to_library` | A library item per file; the title defaults to the file name |
+| Project workflow | `update_project`, `create_project_with_workflow` | An `image`, `video` or `audio` item with `uploadId` instead of `value` |
+| Campaign | `create_posts_from_files` | One draft post per image or video, with the post watermark applied |
+| Existing post | `add_media_to_post` | A post media item, processed in the background |
+
+Rules the server enforces:
+
+- Supported types are images (PNG, JPEG, WebP, GIF; up to 50 MB), videos (MP4, MOV, WebM, MKV; up to 200 MB) and audio (MP3, AAC, M4A, WAV, OGG, WebM; up to 50 MB) — the same limits as uploads in the web app.
+- The type is detected from the file's bytes. A file declared as an image whose contents are audio is refused, and so is a body whose length differs from the declared `size`.
+- An `uploadUrl` accepts one `PUT` and expires after 15 minutes. A staged file can be attached any number of times for 24 hours; each attach makes its own copy, then the staged file is deleted.
+- Staged files count toward the storage quota until they are deleted, and `create_upload` refuses files that would not fit. `get_storage_usage` reports them under `staging`.
+- `get_upload` reports each upload's status: `awaiting_upload`, `processing`, `ready`, or `failed` with an `error`.
+
+These tools are offered to external MCP clients only. The in-app assistant has no way to send file bytes, so it does not see them.
 
 ### Record links
 
@@ -97,7 +123,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
 | Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `export_project`, `export_project_album` |
 | Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
-| Files | `get_file_urls` | — |
+| Files | `get_file_urls`, `get_upload` | `create_upload`, `add_files_to_library`, `create_posts_from_files` |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
 | Posts | `list_posts`, `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
 
@@ -112,7 +138,8 @@ Important boundaries:
 - `clear_failed_jobs` deletes failed job records only — drafts, queued, running, and completed jobs are untouched, and album items already saved survive. A cleared failure can no longer be retried. `projectId` and `providerId` are alternatives, not filters to combine; omitting both clears every failed job in the account. Pending jobs in an affected project are re-enqueued, so a project stalled behind failures resumes on its own.
 - `tag_album_items` takes exactly one of `add`, `remove`, or `replace` per call. `replace` discards whatever other tags the items carried, and `replace: []` clears them entirely. Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item.
 - Export tools are confirmation-gated writes because the archive they produce consumes the user's storage quota. Polling with `task_id` goes through the same protocol.
-- Media added to a post must be an internal storage key already owned by the authenticated user and valid for that campaign.
+- Media added to a post must be an internal storage key already owned by the authenticated user and valid for that campaign, or an `uploadId` from `create_upload`.
+- Image, video and audio workflow items may only name storage keys the authenticated user already owns (from `get_project`, `get_library_items` or `get_album_items`). Use `uploadId` to pin a new file.
 - Scheduling requires a valid time, an active channel on the campaign, and ready media.
 
 ## Write Confirmation Protocol

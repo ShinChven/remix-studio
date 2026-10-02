@@ -18,7 +18,7 @@ export async function getUserStorageUsage(
   repository: IRepository
 ): Promise<number> {
   const usage = await repository.getStorageUsageAggregate(userId);
-  let total = usage.projects + usage.campaigns + usage.libraries + usage.archives + usage.trash;
+  let total = usage.projects + usage.campaigns + usage.libraries + usage.archives + usage.trash + usage.staging;
 
   const exportsMissingSize = await repository.getCompletedExportTasksMissingSize(userId);
   for (const task of exportsMissingSize) {

@@ -169,7 +169,17 @@ export function summarizeToolEffect(
     case 'update_post_text':
       return `Update text for post ${getLabel(objectArgs.postId, 'post')}.`;
     case 'add_media_to_post':
-      return `Add media to post ${getLabel(objectArgs.postId, 'post')}.`;
+      return typeof objectArgs.uploadId === 'string' && objectArgs.uploadId
+        ? `Add uploaded file ${String(objectArgs.uploadId)} to post ${getLabel(objectArgs.postId, 'post')}.`
+        : `Add media to post ${getLabel(objectArgs.postId, 'post')}.`;
+    case 'add_files_to_library': {
+      const count = Array.isArray(objectArgs.files) ? objectArgs.files.length : 0;
+      return `Add ${count} uploaded file${count === 1 ? '' : 's'} to library ${getLabel(objectArgs.library_id, 'library')}.`;
+    }
+    case 'create_posts_from_files': {
+      const count = Array.isArray(objectArgs.files) ? objectArgs.files.length : 0;
+      return `Create ${count} draft post${count === 1 ? '' : 's'} in campaign ${getLabel(objectArgs.campaignId, 'campaign')}, one per uploaded file, with the post watermark applied.`;
+    }
     case 'schedule_post':
       return `Schedule post ${getLabel(objectArgs.postId, 'post')}.`;
     default:

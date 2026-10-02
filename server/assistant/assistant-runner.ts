@@ -139,7 +139,7 @@ export class AssistantRunner {
     private providerRepo: ProviderRepository,
     toolDeps: ToolDependencies,
   ) {
-    this.tools = createAssistantToolDefinitions(toolDeps);
+    this.tools = createAssistantToolDefinitions(toolDeps).filter((tool) => !tool.mcpOnly);
     this.toolsByName = new Map(this.tools.map((t) => [t.name, t]));
   }
 
