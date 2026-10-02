@@ -17,7 +17,8 @@ import {
 import { checkStorageLimit } from '../utils/storage-check';
 import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
-import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort } from '../../src/types';
+import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow } from '../../src/types';
+import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
 
@@ -60,8 +61,64 @@ function normalizeJobsForStorage(jobs: Job[], bucket: string): Job[] {
     const workflowSnapshot = job.workflowSnapshot
       ? normalizeWorkflowForStorage(job.workflowSnapshot, bucket)
       : job.workflowSnapshot;
-    return { ...job, imageContexts, videoContexts, audioContexts, workflowSnapshot };
+    const comfyInputs = Array.isArray(job.comfyInputs)
+      ? job.comfyInputs
+        .filter((input) => input && typeof input.nodeId === 'string' && typeof input.input === 'string' && typeof input.value === 'string')
+        .map((input) => ({
+          nodeId: input.nodeId,
+          input: input.input,
+          kind: (['image', 'video', 'audio'].includes(input.kind) ? input.kind : 'text') as typeof input.kind,
+          value: input.kind === 'text' ? input.value : (stripToKey(input.value, bucket) || input.value),
+        }))
+      : job.comfyInputs;
+    return { ...job, imageContexts, videoContexts, audioContexts, workflowSnapshot, comfyInputs };
   });
+}
+
+/** Largest API-format workflow a ComfyUI project stores. */
+const MAX_COMFY_WORKFLOW_BYTES = 5 * 1024 * 1024;
+
+type ComfyFieldsResult =
+  | { ok: true; comfyUrl?: string | null; comfyWorkflow?: ComfyWorkflow | null }
+  | { ok: false; error: string };
+
+/**
+ * Validate the ComfyUI fields of a project body. An empty URL or a `null`
+ * workflow clears the field; anything not sent is left untouched.
+ */
+function readComfyFields(body: any): ComfyFieldsResult {
+  const result: { ok: true; comfyUrl?: string | null; comfyWorkflow?: ComfyWorkflow | null } = { ok: true };
+
+  if (typeof body?.comfyUrl === 'string') {
+    if (!body.comfyUrl.trim()) {
+      result.comfyUrl = null;
+    } else {
+      try {
+        result.comfyUrl = normalizeComfyAddress(body.comfyUrl);
+      } catch (e: any) {
+        return { ok: false, error: e?.message || 'Invalid ComfyUI URL' };
+      }
+    }
+  } else if (body?.comfyUrl === null) {
+    result.comfyUrl = null;
+  }
+
+  if (body?.comfyWorkflow === null) {
+    result.comfyWorkflow = null;
+  } else if (body?.comfyWorkflow !== undefined) {
+    if (JSON.stringify(body.comfyWorkflow).length > MAX_COMFY_WORKFLOW_BYTES) {
+      return { ok: false, error: 'ComfyUI workflow is too large' };
+    }
+    const parsed = parseComfyWorkflow(body.comfyWorkflow);
+    if (parsed.ok === false) {
+      return { ok: false, error: parsed.error === 'ui-format'
+        ? 'ComfyUI workflow must be exported in API format'
+        : 'Invalid ComfyUI workflow' };
+    }
+    result.comfyWorkflow = parsed.workflow;
+  }
+
+  return result;
 }
 
 /**
@@ -698,14 +755,18 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (id.length > 128 || name.length > 256) return c.json({ error: 'Field too long' }, 400);
       if (description && description.length > 2000) return c.json({ error: 'Description too long' }, 400);
 
-      const projectType: 'image' | 'text' | 'video' | 'audio' =
+      const projectType: 'image' | 'text' | 'video' | 'audio' | 'comfyui' =
         body.type === 'text'
           ? 'text'
           : body.type === 'video'
             ? 'video'
             : body.type === 'audio'
               ? 'audio'
-              : 'image';
+              : body.type === 'comfyui'
+                ? 'comfyui'
+                : 'image';
+      const comfyFields = readComfyFields(body);
+      if (comfyFields.ok === false) return c.json({ error: comfyFields.error }, 400);
       const projectStatus: 'active' | 'archived' = body.status === 'archived' ? 'archived' : 'active';
       const project = {
         id,
@@ -732,6 +793,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         sound: body.sound === 'on' || body.sound === 'off' ? body.sound : undefined,
         lastQueueCount: typeof body.lastQueueCount === 'number' ? body.lastQueueCount : undefined,
         showDisabledItems: typeof body.showDisabledItems === 'boolean' ? body.showDisabledItems : undefined,
+        comfyUrl: comfyFields.comfyUrl ?? undefined,
+        comfyWorkflow: comfyFields.comfyWorkflow ?? undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -787,6 +850,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (body?.sound === 'on' || body?.sound === 'off') updates.sound = body.sound;
       if (typeof body?.lastQueueCount === 'number') updates.lastQueueCount = body.lastQueueCount;
       if (typeof body?.showDisabledItems === 'boolean') updates.showDisabledItems = body.showDisabledItems;
+      const comfyFields = readComfyFields(body);
+      if (comfyFields.ok === false) return c.json({ error: comfyFields.error }, 400);
+      if (comfyFields.comfyUrl !== undefined) (updates as any).comfyUrl = comfyFields.comfyUrl;
+      if (comfyFields.comfyWorkflow !== undefined) (updates as any).comfyWorkflow = comfyFields.comfyWorkflow;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

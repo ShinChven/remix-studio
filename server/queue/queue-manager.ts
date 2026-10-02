@@ -27,6 +27,7 @@ import { TextProcessor } from './text-processor';
 import { VideoProcessor } from './video-processor';
 import { AudioProcessor } from './audio-processor';
 import { DetachedPoller } from './detached-poller';
+import type { ComfyUIRunner } from './comfyui-runner';
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
@@ -108,6 +109,8 @@ export class QueueManager {
   // Maps to the providerId so callers can release the right slot.
   private activeJobIds: Map<string, string> = new Map();
   private processingLoops: Map<string, boolean> = new Map();
+  // ComfyUI projects have no provider; their jobs are handed to this runner.
+  private comfyRunner?: ComfyUIRunner;
 
   constructor(
     private prisma: PrismaClient,
@@ -122,6 +125,10 @@ export class QueueManager {
     private projectEvents?: ProjectEventPublisher
   ) {
     this.detachedPoller.start();
+  }
+
+  public setComfyRunner(runner: ComfyUIRunner) {
+    this.comfyRunner = runner;
   }
 
   // Expose poller method if explicitly requested (e.g. from routes)
@@ -427,6 +434,11 @@ export class QueueManager {
       });
     }
 
+    if (project.type === 'comfyui') {
+      this.comfyRunner?.enqueue(userId, projectId, jobsToRun.map((job) => job.id));
+      return;
+    }
+
     for (const job of jobsToRun) {
       const providerId = job.providerId || project.providerId;
       if (!providerId) continue;
@@ -469,6 +481,11 @@ export class QueueManager {
         projectId,
         reason: 'queue.started',
       });
+    }
+
+    if (project.type === 'comfyui') {
+      this.comfyRunner?.enqueue(userId, projectId, jobsToRun.map((job) => job.id));
+      return;
     }
 
     for (const job of jobsToRun) {
@@ -648,6 +665,9 @@ export class QueueManager {
       // activeJobIds, it is genuinely consuming a provider slot — skip, do not
       // reset, or we'll cause a duplicate dispatch.
       if (this.activeJobIds.has(row.id)) continue;
+      // ComfyUI jobs sit in the same state while their media uploads and the
+      // prompt is queued; the runner owns those.
+      if (this.comfyRunner?.isTracking(row.id)) continue;
 
       // Atomic compare-and-set: only flip the row back to 'pending' if it
       // is still the orphan we observed. Guards against the row legitimately
@@ -1232,6 +1252,7 @@ export class QueueManager {
       where: {
         status: { in: ['pending', 'processing'] },
       },
+      include: { project: { select: { type: true } } },
     });
 
     for (const item of jobs) {
@@ -1239,7 +1260,10 @@ export class QueueManager {
       const userId = item.userId;
       const projectId = item.projectId;
 
-      if (job.status === 'processing' && job.taskId) {
+      if (job.status === 'processing' && job.taskId && item.project?.type === 'comfyui') {
+        pollingCount++;
+        this.comfyRunner?.adopt(userId, projectId, job.id, job.taskId);
+      } else if (job.status === 'processing' && job.taskId) {
         pollingCount++;
         // Reserve a concurrency slot for in-flight detached jobs so the limit is
         // enforced even after a restart. DetachedPoller will release on terminal state.

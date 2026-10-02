@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem } from '../../src/types';
+import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyInputTarget, ComfyJobInput } from '../../src/types';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
@@ -204,6 +204,8 @@ export class ProjectRepository {
       sound: (p as any).sound ?? undefined,
       lastQueueCount: (p as any).lastQueueCount ?? undefined,
       showDisabledItems: (p as any).showDisabledItems ?? undefined,
+      comfyUrl: (p as any).comfyUrl ?? undefined,
+      comfyWorkflow: (p as any).comfyWorkflow ?? undefined,
       jobs: [],
       workflow: [],
       album: [],
@@ -329,6 +331,7 @@ export class ProjectRepository {
         filename: job.filename ?? null,
         providerId: job.providerId ?? null,
         workflowSnapshot: job.workflowSnapshot ?? null,
+        comfyInputs: job.comfyInputs ?? null,
         createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
       })) as any,
     });
@@ -555,6 +558,8 @@ export class ProjectRepository {
         sound: project.sound ?? null,
         lastQueueCount: project.lastQueueCount ?? null,
         showDisabledItems: project.showDisabledItems ?? null,
+        comfyUrl: project.comfyUrl ?? null,
+        comfyWorkflow: project.comfyWorkflow ?? undefined,
       } as any,
     });
 
@@ -585,6 +590,8 @@ export class ProjectRepository {
     if (updates.sound !== undefined) data.sound = updates.sound ?? null;
     if (updates.lastQueueCount !== undefined) data.lastQueueCount = updates.lastQueueCount ?? null;
     if (updates.showDisabledItems !== undefined) data.showDisabledItems = updates.showDisabledItems ?? null;
+    if (updates.comfyUrl !== undefined) data.comfyUrl = updates.comfyUrl ?? null;
+    if (updates.comfyWorkflow !== undefined) data.comfyWorkflow = updates.comfyWorkflow ?? Prisma.DbNull;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data: data as any });
@@ -620,6 +627,7 @@ export class ProjectRepository {
     if (updates.duration !== undefined) data.duration = updates.duration ?? null;
     if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
     if (updates.sound !== undefined) data.sound = updates.sound ?? null;
+    if (updates.comfyInputs !== undefined) data.comfyInputs = updates.comfyInputs ?? Prisma.DbNull;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
@@ -1607,6 +1615,9 @@ export class ProjectRepository {
         if (job.workflowSnapshot !== undefined) {
           updateData.workflowSnapshot = job.workflowSnapshot;
         }
+        if (job.comfyInputs !== undefined) {
+          updateData.comfyInputs = job.comfyInputs;
+        }
 
         // On retry, clear the prior error so the UI doesn't keep showing it.
         if (dbStatus === 'failed' && nextStatus === 'pending') {
@@ -1655,6 +1666,7 @@ export class ProjectRepository {
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
           providerId: job.providerId ?? null,
           workflowSnapshot: job.workflowSnapshot ?? null,
+          comfyInputs: job.comfyInputs ?? null,
         };
         await this.prisma.job.create({ data: createData as any });
       }
@@ -1694,7 +1706,7 @@ export class ProjectRepository {
 
     const jobs = await this.prisma.job.findMany({
       where: { projectId, userId },
-      select: { id: true, imageContexts: true, imageUrl: true },
+      select: { id: true, imageContexts: true, imageUrl: true, comfyInputs: true },
     });
 
     for (const job of jobs) {
@@ -1711,9 +1723,18 @@ export class ProjectRepository {
           ? job.imageUrl.replace(oldPrefix, newPrefix)
           : null;
 
+      const currentComfyInputs = Array.isArray(job.comfyInputs) ? (job.comfyInputs as unknown as ComfyJobInput[]) : null;
+      let comfyInputsChanged = false;
+      const newComfyInputs = currentComfyInputs?.map((input) => {
+        if (input.kind === 'text' || typeof input.value !== 'string' || !input.value.startsWith(oldPrefix)) return input;
+        comfyInputsChanged = true;
+        return { ...input, value: input.value.replace(oldPrefix, newPrefix) };
+      });
+
       const data: any = {};
       if (contextsChanged) data.imageContexts = newContexts;
       if (newImageUrl !== null) data.imageUrl = newImageUrl;
+      if (comfyInputsChanged) data.comfyInputs = newComfyInputs;
 
       if (Object.keys(data).length > 0) {
         await this.prisma.job.update({ where: { id: job.id }, data });
@@ -1762,6 +1783,7 @@ export class ProjectRepository {
           optimizedUrl: item.optimizedUrl ?? null,
           selectedTags: this.toNullableJsonArray(item.selectedTags),
           disabled: item.disabled ?? false,
+          comfyTarget: item.comfyTarget ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input } : Prisma.DbNull,
         })),
       });
     });
@@ -1799,6 +1821,9 @@ export class ProjectRepository {
     if (options.includeWorkflowSnapshot && Array.isArray(j.workflowSnapshot)) {
       job.workflowSnapshot = j.workflowSnapshot as WorkflowItem[];
     }
+    if (Array.isArray(j.comfyInputs)) {
+      job.comfyInputs = j.comfyInputs as ComfyJobInput[];
+    }
     return job;
   }
 
@@ -1812,6 +1837,7 @@ export class ProjectRepository {
       optimizedUrl: w.optimizedUrl ?? undefined,
       selectedTags: (w.selectedTags as string[]) ?? undefined,
       disabled: w.disabled ?? false,
+      comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyInputTarget) : undefined,
     };
   }
 

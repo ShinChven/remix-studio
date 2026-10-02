@@ -18,6 +18,7 @@ import {
   Trash2,
   Type,
   Video,
+  Workflow,
   MoreHorizontal,
 } from 'lucide-react';
 import { Library, Project, ProjectType } from '../types';
@@ -88,6 +89,16 @@ function getProjectTypeMeta(type: ProjectType | undefined) {
         assetIcon: Music,
         assetLabel: 'audios',
       };
+    case 'comfyui':
+      return {
+        icon: Workflow,
+        iconClassName: 'bg-orange-500/10 text-orange-500 shadow-orange-500/5',
+        borderClassName: 'hover:border-orange-500/50',
+        accentClassName: 'text-orange-500/80',
+        glowClassName: 'via-orange-500/20',
+        assetIcon: ImageIcon,
+        assetLabel: 'images',
+      };
     case 'image':
     default:
       return {
@@ -130,6 +141,7 @@ function projectThumbnail(id: string, type: ProjectType = 'image', resolvedTheme
     case 'text': colors = '3b82f6,60a5fa,2563eb'; break; // blue
     case 'video': colors = 'a855f7,c084fc,9333ea'; break; // purple
     case 'audio': colors = '06b6d4,22d3ee,0891b2'; break; // cyan
+    case 'comfyui': colors = 'f97316,fb923c,ea580c'; break; // orange
     case 'image': default: colors = '10b981,34d399,059669'; break; // emerald
   }
   
@@ -215,7 +227,7 @@ export function ProjectCard({ project, isToggling = false, isExporting = false, 
         
         {/* Kicker */}
         <div className="text-[11px] font-medium uppercase tracking-wider text-white/60 mb-1 flex items-center gap-2">
-          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : 'TEXT'}
+          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : project.type === 'comfyui' ? 'COMFYUI' : 'TEXT'}
         </div>
 
         {/* Title */}

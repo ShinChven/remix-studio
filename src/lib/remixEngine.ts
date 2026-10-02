@@ -1,4 +1,4 @@
-import { Library, WorkflowItem } from '../types';
+import { ComfyInputTarget, ComfyJobInput, Library, WorkflowItem } from '../types';
 
 export interface Combination {
   prompt: string;
@@ -6,9 +6,23 @@ export interface Combination {
   videoContexts?: string[];
   audioContexts?: string[];
   filenameParts: string[];
+  /** ComfyUI projects: the value each bound workflow input takes. */
+  comfyInputs?: ComfyJobInput[];
 }
 
-type Choice = { type: 'text' | 'image' | 'video' | 'audio', value: string, tags?: string[], title?: string };
+type Choice = { type: 'text' | 'image' | 'video' | 'audio', value: string, tags?: string[], title?: string, target?: ComfyInputTarget };
+
+/**
+ * A ComfyUI binding stands for its input even when empty — clearing a prompt
+ * there is a value of its own, not "use the workflow's default".
+ */
+function hasTextValue(item: WorkflowItem): boolean {
+  return !!item.comfyTarget || item.value.trim() !== '';
+}
+
+function toComfyInput(choice: Choice): ComfyJobInput | null {
+  return choice.target ? { ...choice.target, kind: choice.type, value: choice.value } : null;
+}
 
 export function filterItemsByTags<T extends { tags?: string[] }>(
   items: T[],
@@ -32,14 +46,15 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
   for (const item of workflow) {
     if (item.disabled) continue;
 
+    const target = item.comfyTarget;
     if (item.type === 'text') {
-      if (item.value.trim()) allChoices.push([{ type: 'text', value: item.value.trim() }]);
+      if (hasTextValue(item)) allChoices.push([{ type: 'text', value: item.value.trim(), target }]);
     } else if (item.type === 'image') {
-      if (item.value) allChoices.push([{ type: 'image', value: item.value }]);
+      if (item.value) allChoices.push([{ type: 'image', value: item.value, target }]);
     } else if (item.type === 'video') {
-      if (item.value) allChoices.push([{ type: 'video', value: item.value }]);
+      if (item.value) allChoices.push([{ type: 'video', value: item.value, target }]);
     } else if (item.type === 'audio') {
-      if (item.value) allChoices.push([{ type: 'audio', value: item.value }]);
+      if (item.value) allChoices.push([{ type: 'audio', value: item.value, target }]);
     } else if (item.type === 'library') {
       const lib = libraries.find(l => l.id === item.value);
       if (lib && lib.items.length > 0) {
@@ -48,10 +63,11 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
         const contents = validItems.filter(i => i.content.trim() !== '');
         if (contents.length > 0) {
           allChoices.push(contents.map(i => ({
-            type: lib.type,
+            type: lib.type || 'text',
             value: i.content,
             tags: i.tags,
-            title: i.title
+            title: i.title,
+            target,
           })));
         }
       }
@@ -67,6 +83,7 @@ function choicesToCombination(combo: Choice[]): Combination {
   const videos: string[] = [];
   const audios: string[] = [];
   const stepParts: string[] = [];
+  const comfyInputs: ComfyJobInput[] = [];
 
   for (const c of combo) {
     if (c.type === 'text') texts.push(c.value);
@@ -76,6 +93,9 @@ function choicesToCombination(combo: Choice[]): Combination {
 
     if (c.tags && c.tags.length > 0) stepParts.push(...c.tags);
     if (c.title) stepParts.push(c.title);
+
+    const comfyInput = toComfyInput(c);
+    if (comfyInput) comfyInputs.push(comfyInput);
   }
 
   return {
@@ -84,6 +104,7 @@ function choicesToCombination(combo: Choice[]): Combination {
     videoContexts: videos.length > 0 ? videos : undefined,
     audioContexts: audios.length > 0 ? audios : undefined,
     filenameParts: stepParts,
+    comfyInputs: comfyInputs.length > 0 ? comfyInputs : undefined,
   };
 }
 
@@ -104,73 +125,17 @@ export function countWorkflowCombinations(workflow: WorkflowItem[], libraries: L
   return choices.reduce((product, arr) => product * arr.length, 1);
 }
 
-function generateRandomCombination(workflow: WorkflowItem[], libraries: Library[]): Combination {
-  const texts: string[] = [];
-  const images: string[] = [];
-  const videos: string[] = [];
-  const audios: string[] = [];
-  const stepParts: string[] = [];
-
-  for (const item of workflow) {
-    if (item.disabled) continue;
-
-    if (item.type === 'text') {
-      if (item.value.trim()) texts.push(item.value.trim());
-    } else if (item.type === 'image') {
-      if (item.value) images.push(item.value);
-    } else if (item.type === 'video') {
-      if (item.value) videos.push(item.value);
-    } else if (item.type === 'audio') {
-      if (item.value) audios.push(item.value);
-    } else if (item.type === 'library') {
-      const lib = libraries.find(l => l.id === item.value);
-      if (lib && lib.items.length > 0) {
-        const validItems = filterItemsByTags(lib.items, item.selectedTags, item.tagMatchMode);
-
-        const contents = validItems.filter(i => i.content.trim() !== '');
-        if (contents.length > 0) {
-          const randomItem = contents[Math.floor(Math.random() * contents.length)];
-          const itemType = lib.type || 'text'; // Fallback
-          if (itemType === 'text') {
-            texts.push(randomItem.content);
-          } else if (itemType === 'image') {
-            images.push(randomItem.content);
-          } else if (itemType === 'video') {
-            videos.push(randomItem.content);
-          } else if (itemType === 'audio') {
-            audios.push(randomItem.content);
-          }
-          if (randomItem.tags) stepParts.push(...randomItem.tags);
-          if (randomItem.title) stepParts.push(randomItem.title);
-        }
-      }
-    }
-  }
-
-  // Fallback if everything is empty
-  if (texts.length === 0 && images.length === 0 && videos.length === 0 && audios.length === 0) {
-    return { prompt: '', filenameParts: [] };
-  }
-
-  return {
-    prompt: texts.join('\n\n'),
-    imageContexts: images.length > 0 ? images : undefined,
-    videoContexts: videos.length > 0 ? videos : undefined,
-    audioContexts: audios.length > 0 ? audios : undefined,
-    filenameParts: stepParts
-  };
-}
-
 export function generateJobs(workflow: WorkflowItem[], libraries: Library[], count: number, shuffle: boolean): Combination[] {
+  const choices = buildWorkflowChoices(workflow, libraries);
+
   if (shuffle) {
     const results: Combination[] = [];
     for (let i = 0; i < count; i++) {
-      results.push(generateRandomCombination(workflow, libraries));
+      results.push(choicesToCombination(choices.map(arr => arr[Math.floor(Math.random() * arr.length)])));
     }
     return results;
   }
 
-  const choices = buildWorkflowChoices(workflow, libraries);
   if (choices.length === 0) return [];
   const total = choices.reduce((product, arr) => product * arr.length, 1);
   if (total === 0) return [];

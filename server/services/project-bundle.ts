@@ -12,7 +12,8 @@
  * anything about the exporting installation's bucket layout.
  */
 
-import type { AlbumItem, Project, WorkflowItem } from '../../src/types';
+import type { AlbumItem, ComfyWorkflow, Project, WorkflowItem } from '../../src/types';
+import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
 
 export const PROJECT_BUNDLE_KIND = 'remix-studio-project';
 export const PROJECT_BUNDLE_VERSION = 1;
@@ -40,6 +41,8 @@ export interface ProjectBundleSettings {
   resolution?: string;
   sound?: Project['sound'];
   showDisabledItems?: boolean;
+  comfyUrl?: string;
+  comfyWorkflow?: ComfyWorkflow;
   createdAt?: number;
 }
 
@@ -201,6 +204,8 @@ export function buildProjectBundleManifest(input: {
       resolution: project.resolution,
       sound: project.sound,
       showDisabledItems: project.showDisabledItems,
+      comfyUrl: project.comfyUrl,
+      comfyWorkflow: project.comfyWorkflow,
       createdAt: project.createdAt,
     },
     workflow,
@@ -210,6 +215,21 @@ export function buildProjectBundleManifest(input: {
 }
 
 export class ProjectBundleError extends Error {}
+
+function parseBundleComfyUrl(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  try {
+    return normalizeComfyAddress(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function parseBundleComfyWorkflow(value: unknown): ComfyWorkflow | undefined {
+  if (value === undefined || value === null) return undefined;
+  const parsed = parseComfyWorkflow(value);
+  return parsed.ok ? parsed.workflow : undefined;
+}
 
 function asStringArray(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
@@ -268,7 +288,7 @@ export function parseProjectBundleManifest(raw: unknown): ProjectBundleManifest 
     project: {
       name: project.name.trim().slice(0, 256),
       description: typeof project.description === 'string' ? project.description.slice(0, 2000) : undefined,
-      type: ['image', 'text', 'video', 'audio'].includes(project.type) ? project.type : 'image',
+      type: ['image', 'text', 'video', 'audio', 'comfyui'].includes(project.type) ? project.type : 'image',
       status: project.status === 'archived' ? 'archived' : 'active',
       providerId: typeof project.providerId === 'string' ? project.providerId : undefined,
       modelConfigId: typeof project.modelConfigId === 'string' ? project.modelConfigId : undefined,
@@ -285,6 +305,8 @@ export function parseProjectBundleManifest(raw: unknown): ProjectBundleManifest 
       resolution: typeof project.resolution === 'string' ? project.resolution : undefined,
       sound: project.sound === 'on' || project.sound === 'off' ? project.sound : undefined,
       showDisabledItems: typeof project.showDisabledItems === 'boolean' ? project.showDisabledItems : undefined,
+      comfyUrl: parseBundleComfyUrl(project.comfyUrl),
+      comfyWorkflow: parseBundleComfyWorkflow(project.comfyWorkflow),
       createdAt: typeof project.createdAt === 'number' ? project.createdAt : undefined,
     },
     workflow: workflow.map((item: any) => ({

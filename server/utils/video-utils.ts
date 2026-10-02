@@ -107,3 +107,35 @@ export async function probeVideo(videoBytes: Buffer): Promise<VideoProbeResult> 
     await safeUnlink(input);
   }
 }
+
+/**
+ * Re-encode a clip (webm, gif, mov…) to an H.264 mp4 that every browser plays,
+ * for generators that hand back other containers. `inputExt` tells ffmpeg how
+ * to read the bytes.
+ */
+export async function transcodeToMp4(videoBytes: Buffer, inputExt: string): Promise<Buffer> {
+  const input = await writeTempVideo(videoBytes, inputExt.replace(/[^a-z0-9]/gi, '') || 'bin');
+  const output = path.join(os.tmpdir(), `remix-transcode-${randomUUID()}.mp4`);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(input)
+        .outputOptions([
+          '-c:v', 'libx264',
+          '-pix_fmt', 'yuv420p',
+          // yuv420p needs even dimensions; gifs often have odd ones.
+          '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+          '-movflags', '+faststart',
+          '-c:a', 'aac',
+        ])
+        .output(output)
+        .on('end', () => resolve())
+        .on('error', (err) => reject(err))
+        .run();
+    });
+    return await fs.readFile(output);
+  } finally {
+    await safeUnlink(input);
+    await safeUnlink(output);
+  }
+}

@@ -91,6 +91,10 @@ export function ProjectRoute() {
         resolution: updatedProject.resolution,
         sound: updatedProject.sound,
         prefix: updatedProject.prefix,
+        // The ComfyUI workflow can run to hundreds of kilobytes, so it and the
+        // address only travel when they actually changed.
+        ...(updatedProject.comfyUrl !== project.comfyUrl ? { comfyUrl: updatedProject.comfyUrl ?? '' } : {}),
+        ...(updatedProject.comfyWorkflow !== project.comfyWorkflow ? { comfyWorkflow: updatedProject.comfyWorkflow ?? null as any } : {}),
       });
       setProject(updatedProject);
     } catch (e) {

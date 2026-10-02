@@ -56,6 +56,7 @@
     "typeText": "文本",
     "typeVideo": "视频",
     "typeAudio": "音频",
+    "typeComfyui": "ComfyUI 工作流",
     "nameLabel": "项目名称",
     "namePlaceholderText": "例如：产品描述生成器...",
     "namePlaceholderImage": "例如：赛博朋克角色系列...",

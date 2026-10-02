@@ -195,7 +195,7 @@ model Project {
   userId            String
   name              String
   description       String?  @db.Text
-  type              String   @default("image") // "image", "text", or "video"
+  type              String   @default("image") // "image", "text", "video", "audio", or "comfyui"
   status            String   @default("active") // "active" or "archived"
   providerId        String?
   aspectRatio       String?
@@ -215,6 +215,9 @@ model Project {
   lastQueueCount    Int?
   // Workflow view preference: null/true shows disabled items, false hides them.
   showDisabledItems Boolean?
+  // ComfyUI projects: instance address and API-format workflow JSON
+  comfyUrl          String?
+  comfyWorkflow     Json?
   createdAt         DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -257,6 +260,7 @@ model Job {
   resolution       String? // '720p' | '1080p' | '4k'
   sound            String? // 'on' | 'off'
   workflowSnapshot Json? // WorkflowItem[]
+  comfyInputs      Json? // ComfyJobInput[] (ComfyUI projects)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
 
@@ -278,6 +282,7 @@ model WorkflowItem {
   optimizedUrl String?
   selectedTags Json? // String[]
   disabled     Boolean @default(false)
+  comfyTarget  Json? // ComfyInputTarget (ComfyUI projects)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

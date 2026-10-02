@@ -758,6 +758,26 @@ export async function updateProject(id: string, updates: Partial<Project>): Prom
   }
 }
 
+export interface ComfyConnectionResult {
+  ok: boolean;
+  url?: string;
+  version?: string;
+  device?: string;
+  vramTotal?: number;
+  vramFree?: number;
+  error?: string;
+}
+
+/** Ask the server to reach a ComfyUI instance — generation runs from there. */
+export async function testComfyConnection(url: string): Promise<ComfyConnectionResult> {
+  const res = await apiFetch('/api/comfyui/test', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ url }),
+  });
+  return handleResponse<ComfyConnectionResult>(res, 'Failed to test the ComfyUI connection');
+}
+
 export type StartProjectJobsRequest =
   | { mode: 'allDrafts' }
   | { mode: 'selected'; jobIds: string[] };

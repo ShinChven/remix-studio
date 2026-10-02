@@ -27,7 +27,8 @@ import {
 import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
+import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
+import { summarizeComfyPrompt } from '../lib/comfyWorkflow';
 import { ConfirmModal } from './ConfirmModal';
 import { UniversalMediaPicker, UniversalPickedItem } from './UniversalMediaPicker';
 
@@ -1011,9 +1012,19 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
   const isAudioProject = localProject.type === 'audio';
+  const isComfyProject = localProject.type === 'comfyui';
+  // ComfyUI projects render their results as the image or video project they
+  // produce; the output format picks which.
+  const mediaProjectType = isComfyProject
+    ? (localProject.format === 'mp4' ? 'video' : 'image')
+    : (localProject.type || 'image');
 
-  const getProviderName = (id?: string) => id ? providers.find(p => p.id === id)?.name || id : t('projectViewer.common.unknownProvider');
+  const getProviderName = (id?: string) => {
+    if (isComfyProject && !id) return 'ComfyUI';
+    return id ? providers.find(p => p.id === id)?.name || id : t('projectViewer.common.unknownProvider');
+  };
   const getModelName = (providerId?: string, modelId?: string) => {
+    if (isComfyProject && !modelId) return t('projectViewer.comfy.workflowLabel');
     if (!modelId) return t('projectViewer.common.unknownModel');
     const providerModels = providerId
       ? providers.find(p => p.id === providerId)?.models
@@ -1087,6 +1098,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   );
 
   const addWorkflowItem = (type: WorkflowItemTypeKind, initialValue: string = '') => {
+    // A ComfyUI project's items are bindings, made from its input list.
+    if (isComfyProject) return;
+
     if (isAudioProject && (type === 'video' || type === 'audio')) {
       return;
     }
@@ -1253,6 +1267,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const handleFilesDrop = (files: File[]) => {
+    if (isComfyProject) return;
     const newItems: import('../types').WorkflowItem[] = [];
     const filesToUpload: { type: 'image' | 'video' | 'audio', file: File, id: string }[] = [];
 
@@ -1503,7 +1518,85 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  /**
+   * ComfyUI drafts: each combination of the bound inputs becomes a job that
+   * carries the values it submits. With nothing bound the workflow still runs,
+   * once per job, each with fresh seeds.
+   */
+  const addComfyDraftsToQueue = async () => {
+    const comfyWorkflow = localProject.comfyWorkflow;
+    if (!comfyWorkflow) return;
+    const bindings = (localProject.workflow || []).filter((item) => item.comfyTarget && !item.disabled);
+    const missing = bindings.filter((item) => item.type !== 'text' && !item.value.trim());
+    if (missing.length > 0) {
+      setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: missing.length }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+
+    setIsAddingDrafts(true);
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
+    try {
+      let librariesForGeneration: Library[];
+      try {
+        librariesForGeneration = await refreshWorkflowLibraries();
+      } catch {
+        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+        return;
+      }
+
+      const combinations = generateJobs(bindings, librariesForGeneration, queueCount, !!localProject.shuffle);
+      const selected: Combination[] = combinations.length > 0
+        ? combinations
+        : Array.from({ length: queueCount }, () => ({ prompt: '', filenameParts: [] }));
+      const format = localProject.format || 'png';
+      const newJobs: Job[] = selected.map((combo) => {
+        const comfyInputs = combo.comfyInputs || [];
+        return {
+          id: crypto.randomUUID(),
+          prompt: summarizeComfyPrompt(comfyWorkflow, comfyInputs),
+          imageContexts: combo.imageContexts,
+          videoContexts: combo.videoContexts,
+          audioContexts: combo.audioContexts,
+          comfyInputs,
+          status: 'draft',
+          format,
+          filename: buildJobFilename([localProject.prefix, ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
+          workflowSnapshot: localProject.workflow || [],
+        };
+      });
+
+      const nextJobs = [...localJobs, ...newJobs];
+      setDraftsProgress({ current: newJobs.length, total: newJobs.length, stage: 'saving' });
+      await apiUpdateProject(localProject.id, {
+        jobs: nextJobs,
+        workflow: localProject.workflow,
+        format,
+        shuffle: localProject.shuffle,
+        lastQueueCount: queueCount,
+      });
+
+      setLocalProject({ ...localProject, lastQueueCount: queueCount });
+      setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
+      setActiveTab('draft');
+      setIsWorkflowExpanded(false);
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setMobileView('jobs');
+      }
+    } catch (error) {
+      console.error('Failed to add drafts:', error);
+      toast.error(t('projectViewer.toasts.addDraftsFailed'));
+    } finally {
+      setIsAddingDrafts(false);
+      setDraftsProgress(null);
+    }
+  };
+
   const addDraftsToQueue = async () => {
+    if (isComfyProject) {
+      await addComfyDraftsToQueue();
+      return;
+    }
     const emptyItems = (localProject.workflow || []).filter(item => !item.value.trim());
     if (emptyItems.length > 0) {
       setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: emptyItems.length }));
@@ -2363,6 +2456,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         showDisabledItems={showDisabledItems}
         onToggleShowDisabledItems={handleToggleShowDisabledItems}
         onFilesDrop={handleFilesDrop}
+        isRefreshingLibraries={isRefreshingLibraries}
+        libraryRefreshError={libraryRefreshError}
+        onRefreshLibraries={refreshWorkflowLibraries}
       />
 
       {/*
@@ -2423,7 +2519,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               albumItems={albumPreviewItems}
               onSwitchToAlbum={() => setActiveTab('album')}
-              projectType={localProject.type || 'image'}
+              projectType={mediaProjectType}
               projectName={localProject.name}
               onReuse={handleReuseWorkflow}
             />
@@ -2456,7 +2552,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               toggleSelectAllCompleted={toggleSelectAllCompleted} setShowDeleteSelectedModal={setShowDeleteCompletedSelectedModal}
               getProviderName={getProviderName} getModelName={getModelName}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
-              projectType={localProject.type || 'image'}
+              projectType={mediaProjectType}
               onReuse={handleReuseWorkflow}
               page={completedPage}
               pageSize={completedPageSize}
@@ -2493,7 +2589,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onReuseWorkflow={handleReuseAlbumWorkflow}
               reusingAlbumItemId={reuseConfigSourceId}
               onExportStarted={() => navigate('/exports')}
-              projectType={localProject.type || 'image'}
+              projectType={mediaProjectType}
               page={albumPage}
               pageSize={albumPageSize}
               total={albumTotal}

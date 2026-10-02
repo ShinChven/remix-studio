@@ -5,6 +5,7 @@ import { Archive, ArchiveRestore, Copy, Eraser, Eye, EyeOff, HardDrive, Hash, Im
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
+import { ComfySettingsPanel, ComfyWorkflowPanel } from './ComfyWorkflowPanel';
 
 interface WorkflowPanelProps {
   isLoading?: boolean;
@@ -62,6 +63,9 @@ interface WorkflowPanelProps {
   showDisabledItems: boolean;
   onToggleShowDisabledItems: () => void;
   onFilesDrop?: (files: File[]) => void;
+  isRefreshingLibraries: boolean;
+  libraryRefreshError: string | null;
+  onRefreshLibraries: () => Promise<unknown>;
 }
 
 export function WorkflowPanel({
@@ -120,6 +124,9 @@ export function WorkflowPanel({
   showDisabledItems,
   onToggleShowDisabledItems,
   onFilesDrop,
+  isRefreshingLibraries,
+  libraryRefreshError,
+  onRefreshLibraries,
 }: WorkflowPanelProps) {
   const { t } = useTranslation();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
@@ -153,6 +160,11 @@ export function WorkflowPanel({
 
   const menuButtonBaseClass =
     'w-full px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 border border-transparent';
+  const isComfyProject = localProject.type === 'comfyui';
+  const saveProject = (next: Project) => {
+    setLocalProject(next);
+    onUpdate(next);
+  };
   const selectedProviderRecord = providers.find((p) => p.id === selectedProviderId);
   const selectedProviderType = selectedProviderRecord?.type as ProviderType;
   const selectedBaseModels = PROVIDER_MODELS_MAP[selectedProviderType] || [];
@@ -190,6 +202,7 @@ export function WorkflowPanel({
   };
 
   const handlePanelDragOver = (e: React.DragEvent) => {
+    if (isComfyProject) return;
     if (e.dataTransfer.types.includes('Files')) {
       e.preventDefault();
       setIsDragOverFiles(true);
@@ -427,111 +440,146 @@ export function WorkflowPanel({
         </div>
       ), document.body)}
 
-      <div className="h-[57px] p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl">
-        <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-          <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
-        </button>
-        {supportsImageInput && (
-          <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-            <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
-          </button>
-        )}
-        <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-          <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
-        </button>
-        {localProject.type === 'video' && (
-          <>
-            {(() => {
-              return (
-                <>
-                  {selectedModel?.options.supportsReferenceVideo && (
-                    <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-                      <VideoIcon className="w-3 h-3" /> {t('projectViewer.common.video')}
-                    </button>
-                  )}
-                  {selectedModel?.options.supportsReferenceAudio && (
-                    <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
-                      <Volume2 className="w-3 h-3" /> {t('projectViewer.common.audio')}
-                    </button>
-                  )}
-                </>
-              );
-            })()}
-          </>
-        )}
-      </div>
-
-      <div
-        ref={workflowListRef}
-        className={`flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar lg:max-h-none relative ${isExpanded ? 'space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4 lg:content-start lg:auto-rows-[20rem]' : 'space-y-4'}`}
-      >
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
-            <div className="animate-spin text-neutral-500">
-              <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            </div>
-          </div>
-        )}
-        {!isLoading && visibleWorkflowItems.map(({ item, index }) => (
-          <WorkflowItem
-            key={item.id}
-            item={item}
-            index={index}
-            draggedIndex={draggedIndex}
-            dragOverIndex={dragOverIndex}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
-            onRemove={onRemoveItem}
-            onEdit={onEditItem}
-            onEditImage={onEditImage}
-            onPreviewLibrary={(lib) => onPreviewLibrary(lib, item.id)}
+      {isComfyProject ? (
+        <>
+          <ComfyWorkflowPanel
+            localProject={localProject}
+            libraries={libraries}
+            isExpanded={isExpanded}
+            uploadingItemIds={uploadingItemIds}
+            isRefreshingLibraries={isRefreshingLibraries}
+            libraryRefreshError={libraryRefreshError}
+            onSaveProject={saveProject}
+            onRefreshLibraries={onRefreshLibraries}
             onImageUpload={onImageUpload}
             onVideoUpload={onVideoUpload}
             onAudioUpload={onAudioUpload}
-            uploadingItemIds={uploadingItemIds}
-            libraries={libraries}
+            onEditItem={onEditItem}
+            onPreviewLibrary={onPreviewLibrary}
             onLightbox={onLightbox}
-            onUpdateTags={onUpdateTags}
-            onSelectFromLibrary={onSelectFromLibrary}
-            onChangeLibrary={onChangeLibrary}
-            onSaveToLibrary={onSaveToLibrary}
-            onToggleDisable={onToggleDisable}
-            gridView={isExpanded}
           />
-        ))}
-        {!isLoading && visibleWorkflowItems.length === 0 && (
-          <div className="col-span-full text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">
-            {workflowItems.length === 0
-              ? t('projectViewer.main.buildWorkflow')
-              : t('projectViewer.workflow.allItemsHidden')}
-          </div>
-        )}
-      </div>
+          <ComfySettingsPanel
+            localProject={localProject}
+            onSaveProject={saveProject}
+            queueCount={queueCount}
+            setQueueCount={setQueueCount}
+            combinationsCount={combinationsCount}
+            workflowError={workflowError}
+            uploadingItemIds={uploadingItemIds}
+            onAddDraftsToQueue={onAddDraftsToQueue}
+            isAddingDrafts={isAddingDrafts}
+            draftsProgress={draftsProgress}
+          />
+        </>
+      ) : (
+        <>
+        <div className="h-[57px] p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl">
+          <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+            <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
+          </button>
+          {supportsImageInput && (
+            <button onClick={() => onAddWorkflowItem('image')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+              <ImageIcon className="w-3 h-3" /> {t('projectViewer.common.imageShort')}
+            </button>
+          )}
+          <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+            <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
+          </button>
+          {localProject.type === 'video' && (
+            <>
+              {(() => {
+                return (
+                  <>
+                    {selectedModel?.options.supportsReferenceVideo && (
+                      <button onClick={() => onAddWorkflowItem('video')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+                        <VideoIcon className="w-3 h-3" /> {t('projectViewer.common.video')}
+                      </button>
+                    )}
+                    {selectedModel?.options.supportsReferenceAudio && (
+                      <button onClick={() => onAddWorkflowItem('audio')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
+                        <Volume2 className="w-3 h-3" /> {t('projectViewer.common.audio')}
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+        </div>
 
-      <SettingsPanel
-        localProject={localProject}
-        setLocalProject={setLocalProject}
-        onUpdate={onUpdate}
-        providers={providers}
-        selectedProviderId={selectedProviderId}
-        selectedModelId={selectedModelId}
-        isSettingsCollapsed={isSettingsCollapsed}
-        setIsSettingsCollapsed={setIsSettingsCollapsed}
-        queueCount={queueCount}
-        setQueueCount={setQueueCount}
-        combinationsCount={combinationsCount}
-        setIsModelSelectorOpen={setIsModelSelectorOpen}
-        workflowError={workflowError}
-        uploadingItemIds={uploadingItemIds}
-        onAddDraftsToQueue={onAddDraftsToQueue}
-        isAddingDrafts={isAddingDrafts}
-        draftsProgress={draftsProgress}
-      />
+        <div
+          ref={workflowListRef}
+          className={`flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar lg:max-h-none relative ${isExpanded ? 'space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 lg:gap-4 lg:content-start lg:auto-rows-[20rem]' : 'space-y-4'}`}
+        >
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-black/50 z-20">
+              <div className="animate-spin text-neutral-500">
+                <svg className="w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+            </div>
+          )}
+          {!isLoading && visibleWorkflowItems.map(({ item, index }) => (
+            <WorkflowItem
+              key={item.id}
+              item={item}
+              index={index}
+              draggedIndex={draggedIndex}
+              dragOverIndex={dragOverIndex}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onDragEnd={onDragEnd}
+              onRemove={onRemoveItem}
+              onEdit={onEditItem}
+              onEditImage={onEditImage}
+              onPreviewLibrary={(lib) => onPreviewLibrary(lib, item.id)}
+              onImageUpload={onImageUpload}
+              onVideoUpload={onVideoUpload}
+              onAudioUpload={onAudioUpload}
+              uploadingItemIds={uploadingItemIds}
+              libraries={libraries}
+              onLightbox={onLightbox}
+              onUpdateTags={onUpdateTags}
+              onSelectFromLibrary={onSelectFromLibrary}
+              onChangeLibrary={onChangeLibrary}
+              onSaveToLibrary={onSaveToLibrary}
+              onToggleDisable={onToggleDisable}
+              gridView={isExpanded}
+            />
+          ))}
+          {!isLoading && visibleWorkflowItems.length === 0 && (
+            <div className="col-span-full text-center text-neutral-500 dark:text-neutral-500 text-[10px] font-bold uppercase tracking-[0.2em] py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl bg-white/20 dark:bg-neutral-900/20 shadow-inner backdrop-blur-sm">
+              {workflowItems.length === 0
+                ? t('projectViewer.main.buildWorkflow')
+                : t('projectViewer.workflow.allItemsHidden')}
+            </div>
+          )}
+        </div>
+
+        <SettingsPanel
+          localProject={localProject}
+          setLocalProject={setLocalProject}
+          onUpdate={onUpdate}
+          providers={providers}
+          selectedProviderId={selectedProviderId}
+          selectedModelId={selectedModelId}
+          isSettingsCollapsed={isSettingsCollapsed}
+          setIsSettingsCollapsed={setIsSettingsCollapsed}
+          queueCount={queueCount}
+          setQueueCount={setQueueCount}
+          combinationsCount={combinationsCount}
+          setIsModelSelectorOpen={setIsModelSelectorOpen}
+          workflowError={workflowError}
+          uploadingItemIds={uploadingItemIds}
+          onAddDraftsToQueue={onAddDraftsToQueue}
+          isAddingDrafts={isAddingDrafts}
+          draftsProgress={draftsProgress}
+        />
+        </>
+      )}
     </div>
   );
 }
