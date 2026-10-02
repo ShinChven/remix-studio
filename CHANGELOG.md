@@ -20,6 +20,10 @@ All notable changes to Remix Studio are documented here by version number.
 - **MCP workflow writes only pin your own files**: `update_project` and `create_project_with_workflow` stored whatever storage key they were given for an image, video or audio workflow item, including its `thumbnailUrl` and `optimizedUrl`, without checking that the file belonged to the caller. They now accept only keys still referenced by the caller's own library items, album items, job outputs, workflow items or post media, the same rule `get_file_urls` applies, and name each rejected key in the error. `get_file_urls` can now also sign keys referenced by the caller's workflow items.
 - **Sign-in keeps the page you were opening**: When a session had expired, the app sent you to a bare `/login` and dropped where you were going, so a link to a project or a TV code landed on the home page after signing in. It now returns to that page.
 
+### Changed
+
+- **Qwen Image 3 Replaces Qwen Image 2 on RunningHub**: The RunningHub catalog listed **Qwen Image 2 Pro** (`alibaba/qwen-image-2.0-pro`). It is removed, and **Qwen Image 3 Pro** (`alibaba/qwen-image-3.0-pro`) and **Qwen Image 3** (`alibaba/qwen-image-3.0`) take its place. The Pro entry keeps the old entry's `id` (`runninghub-qwen-image-2-pro`), so a project set to Qwen Image 2 Pro now generates on Qwen Image 3 Pro rather than losing its model and falling back to RunningHub's default. Both use the same `/text-to-image` and `/image-edit` endpoints as before, but `size` is now resolved from Qwen Image 3's own `width*height` enum (1:1 at 2K, for example, is `1600*1600` rather than `1536*1536`). That enum has no 21:9, so the ratio is no longer offered, and a project set to it resolves to the nearest ratio, 16:9. Editing takes at most three reference images, so extra ones are dropped before upload rather than sent and rejected. The prompt limit rises from 800 characters to 4,500 tokens.
+
 ## [1.23.0] - 2026-09-12
 
 ### Added
