@@ -56,6 +56,7 @@
     "typeText": "文本",
     "typeVideo": "影片",
     "typeAudio": "音訊",
+    "typeComfyui": "ComfyUI 工作流程",
     "nameLabel": "專案名稱",
     "namePlaceholderText": "例如：產品描述生成器...",
     "namePlaceholderImage": "例如：賽博朋克角色系列...",

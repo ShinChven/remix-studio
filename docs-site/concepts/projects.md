@@ -12,8 +12,29 @@ Choose the type according to the output you want:
 | **Image** | Generated images | Aspect ratio, quality, format, background |
 | **Video** | Generated video | Duration, resolution, sound, format |
 | **Audio** | Speech or music, depending on model | Voice/speaker or music mode, output format |
+| **ComfyUI Workflow** | Images or video from your own ComfyUI | ComfyUI address, API-format workflow, input mappings, output format |
 
 Available controls come from the selected model profile. A project also stores a default provider/model, description, filename prefix, shuffle setting, and workflow.
+
+## ComfyUI Projects
+
+A ComfyUI project runs a workflow on a ComfyUI instance you host — a local machine, a LAN box, or a rented GPU. It needs no provider: the instance address lives on the project, because rented instances get a new address every time they start. When the address changes, paste the new one into the project; jobs that are still waiting use it.
+
+1. **Address** — enter the instance URL (for example `http://127.0.0.1:8188`) and press **Test**. Remix Studio connects from its server, so the address must be reachable from where the server runs, not only from your browser.
+   - **Access password** (optional) — only for an instance protected by [ComfyUI-Login](https://github.com/liusida/ComfyUI-Login). Enter the password you log in with, or the API token it prints at startup (`For direct API calls, use token=$2b$…`, also the first line of `ComfyUI/login/PASSWORD`). With the password, Remix Studio logs in the way the browser does and logs in again when the session expires; the token is sent as a Bearer header. Leave it empty and no credentials are sent. The password is stored as typed and masked in the form; it is copied when a project is duplicated but left out of project bundles. Set the password in the browser first — Remix Studio won't create one on an instance that has none yet.
+2. **Workflow** — in ComfyUI choose **Workflow → Export (API)** and upload or paste the exported JSON. A regular saved workflow (with `nodes` and `links`) is refused with a hint, because only the API format carries the values that are sent.
+3. **Inputs** — every widget value in the workflow is listed by node.
+   - **Numbers and toggles** are edited in place, starting from the workflow's value. Change one to override it; the reset button (or typing the workflow's value back) drops the override.
+   - **Seeds** are random for every job by default, so a batch does not repeat the same image. Turn off the dice to pin a seed and type it.
+   - **Text and file inputs** choose where their value comes from:
+     - **Default** keeps the value from the workflow.
+     - **Input** takes text you type.
+     - **Import** takes a file you upload, for `Load Image`, video and audio loader nodes. It is uploaded to ComfyUI's input folder when the job runs.
+     - **Library** varies the input over a library's items (text libraries for text inputs, media libraries for loader nodes), with the same tag filters a regular workflow uses.
+
+Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
+
+Jobs run up to two at a time per project. Each result is downloaded from ComfyUI and stored like any other generation; choose **Image** (PNG, JPEG, WebP) or **Video** output — video files that are not mp4 are converted. A job's expanded view lists the values it sent, including the seed it rolled. When a prompt fails in ComfyUI, the job fails with ComfyUI's own error (for example the node that ran out of memory); when the instance restarted and forgot the prompt, retry the job after updating the address.
 
 ## Project Management
 

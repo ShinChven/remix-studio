@@ -39,14 +39,15 @@ export class ImageProcessor {
       let mimeType: string;
       let ext: string;
 
-      // Create sharp instance and add metadata
-      let sharpInstance = sharp(imageBytes).withMetadata({
+      // Create sharp instance and add metadata. sharp rejects an empty
+      // UserComment, and a ComfyUI job with nothing typed has no prompt.
+      let sharpInstance = sharp(imageBytes).withMetadata(job.prompt ? {
         exif: {
           IFD0: {
             UserComment: job.prompt
           }
         }
-      });
+      } : {});
 
       if (targetFormat === 'jpeg' || targetFormat === 'jpg') {
         finalBytes = await sharpInstance.jpeg({ quality: 100, chromaSubsampling: '4:4:4' }).toBuffer();

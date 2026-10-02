@@ -11,6 +11,32 @@ export interface WorkflowItem {
   size?: number;
   selectedTags?: string[];
   tagMatchMode?: 'and' | 'or';
+  /** ComfyUI projects only: the workflow input this item feeds. */
+  comfyTarget?: ComfyInputTarget;
+}
+
+/** One input of a node in a ComfyUI API-format workflow. */
+export interface ComfyInputTarget {
+  nodeId: string;
+  input: string;
+}
+
+/**
+ * A value resolved for one ComfyUI input when a job is drafted. Media kinds
+ * carry a storage key (or URL) that is uploaded to ComfyUI at run time.
+ */
+export interface ComfyJobInput extends ComfyInputTarget {
+  kind: 'text' | 'image' | 'video' | 'audio';
+  value: string;
+}
+
+/** A ComfyUI workflow in API format: node id -> node. */
+export type ComfyWorkflow = Record<string, ComfyWorkflowNode>;
+
+export interface ComfyWorkflowNode {
+  class_type: string;
+  inputs: Record<string, unknown>;
+  _meta?: { title?: string };
 }
 
 export interface LibraryItem {
@@ -39,7 +65,7 @@ export interface Library {
   pinnedAt?: string | null;
 }
 
-export type ProjectType = 'image' | 'text' | 'video' | 'audio';
+export type ProjectType = 'image' | 'text' | 'video' | 'audio' | 'comfyui';
 export type ProjectStatus = 'active' | 'archived';
 
 export interface ModelConfig {
@@ -47,7 +73,7 @@ export interface ModelConfig {
   name: string; // Display name e.g. "nano banana 2"
   generatorId: ProviderType; // Which generator type to use
   modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image')
-  category: ProjectType; // 'image' | 'text' | 'video' | 'audio'
+  category: Exclude<ProjectType, 'comfyui'>; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
   options: {
@@ -2024,6 +2050,8 @@ export interface Job {
   steps?: number;
   guidance?: number;
   workflowSnapshot?: WorkflowItem[];
+  /** ComfyUI projects only: the input values this job submits. */
+  comfyInputs?: ComfyJobInput[];
 }
 
 /**
@@ -2110,6 +2138,16 @@ export interface Project {
   lastQueueCount?: number;
   // Workflow view preference: undefined/true shows disabled items, false hides them.
   showDisabledItems?: boolean;
+  // ComfyUI projects: the instance address (it changes whenever a rented
+  // instance restarts, so it lives on the project rather than a provider) and
+  // the API-format workflow whose inputs the project's items feed.
+  comfyUrl?: string;
+  comfyWorkflow?: ComfyWorkflow;
+  /**
+   * Optional access password for an instance protected by ComfyUI-Login: the
+   * login password, or the API token it prints at startup. Stored as given.
+   */
+  comfyPassword?: string;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax';

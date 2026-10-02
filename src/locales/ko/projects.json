@@ -56,6 +56,7 @@
     "typeText": "텍스트",
     "typeVideo": "비디오",
     "typeAudio": "오디오",
+    "typeComfyui": "ComfyUI 워크플로",
     "nameLabel": "프로젝트 이름",
     "namePlaceholderText": "예: 제품 설명 생성기...",
     "namePlaceholderImage": "예: 사이버펑크 캐릭터 시리즈...",

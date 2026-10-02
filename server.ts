@@ -21,6 +21,7 @@ import { createImageRouter } from './server/routes/images';
 import { createVideoRouter } from './server/routes/videos';
 import { createAudioRouter } from './server/routes/audios';
 import { createProviderRouter } from './server/routes/providers';
+import { createComfyUIRouter } from './server/routes/comfyui';
 import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
 import { createCampaignsRouter } from './server/routes/campaigns';
@@ -49,6 +50,7 @@ import { TextProcessor } from './server/queue/text-processor';
 import { VideoProcessor } from './server/queue/video-processor';
 import { AudioProcessor } from './server/queue/audio-processor';
 import { DetachedPoller } from './server/queue/detached-poller';
+import { ComfyUIRunner } from './server/queue/comfyui-runner';
 import { ProjectLiveHub } from './server/live/project-live-hub';
 import { ProjectCompletionNotifier } from './server/live/project-completion-notifier';
 import { PushService } from './server/services/push/push-service';
@@ -139,6 +141,9 @@ async function startServer() {
   const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage, projectEvents);
   const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor, projectEvents);
   const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller, projectEvents);
+  const comfyUIRunner = new ComfyUIRunner(projectRepository, storage, imageProcessor, videoProcessor, projectEvents);
+  queueManager.setComfyRunner(comfyUIRunner);
+  comfyUIRunner.start();
   // Release the QueueManager concurrency slot when DetachedPoller finalizes a job.
   // Without this, async providers (e.g. KlingAI) would hold their slots forever.
   detachedPoller.setOnJobFinalize((providerId, jobId) => queueManager.releaseSlot(providerId, jobId));
@@ -263,6 +268,7 @@ async function startServer() {
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
+  app.route('/', createComfyUIRouter());
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage, projectEvents));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));

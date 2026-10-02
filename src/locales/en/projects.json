@@ -56,6 +56,7 @@
     "typeText": "Text",
     "typeVideo": "Video",
     "typeAudio": "Audio",
+    "typeComfyui": "ComfyUI Workflow",
     "nameLabel": "Project Name",
     "namePlaceholderText": "e.g. Product Description Generator...",
     "namePlaceholderImage": "e.g. Cyberpunk Character Series...",

@@ -5,6 +5,7 @@ import { Job, ProjectType } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
+import { ComfyJobInputs } from './ComfyJobInputs';
 import { InfoChip } from './InfoChip';
 import { EmptyState } from './EmptyState';
 import { PaginationBar } from './PaginationBar';
@@ -138,6 +139,7 @@ export function CompletedTab({
                           {job.prompt}
                         </div>
                       </div>
+                      <ComfyJobInputs job={job} />
 
                       {(projectType === 'text' || projectType === 'audio') && job.resultText && (
                         <div className="space-y-2">

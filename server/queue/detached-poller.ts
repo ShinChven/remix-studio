@@ -122,6 +122,8 @@ export class DetachedPoller {
         where: {
           status: 'processing',
           taskId: { not: null },
+          // ComfyUI jobs have no provider and are polled by ComfyUIRunner.
+          project: { type: { not: 'comfyui' } },
         },
         include: {
           project: { select: { type: true } },
