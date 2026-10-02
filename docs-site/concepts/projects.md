@@ -22,11 +22,14 @@ A ComfyUI project runs a workflow on a ComfyUI instance you host — a local mac
 
 1. **Address** — enter the instance URL (for example `http://127.0.0.1:8188`) and press **Test**. Remix Studio connects from its server, so the address must be reachable from where the server runs, not only from your browser.
 2. **Workflow** — in ComfyUI choose **Workflow → Export (API)** and upload or paste the exported JSON. A regular saved workflow (with `nodes` and `links`) is refused with a hint, because only the API format carries the values that are sent.
-3. **Inputs** — every widget value in the workflow is listed by node. For each one, choose where its value comes from:
-   - **Default** keeps the value from the workflow. Integer `seed` inputs left on default get a fresh random seed for every job, so a batch does not repeat the same image.
-   - **Input** takes a value you type. Numbers and toggles keep their type.
-   - **Import** takes a file you upload, for `Load Image`, video and audio loader nodes. It is uploaded to ComfyUI's input folder when the job runs.
-   - **Library** varies the input over a library's items (text libraries for text inputs, media libraries for loader nodes), with the same tag filters a regular workflow uses.
+3. **Inputs** — every widget value in the workflow is listed by node.
+   - **Numbers and toggles** are edited in place, starting from the workflow's value. Change one to override it; the reset button (or typing the workflow's value back) drops the override.
+   - **Seeds** are random for every job by default, so a batch does not repeat the same image. Turn off the dice to pin a seed and type it.
+   - **Text and file inputs** choose where their value comes from:
+     - **Default** keeps the value from the workflow.
+     - **Input** takes text you type.
+     - **Import** takes a file you upload, for `Load Image`, video and audio loader nodes. It is uploaded to ComfyUI's input folder when the job runs.
+     - **Library** varies the input over a library's items (text libraries for text inputs, media libraries for loader nodes), with the same tag filters a regular workflow uses.
 
 Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
 

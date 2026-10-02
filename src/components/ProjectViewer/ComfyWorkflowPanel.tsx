@@ -19,6 +19,7 @@ import {
   Plug,
   Plus,
   RefreshCw,
+  RotateCcw,
   Search,
   Shuffle,
   Trash2,
@@ -100,18 +101,34 @@ function CommitTextarea({ value, onCommit, placeholder }: { value: string; onCom
   );
 }
 
-function CommitInput({ value, onCommit, invalid }: { value: string; onCommit: (value: string) => void; invalid?: boolean }) {
+/** A number field that only hands back finite numbers; anything else snaps back on blur. */
+function NumberField({ value, onCommit, disabled, placeholder, label }: {
+  value: string;
+  onCommit: (value: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  label: string;
+}) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
+  const invalid = !disabled && (draft.trim() === '' || !Number.isFinite(Number(draft.trim())));
+  const commit = () => {
+    if (draft === value) return;
+    if (invalid) setDraft(value);
+    else onCommit(draft.trim());
+  };
   return (
     <input
       type="text"
       inputMode="decimal"
+      aria-label={label}
       value={draft}
+      disabled={disabled}
+      placeholder={placeholder}
       onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => { if (draft !== value) onCommit(draft); }}
+      onBlur={commit}
       onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-      className={`${fieldClass} font-mono ${invalid ? 'border-red-500/60 focus:border-red-500/60' : ''}`}
+      className={`${fieldClass} !w-32 !py-1.5 font-mono text-right disabled:opacity-60 ${invalid ? '!border-red-500/60' : ''}`}
     />
   );
 }
@@ -336,6 +353,26 @@ export function ComfyWorkflowPanel({
     onSaveProject({ ...localProject, workflow: items.map((item) => (item.id === id ? { ...item, value } : item)) });
   };
 
+  /**
+   * Numbers and toggles are edited in place: a value other than the workflow's
+   * overrides it, the workflow's own value drops the override. A seed is the
+   * exception — left alone it is random, so any typed value pins it.
+   */
+  const setScalarValue = (info: ComfyInputInfo, raw: string) => {
+    const current = bindings.get(info.key);
+    const matchesWorkflow = info.valueType === 'number' ? Number(raw) === info.value : raw === String(info.value);
+    if (matchesWorkflow && !info.isSeed) {
+      if (current) saveBinding(info, null);
+      return;
+    }
+    saveBinding(info, {
+      id: current?.id ?? crypto.randomUUID(),
+      type: 'text',
+      value: raw,
+      comfyTarget: { nodeId: info.nodeId, input: info.input },
+    });
+  };
+
   const handleLibraryPicked = (libraryId: string) => {
     const info = libraryPickerFor;
     setLibraryPickerFor(null);
@@ -359,7 +396,7 @@ export function ComfyWorkflowPanel({
   const mappedCount = bindings.size;
 
   const sourceOptions = (info: ComfyInputInfo): Array<{ source: BindingSource; label: string; icon: typeof Type }> => [
-    { source: 'default', label: info.isSeed ? t('projectViewer.comfy.sourceRandom') : t('projectViewer.comfy.sourceDefault'), icon: info.isSeed ? Dices : RefreshCw },
+    { source: 'default', label: t('projectViewer.comfy.sourceDefault'), icon: RefreshCw },
     ...(info.mediaKind
       ? [{ source: 'import' as const, label: t('projectViewer.comfy.sourceImport'), icon: Upload }]
       : [{ source: 'input' as const, label: t('projectViewer.comfy.sourceInput'), icon: Type }]),
@@ -367,39 +404,81 @@ export function ComfyWorkflowPanel({
   ];
 
   const renderValuePreview = (info: ComfyInputInfo) => {
-    if (info.isSeed) return t('projectViewer.comfy.seedHint', { value: info.value });
     const text = String(info.value);
     return text === '' ? t('projectViewer.comfy.emptyValue') : text;
   };
 
+  const renderScalarRow = (info: ComfyInputInfo, item: WorkflowItem | undefined) => {
+    const override = item?.type === 'text' ? item.value : undefined;
+    const isRandomSeed = info.isSeed && override === undefined;
+    const subtitle = isRandomSeed
+      ? t('projectViewer.comfy.seedHint', { value: info.value })
+      : override !== undefined && !info.isSeed
+        ? t('projectViewer.comfy.workflowValue', { value: String(info.value) })
+        : null;
+    const boolValue = override !== undefined ? /^(true|1|yes|on)$/i.test(override.trim()) : info.value === true;
+
+    return (
+      <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-bold text-neutral-800 dark:text-neutral-200 truncate">{info.input}</div>
+          {subtitle && <div className="text-[10px] text-neutral-500 truncate" title={subtitle}>{subtitle}</div>}
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {override !== undefined && !info.isSeed && (
+            <button
+              type="button"
+              onClick={() => saveBinding(info, null)}
+              className="p-1.5 rounded-lg text-neutral-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
+              title={t('projectViewer.comfy.resetToDefault')}
+              aria-label={t('projectViewer.comfy.resetToDefault')}
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {info.isSeed && (
+            <button
+              type="button"
+              onClick={() => (isRandomSeed ? setScalarValue(info, String(info.value)) : saveBinding(info, null))}
+              aria-pressed={isRandomSeed}
+              className={`p-1.5 rounded-lg border transition-all ${
+                isRandomSeed
+                  ? 'border-orange-500/50 bg-orange-500/10 text-orange-600 dark:text-orange-300'
+                  : 'border-neutral-200/70 dark:border-white/10 text-neutral-400 hover:text-orange-500'
+              }`}
+              title={t('projectViewer.comfy.randomSeed')}
+              aria-label={t('projectViewer.comfy.randomSeed')}
+            >
+              <Dices className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {info.valueType === 'boolean' ? (
+            <button
+              type="button"
+              role="switch"
+              aria-checked={boolValue}
+              aria-label={info.input}
+              onClick={() => setScalarValue(info, String(!boolValue))}
+              className={`w-9 h-5 rounded-full relative transition-all duration-300 ${boolValue ? 'bg-orange-500' : 'bg-neutral-200 dark:bg-neutral-800'}`}
+            >
+              <span className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${boolValue ? 'left-5' : 'left-1'}`} />
+            </button>
+          ) : (
+            <NumberField
+              label={info.input}
+              value={isRandomSeed ? '' : (override ?? String(info.value))}
+              disabled={isRandomSeed}
+              placeholder={isRandomSeed ? t('projectViewer.comfy.randomEachJob') : undefined}
+              onCommit={(value) => setScalarValue(info, value)}
+            />
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderEditor = (info: ComfyInputInfo, item: WorkflowItem) => {
     if (item.type === 'text') {
-      if (info.valueType === 'boolean') {
-        const on = /^(true|1|yes|on)$/i.test(item.value.trim());
-        return (
-          <div className="flex gap-1.5">
-            {[true, false].map((value) => (
-              <button
-                key={String(value)}
-                type="button"
-                onClick={() => updateItemValue(item.id, String(value))}
-                className={`${smallButtonClass} flex-1 ${on === value ? '!border-orange-500/50 !bg-orange-500/10 !text-orange-600 dark:!text-orange-300' : ''}`}
-              >
-                {String(value)}
-              </button>
-            ))}
-          </div>
-        );
-      }
-      if (info.valueType === 'number') {
-        const invalid = item.value.trim() === '' || !Number.isFinite(Number(item.value.trim()));
-        return (
-          <div className="space-y-1">
-            <CommitInput value={item.value} onCommit={(value) => updateItemValue(item.id, value)} invalid={invalid} />
-            {invalid && <p className="text-[10px] font-bold text-red-500">{t('projectViewer.comfy.notANumber')}</p>}
-          </div>
-        );
-      }
       return (
         <div className="relative">
           <CommitTextarea value={item.value} onCommit={(value) => updateItemValue(item.id, value)} placeholder={t('projectViewer.comfy.emptyValue')} />
@@ -637,6 +716,13 @@ export function ComfyWorkflowPanel({
                       {node.inputs.map((info) => {
                         const item = bindings.get(info.key);
                         const source = sourceOf(item);
+                        if (!info.mediaKind && info.valueType !== 'string') {
+                          return (
+                            <div key={info.key} className="px-3 py-2.5">
+                              {renderScalarRow(info, item)}
+                            </div>
+                          );
+                        }
                         return (
                           <div key={info.key} className="px-3 py-2.5 space-y-2">
                             <div className="flex items-center gap-2">
