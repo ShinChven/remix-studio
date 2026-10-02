@@ -508,6 +508,11 @@
       "useLastAddress": "Use last address: {{url}}",
       "vramFree": "{{free}} of {{total}} VRAM free",
       "addressHelp": "Remix Studio connects to this address from its server, so it must be reachable from there. Update it whenever the instance restarts — queued jobs pick up the new address.",
+      "passwordLabel": "Access password (optional)",
+      "passwordPlaceholder": "Leave empty if there is none",
+      "passwordHelp": "Only for instances protected by ComfyUI-Login: enter its login password, or the token=… value it prints at startup. Left empty, nothing is sent.",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
       "invalidUrl": "Enter an http(s) address, e.g. http://127.0.0.1:8188",
       "parseErrors": {
         "invalid-json": "That is not valid JSON.",

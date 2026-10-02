@@ -28,7 +28,8 @@ export function createComfyUIRouter() {
     }
 
     try {
-      const stats = await new ComfyClient(url).systemStats();
+      const password = typeof body?.password === 'string' && body.password ? body.password : undefined;
+      const stats = await new ComfyClient(url, password).systemStats();
       const device = Array.isArray(stats?.devices) ? stats.devices[0] : undefined;
       return c.json({
         ok: true,

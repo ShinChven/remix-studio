@@ -206,6 +206,7 @@ export function buildProjectBundleManifest(input: {
       showDisabledItems: project.showDisabledItems,
       comfyUrl: project.comfyUrl,
       comfyWorkflow: project.comfyWorkflow,
+      // comfyPassword stays out: bundles get handed around, a password shouldn't.
       createdAt: project.createdAt,
     },
     workflow,

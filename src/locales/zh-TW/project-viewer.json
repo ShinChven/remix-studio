@@ -508,6 +508,11 @@
       "useLastAddress": "使用上次的位址：{{url}}",
       "vramFree": "顯示記憶體可用 {{free}} / {{total}}",
       "addressHelp": "Remix Studio 從伺服器端連線到這個位址，因此伺服器必須能存取它。執行個體重新啟動後位址改變時，直接在這裡更新即可——排隊中的任務會使用新位址。",
+      "passwordLabel": "存取密碼（選填）",
+      "passwordPlaceholder": "沒有就留空",
+      "passwordHelp": "只有安裝了 ComfyUI-Login 的執行個體才需要：填它的登入密碼，或啟動日誌中 token= 後面那串。留空就不帶任何驗證。",
+      "showPassword": "顯示密碼",
+      "hidePassword": "隱藏密碼",
       "invalidUrl": "請輸入 http(s) 位址，例如 http://127.0.0.1:8188",
       "parseErrors": {
         "invalid-json": "這不是有效的 JSON。",

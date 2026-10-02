@@ -9,6 +9,8 @@ import {
   ChevronRight,
   ClipboardPaste,
   Dices,
+  Eye,
+  EyeOff,
   FileJson,
   Film,
   ImageIcon,
@@ -179,24 +181,27 @@ export function ComfyWorkflowPanel({
 
   // ---- Connection ----
   const [urlDraft, setUrlDraft] = useState(localProject.comfyUrl || '');
+  const [passwordDraft, setPasswordDraft] = useState(localProject.comfyPassword || '');
+  const [showPassword, setShowPassword] = useState(false);
   const [connection, setConnection] = useState<ComfyConnectionResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
   const lastUrl = useMemo(readLastUrl, []);
   const testRunRef = useRef(0);
-  // The address last handed to onSaveProject. Blurring the field and clicking
+  // What was last handed to onSaveProject. Blurring a field and clicking
   // "Test" both commit, before the project state catches up with the first.
-  const savedUrlRef = useRef(localProject.comfyUrl);
+  const savedConnectionRef = useRef({ url: localProject.comfyUrl, password: localProject.comfyPassword });
 
   useEffect(() => {
     setUrlDraft(localProject.comfyUrl || '');
-    savedUrlRef.current = localProject.comfyUrl;
-  }, [localProject.comfyUrl]);
+    setPasswordDraft(localProject.comfyPassword || '');
+    savedConnectionRef.current = { url: localProject.comfyUrl, password: localProject.comfyPassword };
+  }, [localProject.comfyUrl, localProject.comfyPassword]);
 
-  const runConnectionTest = async (url: string) => {
+  const runConnectionTest = async (url: string, password?: string) => {
     const run = ++testRunRef.current;
     setIsTesting(true);
     try {
-      const result = await testComfyConnection(url);
+      const result = await testComfyConnection(url, password);
       if (run === testRunRef.current) setConnection(result);
     } catch (e: any) {
       if (run === testRunRef.current) setConnection({ ok: false, error: e?.message });
@@ -205,42 +210,45 @@ export function ComfyWorkflowPanel({
     }
   };
 
-  // Check the saved address whenever it changes, so a stale one shows up
-  // before a whole batch fails against it.
+  // Check the saved address whenever it (or its password) changes, so a stale
+  // one shows up before a whole batch fails against it.
   useEffect(() => {
     setConnection(null);
-    if (localProject.comfyUrl) void runConnectionTest(localProject.comfyUrl);
+    if (localProject.comfyUrl) void runConnectionTest(localProject.comfyUrl, localProject.comfyPassword);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localProject.comfyUrl]);
+  }, [localProject.comfyUrl, localProject.comfyPassword]);
 
-  /** Save the address field. Returns the address and whether it changed, or null. */
-  const commitUrl = (value: string): { url: string; changed: boolean } | null => {
-    if (!value.trim()) {
-      if (savedUrlRef.current) {
-        savedUrlRef.current = undefined;
-        onSaveProject({ ...localProject, comfyUrl: undefined });
+  /**
+   * Save the address and password fields in one go — two saves built from the
+   * same project state would undo each other. Returns the saved address and
+   * whether anything changed, or null when the address is invalid.
+   */
+  const commitConnection = (next: { url?: string } = {}): { url?: string; changed: boolean } | null => {
+    const rawUrl = next.url ?? urlDraft;
+    let url: string | undefined;
+    if (rawUrl.trim()) {
+      try {
+        url = normalizeComfyAddress(rawUrl);
+      } catch {
+        toast.error(t('projectViewer.comfy.invalidUrl'));
+        return null;
       }
-      return null;
+      setUrlDraft(url);
+      rememberUrl(url);
     }
-    let normalized: string;
-    try {
-      normalized = normalizeComfyAddress(value);
-    } catch {
-      toast.error(t('projectViewer.comfy.invalidUrl'));
-      return null;
-    }
-    setUrlDraft(normalized);
-    rememberUrl(normalized);
-    if (normalized === savedUrlRef.current) return { url: normalized, changed: false };
-    savedUrlRef.current = normalized;
-    onSaveProject({ ...localProject, comfyUrl: normalized });
-    return { url: normalized, changed: true };
+    // Optional: an empty field means the instance has no password.
+    const password = passwordDraft || undefined;
+    const saved = savedConnectionRef.current;
+    if (url === saved.url && password === saved.password) return { url, changed: false };
+    savedConnectionRef.current = { url, password };
+    onSaveProject({ ...localProject, comfyUrl: url, comfyPassword: password });
+    return { url, changed: true };
   };
 
   const handleTest = () => {
-    const committed = commitUrl(urlDraft);
+    const committed = commitConnection();
     // A changed address is tested by the effect above once it is saved.
-    if (committed && !committed.changed) void runConnectionTest(committed.url);
+    if (committed?.url && !committed.changed) void runConnectionTest(committed.url, passwordDraft || undefined);
   };
 
   // ---- Workflow JSON ----
@@ -593,7 +601,7 @@ export function ComfyWorkflowPanel({
             value={urlDraft}
             placeholder="http://127.0.0.1:8188"
             onChange={(e) => setUrlDraft(e.target.value)}
-            onBlur={() => { commitUrl(urlDraft); }}
+            onBlur={() => { commitConnection(); }}
             onKeyDown={(e) => { if (e.key === 'Enter') handleTest(); }}
             className={`${fieldClass} font-mono`}
           />
@@ -605,7 +613,7 @@ export function ComfyWorkflowPanel({
         {!localProject.comfyUrl && lastUrl && (
           <button
             type="button"
-            onClick={() => commitUrl(lastUrl)}
+            onClick={() => commitConnection({ url: lastUrl })}
             className="text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:underline truncate max-w-full text-left"
           >
             {t('projectViewer.comfy.useLastAddress', { url: lastUrl })}
@@ -622,6 +630,37 @@ export function ComfyWorkflowPanel({
           <p className="text-[10px] font-medium text-red-500 break-words">{connection.error}</p>
         )}
         <p className="text-[10px] leading-relaxed text-neutral-500">{t('projectViewer.comfy.addressHelp')}</p>
+        <div className="space-y-1.5 pt-1">
+          <label htmlFor="comfy-password" className={sectionLabelClass}>{t('projectViewer.comfy.passwordLabel')}</label>
+          <div className="relative">
+            <input
+              id="comfy-password"
+              name="comfy-access-password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              data-1p-ignore
+              data-lpignore="true"
+              spellCheck={false}
+              value={passwordDraft}
+              placeholder={t('projectViewer.comfy.passwordPlaceholder')}
+              onChange={(e) => setPasswordDraft(e.target.value)}
+              onBlur={() => { commitConnection(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleTest(); }}
+              className={`${fieldClass} font-mono pr-9`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+              title={showPassword ? t('projectViewer.comfy.hidePassword') : t('projectViewer.comfy.showPassword')}
+              aria-label={showPassword ? t('projectViewer.comfy.hidePassword') : t('projectViewer.comfy.showPassword')}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+          <p className="text-[10px] leading-relaxed text-neutral-500">{t('projectViewer.comfy.passwordHelp')}</p>
+        </div>
       </section>
 
       {/* Workflow JSON */}

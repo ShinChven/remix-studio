@@ -182,7 +182,7 @@ export class ComfyUIRunner {
 
       if (!project.comfyUrl) throw new Error('Set the ComfyUI address on this project first');
       if (!project.comfyWorkflow) throw new Error('Load a ComfyUI workflow (API format) on this project first');
-      const client = new ComfyClient(project.comfyUrl);
+      const client = new ComfyClient(project.comfyUrl, project.comfyPassword);
 
       // A job that finished in ComfyUI but failed afterwards (e.g. storage quota)
       // keeps its prompt id; on retry, collect that result instead of re-running.
@@ -317,7 +317,7 @@ export class ComfyUIRunner {
 
     if (!job || !project) {
       // Deleted while running: drop it from ComfyUI's queue if it hasn't started.
-      if (project?.comfyUrl) await new ComfyClient(project.comfyUrl).deleteFromQueue(promptId).catch(() => {});
+      if (project?.comfyUrl) await new ComfyClient(project.comfyUrl, project.comfyPassword).deleteFromQueue(promptId).catch(() => {});
       this.release(entry);
       return;
     }
@@ -330,11 +330,16 @@ export class ComfyUIRunner {
       return;
     }
 
-    const client = new ComfyClient(project.comfyUrl);
+    const client = new ComfyClient(project.comfyUrl, project.comfyPassword);
     let history;
     try {
       history = await client.getHistory(promptId);
     } catch (e: any) {
+      // A wrong or missing password won't fix itself by waiting.
+      if (e instanceof ComfyApiError && (e.status === 401 || e.status === 403)) {
+        await this.fail(entry, e.message);
+        return;
+      }
       entry.unreachableSince ??= Date.now();
       if (Date.now() - entry.unreachableSince > UNREACHABLE_TIMEOUT_MS) {
         await this.fail(entry, this.describeError(e, project.comfyUrl));

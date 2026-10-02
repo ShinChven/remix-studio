@@ -94,16 +94,100 @@ export function collectOutputFiles(entry: ComfyHistoryEntry): ComfyOutputFile[] 
   return [...files.filter((f) => f.type === 'output'), ...files.filter((f) => f.type !== 'output')];
 }
 
-/** Minimal client for the HTTP API a ComfyUI server exposes. */
+// The API token ComfyUI-Login prints at startup ("For direct API calls, use
+// token=…"): the bcrypt hash its login/PASSWORD file holds.
+const COMFY_LOGIN_TOKEN_PATTERN = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
+
+// Session cookies from logging in with a ComfyUI-Login password, per instance
+// and password, shared by every client so a batch logs in once.
+const sessionCookies = new Map<string, string>();
+const pendingLogins = new Map<string, Promise<void>>();
+
+/**
+ * Minimal client for the HTTP API a ComfyUI server exposes.
+ *
+ * `password` is optional and only for instances protected by ComfyUI-Login.
+ * Its API token is sent as a Bearer header. A plain login password is used
+ * the way the browser uses it: when ComfyUI answers 401, log in at `/login`
+ * and send the session cookie it returns.
+ */
 export class ComfyClient {
-  constructor(private baseUrl: string) {}
+  private readonly bearerToken?: string;
+  private readonly loginPassword?: string;
+
+  constructor(private baseUrl: string, password?: string | null) {
+    if (password && COMFY_LOGIN_TOKEN_PATTERN.test(password)) this.bearerToken = password;
+    else if (password) this.loginPassword = password;
+  }
 
   private url(path: string): string {
     return `${this.baseUrl}${path}`;
   }
 
+  private get sessionKey(): string {
+    return `${this.baseUrl}\n${this.loginPassword}`;
+  }
+
+  private send(path: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+    const headers = new Headers(init.headers);
+    if (this.bearerToken) headers.set('Authorization', `Bearer ${this.bearerToken}`);
+    const cookie = this.loginPassword ? sessionCookies.get(this.sessionKey) : undefined;
+    if (cookie) headers.set('Cookie', cookie);
+    return fetch(this.url(path), { ...init, headers, signal: AbortSignal.timeout(timeoutMs) });
+  }
+
   private async request(path: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
-    return fetch(this.url(path), { ...init, signal: AbortSignal.timeout(timeoutMs) });
+    let res = await this.send(path, init, timeoutMs);
+    if (res.status === 401 && this.loginPassword) {
+      // No session yet, or it expired (ComfyUI-Login rotates its key monthly).
+      sessionCookies.delete(this.sessionKey);
+      await this.login();
+      res = await this.send(path, init, timeoutMs);
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new ComfyApiError(this.bearerToken || this.loginPassword
+        ? `ComfyUI rejected the access password (HTTP ${res.status})`
+        : `ComfyUI requires an access password (HTTP ${res.status}) — set it on the project`, res.status);
+    }
+    return res;
+  }
+
+  private login(): Promise<void> {
+    const key = this.sessionKey;
+    let pending = pendingLogins.get(key);
+    if (!pending) {
+      pending = this.performLogin().finally(() => pendingLogins.delete(key));
+      pendingLogins.set(key, pending);
+    }
+    return pending;
+  }
+
+  private async performLogin(): Promise<void> {
+    // Posting to /login on an instance without a password would create one.
+    // Leave that to the browser, where the user picks it deliberately.
+    const page = await fetch(this.url('/login'), {
+      headers: { Accept: 'text/html' },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    const html = await page.text().catch(() => '');
+    if (/For your first login|Please also set a username/.test(html)) {
+      throw new ComfyApiError('ComfyUI-Login has no password set up yet — log in once in the browser to create it, then retry', 401);
+    }
+
+    const res = await fetch(this.url('/login'), {
+      method: 'POST',
+      body: new URLSearchParams({ password: this.loginPassword! }),
+      redirect: 'manual',
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if ((res.headers.get('location') || '').includes('wrong_password')) {
+      throw new ComfyApiError('Wrong ComfyUI access password', 401);
+    }
+    const cookie = res.headers.getSetCookie().map((c) => c.split(';')[0]).filter(Boolean).join('; ');
+    if (!cookie) {
+      throw new ComfyApiError(`ComfyUI login failed (HTTP ${res.status})`, res.status || 401);
+    }
+    sessionCookies.set(this.sessionKey, cookie);
   }
 
   private async json(path: string, init: RequestInit = {}): Promise<any> {

@@ -508,6 +508,11 @@
       "useLastAddress": "마지막 주소 사용: {{url}}",
       "vramFree": "VRAM 여유 {{free}} / {{total}}",
       "addressHelp": "Remix Studio는 서버에서 이 주소로 연결하므로 서버에서 접근할 수 있어야 합니다. 인스턴스가 재시작되어 주소가 바뀌면 여기서 업데이트하세요. 대기 중인 작업은 새 주소를 사용합니다.",
+      "passwordLabel": "접속 비밀번호 (선택)",
+      "passwordPlaceholder": "없으면 비워 두세요",
+      "passwordHelp": "ComfyUI-Login으로 보호된 인스턴스에만 필요합니다. 로그인 비밀번호나 시작 로그의 token=… 값을 입력하세요. 비워 두면 인증 정보를 보내지 않습니다.",
+      "showPassword": "비밀번호 표시",
+      "hidePassword": "비밀번호 숨기기",
       "invalidUrl": "http(s) 주소를 입력하세요 (예: http://127.0.0.1:8188)",
       "parseErrors": {
         "invalid-json": "올바른 JSON이 아닙니다.",

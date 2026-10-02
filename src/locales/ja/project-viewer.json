@@ -508,6 +508,11 @@
       "useLastAddress": "前回のアドレスを使用：{{url}}",
       "vramFree": "VRAM 空き {{free}} / {{total}}",
       "addressHelp": "Remix Studio はサーバーからこのアドレスに接続するため、サーバーから到達できる必要があります。インスタンスの再起動でアドレスが変わったらここを更新してください。待機中のジョブは新しいアドレスを使います。",
+      "passwordLabel": "アクセスパスワード（任意）",
+      "passwordPlaceholder": "なければ空欄",
+      "passwordHelp": "ComfyUI-Login で保護されたインスタンスのみ：ログインパスワード、または起動時に表示される token=… の値を入力します。空欄なら認証情報は送りません。",
+      "showPassword": "パスワードを表示",
+      "hidePassword": "パスワードを隠す",
       "invalidUrl": "http(s) のアドレスを入力してください（例：http://127.0.0.1:8188）",
       "parseErrors": {
         "invalid-json": "有効な JSON ではありません。",

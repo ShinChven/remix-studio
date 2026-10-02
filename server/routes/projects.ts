@@ -77,17 +77,17 @@ function normalizeJobsForStorage(jobs: Job[], bucket: string): Job[] {
 
 /** Largest API-format workflow a ComfyUI project stores. */
 const MAX_COMFY_WORKFLOW_BYTES = 5 * 1024 * 1024;
+const MAX_COMFY_PASSWORD_LENGTH = 1024;
 
-type ComfyFieldsResult =
-  | { ok: true; comfyUrl?: string | null; comfyWorkflow?: ComfyWorkflow | null }
-  | { ok: false; error: string };
+type ComfyFields = { comfyUrl?: string | null; comfyWorkflow?: ComfyWorkflow | null; comfyPassword?: string | null };
+type ComfyFieldsResult = ({ ok: true } & ComfyFields) | { ok: false; error: string };
 
 /**
- * Validate the ComfyUI fields of a project body. An empty URL or a `null`
- * workflow clears the field; anything not sent is left untouched.
+ * Validate the ComfyUI fields of a project body. An empty URL or password, or
+ * a `null` workflow, clears the field; anything not sent is left untouched.
  */
 function readComfyFields(body: any): ComfyFieldsResult {
-  const result: { ok: true; comfyUrl?: string | null; comfyWorkflow?: ComfyWorkflow | null } = { ok: true };
+  const result: { ok: true } & ComfyFields = { ok: true };
 
   if (typeof body?.comfyUrl === 'string') {
     if (!body.comfyUrl.trim()) {
@@ -116,6 +116,16 @@ function readComfyFields(body: any): ComfyFieldsResult {
         : 'Invalid ComfyUI workflow' };
     }
     result.comfyWorkflow = parsed.workflow;
+  }
+
+  // Kept exactly as typed: a password may legitimately start or end with a space.
+  if (typeof body?.comfyPassword === 'string') {
+    if (body.comfyPassword.length > MAX_COMFY_PASSWORD_LENGTH) {
+      return { ok: false, error: 'ComfyUI password is too long' };
+    }
+    result.comfyPassword = body.comfyPassword === '' ? null : body.comfyPassword;
+  } else if (body?.comfyPassword === null) {
+    result.comfyPassword = null;
   }
 
   return result;
@@ -795,6 +805,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         showDisabledItems: typeof body.showDisabledItems === 'boolean' ? body.showDisabledItems : undefined,
         comfyUrl: comfyFields.comfyUrl ?? undefined,
         comfyWorkflow: comfyFields.comfyWorkflow ?? undefined,
+        comfyPassword: comfyFields.comfyPassword ?? undefined,
       };
 
       await repository.createProject(user.userId, project);
@@ -854,6 +865,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (comfyFields.ok === false) return c.json({ error: comfyFields.error }, 400);
       if (comfyFields.comfyUrl !== undefined) (updates as any).comfyUrl = comfyFields.comfyUrl;
       if (comfyFields.comfyWorkflow !== undefined) (updates as any).comfyWorkflow = comfyFields.comfyWorkflow;
+      if (comfyFields.comfyPassword !== undefined) (updates as any).comfyPassword = comfyFields.comfyPassword;
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {

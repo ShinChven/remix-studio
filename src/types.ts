@@ -2128,6 +2128,11 @@ export interface Project {
   // the API-format workflow whose inputs the project's items feed.
   comfyUrl?: string;
   comfyWorkflow?: ComfyWorkflow;
+  /**
+   * Optional access password for an instance protected by ComfyUI-Login: the
+   * login password, or the API token it prints at startup. Stored as given.
+   */
+  comfyPassword?: string;
 }
 
 export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax';

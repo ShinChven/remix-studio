@@ -508,6 +508,11 @@
       "useLastAddress": "使用上次的地址：{{url}}",
       "vramFree": "显存空闲 {{free}} / {{total}}",
       "addressHelp": "Remix Studio 从服务器端连接这个地址，所以服务器必须能访问到它。实例重启后地址变了，直接在这里更新即可——排队中的任务会使用新地址。",
+      "passwordLabel": "访问密码（可选）",
+      "passwordPlaceholder": "没有就留空",
+      "passwordHelp": "只有装了 ComfyUI-Login 的实例才需要：填它的登录密码，或启动日志里 token= 后面那串。留空就不带任何认证。",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码",
       "invalidUrl": "请输入 http(s) 地址，例如 http://127.0.0.1:8188",
       "parseErrors": {
         "invalid-json": "这不是有效的 JSON。",

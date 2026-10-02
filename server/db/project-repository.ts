@@ -206,6 +206,7 @@ export class ProjectRepository {
       showDisabledItems: (p as any).showDisabledItems ?? undefined,
       comfyUrl: (p as any).comfyUrl ?? undefined,
       comfyWorkflow: (p as any).comfyWorkflow ?? undefined,
+      comfyPassword: (p as any).comfyPassword ?? undefined,
       jobs: [],
       workflow: [],
       album: [],
@@ -560,6 +561,7 @@ export class ProjectRepository {
         showDisabledItems: project.showDisabledItems ?? null,
         comfyUrl: project.comfyUrl ?? null,
         comfyWorkflow: project.comfyWorkflow ?? undefined,
+        comfyPassword: project.comfyPassword ?? null,
       } as any,
     });
 
@@ -592,6 +594,7 @@ export class ProjectRepository {
     if (updates.showDisabledItems !== undefined) data.showDisabledItems = updates.showDisabledItems ?? null;
     if (updates.comfyUrl !== undefined) data.comfyUrl = updates.comfyUrl ?? null;
     if (updates.comfyWorkflow !== undefined) data.comfyWorkflow = updates.comfyWorkflow ?? Prisma.DbNull;
+    if (updates.comfyPassword !== undefined) data.comfyPassword = updates.comfyPassword ?? null;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data: data as any });

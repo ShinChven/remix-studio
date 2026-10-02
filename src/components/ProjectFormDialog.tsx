@@ -173,6 +173,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
             guidance: sourceProject.guidance,
             comfyUrl: sourceProject.comfyUrl,
             comfyWorkflow: sourceProject.comfyWorkflow,
+            comfyPassword: sourceProject.comfyPassword,
           }),
         });
       } else {

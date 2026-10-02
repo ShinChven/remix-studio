@@ -95,6 +95,7 @@ export function ProjectRoute() {
         // address only travel when they actually changed.
         ...(updatedProject.comfyUrl !== project.comfyUrl ? { comfyUrl: updatedProject.comfyUrl ?? '' } : {}),
         ...(updatedProject.comfyWorkflow !== project.comfyWorkflow ? { comfyWorkflow: updatedProject.comfyWorkflow ?? null as any } : {}),
+        ...(updatedProject.comfyPassword !== project.comfyPassword ? { comfyPassword: updatedProject.comfyPassword ?? '' } : {}),
       });
       setProject(updatedProject);
     } catch (e) {

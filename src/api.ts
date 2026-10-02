@@ -769,11 +769,11 @@ export interface ComfyConnectionResult {
 }
 
 /** Ask the server to reach a ComfyUI instance — generation runs from there. */
-export async function testComfyConnection(url: string): Promise<ComfyConnectionResult> {
+export async function testComfyConnection(url: string, password?: string): Promise<ComfyConnectionResult> {
   const res = await apiFetch('/api/comfyui/test', {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, password }),
   });
   return handleResponse<ComfyConnectionResult>(res, 'Failed to test the ComfyUI connection');
 }
