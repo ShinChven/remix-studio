@@ -8,6 +8,38 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.24.0 — ComfyUI workflows, albums on your TV, and a notification when a batch is done
+
+*Run your own ComfyUI workflows in batches, watch project albums on a TV or open them in a file manager, hear back when a project's queue empties, and let an MCP agent upload files of its own.*
+
+**Added**
+
+- **ComfyUI workflow projects** — A new project type runs a workflow on a ComfyUI instance you host — a local machine, a box on your network, or a rented GPU — so custom checkpoints, LoRAs and node chains can be batched like any other project. Export the workflow from ComfyUI with **Workflow → Export (API)**, and every input is listed by node: numbers and toggles are edited in place, seeds are random for every job unless you pin one, and text and file inputs can draw from a library, so they combine and shuffle like regular workflow steps. The address lives on the project, so a rented GPU that comes back on a new address only needs it pasted in. Instances protected by ComfyUI-Login take an optional access password. See [ComfyUI Projects](/concepts/projects#comfyui-projects).
+- **Albums on a TV** — Project albums can now be watched on the living-room TV or opened in a file manager, all read-only and managed under **Account → TV & devices**. **TV mode** at `/tv` is a full-screen viewer built for a remote control, with slideshows and video playback; link a TV by scanning the code it shows with your phone. **WebDAV** opens albums in Finder, Windows Explorer, Infuse, Kodi or rclone. **DLNA**, off by default, lets TVs on your network find Remix Studio by themselves and browse it in their own photo and video app. See [TV & Devices](/integrations/tv-and-devices).
+- **A notification when a project finishes** — Turn on **Notifications** under **Account → Preferences** and your browser tells you when a project has worked through its queue — how many jobs finished and how many failed — even with Remix Studio closed. Tap it to open the project. On iPhone and iPad, add Remix Studio to the Home Screen first. No third-party account is needed.
+- **File uploads over MCP** — An external agent could organise your media but never add any. It can now upload images, videos and audio and put them in a library, a project workflow or a campaign, including one draft post per file. The file goes straight to the server rather than through the conversation. See [file uploads](/integrations/mcp#file-uploads).
+
+**Improved**
+
+- **Edit and create a project from a dialog** — Editing a project no longer takes you away from it, and creating one no longer leaves the list it will land in. On a phone the dialog is full screen and keeps the keyboard down until you tap a field.
+- **Moving album items, in a dialog that remembers where they went** — **Move to Project** opens over the album instead of on a page of its own, so your selection is still there if you back out, and it proposes the project you last moved items to.
+- **Quieter TV slideshows** — Only the pictures are shown; the caption and progress appear for a few seconds when you touch the remote. A running slideshow no longer lets the TV's screensaver start.
+- **Archived albums on the TV** — TV mode has **Active**, **Archived** and **All** tabs.
+
+**Fixed**
+
+- **Sharing a photo into the app from Android** — On some phones a shared photo arrived as **Share Failed** or as an empty preview, though the image had reached the app. It now comes through.
+- **Projects switched between models** — A project set up on one model and moved to another could send the new model a size or quality it does not support, and the job failed. Each model now gets the closest setting it offers, keeping the picture's shape.
+- **GPT Image 2.5 on RunningHub** — The aspect-ratio picker offered five ratios RunningHub's API rejects. It now offers the ten it accepts plus **auto**.
+- **RunningHub reference images** — Jobs that uploaded a reference image to RunningHub failed with an unrecognised API key.
+- **Prompt dialogs under the sidebar** — **Edit Prompt** and the album prompt dialog opened partly hidden behind the sidebar.
+- **Sign-in keeps your place** — After an expired session, signing in returns you to the page you were opening rather than the home page.
+
+**Changed**
+
+- **Qwen Image 3 replaces Qwen Image 2 on RunningHub** — **Qwen Image 3 Pro** and **Qwen Image 3** take the place of Qwen Image 2 Pro, and projects set to the old model move to Qwen Image 3 Pro. 21:9 is no longer offered; projects using it switch to 16:9.
+- **Solid cards and dialogs** — Cards, panels, menus and dialogs are opaque now instead of translucent, so what is behind them no longer shows through their text.
+
 ## 1.23.0 — GPT Image 2.5, an assistant that survives a refresh, and a searchable album
 
 *OpenAI's newest image models arrive on both OpenAI and RunningHub, a chat no longer loses its turn when you reload the page, and the album gains search, a tidier toolbar and a way to move results into another project.*
