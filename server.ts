@@ -33,6 +33,8 @@ import { createSocialRouter } from './server/routes/social';
 import { createReleaseRouter } from './server/routes/releases';
 import { createProductsRouter } from './server/routes/products';
 import { createMcpRouter } from './server/mcp/mcp-server';
+import { createStagedUploadRouter } from './server/routes/staged-uploads';
+import { cleanupExpiredStagedUploads } from './server/services/staged-uploads';
 import { createAssistantRouter } from './server/routes/assistant';
 import { AssistantRepository } from './server/db/assistant-repository';
 import { AssistantRunner } from './server/assistant/assistant-runner';
@@ -183,6 +185,19 @@ async function startServer() {
   runSessionCleanup(); // run once immediately on startup
   setInterval(runSessionCleanup, SESSION_CLEANUP_INTERVAL_MS);
 
+  // Delete staged MCP uploads that expired or whose upload URL lapsed unused.
+  const STAGED_UPLOAD_CLEANUP_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+  const runStagedUploadCleanup = async () => {
+    try {
+      const deleted = await cleanupExpiredStagedUploads(prisma, storage);
+      if (deleted > 0) console.log(`[StagedUploads] Removed ${deleted} expired upload(s).`);
+    } catch (e) {
+      console.error('[StagedUploads] Failed to clean up expired uploads:', e);
+    }
+  };
+  runStagedUploadCleanup();
+  setInterval(runStagedUploadCleanup, STAGED_UPLOAD_CLEANUP_INTERVAL_MS);
+
   // Periodic memory snapshot to distinguish heap leak vs native (Sharp/ffmpeg) growth.
   const MEMORY_LOG_INTERVAL_MS = 30 * 1000;
   setInterval(() => {
@@ -281,6 +296,7 @@ async function startServer() {
     projectEvents,
   };
   app.route('/', createMcpRouter(prisma, toolDeps));
+  app.route('/', createStagedUploadRouter({ prisma, storage, exportStorage, repository, userRepository }));
 
   // === Assistant chat runtime ===
   const assistantRepo = new AssistantRepository(prisma);

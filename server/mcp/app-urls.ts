@@ -30,6 +30,8 @@ export interface AppUrlBuilder {
   queue(view?: 'projects' | 'providers'): string;
   campaign(campaignId: string): string;
   campaignPost(campaignId: string, postId: string): string;
+  /** Where a create_upload client PUTs the file; the token is single-use. */
+  stagedUpload(uploadId: string, token: string): string;
 }
 
 export function createAppUrlBuilder(requestOrigin?: string | null): AppUrlBuilder {
@@ -43,5 +45,6 @@ export function createAppUrlBuilder(requestOrigin?: string | null): AppUrlBuilde
     queue: (view) => `${base}/projects/queues${view === 'providers' ? '?view=providers' : ''}`,
     campaign: (campaignId) => `${base}/campaigns/${seg(campaignId)}`,
     campaignPost: (campaignId, postId) => `${base}/campaigns/${seg(campaignId)}/posts/${seg(postId)}`,
+    stagedUpload: (uploadId, token) => `${base}/api/staged-uploads/${seg(uploadId)}?token=${seg(token)}`,
   };
 }

@@ -1424,8 +1424,9 @@ export class ProjectRepository {
     libraries: number;
     archives: number;
     trash: number;
+    staging: number;
   }> {
-    const [albumAgg, postMediaAgg, libAgg, exportAgg, trashAgg] = await Promise.all([
+    const [albumAgg, postMediaAgg, libAgg, exportAgg, trashAgg, stagedReadyAgg, stagedPendingAgg] = await Promise.all([
       this.prisma.albumItem.aggregate({
         where: { userId },
         _sum: { size: true, optimizedSize: true, thumbnailSize: true },
@@ -1446,6 +1447,22 @@ export class ProjectRepository {
         where: { userId },
         _sum: { size: true, optimizedSize: true, thumbnailSize: true },
       }),
+      this.prisma.stagedUpload.aggregate({
+        where: { userId, status: 'ready' },
+        _sum: { storedSize: true },
+      }),
+      // Uploads still on their way in hold their declared size, so several
+      // concurrent create_upload calls cannot each pass the same headroom.
+      this.prisma.stagedUpload.aggregate({
+        where: {
+          userId,
+          OR: [
+            { status: 'awaiting_upload', tokenExpiresAt: { gt: new Date() } },
+            { status: 'processing' },
+          ],
+        },
+        _sum: { declaredSize: true },
+      }),
     ]);
 
     const sum3 = (agg: { _sum: { size?: bigint | null; optimizedSize?: bigint | null; thumbnailSize?: bigint | null } }) =>
@@ -1459,6 +1476,7 @@ export class ProjectRepository {
       libraries: Number(libAgg._sum.size || 0),
       archives: Number(exportAgg._sum.size || 0),
       trash: sum3(trashAgg),
+      staging: Number(stagedReadyAgg._sum.storedSize || 0) + Number(stagedPendingAgg._sum.declaredSize || 0),
     };
   }
 

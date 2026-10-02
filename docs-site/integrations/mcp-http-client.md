@@ -135,6 +135,33 @@ mcp '{
 
 Keys the authenticated user does not own come back under `denied` with a reason rather than failing the whole call. See [file access](/integrations/mcp#file-access) for the rules.
 
+## Uploading a File
+
+Stage the file, send its bytes with a plain `PUT`, then attach the `uploadId`. `create_upload` needs no confirmation round:
+
+```bash
+SIZE=$(wc -c < hero.png)
+UPLOAD=$(mcp '{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "create_upload",
+    "arguments": { "files": [{ "filename": "hero.png", "mimeType": "image/png", "size": '"$SIZE"' }] }
+  }
+}' | jq '.result.structuredContent.uploads[0]')
+UPLOAD_ID=$(jq -r .uploadId <<< "$UPLOAD")
+UPLOAD_URL=$(jq -r .uploadUrl <<< "$UPLOAD")
+
+curl -sS -T hero.png "$UPLOAD_URL"
+```
+
+```json
+{ "uploadId": "…", "status": "ready", "kind": "image", "mimeType": "image/png", "size": 48211, "expiresAt": "…" }
+```
+
+The upload URL carries its own single-use token, so the `PUT` sends no `Authorization` header. Then attach the file by passing `$UPLOAD_ID` to an attach tool — for example `add_files_to_library` with `library_id` and `files: [{ "uploadId": … }]` — using the two-call protocol below. See [file uploads](/integrations/mcp#file-uploads) for every destination and limit.
+
 ## Calling a Write Tool
 
 Write and destructive tools use an argument-bound, two-call confirmation protocol. Over HTTP you drive both calls yourself.

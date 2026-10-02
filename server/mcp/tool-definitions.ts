@@ -16,6 +16,16 @@ import {
   type StartedProjectExport,
 } from '../services/project-export';
 import { createAppUrlBuilder, type AppUrlBuilder } from './app-urls';
+import {
+  copyStagedFiles,
+  createStagedUpload,
+  describeStagedUpload,
+  newMediaBaseKey,
+  resolveReadyStagedUploads,
+  StagedUploadError,
+  type ReadyStagedUpload,
+} from '../services/staged-uploads';
+import { createCampaignMediaService, StorageLimitError } from '../services/campaign-media';
 import { generateJobs } from '../../src/lib/remixEngine';
 import {
   DEFAULT_AUDIO_PROJECT_CONFIG,
@@ -100,6 +110,9 @@ export interface AssistantToolDefinition<Shape extends z.ZodRawShape = z.ZodRawS
   /** Optional explicit override. When omitted, non-read tools are gated for
    *  confirmation by the assistant runner and external MCP transport. */
   requiresConfirmation?: boolean;
+  /** Only offered to external MCP clients. The in-app assistant cannot send
+   *  file bytes, so tools built around uploading them are left out there. */
+  mcpOnly?: boolean;
   handler: (userId: string, input: any) => Promise<ToolResult>;
 }
 
@@ -136,6 +149,8 @@ const JOB_STORAGE_ESTIMATE_BYTES = 25 * 1024 * 1024;
 /** Fallback quota for users created before a limit was stored on the record. */
 const DEFAULT_STORAGE_LIMIT_BYTES = 5 * 1024 * 1024 * 1024;
 const MAX_SIGNED_KEYS_PER_CALL = 50;
+const MAX_UPLOADS_PER_CALL = 50;
+const MAX_UPLOAD_POSTS_PER_CALL = 20;
 const DEFAULT_SIGNED_URL_TTL_SECONDS = 3600;
 const MAX_SIGNED_URL_TTL_SECONDS = 86400;
 
@@ -312,10 +327,11 @@ async function assertPostMediaSourceAllowed(
 }
 
 /**
- * Batch ownership check for raw storage keys. A key is signable only when it is
+ * Batch ownership check for raw storage keys. A key passes only when it is
  * still referenced by a record the authenticated user owns — library items,
- * album items, job outputs, or campaign post media. Returns the subset of
- * `keys` that passed, so callers can report the rest as denied.
+ * album items, job outputs, project workflow items, or campaign post media.
+ * Returns the subset of `keys` that passed, so callers can report the rest as
+ * denied.
  */
 async function resolveOwnedStorageKeys(
   prisma: PrismaClient,
@@ -326,7 +342,7 @@ async function resolveOwnedStorageKeys(
   if (candidates.length === 0) return new Set();
 
   const inList = { in: candidates };
-  const [libraryItems, albumItems, jobs, postMedia] = await Promise.all([
+  const [libraryItems, albumItems, jobs, workflowItems, postMedia] = await Promise.all([
     prisma.libraryItem.findMany({
       where: {
         library: { userId },
@@ -347,6 +363,13 @@ async function resolveOwnedStorageKeys(
         OR: [{ imageUrl: inList }, { thumbnailUrl: inList }, { optimizedUrl: inList }],
       },
       select: { imageUrl: true, thumbnailUrl: true, optimizedUrl: true },
+    }),
+    prisma.workflowItem.findMany({
+      where: {
+        project: { userId },
+        OR: [{ value: inList }, { thumbnailUrl: inList }, { optimizedUrl: inList }],
+      },
+      select: { type: true, value: true, thumbnailUrl: true, optimizedUrl: true },
     }),
     prisma.postMedia.findMany({
       where: {
@@ -378,6 +401,13 @@ async function resolveOwnedStorageKeys(
     allow(job.imageUrl);
     allow(job.thumbnailUrl);
     allow(job.optimizedUrl);
+  }
+  for (const item of workflowItems) {
+    // A text item's value is prompt text, not a file, even if it happens to
+    // match a key.
+    if (item.type === 'image' || item.type === 'video' || item.type === 'audio') allow(item.value);
+    allow(item.thumbnailUrl);
+    allow(item.optimizedUrl);
   }
   for (const media of postMedia) {
     allow(media.sourceUrl);
@@ -565,6 +595,8 @@ function toToolWorkflowItem(item: {
 export function createAssistantToolDefinitions(deps: ToolDependencies): AssistantToolDefinition[] {
   const { repository, userRepository, prisma, providerRepository, storage, exportStorage, exportManager, queueManager, projectEvents } = deps;
   const exportDeps = { repository, userRepository, storage, exportStorage, exportManager };
+  const stagedUploadDeps = { prisma, storage, exportStorage, repository, userRepository };
+  const campaignMedia = createCampaignMediaService(stagedUploadDeps);
   const appUrls = createAppUrlBuilder(deps.appBaseUrl);
 
   const tools: AssistantToolDefinition[] = [];
@@ -616,6 +648,126 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       }),
       isError: true,
     };
+  }
+
+  function errorResult(message: string, extra?: Record<string, unknown>): ToolResult {
+    return { text: JSON.stringify({ error: message, ...extra }), isError: true };
+  }
+
+  /** A StagedUploadError becomes a tool error the model can act on; anything else propagates. */
+  function stagedUploadErrorResult(error: unknown): ToolResult {
+    if (error instanceof StagedUploadError || error instanceof StorageLimitError) return errorResult(error.message);
+    throw error;
+  }
+
+  /** Refuse a write that would push the user past their storage limit. */
+  async function assertBytesHeadroom(userId: string, bytes: number): Promise<ToolResult | null> {
+    if (bytes <= 0) return null;
+    const { allowed, currentUsage, limit } = await checkStorageLimit(
+      userId,
+      bytes,
+      userRepository,
+      storage,
+      exportStorage,
+      repository,
+    );
+    if (allowed) return null;
+    return errorResult(
+      `Storage limit exceeded. Remaining: ${formatSize(Math.max(0, limit - currentUsage))}. Required: ~${formatSize(bytes)}.`,
+    );
+  }
+
+  type WorkflowMediaInput = {
+    itemType: string;
+    value?: string;
+    uploadId?: string;
+    thumbnailUrl?: string;
+    optimizedUrl?: string;
+  };
+  type WorkflowMediaFiles = { value: string; thumbnailUrl?: string; optimizedUrl?: string };
+
+  /**
+   * Check the files a workflow write pins to image, video and audio items, then
+   * copy any staged uploads into the project's folder. Items naming storage
+   * keys must name files the user already owns. Everything is validated before
+   * the first copy, so a rejected call leaves storage untouched.
+   */
+  async function resolveWorkflowMedia(
+    userId: string,
+    projectId: string,
+    items: WorkflowMediaInput[],
+  ): Promise<{ files: Map<number, WorkflowMediaFiles> } | { error: ToolResult }> {
+    const isMediaSlot = (itemType: string) => itemType === 'image' || itemType === 'video' || itemType === 'audio';
+    const uploadIndexes: number[] = [];
+    const keyFields: { index: number; field: 'value' | 'thumbnailUrl' | 'optimizedUrl'; key: string }[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.uploadId) {
+        if (!isMediaSlot(item.itemType)) {
+          return { error: errorResult(`workflowItems[${i}] has an uploadId, but only "image", "video" and "audio" items take one.`) };
+        }
+        if (item.value || item.thumbnailUrl || item.optimizedUrl) {
+          return { error: errorResult(`workflowItems[${i}] has both an uploadId and file keys. Pass only the uploadId; the server fills in value, thumbnailUrl and optimizedUrl.`) };
+        }
+        uploadIndexes.push(i);
+        continue;
+      }
+      if (!isMediaSlot(item.itemType)) continue;
+      for (const field of ['value', 'thumbnailUrl', 'optimizedUrl'] as const) {
+        const key = item[field]?.trim();
+        if (key && isInternalStorageValue(key)) keyFields.push({ index: i, field, key });
+      }
+    }
+
+    if (keyFields.length > 0) {
+      const owned = await resolveOwnedStorageKeys(prisma, userId, keyFields.map((entry) => entry.key));
+      const denied = keyFields.filter((entry) => !owned.has(entry.key));
+      if (denied.length > 0) {
+        return {
+          error: errorResult(
+            `Some workflow items point at files that are not in this account: ${denied
+              .map((entry) => `workflowItems[${entry.index}].${entry.field} "${entry.key}"`)
+              .join(', ')}. Use storage keys from get_project, get_library_items or get_album_items, or upload the file with create_upload and pass its uploadId.`,
+          ),
+        };
+      }
+    }
+
+    const files = new Map<number, WorkflowMediaFiles>();
+    if (uploadIndexes.length === 0) return { files };
+
+    let uploads: ReadyStagedUpload[];
+    try {
+      uploads = await resolveReadyStagedUploads(prisma, userId, uploadIndexes.map((i) => items[i].uploadId!));
+    } catch (error) {
+      return { error: stagedUploadErrorResult(error) };
+    }
+    const mismatched = uploadIndexes
+      .map((index, n) => ({ index, upload: uploads[n] }))
+      .filter(({ index, upload }) => upload.kind !== items[index].itemType);
+    if (mismatched.length > 0) {
+      return {
+        error: errorResult(
+          `Upload type does not match the workflow item: ${mismatched
+            .map(({ index, upload }) => `workflowItems[${index}] is "${items[index].itemType}" but upload ${upload.id} is ${upload.kind}`)
+            .join('; ')}.`,
+        ),
+      };
+    }
+
+    const headroom = await assertBytesHeadroom(userId, uploads.reduce((sum, upload) => sum + Number(upload.storedSize), 0));
+    if (headroom) return { error: headroom };
+
+    for (let n = 0; n < uploadIndexes.length; n++) {
+      const copied = await copyStagedFiles(storage, uploads[n], newMediaBaseKey(userId, projectId));
+      files.set(uploadIndexes[n], {
+        value: copied.key,
+        thumbnailUrl: copied.thumbnailKey,
+        optimizedUrl: copied.optimizedKey,
+      });
+    }
+    return { files };
   }
 
   // ─── get_current_account ───
@@ -976,7 +1128,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   tools.push({
     name: 'get_storage_usage',
     title: 'Get Storage Usage',
-    description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, campaigns, libraries, archives, trash). Computed via SQL aggregates — cheap to call.',
+    description: 'Get storage usage summary for the authenticated user. Returns total usage, storage limit, and breakdown by category (projects, campaigns, libraries, archives, trash, staging — files uploaded with create_upload that are not yet expired). Computed via SQL aggregates — cheap to call.',
     inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     category: 'read',
@@ -987,7 +1139,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       ]);
 
       const storageLimit = userRecord?.storageLimit || DEFAULT_STORAGE_LIMIT_BYTES;
-      const totalSize = breakdown.projects + breakdown.campaigns + breakdown.libraries + breakdown.archives + breakdown.trash;
+      const totalSize = breakdown.projects + breakdown.campaigns + breakdown.libraries + breakdown.archives + breakdown.trash + breakdown.staging;
 
       return {
         text: JSON.stringify({
@@ -1002,6 +1154,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
             libraries: { size: breakdown.libraries, formatted: formatSize(breakdown.libraries) },
             archives: { size: breakdown.archives, formatted: formatSize(breakdown.archives) },
             trash: { size: breakdown.trash, formatted: formatSize(breakdown.trash) },
+            staging: { size: breakdown.staging, formatted: formatSize(breakdown.staging) },
           },
         }, null, 2),
       };
@@ -1358,7 +1511,7 @@ For a single file, get_file_urls is cheaper — it needs no archive. To move a p
     title: 'Get File URLs',
     description: `Mint temporary, presigned HTTPS URLs for stored files so they can be fetched, viewed, or downloaded. Input is one or more internal storage keys — the values returned as storageKey/thumbnailKey/optimizedKey by get_album_items and get_library_items, or sourceUrl/processedUrl/thumbnailUrl on campaign post media from get_post.
 
-Only keys still referenced by the authenticated user's own library items, album items, job outputs, or campaign post media can be signed; anything else comes back under "denied" instead of "urls". Full public URLs (http://, https://, data:) are rejected — they need no signing.
+Only keys still referenced by the authenticated user's own library items, album items, job outputs, project workflow items, or campaign post media can be signed; anything else comes back under "denied" instead of "urls". Full public URLs (http://, https://, data:) are rejected — they need no signing.
 
 Set download=true to get a URL that saves as a file (Content-Disposition: attachment) instead of rendering inline. URLs expire after expires_in seconds (default 1 hour, max 24 hours); mint fresh ones rather than storing them. When the deployment serves media from a public custom domain, the returned URL is a direct public URL rather than a signed one.`,
     inputSchema: {
@@ -1433,6 +1586,237 @@ Set download=true to get a URL that saves as a file (Content-Disposition: attach
         text: JSON.stringify(response, null, 2),
         structuredContent: response,
       };
+    },
+  });
+
+  // ─── create_upload ───
+  tools.push({
+    name: 'create_upload',
+    title: 'Create File Upload',
+    description: `Get one-time upload URLs for image, video or audio files, so they can be added to a library, a project workflow or a campaign. Use this when the file is on disk where you can run commands (a shell, a script, a code sandbox). The bytes go straight to the server over HTTP, never through a tool call.
+
+Steps:
+1. Call create_upload with each file's name, MIME type and exact size in bytes.
+2. For each returned upload, PUT the raw file bytes to its uploadUrl. The "curl" field is a ready command: run it from the folder holding the file, or replace the file name with its path. Do not use multipart/form-data. Each URL works once and expires after 15 minutes.
+3. Attach the uploadId: add_files_to_library (library items), update_project or create_project_with_workflow (an "image", "video" or "audio" workflow item with uploadId), create_posts_from_files (new campaign draft posts), or add_media_to_post (an existing post). One upload can be attached more than once.
+
+Staged files are kept for 24 hours and count toward the storage quota until then. The server checks that each file's contents match its declared type. Supported: images (PNG, JPEG, WebP, GIF; up to 50 MB), videos (MP4, MOV, WebM, MKV; up to 200 MB), audio (MP3, AAC, M4A, WAV, OGG, WebM; up to 50 MB).`,
+    inputSchema: {
+      files: z.array(z.object({
+        filename: z.string().min(1).max(255).describe('File name, e.g. "hero.png". Used as the default title when attached to a library.'),
+        mimeType: z.string().min(1).max(100).describe('MIME type, e.g. "image/png", "video/mp4", "audio/mpeg"'),
+        size: z.number().int().positive().describe('Exact file size in bytes, e.g. from `wc -c < file`'),
+      })).min(1).max(MAX_UPLOADS_PER_CALL).describe(`Files to upload (1-${MAX_UPLOADS_PER_CALL})`),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    // Staging is invisible to the user and expires on its own; the attach
+    // tools that change libraries, projects and campaigns ask for approval.
+    requiresConfirmation: false,
+    mcpOnly: true,
+    handler: async (userId, input) => {
+      const { files } = input as { files: { filename: string; mimeType: string; size: number }[] };
+      const shellQuote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`;
+      const uploads: Record<string, unknown>[] = [];
+      const rejected: { index: number; filename: string; error: string }[] = [];
+
+      for (const [index, file] of files.entries()) {
+        try {
+          const { upload, token } = await createStagedUpload(stagedUploadDeps, userId, file);
+          const uploadUrl = appUrls.stagedUpload(upload.id, token);
+          uploads.push({
+            ...describeStagedUpload(upload),
+            uploadUrl,
+            method: 'PUT',
+            curl: `curl -sS -T ${shellQuote(upload.filename)} ${shellQuote(uploadUrl)}`,
+          });
+        } catch (error) {
+          if (!(error instanceof StagedUploadError)) throw error;
+          rejected.push({ index, filename: file.filename, error: error.message });
+        }
+      }
+
+      const payload = {
+        uploads,
+        rejected,
+        message: uploads.length > 0
+          ? `PUT each file to its uploadUrl (the curl command does this). A successful upload answers with status "ready". Then pass the uploadId to an attach tool.`
+          : 'No upload URLs were created. Read "rejected" for the reasons.',
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload, ...(uploads.length === 0 ? { isError: true } : {}) };
+    },
+  });
+
+  // ─── get_upload ───
+  tools.push({
+    name: 'get_upload',
+    title: 'Get Upload Status',
+    description: 'Check staged uploads made with create_upload. Status is "awaiting_upload" (the file has not been PUT yet), "processing", "ready" (can be attached) or "failed" (read "error", then call create_upload again). Uploads disappear after 24 hours.',
+    inputSchema: {
+      uploadIds: z.array(z.string().min(1)).min(1).max(MAX_UPLOADS_PER_CALL).describe('uploadId values returned by create_upload'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    mcpOnly: true,
+    handler: async (userId, input) => {
+      const { uploadIds } = input as { uploadIds: string[] };
+      const unique = [...new Set(uploadIds)];
+      const rows = await prisma.stagedUpload.findMany({ where: { userId, id: { in: unique } } });
+      const found = new Set(rows.map((row) => row.id));
+      const payload = {
+        uploads: rows.map(describeStagedUpload),
+        notFound: unique.filter((id) => !found.has(id)),
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
+    },
+  });
+
+  // ─── add_files_to_library ───
+  tools.push({
+    name: 'add_files_to_library',
+    title: 'Add Files to Library',
+    description: 'Add uploaded files to an image, video or audio library as new items. Each file needs an uploadId from create_upload whose status is "ready", and its type must match the library type. The title defaults to the uploaded file name. The result carries the library "url".',
+    inputSchema: {
+      library_id: z.string().min(1).describe('The image, video or audio library to add the files to'),
+      files: z.array(z.object({
+        uploadId: z.string().min(1).describe('uploadId from create_upload'),
+        title: z.string().max(500).optional().describe('Item title; defaults to the uploaded file name'),
+        tags: z.array(z.string()).optional().describe('Optional tags for the item'),
+      })).min(1).max(MAX_UPLOADS_PER_CALL).describe(`Files to add (1-${MAX_UPLOADS_PER_CALL})`),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    mcpOnly: true,
+    handler: async (userId, input) => {
+      const { library_id, files } = input as {
+        library_id: string;
+        files: { uploadId: string; title?: string; tags?: string[] }[];
+      };
+      const library = await repository.getLibrary(userId, library_id);
+      if (!library) return errorResult(`Library "${library_id}" not found.`);
+      if (library.type !== 'image' && library.type !== 'video' && library.type !== 'audio') {
+        return errorResult(`Library "${library.name}" is a ${library.type} library. Files go into image, video or audio libraries; add text with create_prompt.`);
+      }
+
+      let uploads: ReadyStagedUpload[];
+      try {
+        uploads = await resolveReadyStagedUploads(prisma, userId, files.map((file) => file.uploadId));
+      } catch (error) {
+        return stagedUploadErrorResult(error);
+      }
+      const mismatched = uploads.filter((upload) => upload.kind !== library.type);
+      if (mismatched.length > 0) {
+        return errorResult(`Library "${library.name}" holds ${library.type} files, but these uploads are not: ${mismatched.map((upload) => `${upload.id} (${upload.kind})`).join(', ')}.`);
+      }
+
+      const headroom = await assertBytesHeadroom(userId, uploads.reduce((sum, upload) => sum + Number(upload.storedSize), 0));
+      if (headroom) return headroom;
+
+      const items = [];
+      for (let i = 0; i < files.length; i++) {
+        const upload = uploads[i];
+        const copied = await copyStagedFiles(storage, upload, newMediaBaseKey(userId, library_id));
+        items.push({
+          id: crypto.randomUUID(),
+          content: copied.key,
+          title: files[i].title?.trim() || upload.filename,
+          tags: files[i].tags,
+          thumbnailUrl: copied.thumbnailKey,
+          optimizedUrl: copied.optimizedKey,
+          size: Number(upload.size),
+        });
+      }
+      await repository.createLibraryItemsBatch(userId, library_id, items);
+
+      const libraryTotal = (library.items?.length ?? 0) + items.length;
+      const payload = {
+        library_id,
+        libraryUrl: appUrls.library(library_id),
+        name: library.name,
+        created: items.map((item, i) => ({
+          id: item.id,
+          title: item.title,
+          uploadId: files[i].uploadId,
+          storageKey: item.content,
+        })),
+        count: items.length,
+        libraryTotal,
+        message: `${items.length} file${items.length === 1 ? '' : 's'} added to "${library.name}".`,
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload };
+    },
+  });
+
+  // ─── create_posts_from_files ───
+  tools.push({
+    name: 'create_posts_from_files',
+    title: 'Create Posts from Files',
+    description: 'Create one draft post per uploaded image or video in a campaign, the same way uploading media on the campaign page does: each post gets its own copy of the file with the user\'s post watermark applied. Each file needs an uploadId from create_upload whose status is "ready". Optionally give each post its text. Posts are created as drafts; schedule them with schedule_post.',
+    inputSchema: {
+      campaignId: z.string().min(1).describe('The campaign to add the posts to'),
+      files: z.array(z.object({
+        uploadId: z.string().min(1).describe('uploadId from create_upload'),
+        text: z.string().max(10000).optional().describe('Optional post text'),
+      })).min(1).max(MAX_UPLOAD_POSTS_PER_CALL).describe(`One entry per post to create (1-${MAX_UPLOAD_POSTS_PER_CALL})`),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    mcpOnly: true,
+    handler: async (userId, input) => {
+      const { campaignId, files } = input as { campaignId: string; files: { uploadId: string; text?: string }[] };
+      const campaign = await prisma.campaign.findFirst({ where: { id: campaignId, userId }, select: { id: true, name: true } });
+      if (!campaign) return errorResult(`Campaign "${campaignId}" not found.`);
+
+      let uploads: ReadyStagedUpload[];
+      try {
+        uploads = await resolveReadyStagedUploads(prisma, userId, files.map((file) => file.uploadId));
+      } catch (error) {
+        return stagedUploadErrorResult(error);
+      }
+      const audio = uploads.filter((upload) => upload.kind === 'audio');
+      if (audio.length > 0) {
+        return errorResult(`Campaign posts take images and videos. These uploads are audio: ${audio.map((upload) => upload.id).join(', ')}.`);
+      }
+
+      const watermark = await campaignMedia.findPostWatermarkSetting(userId);
+      const safeCampaignId = campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const created: { postId: string; mediaId: string; uploadId: string; postUrl: string }[] = [];
+      const failed: { uploadId: string; error: string }[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const upload = uploads[i];
+        try {
+          const post = await campaignMedia.createImportMediaPost(
+            userId,
+            campaignId,
+            safeCampaignId,
+            {
+              mediaType: upload.kind as 'image' | 'video',
+              rawValue: upload.storageKey,
+              thumbnailValue: upload.thumbnailKey,
+              optimizedValue: upload.optimizedKey,
+              rawSize: Number(upload.size),
+            },
+            watermark,
+            files[i].text,
+          );
+          created.push({ ...post, uploadId: upload.id, postUrl: appUrls.campaignPost(campaignId, post.postId) });
+        } catch (error: any) {
+          failed.push({ uploadId: upload.id, error: error?.message || 'Failed to create the post' });
+          // Later files would hit the same limit, so stop rather than fail each one.
+          if (error instanceof StorageLimitError) break;
+        }
+      }
+
+      const payload = {
+        campaignId,
+        campaignUrl: appUrls.campaign(campaignId),
+        campaignName: campaign.name,
+        created,
+        failed,
+        message: `${created.length} draft post${created.length === 1 ? '' : 's'} created${failed.length ? `, ${failed.length} failed` : ''}.`,
+      };
+      return { text: JSON.stringify(payload), structuredContent: payload, ...(created.length === 0 ? { isError: true } : {}) };
     },
   });
 
@@ -1798,11 +2182,11 @@ Workflow item types:
 - "text": static prompt text. Requires "value" with the text content. To use a specific item from a text library, first call get_library_items and pass the returned item.text as "value".
 - "library": generic library reference (runtime uses the referenced library's type). Requires "libraryId".
 - "text_from_library" / "text_library": reference a text library (runtime picks random items). Requires "libraryId".
-- "image": image context slot. Leave "value" empty for a blank placeholder, or set "value" to item.storageKey from get_library_items to pin a specific image file.
+- "image": image context slot. Leave "value" empty for a blank placeholder, set "value" to item.storageKey from get_library_items to pin a specific image file, or set "uploadId" to pin a file uploaded with create_upload.
 - "image_from_library" / "image_library": reference an image library (runtime picks randomly). Requires "libraryId".
-- "audio": audio context slot. Leave "value" empty, or set "value" to item.storageKey from get_library_items to pin a specific audio file.
+- "audio": audio context slot. Leave "value" empty, set "value" to item.storageKey from get_library_items to pin a specific audio file, or set "uploadId" to pin an uploaded file.
 - "audio_from_library" / "audio_library": reference an audio library. Requires "libraryId".
-- "video": video context slot. Leave "value" empty, or set "value" to item.storageKey from get_library_items to pin a specific video file.
+- "video": video context slot. Leave "value" empty, set "value" to item.storageKey from get_library_items to pin a specific video file, or set "uploadId" to pin an uploaded file.
 - "video_from_library" / "video_library": reference a video library. Requires "libraryId".
 
 Recommended workflow:
@@ -1830,6 +2214,7 @@ Recommended workflow:
       workflowItems: z.array(z.object({
         itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": leave empty for a blank slot, or set to item.storageKey from get_library_items to pin a specific file.'),
+        uploadId: z.string().min(1).optional().describe('For "image"/"audio"/"video": a ready upload from create_upload to pin. The server copies it into the project; leave value empty.'),
         libraryId: z.string().optional().describe('Library ID (required for "library", *_from_library, and *_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter applied when picking items from the library'),
       })).min(1).max(200).describe('Ordered list of workflow items (1–200)'),
@@ -1860,6 +2245,7 @@ Recommended workflow:
         workflowItems: {
           itemType: (typeof WORKFLOW_ITEM_TYPES)[number];
           value?: string;
+          uploadId?: string;
           libraryId?: string;
           selectedTags?: string[];
         }[];
@@ -1932,6 +2318,11 @@ Recommended workflow:
         }
       }
 
+      // ─── Check pinned files and copy uploads in ───
+      const projectId = crypto.randomUUID();
+      const media = await resolveWorkflowMedia(userId, projectId, workflowItems);
+      if ('error' in media) return media.error;
+
       // ─── Normalize workflow ───
       const workflow = workflowItems.map((item, idx) => {
         let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
@@ -1981,17 +2372,19 @@ Recommended workflow:
           }
         }
 
+        const uploaded = media.files.get(idx);
         return {
           id: crypto.randomUUID(),
           type: internalType,
-          value: internalValue,
+          value: uploaded?.value ?? internalValue,
           order: idx,
           selectedTags: item.selectedTags,
+          thumbnailUrl: uploaded?.thumbnailUrl,
+          optimizedUrl: uploaded?.optimizedUrl,
         };
       });
 
       // ─── Create ───
-      const projectId = crypto.randomUUID();
       const project = {
         id: projectId,
         name,
@@ -2065,6 +2458,7 @@ Important workflow behavior:
       workflowItems: z.array(z.object({
         itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": file storage key to pin a file.'),
+        uploadId: z.string().min(1).optional().describe('For "image"/"audio"/"video": a ready upload from create_upload to pin. The server copies it into the project and fills value, thumbnailUrl and optimizedUrl; leave those empty.'),
         libraryId: z.string().optional().describe('Library ID (required for "library" and *_from_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter for library items'),
         id: z.string().optional().describe('Existing workflow item ID. Preserve this when carrying forward an item from get_project.'),
@@ -2102,6 +2496,7 @@ Important workflow behavior:
           id?: string;
           itemType: (typeof WORKFLOW_ITEM_TYPES)[number];
           value?: string;
+          uploadId?: string;
           libraryId?: string;
           selectedTags?: string[];
           disabled?: boolean;
@@ -2233,6 +2628,9 @@ Important workflow behavior:
           }
         }
 
+        const media = await resolveWorkflowMedia(userId, projectId, workflowItems);
+        if ('error' in media) return media.error;
+
         updates.workflow = workflowItems.map((item, idx) => {
           let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
           let internalValue: string;
@@ -2279,15 +2677,16 @@ Important workflow behavior:
               throw new Error(`Unknown workflow itemType: ${item.itemType}`);
           }
 
+          const uploaded = media.files.get(idx);
           return {
             id: item.id || crypto.randomUUID(),
             type: internalType,
-            value: internalValue,
+            value: uploaded?.value ?? internalValue,
             order: idx,
             selectedTags: item.selectedTags,
             disabled: item.disabled,
-            thumbnailUrl: item.thumbnailUrl,
-            optimizedUrl: item.optimizedUrl,
+            thumbnailUrl: uploaded ? uploaded.thumbnailUrl : item.thumbnailUrl,
+            optimizedUrl: uploaded ? uploaded.optimizedUrl : item.optimizedUrl,
           };
         });
       }
@@ -3267,19 +3666,49 @@ Each entry carries the post's "url", its status and schedule, a short "textPrevi
   tools.push({
     name: 'add_media_to_post',
     title: 'Add Media to Post',
-    description: 'Add a media item (like an image from the library/album) to a post.',
+    description: 'Add a media item to an existing post: either a stored file (an image or video storage key from get_library_items, get_album_items or get_post) or a file uploaded with create_upload. The media is processed in the background before the post can be scheduled.',
     inputSchema: {
       postId: z.string().min(1),
-      sourceUrl: z.string().min(1).describe('Internal S3 key for media owned by the authenticated user'),
-      type: z.enum(POST_MEDIA_TYPE_VALUES).describe('image, video, or gif'),
+      sourceUrl: z.string().min(1).optional().describe('Internal S3 key for media owned by the authenticated user. Pass this or uploadId.'),
+      uploadId: z.string().min(1).optional().describe('A ready image or video upload from create_upload. Pass this or sourceUrl.'),
+      type: z.enum(POST_MEDIA_TYPE_VALUES).optional().describe('image, video, or gif. Required with sourceUrl; with uploadId it is taken from the file.'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
     category: 'mutate',
     requiresConfirmation: true,
-    handler: async (userId, { postId, sourceUrl, type }) => {
+    handler: async (userId, { postId, sourceUrl, uploadId, type }) => {
+      if (Boolean(sourceUrl) === Boolean(uploadId)) return errorResult('Pass exactly one of sourceUrl or uploadId.');
       const post = await prisma.post.findUnique({ where: { id: postId }});
       if (!post || post.userId !== userId) throw new Error("Post not found");
-      const safeSourceUrl = await assertPostMediaSourceAllowed(prisma, userId, post.campaignId, sourceUrl);
+
+      const mediaId = crypto.randomUUID();
+      let mediaSource: string;
+      let mediaType: (typeof POST_MEDIA_TYPE_VALUES)[number];
+      if (uploadId) {
+        let upload: ReadyStagedUpload;
+        try {
+          [upload] = await resolveReadyStagedUploads(prisma, userId, [uploadId]);
+        } catch (error) {
+          return stagedUploadErrorResult(error);
+        }
+        if (upload.kind === 'audio') return errorResult('Posts take images and videos; this upload is audio.');
+        const uploadType = upload.kind === 'video' ? 'video' : upload.mimeType === 'image/gif' ? 'gif' : 'image';
+        if (type && type !== uploadType) return errorResult(`type "${type}" does not match the upload, which is ${uploadType}.`);
+        const headroom = await assertBytesHeadroom(userId, Number(upload.size));
+        if (headroom) return headroom;
+
+        // The media poller makes the processed copy and thumbnail from this source.
+        const safeCampaignId = post.campaignId.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const ext = upload.storageKey.slice(upload.storageKey.lastIndexOf('.') + 1);
+        mediaSource = `campaigns/${safeCampaignId}/posts/${post.id}/media/${mediaId}.src.${ext}`;
+        await storage.copy(upload.storageKey, mediaSource);
+        mediaType = uploadType;
+      } else {
+        if (!type) return errorResult('type is required with sourceUrl.');
+        mediaSource = await assertPostMediaSourceAllowed(prisma, userId, post.campaignId, sourceUrl);
+        mediaType = type;
+      }
+
       const max = await prisma.postMedia.aggregate({
         where: { postId },
         _max: { position: true },
@@ -3287,9 +3716,10 @@ Each entry carries the post's "url", its status and schedule, a short "textPrevi
       const nextPosition = (max._max.position ?? -1) + 1;
       const media = await prisma.postMedia.create({
         data: {
+          id: mediaId,
           postId,
-          sourceUrl: safeSourceUrl,
-          type,
+          sourceUrl: mediaSource,
+          type: mediaType,
           position: nextPosition,
           status: 'pending'
         }

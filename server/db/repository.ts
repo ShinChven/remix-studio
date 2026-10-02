@@ -158,6 +158,8 @@ export interface IRepository {
     libraries: number;
     archives: number;
     trash: number;
+    /** Staged MCP uploads not yet expired, including ones still arriving. */
+    staging: number;
   }>;
 
   /** Per-project album stats (count + size) aggregated in SQL. */

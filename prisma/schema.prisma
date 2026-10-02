@@ -50,6 +50,7 @@ model User {
   storeUploadHistory      StoreUploadHistory[]
   pushSubscriptions       PushSubscription[]
   mediaDevices            MediaDevice[]
+  stagedUploads           StagedUpload[]
   createdByUser           User?                    @relation("UserCreation", fields: [createdByUserId], references: [id], onDelete: SetNull)
   createdUsers            User[]                   @relation("UserCreation")
   createdInviteCodes      InviteCode[]             @relation("InviteCodeCreator")
@@ -938,5 +939,40 @@ model MediaPairing {
   expiresAt      DateTime
   createdAt      DateTime @default(now())
 
+  @@index([expiresAt])
+}
+
+// A file an MCP client is getting into storage before it is attached to a
+// library, project workflow or campaign. create_upload makes the row with a
+// single-use upload token; the PUT that spends it moves the row out of
+// awaiting_upload and fills in the stored keys.
+// Attaching copies the files, so the staged set is deleted when the row
+// expires whether or not it was used.
+model StagedUpload {
+  id               String    @id @default(uuid())
+  userId           String
+  status           String    @default("awaiting_upload") // 'awaiting_upload' | 'processing' | 'ready' | 'failed'
+  filename         String
+  declaredMimeType String
+  declaredSize     BigInt
+  // Detected from the received bytes, not taken from the declaration.
+  kind             String? // 'image' | 'video' | 'audio'
+  mimeType         String?
+  size             BigInt?
+  // Original plus thumbnail and optimized variants, counted toward the quota.
+  storedSize       BigInt?
+  storageKey       String?
+  thumbnailKey     String?
+  optimizedKey     String?
+  tokenHash        String?   @unique
+  tokenExpiresAt   DateTime?
+  error            String?   @db.Text
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @default(now()) @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@index([expiresAt])
 }
