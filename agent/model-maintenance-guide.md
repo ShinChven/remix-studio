@@ -347,7 +347,8 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | GPT Image 2.5 Flare Official | `rhart-image-g-2.5-official-token/flare` | image |
 | GPT Image 2 | `rhart-image-g-2` | image |
 | GPT Image 2 Official | `rhart-image-g-2-official` | image |
-| Qwen Image 2 Pro | `alibaba/qwen-image-2.0-pro` | image |
+| Qwen Image 3 Pro | `alibaba/qwen-image-3.0-pro` | image |
+| Qwen Image 3 | `alibaba/qwen-image-3.0` | image |
 | Grok Imagine Quality | `rhart-imagine-image-quality` | image |
 | Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
 | Seedream V5 Pro | `seedream-v5-pro` | image |
@@ -429,6 +430,19 @@ reference endpoint is `/edit`, which takes a single `imageUrl` rather than a
 list — extra reference images are dropped before upload, not after. `auto` is
 an `/edit`-only aspect ratio: the `/text-to-image` enum has no such value, so
 the generator omits the optional field there rather than sending it.
+
+Qwen Image 3 replaced Qwen Image 2 Pro (`alibaba/qwen-image-2.0-pro`), which
+is gone from the catalog. The Pro entry keeps the old `id`
+(`runninghub-qwen-image-2-pro`) so projects pinned to 2 Pro land on its
+successor; dropping the `id` would instead make the generator fall back to its
+default rhart model, a different family. Both 3.0 tiers share one request shape
+and one predicate, `isQwenImage3`: `/text-to-image` and `/image-edit` (1-3
+`imageUrls`, extra references dropped before upload), and `size` from a
+discrete `width*height` enum that `QWEN_SIZE_MAP` resolves from the ratio and
+`1K`/`2K` tier. That enum has no 21:9, so neither entry offers it. The prompt
+limit is Alibaba's published 4,500 tokens; RunningHub documents none of its
+own. `negativePrompt`, `seed`, `promptExtend`, `promptExtendMode` and
+`enableThinking` are optional and left at RunningHub's defaults.
 
 RunningHub model IDs may carry an endpoint suffix. When present it pins the
 request to that endpoint; otherwise the video generator picks `image-to-video`

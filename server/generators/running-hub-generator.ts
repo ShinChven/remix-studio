@@ -7,28 +7,30 @@ const UPLOAD_URL = 'https://www.runninghub.ai/openapi/v2/media/upload/binary';
 const MAX_POLL_ATTEMPTS = 60;  // 60 × 5 s = 5 min
 const POLL_INTERVAL_MS  = 5_000;
 
-// Qwen Image 2 Pro accepts a discrete set of width*height values. Map our
-// (quality, aspectRatio) selections onto that enum.
+// Qwen Image 3 (`qwen-image-3.0` and `qwen-image-3.0-pro`) accepts a discrete
+// set of width*height values. Map our (quality, aspectRatio) selections onto
+// that enum; it has no 21:9 entry, so neither model offers that ratio.
+// `1920*1280` is missing from the Pro `/image-edit` list alone, but every other
+// Qwen Image 3 endpoint lists it and all of them take a custom size within
+// 512*512 - 2048*2048 total pixels, which it is.
 const QWEN_SIZE_MAP: Record<string, Record<string, string>> = {
   '1K': {
     '1:1': '1024*1024',
-    '4:3': '1280*960',
-    '3:4': '960*1280',
-    '16:9': '1280*720',
-    '9:16': '720*1280',
+    '4:3': '1024*768',
+    '3:4': '768*1024',
+    '16:9': '1024*576',
+    '9:16': '576*1024',
     '3:2': '1152*768',
     '2:3': '768*1152',
-    '21:9': '1344*576',
   },
   '2K': {
-    '1:1': '1536*1536',
-    '4:3': '1440*1080',
-    '3:4': '1080*1440',
-    '16:9': '1920*1080',
-    '9:16': '1080*1920',
-    '3:2': '1536*1024',
-    '2:3': '1024*1536',
-    '21:9': '2048*872',
+    '1:1': '1600*1600',
+    '4:3': '1792*1344',
+    '3:4': '1536*2048',
+    '16:9': '2048*1152',
+    '9:16': '1152*2048',
+    '3:2': '1920*1280',
+    '2:3': '1280*1920',
   },
 };
 
@@ -38,9 +40,12 @@ function resolveQwenSize(aspectRatio?: string, imageSize?: string): string {
   return bucket[aspectRatio || '1:1'] || bucket['1:1'];
 }
 
-function isQwenImage2Pro(modelId?: string, apiUrl?: string): boolean {
+// Qwen Image 3's `/image-edit` takes 1-3 images.
+const QWEN_MAX_REF_IMAGES = 3;
+
+function isQwenImage3(modelId?: string, apiUrl?: string): boolean {
   const target = `${modelId || ''} ${apiUrl || ''}`;
-  return target.includes('qwen-image-2.0-pro');
+  return target.includes('qwen-image-3.0');
 }
 
 // Grok Imagine Quality's reference endpoint is `/edit`, which takes one
@@ -208,7 +213,7 @@ export class RunningHubGenerator extends ImageGenerator {
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     const { prompt, aspectRatio = '2:3', imageSize = '1K', format, background, refImagesBase64, modelId, apiUrl: reqApiUrl } = req;
 
-    const isQwen = isQwenImage2Pro(modelId, reqApiUrl);
+    const isQwen = isQwenImage3(modelId, reqApiUrl);
     const isGrok = isGrokImagineQuality(modelId, reqApiUrl);
     const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
@@ -218,11 +223,11 @@ export class RunningHubGenerator extends ImageGenerator {
     const isGpt25 = isGptImage25(modelId, reqApiUrl);
 
     // --- Step 1: optional image upload ---
-    // Grok Imagine Quality's /edit carries a single imageUrl, so uploading the
-    // rest costs a round trip each for bytes the request cannot hold.
-    const refImages = isGrok
-      ? (refImagesBase64 || []).slice(0, GROK_MAX_REF_IMAGES)
-      : (refImagesBase64 || []);
+    // Grok Imagine Quality's /edit carries a single imageUrl and Qwen Image 3's
+    // /image-edit at most three, so uploading the rest costs a round trip each
+    // for bytes the request cannot hold.
+    const maxRefImages = isGrok ? GROK_MAX_REF_IMAGES : isQwen ? QWEN_MAX_REF_IMAGES : undefined;
+    const refImages = (refImagesBase64 || []).slice(0, maxRefImages);
     const imageUrls: string[] = [];
     for (const base64 of refImages) {
       const up = await this.uploadImage(base64);

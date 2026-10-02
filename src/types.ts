@@ -782,14 +782,29 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      // `id` stays on the Qwen Image 2 Pro name so projects pinned to that
+      // retired model resolve to its successor rather than to no model at all.
       id: 'runninghub-qwen-image-2-pro',
-      name: 'Qwen Image 2 Pro',
+      name: 'Qwen Image 3 Pro',
       generatorId: 'RunningHub',
-      modelId: 'alibaba/qwen-image-2.0-pro',
+      modelId: 'alibaba/qwen-image-3.0-pro',
       category: 'image',
-      promptLimit: { value: 800, unit: 'characters' },
+      promptLimit: { value: 4500, unit: 'tokens' },
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '21:9'],
+        // The size enum has no 21:9 entry.
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'runninghub-qwen-image-3',
+      name: 'Qwen Image 3',
+      generatorId: 'RunningHub',
+      modelId: 'alibaba/qwen-image-3.0',
+      category: 'image',
+      promptLimit: { value: 4500, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2'],
         qualities: ['1K', '2K'],
       },
     },
