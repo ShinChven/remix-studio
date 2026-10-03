@@ -25,6 +25,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 - **Moving album items, in a dialog that remembers where they went** — **Move to Project** opens over the album instead of on a page of its own, so your selection is still there if you back out, and it proposes the project you last moved items to.
 - **Quieter TV slideshows** — Only the pictures are shown; the caption and progress appear for a few seconds when you touch the remote. A running slideshow no longer lets the TV's screensaver start.
 - **Archived albums on the TV** — TV mode has **Active**, **Archived** and **All** tabs.
+- **Album cards always show their date** — The date on an album card disappeared whenever the card got narrow, so it came and went as the window was resized. Narrow cards now show it without the year. Albums also show at most four cards per row, and a wider window makes the cards bigger instead.
 
 **Fixed**
 

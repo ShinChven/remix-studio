@@ -87,6 +87,16 @@ function getCssAspectRatio(value?: string) {
   return `${width} / ${height}`;
 }
 
+// Date and time are formatted apart and joined with a space, on a 24-hour clock:
+// the locale's own joiner and AM/PM suffix (", 02:32 PM" in en-US) are what push
+// the pill past the width a narrow card leaves for it.
+function formatCardDate(ts: number, withYear: boolean) {
+  const date = new Date(ts);
+  const day = date.toLocaleDateString(undefined, { year: withYear ? '2-digit' : undefined, month: '2-digit', day: '2-digit' });
+  const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  return `${day} ${time}`;
+}
+
 interface AspectRatioFilterControlProps {
   options: { ratio: string; count: number }[];
   selectedAspectRatios: string[];
@@ -941,17 +951,18 @@ export function AlbumTab({
         ) : (
           // Column count follows the pane's width, not the window's. Each step keeps
           // cards at ~200px or wider — below that the overlay controls and the
-          // metadata rows stop fitting. Every step is also gated on `sm:` so phones
-          // in portrait stay one card per row: there the pane spans the whole
-          // viewport, which is wide enough to trip the 26rem step but far too narrow
-          // to read two cards side by side.
+          // metadata rows stop fitting — and it tops out at four columns, so wider
+          // panes grow the cards instead of adding more of them. Every step is also
+          // gated on `sm:` so phones in portrait stay one card per row: there the
+          // pane spans the whole viewport, which is wide enough to trip the 26rem
+          // step but far too narrow to read two cards side by side.
           //
           // `isolate` keeps the cards in their own stacking context: the overlay
           // buttons on a card sit at z-20, and without it they escape and paint over
           // the sticky selection toolbar as a row scrolls under it. Cards only form a
           // stacking context of their own where `backdrop-filter` takes effect, so the
           // grid has to guarantee it instead.
-          <div className="isolate grid grid-cols-1 sm:@min-[26rem]/pane:grid-cols-2 sm:@min-[44rem]/pane:grid-cols-3 sm:@min-[60rem]/pane:grid-cols-4 sm:@min-[76rem]/pane:grid-cols-5 sm:@min-[92rem]/pane:grid-cols-6 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
+          <div className="isolate grid grid-cols-1 sm:@min-[26rem]/pane:grid-cols-2 sm:@min-[44rem]/pane:grid-cols-3 sm:@min-[60rem]/pane:grid-cols-4 gap-3 @xl/pane:gap-4 p-3 @xl/pane:p-4">
             {displayItems.map((item, index) => {
               const isSelected = selectedAlbumIds.has(item.id);
               const aspectRatioStr = getCssAspectRatio(item.aspectRatio);
@@ -1059,10 +1070,16 @@ export function AlbumTab({
                             {item.aspectRatio}
                           </span>
                         )}
+                        {/* Narrow cards drop the year so the date still fits beside the ratio. */}
                         {item.createdAt && (
-                          <span className="hidden @min-[15rem]/card:inline px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none truncate">
-                            {new Date(item.createdAt).toLocaleString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <>
+                            <span className="@min-[15rem]/card:hidden px-1.5 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-wider leading-none truncate">
+                              {formatCardDate(item.createdAt, false)}
+                            </span>
+                            <span className="hidden @min-[15rem]/card:inline px-2 py-0.5 bg-black/60 rounded-full text-[9px] font-bold text-white/60 border border-white/5 tracking-widest leading-none truncate">
+                              {formatCardDate(item.createdAt, true)}
+                            </span>
+                          </>
                         )}
                       </div>
                     )}
