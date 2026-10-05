@@ -30,7 +30,7 @@ export class ProjectCompletionNotifier implements ProjectEventPublisher {
     private push: PushService,
   ) {}
 
-  notifyProjectChanged(event: Omit<ProjectLiveEvent, 'type' | 'at'> & { userId: string }): void {
+  notifyProjectChanged(event: Omit<ProjectLiveEvent, 'type' | 'at' | 'origin'> & { userId: string }): void {
     this.inner.notifyProjectChanged(event);
 
     if (event.reason === 'project.deleted') {

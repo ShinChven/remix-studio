@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -27,6 +27,7 @@ import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { formatShortDate, formatTimeOrDate } from '../lib/date';
 import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 type CampaignStatus = 'Active' | 'Inactive';
 
@@ -148,22 +149,30 @@ export function Campaigns() {
   const [scheduledPostsLoading, setScheduledPostsLoading] = useState(true);
   const trendRange = useMemo(() => lastNDaysRange(7), []);
 
-  const loadData = async () => {
-    setIsLoading(true);
+  // Only the newest load may write the list, so a slow one can't overwrite a
+  // later page, search or live refresh.
+  const loadSeqRef = useRef(0);
+
+  /** Load the current page; `silent` keeps the list in place instead of showing the spinner. */
+  const loadData = async (silent = false) => {
+    const seq = ++loadSeqRef.current;
+    if (!silent) setIsLoading(true);
     try {
       const data = await fetchCampaignsPage({ page, pageSize, q: queryParam || undefined });
+      if (seq !== loadSeqRef.current) return;
       setCampaigns(data.items.map(mapCampaign));
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (error) {
-      toast.error('Failed to load campaigns');
+      if (silent) console.error('Failed to refresh campaigns', error);
+      else toast.error('Failed to load campaigns');
     } finally {
-      setIsLoading(false);
+      if (seq === loadSeqRef.current) setIsLoading(false);
     }
   };
 
-  const loadRecentPosts = async () => {
-    setRecentPostsLoading(true);
+  const loadRecentPosts = async (silent = false) => {
+    if (!silent) setRecentPostsLoading(true);
     try {
       const data = await fetchRecentPosts(10);
       setRecentPosts(data);
@@ -174,8 +183,8 @@ export function Campaigns() {
     }
   };
 
-  const loadScheduledPosts = async () => {
-    setScheduledPostsLoading(true);
+  const loadScheduledPosts = async (silent = false) => {
+    if (!silent) setScheduledPostsLoading(true);
     try {
       const data = await fetchScheduledPosts(1, 5);
       setScheduledPosts(data.items);
@@ -195,6 +204,12 @@ export function Campaigns() {
   useEffect(() => {
     void loadData();
   }, [page, pageSize, queryParam]);
+
+  // Campaigns and posts changed elsewhere (another tab, an MCP agent, the scheduler).
+  useLiveRefresh(
+    (event) => event.resource === 'campaign' || event.resource === 'post',
+    () => Promise.all([loadData(true), loadRecentPosts(true), loadScheduledPosts(true)]),
+  );
 
   useEffect(() => {
     const trimmed = searchQuery.trim();

@@ -118,6 +118,8 @@ Watermarking creates a processed post asset; it does not overwrite the original 
 - **Post Detail** shows media, schedule controls, generated text actions, and every channel execution.
 - Campaign cards summarize total, completed, and scheduled ranges.
 
+These pages, the campaigns list and the campaign page refresh on their own when posts change elsewhere: when the scheduler publishes them, when their media finishes processing, and when another tab, the assistant or an MCP client edits them.
+
 ## Related
 
 - [Projects & Albums](/concepts/projects) — sources for reusable generated media.

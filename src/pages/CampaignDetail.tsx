@@ -44,6 +44,7 @@ import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon } from '../lib/platform';
 import { PageNav } from '../components/PageNav';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 type StatusFilter = 'all' | 'draft' | 'scheduled' | 'queued' | 'completed' | 'failed';
 type SortKey = 'scheduled_asc' | 'scheduled_desc' | 'created_desc' | 'created_asc';
@@ -332,6 +333,17 @@ export function CampaignDetail() {
   useEffect(() => {
     void loadPosts();
   }, [id, page, pageSize, searchQuery, statusFilter, sortKey]);
+
+  // The campaign or its posts changed elsewhere (another tab, an MCP agent,
+  // the scheduler). Batch post changes name no campaign, so they match too.
+  useLiveRefresh(
+    (event) => (
+      event.resource === 'campaign'
+        ? event.id === id
+        : event.resource === 'post' && (!event.campaignId || event.campaignId === id)
+    ),
+    () => Promise.all([loadCampaign(true), loadPosts(true)]),
+  );
 
   useEffect(() => {
     if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;

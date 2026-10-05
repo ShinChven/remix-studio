@@ -28,6 +28,7 @@ import {
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
@@ -143,6 +144,23 @@ export function CampaignPostDetail() {
   useEffect(() => {
     void loadPost();
   }, [postId]);
+
+  // The post edited, scheduled, published or deleted elsewhere (another tab,
+  // an MCP agent, the scheduler). Batch changes name no post, so they match too.
+  useLiveRefresh(
+    (event) => (
+      event.resource === 'post'
+        ? (event.id ? event.id === postId : !event.campaignId || event.campaignId === campaignId)
+        : event.resource === 'campaign' && event.id === campaignId
+    ),
+    async (events) => {
+      if (events.some((event) => event.resource === 'post' && event.action === 'deleted' && event.id === postId)) {
+        setPost(null);
+        return;
+      }
+      await loadPost(true);
+    },
+  );
 
   useEffect(() => {
     if (!aiTask?.batchId || aiTask.status === 'completed' || aiTask.status === 'failed') return;

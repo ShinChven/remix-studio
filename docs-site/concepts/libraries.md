@@ -104,6 +104,8 @@ The shared tool layer can list and search libraries, browse their items, create 
 
 See [The Assistant](/concepts/assistant) for the in-app approval flow and [MCP Support](/integrations/mcp) for external clients.
 
+Open library pages and the libraries list refresh on their own when the assistant, an MCP client or another tab adds, edits or removes items, so there is no need to reload the page to see an agent's work.
+
 ## Related
 
 - [Workflows & Combinations](/concepts/workflows) — how library choices become drafts.

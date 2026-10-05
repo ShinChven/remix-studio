@@ -1,3 +1,4 @@
+import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
 import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
@@ -67,7 +68,13 @@ function loginUrlReturningHere(): string {
   return here === '/' ? '/login' : `/login?next=${encodeURIComponent(here)}`;
 }
 
-async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
+async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
+  // Tag the request with this tab's live client id, so the change events it
+  // causes come back marked as this tab's own.
+  const headers = new Headers(init?.headers);
+  headers.set(LIVE_CLIENT_HEADER, LIVE_CLIENT_ID);
+  const options: RequestInit = { ...init, headers };
+
   const res = await fetch(url, { ...options, credentials: 'include' });
 
   if (res.status === 401) {

@@ -23,6 +23,7 @@ import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { formatShortDate } from '../lib/date';
 import { PageNav } from '../components/PageNav';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 type ViewMode = 'list' | 'calendar';
 
@@ -72,9 +73,9 @@ export function ScheduledPosts() {
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const loadPosts = async () => {
+  const loadPosts = async (silent = false) => {
     if (viewMode === 'calendar') return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const data = await fetchScheduledPosts(page, 25, q);
       setPosts(data.items);
@@ -90,9 +91,9 @@ export function ScheduledPosts() {
     }
   };
 
-  const loadCounts = async () => {
+  const loadCounts = async (silent = false) => {
     if (viewMode === 'list') return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
@@ -142,6 +143,16 @@ export function ScheduledPosts() {
     if (viewMode === 'list' && !q) return;
     void loadTotalScheduled();
   }, [viewMode, q]);
+
+  // Posts scheduled, rescheduled or published elsewhere (another tab, an MCP
+  // agent, the scheduler); campaign names show on each row.
+  useLiveRefresh(
+    (event) => event.resource === 'post' || event.resource === 'campaign',
+    () => Promise.all([
+      viewMode === 'list' ? loadPosts(true) : loadCounts(true),
+      viewMode === 'list' && !q ? undefined : loadTotalScheduled(),
+    ]),
+  );
 
   const toggleView = (mode: ViewMode) => {
     const params = new URLSearchParams(searchParams);

@@ -20,6 +20,7 @@ import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow } from '../../src/types';
 import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
+import type { LiveEventPublisher } from '../live/user-live-hub';
 import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
 
 type Variables = { user: JwtPayload };
@@ -400,7 +401,7 @@ async function planAlbumStorageMoves(
   return keyMap;
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher, liveEvents?: LiveEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   const exportDeps = { repository, userRepository, storage, exportStorage, exportManager };
@@ -1338,6 +1339,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (newItems.length > 0) {
         await repository.createLibraryItemsBatch(user.userId, libraryId, newItems);
       }
+      liveEvents?.publishChange(user.userId, {
+        resource: 'library',
+        action: destinationLibraryId ? 'updated' : 'created',
+        id: libraryId,
+      });
 
       return c.json({ success: true, libraryId });
     } catch (e) {

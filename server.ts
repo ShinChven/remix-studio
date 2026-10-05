@@ -53,6 +53,8 @@ import { DetachedPoller } from './server/queue/detached-poller';
 import { ComfyUIRunner } from './server/queue/comfyui-runner';
 import { ProjectLiveHub } from './server/live/project-live-hub';
 import { ProjectCompletionNotifier } from './server/live/project-completion-notifier';
+import { UserLiveHub } from './server/live/user-live-hub';
+import { liveOriginMiddleware } from './server/live/live-origin';
 import { PushService } from './server/services/push/push-service';
 import { createPushRouter } from './server/routes/push';
 import { MediaCatalog } from './server/media-share/catalog';
@@ -106,10 +108,18 @@ async function startServer() {
   const providerRepository = new ProviderRepository(prisma);
   const projectRepository = new ProjectRepository(prisma);
   const projectLiveHub = new ProjectLiveHub(repository, userRepository);
+  // Per-user change feed for list and detail pages (projects, libraries,
+  // campaigns, posts).
+  const liveEvents = new UserLiveHub(userRepository);
   const pushService = new PushService(prisma);
-  // Forwards every event to the live hub and pushes a notification when a
-  // project's queue drains.
-  const projectEvents = new ProjectCompletionNotifier(projectLiveHub, prisma, pushService);
+  // Forwards every event to the open project views and the user's change
+  // feed, and pushes a notification when a project's queue drains.
+  const projectEvents = new ProjectCompletionNotifier({
+    notifyProjectChanged(event) {
+      projectLiveHub.notifyProjectChanged(event);
+      liveEvents.notifyProjectChanged(event);
+    },
+  }, prisma, pushService);
 
   const storage = new S3Storage({
     endpoint: process.env.S3_ENDPOINT,
@@ -157,9 +167,9 @@ async function startServer() {
   });
   const exportManager = new ExportManager(repository, storage, exportStorage, userRepository);
   const deliveryManager = new DeliveryManager(repository, exportStorage, prisma, storage);
-  const projectImportManager = new ProjectImportManager(repository, storage, exportStorage, userRepository);
-  const postManager = new PostManager(prisma, storage);
-  const mediaProcessingPoller = new MediaProcessingPoller(prisma, storage);
+  const projectImportManager = new ProjectImportManager(repository, storage, exportStorage, userRepository, projectEvents);
+  const postManager = new PostManager(prisma, storage, liveEvents);
+  const mediaProcessingPoller = new MediaProcessingPoller(prisma, storage, liveEvents);
 
   // Start background workers
   exportManager.startWorkerLoop();
@@ -236,6 +246,9 @@ async function startServer() {
   type Variables = { user: JwtPayload };
   const app = new Hono<{ Variables: Variables }>();
 
+  // Tags live events with the browser tab whose request caused them.
+  app.use('/api/*', liveOriginMiddleware);
+
   app.get('/healthz', (c) => c.json({ ok: true }));
   app.get('/readyz', async (c) => {
     try {
@@ -262,8 +275,8 @@ async function startServer() {
 
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
-  app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager));
-  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, projectEvents));
+  app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager, liveEvents, projectEvents));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, projectEvents, liveEvents));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
@@ -272,8 +285,8 @@ async function startServer() {
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage, projectEvents));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
-  app.route('/', createCampaignsRouter(prisma, storage));
-  app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository));
+  app.route('/', createCampaignsRouter(prisma, storage, liveEvents));
+  app.route('/', createPostsRouter(prisma, postManager, providerRepository, storage, exportStorage, repository, userRepository, liveEvents));
   app.route('/', createOAuthRouter(prisma));
   app.route('/', createSocialRouter(prisma));
   app.route('/', createReleaseRouter(prisma));
@@ -300,6 +313,7 @@ async function startServer() {
     exportManager,
     queueManager,
     projectEvents,
+    liveEvents,
   };
   app.route('/', createMcpRouter(prisma, toolDeps));
   app.route('/', createStagedUploadRouter({ prisma, storage, exportStorage, repository, userRepository }));
@@ -344,6 +358,7 @@ async function startServer() {
     server.maxRequestsPerSocket = 0;
     (server as any).timeout = 120000; // 2 minute timeout for uploads
     projectLiveHub.attach(server);
+    liveEvents.attach(server);
 
     server.listen(port, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${port}`);
@@ -382,6 +397,7 @@ async function startServer() {
       void dlnaService.start();
     });
     projectLiveHub.attach(server as http.Server);
+    liveEvents.attach(server as http.Server);
   }
 }
 

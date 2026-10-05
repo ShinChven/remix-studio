@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,7 @@ import { PageNav } from './PageNav';
 import { TagModal } from './TagModal';
 import { PageHeader } from './PageHeader';
 import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems, fetchLibraryReferences } from '../api';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { CopyMoveItemsDialog } from './CopyMoveItemsDialog';
 import { RenameItemModal } from './RenameItemModal';
@@ -142,9 +143,15 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     });
   }, [setSearchParams]);
 
-  // Fetch items from server when page/search/library changes
-  const loadItems = useCallback(async () => {
-    setLoadingItems(true);
+  // Only the newest load may write the items, so a slow one can't overwrite a
+  // later page, filter or live refresh.
+  const loadSeqRef = useRef(0);
+
+  // Fetch items from server when page/search/library changes. `silent` keeps
+  // the current items on screen instead of showing the spinner.
+  const loadItems = useCallback(async (silent = false) => {
+    const seq = ++loadSeqRef.current;
+    if (!silent) setLoadingItems(true);
     try {
       const result = await fetchLibraryItems(
         library.id, 
@@ -155,19 +162,26 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         sortBy,
         sortOrder
       );
+      if (seq !== loadSeqRef.current) return;
       setItems(result.items);
       setTotalItems(result.total);
       setTotalPages(result.pages);
     } catch (e) {
       console.error('Failed to load items:', e);
     } finally {
-      setLoadingItems(false);
+      if (seq === loadSeqRef.current) setLoadingItems(false);
     }
   }, [library.id, currentPage, itemsPerPage, searchTerm, selectedTagsKey, sortBy, sortOrder]);
 
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  // Items added or edited elsewhere (another tab, an MCP agent).
+  useLiveRefresh(
+    (event) => event.resource === 'library' && (!event.id || event.id === library.id),
+    () => loadItems(true),
+  );
 
   useEffect(() => {
     setSearchInput(searchTerm);
