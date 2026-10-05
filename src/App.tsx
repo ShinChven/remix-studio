@@ -30,6 +30,7 @@ import { ProviderCustomModels } from './pages/ProviderCustomModels.tsx';
 import { TrashView } from './components/TrashView.tsx';
 import { ProjectOrphans } from './pages/ProjectOrphans.tsx';
 import { ExportWatermark } from './pages/ExportWatermark.tsx';
+import { QuickWatermark } from './pages/QuickWatermark.tsx';
 import { Exports } from './pages/Exports.tsx';
 import { Releases } from './pages/Releases.tsx';
 import { ReleaseHistory } from './pages/ReleaseHistory.tsx';
@@ -103,6 +104,7 @@ export default function App() {
               <Route path="queues" element={<Navigate to="/projects/queues" replace />} />
               <Route path="project/new" element={<LegacyRedirect to="/projects" />} />
               <Route path="project/:id/export-watermark" element={<ExportWatermark />} />
+              <Route path="project/:id/album/:itemId/watermark" element={<QuickWatermark source="album" />} />
               <Route path="project/:id" element={<ProjectRoute />} />
               <Route path="project/:id/edit" element={<ProjectEditRedirect />} />
               <Route path="project/:id/orphans" element={<ProjectOrphans />} />
@@ -110,6 +112,7 @@ export default function App() {
               <Route path="library/:id/import-export" element={<LibraryImportExport />} />
               <Route path="library/:id/cleanup" element={<LibraryCleanup />} />
               <Route path="library/:id/prompt/:index" element={<PromptEditor />} />
+              <Route path="library/:id/items/:itemId/watermark" element={<QuickWatermark source="library" />} />
               <Route path="import" element={<ExtensionImport />} />
               <Route path="share" element={<SharePage />} />
                 <Route path="campaigns">

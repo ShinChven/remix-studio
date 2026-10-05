@@ -367,6 +367,7 @@
       "imageContexts": "+{{count}} 圖",
       "view": "查看",
       "openOriginal": "開啟原圖",
+      "quickWatermark": "快速浮水印",
       "reuseWorkflow": "重用工作流",
       "reuseWorkflowUnavailable": "此作品的工作流已無法使用。",
       "playVideo": "播放影片",

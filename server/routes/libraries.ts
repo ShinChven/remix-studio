@@ -10,6 +10,13 @@ import { formatError } from '../utils/error-handler';
 import { ExportManager } from '../queue/export-manager';
 import type { LiveEventPublisher } from '../live/user-live-hub';
 import type { ProjectEventPublisher } from '../live/project-live-hub';
+import {
+  describeQuickWatermarkSource,
+  QuickWatermarkError,
+  renderQuickWatermark,
+  toStorageKey,
+  type QuickWatermarkSource,
+} from '../services/quick-watermark';
 import type { AlbumItem, LibraryItem, Library } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -717,6 +724,59 @@ export function createLibraryRouter(
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[PUT /api/libraries/:libId/items/:itemId]', e);
       return c.json({ error: 'Failed to update item' }, 500);
+    }
+  });
+
+  const findLibraryWatermarkSource = async (userId: string, libId: string, itemId: string): Promise<QuickWatermarkSource> => {
+    const library = await repository.getLibrary(userId, libId);
+    if (!library) throw new QuickWatermarkError('Library not found', 404);
+    if (library.type !== 'image') {
+      throw new QuickWatermarkError('Watermarking is only available for image libraries', 400);
+    }
+    const item = library.items.find((entry) => entry.id === itemId);
+    if (!item) throw new QuickWatermarkError('Library item not found', 404);
+    const rawKey = toStorageKey(item.content, storage);
+    return {
+      containerName: library.name,
+      filename: item.title?.trim() || (rawKey ? getKeyBasename(rawKey) : item.id),
+      rawKey,
+      optimizedKey: toStorageKey(item.optimizedUrl, storage),
+      size: item.size,
+    };
+  };
+
+  /**
+   * GET /api/libraries/:libId/items/:itemId/watermark
+   *
+   * Describe one library image for the quick watermark page.
+   */
+  router.get('/api/libraries/:libId/items/:itemId/watermark', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const source = await findLibraryWatermarkSource(user.userId, c.req.param('libId'), c.req.param('itemId'));
+      return c.json(await describeQuickWatermarkSource(source, storage));
+    } catch (e) {
+      if (e instanceof QuickWatermarkError) return c.json({ error: e.message }, e.status);
+      console.error('[GET /api/libraries/:libId/items/:itemId/watermark]', e);
+      return c.json({ error: 'Failed to load library item' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/libraries/:libId/items/:itemId/watermark
+   *
+   * Watermark one library image and return the JPEG in the response. Nothing
+   * is written to storage.
+   */
+  router.post('/api/libraries/:libId/items/:itemId/watermark', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const source = await findLibraryWatermarkSource(user.userId, c.req.param('libId'), c.req.param('itemId'));
+      return await renderQuickWatermark(source, await c.req.json().catch(() => null), storage);
+    } catch (e) {
+      if (e instanceof QuickWatermarkError) return c.json({ error: e.message }, e.status);
+      console.error('[POST /api/libraries/:libId/items/:itemId/watermark]', e);
+      return c.json({ error: 'Failed to watermark image' }, 500);
     }
   });
 

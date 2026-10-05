@@ -119,10 +119,11 @@ export async function applyPostWatermark(buffer: Buffer, setting?: PostWatermark
   const text = setting?.text?.trim();
   if (!setting?.enabled || !text) return buffer;
 
-  const image = sharp(buffer);
-  const metadata = await image.metadata();
-  const width = metadata.width || 0;
-  const height = metadata.height || 0;
+  // Measure the image the way it will be drawn: autoOrient() below stands an
+  // EXIF-rotated photo upright before the watermark is laid over it.
+  const metadata = await sharp(buffer).metadata();
+  const width = metadata.autoOrient?.width || metadata.width || 0;
+  const height = metadata.autoOrient?.height || metadata.height || 0;
   if (!width || !height) return buffer;
 
   const { padding, fontSize } = getScaledWatermarkMetrics(width, height, setting);
@@ -143,6 +144,7 @@ export async function applyPostWatermark(buffer: Buffer, setting?: PostWatermark
     </svg>`;
 
   return sharp(buffer)
+    .autoOrient()
     .composite([{ input: Buffer.from(svg), blend: 'over' }])
     .jpeg({ quality: WATERMARK_JPEG_QUALITY })
     .toBuffer();

@@ -367,6 +367,7 @@
       "imageContexts": "+{{count}} img",
       "view": "View",
       "openOriginal": "Open Original",
+      "quickWatermark": "Quick watermark",
       "reuseWorkflow": "Reuse Workflow",
       "reuseWorkflowUnavailable": "The workflow behind this result is no longer available.",
       "playVideo": "Play video",

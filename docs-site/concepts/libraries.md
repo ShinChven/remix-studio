@@ -24,6 +24,7 @@ Inside a library you can:
 - Search items and filter them by tags.
 - Sort by newest/oldest or by name in ascending/descending order.
 - Edit an item's title and tags; text items can also be edited in the Prompt Editor.
+- Watermark a single image with the stamp button on its card and download the result, without saving a copy. See [Watermarking a Single Image](/concepts/projects#watermarking-a-single-image).
 - Select several items for batch tagging, copying, moving, or deletion.
 - Copy or move items only to a library of the same media type.
 - Duplicate a whole library, including its items.

@@ -367,6 +367,7 @@
       "imageContexts": "+{{count}} img",
       "view": "보기",
       "openOriginal": "원본 열기",
+      "quickWatermark": "빠른 워터마크",
       "reuseWorkflow": "워크플로 재사용",
       "reuseWorkflowUnavailable": "이 결과의 워크플로를 사용할 수 없습니다.",
       "playVideo": "비디오 재생",
