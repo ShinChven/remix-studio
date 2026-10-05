@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import type { BoundContext } from '../components/Assistant/AssistantComposer';
 import { ProjectCard } from '../components/EntityCards';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ProjectFormDialog } from '../components/ProjectFormDialog';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 type StatusFilter = 'active' | 'archived' | 'all';
 
@@ -38,41 +39,35 @@ export function Projects() {
   const [projectForm, setProjectForm] = useState<{ copyFromId?: string } | null>(null);
 
   const navigate = useNavigate();
+  // Only the newest load may write the page, so a slow one can't overwrite a
+  // later page, search or live refresh.
+  const loadSeqRef = useRef(0);
 
-  const loadProjects = async () => {
-    setIsLoading(true);
+  /** Load the current page; `silent` keeps the grid in place instead of showing the spinner. */
+  const loadProjects = async (silent = false) => {
+    const seq = ++loadSeqRef.current;
+    if (!silent) setIsLoading(true);
     try {
       const result = await fetchProjects(page, 24, q, status);
+      if (seq !== loadSeqRef.current) return;
       setProjects(result.items);
       setTotal(result.total);
       setPages(result.pages);
     } catch (err) {
       console.error(err);
     } finally {
-      setIsLoading(false);
+      if (seq === loadSeqRef.current) setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const result = await fetchProjects(page, 24, q, status);
-        if (mounted) {
-          setProjects(result.items);
-          setTotal(result.total);
-          setPages(result.pages);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-    load();
-    return () => { mounted = false; };
+    void loadProjects();
+    // Invalidate the in-flight load when the page unmounts.
+    return () => { loadSeqRef.current++; };
   }, [page, q, status]);
+
+  // Projects created, edited or filled elsewhere (another tab, an MCP agent).
+  useLiveRefresh((event) => event.resource === 'project', () => loadProjects(true));
 
   const addProject = () => setProjectForm({});
 

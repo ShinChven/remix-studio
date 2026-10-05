@@ -14,6 +14,7 @@ import {
 import { AssistantHero } from './Assistant/AssistantHero';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ProjectFormDialog } from './ProjectFormDialog';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 export function Home() {
   const { t } = useTranslation();
@@ -85,6 +86,25 @@ export function Home() {
       console.error('Failed to reload projects:', err);
     }
   };
+
+  // Recent projects, libraries and campaigns changed elsewhere (another tab, an
+  // MCP agent). No events means the feed reconnected, so reload every section.
+  useLiveRefresh(
+    () => true,
+    async (events) => {
+      const changed = new Set(events.map((event) => event.resource));
+      const reloadAll = events.length === 0;
+      await Promise.all([
+        (reloadAll || changed.has('project')) && loadProjects(),
+        (reloadAll || changed.has('library')) && fetchLibraries(1, 8)
+          .then((libRes) => setLibraries(libRes.items))
+          .catch((err) => console.error('Failed to reload libraries:', err)),
+        (reloadAll || changed.has('campaign') || changed.has('post')) && fetchCampaigns({ pageSize: 8 })
+          .then((campRes) => setCampaigns(Array.isArray(campRes) ? campRes.slice(0, 8) : []))
+          .catch((err) => console.error('Failed to reload campaigns:', err)),
+      ]);
+    },
+  );
 
   const confirmDeleteProject = async () => {
     if (!deleteTarget) return;

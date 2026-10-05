@@ -23,6 +23,7 @@ import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon, fallbackExternalUrl } from '../lib/platform';
 import { PageNav } from '../components/PageNav';
 import { PostingTrendChart, lastNDaysRange } from '../components/PostingTrendChart';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 /** Quick ranges, in URL-friendly ids. `null` days means "all time" (no lower bound). */
 const RANGE_PRESETS = [
@@ -163,8 +164,8 @@ export function CampaignHistory() {
     setSearchParams(params);
   };
 
-  const loadHistory = async () => {
-    setIsLoading(true);
+  const loadHistory = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await fetchCampaignHistory(
         page,
@@ -190,6 +191,13 @@ export function CampaignHistory() {
     if (view === 'list') void loadHistory();
     setSearchQuery(qParam);
   }, [page, pageSize, range.apiStart, range.apiEnd, qParam, view]);
+
+  // Posts published or edited elsewhere (another tab, an MCP agent, the scheduler).
+  useLiveRefresh(
+    (event) => event.resource === 'post' || event.resource === 'campaign',
+    () => loadHistory(true),
+    { enabled: view === 'list' },
+  );
 
   const applySearch = () => {
     const params = new URLSearchParams(searchParams);

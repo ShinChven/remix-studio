@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { SocialChannelFactory, PreparedSocialMedia, PublishResult } from '../services/social';
 import { decrypt, encrypt } from '../utils/crypto';
+import type { LiveEventPublisher } from '../live/user-live-hub';
 
 // Platforms that publish media by handing the provider a public URL it fetches
 // server-side (vs. uploading raw bytes). These get presigned URLs instead of
@@ -20,7 +21,8 @@ export class PostManager {
 
   constructor(
     private prisma: PrismaClient,
-    private storage: any
+    private storage: any,
+    private liveEvents?: LiveEventPublisher
   ) {}
 
   start(intervalMs = 60000) {
@@ -168,6 +170,8 @@ export class PostManager {
         } catch (e) {
           console.error(`[PostManager] fanOutPost(${post.id}) failed:`, e);
         }
+        // Queued on success, failed otherwise: either way the post moved on.
+        this.liveEvents?.publishChange(post.userId, { resource: 'post', action: 'updated', id: post.id, campaignId: post.campaignId });
       }
     } catch (e) {
       console.error('[PostManager] Error in fanOutPosts:', e);
@@ -194,11 +198,28 @@ export class PostManager {
         // After each execution, check if all executions for this post are settled
         // and update the parent Post status accordingly (async queue path)
         await this.settlePostStatus(exec.postId);
+        await this.publishPostChange(exec.postId);
       }
     } catch (e) {
       console.error('[PostManager] Error in processExecutions:', e);
     } finally {
       this.isExecuting = false;
+    }
+  }
+
+  /** Tell the post owner's open pages that a post's publishing state moved. */
+  private async publishPostChange(postId: string) {
+    if (!this.liveEvents) return;
+    try {
+      const post = await this.prisma.post.findUnique({
+        where: { id: postId },
+        select: { userId: true, campaignId: true },
+      });
+      if (post) {
+        this.liveEvents.publishChange(post.userId, { resource: 'post', action: 'updated', id: postId, campaignId: post.campaignId });
+      }
+    } catch (e) {
+      console.warn(`[PostManager] Failed to publish change for post ${postId}:`, e);
     }
   }
 

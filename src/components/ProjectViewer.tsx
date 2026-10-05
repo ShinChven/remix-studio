@@ -24,11 +24,13 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { summarizeComfyPrompt } from '../lib/comfyWorkflow';
+import { LIVE_CLIENT_ID } from '../lib/live';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { ConfirmModal } from './ConfirmModal';
 import { UniversalMediaPicker, UniversalPickedItem } from './UniversalMediaPicker';
 
@@ -92,6 +94,13 @@ const RIGHT_PANEL_REFRESH_EVENT_REASONS = new Set([
   'album.restored',
   'album.moved',
   'album.tagged',
+]);
+// Changes to the project's own settings or workflow. This view saves its own
+// edits as it makes them, so only changes from elsewhere (another tab, the
+// assistant, an MCP client) are refetched.
+const PROJECT_DEFINITION_EVENT_REASONS = new Set([
+  'project.updated',
+  'workflow.updated',
 ]);
 
 function buildJobFilename(filenameParts: string[], suffixId: string): string {
@@ -321,6 +330,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const completedLoadedKeyRef = useRef<string | null>(null);
   const completedFetchedAtRef = useRef<number>(0);
   const runProjectLiveRefreshRef = useRef<() => void>(() => {});
+  const projectDefinitionRefreshTimerRef = useRef<number | null>(null);
+  const projectDefinitionFetchTokenRef = useRef(0);
+  const refreshProjectDefinitionRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const jobsFetchToken = ++jobsFetchTokenRef.current;
@@ -898,6 +910,43 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     };
   }, [runProjectLiveRefresh]);
 
+  /** Reload the project's settings and workflow after they changed elsewhere. */
+  const refreshProjectDefinition = useCallback(async () => {
+    const projectId = localProject.id;
+    const fetchToken = ++projectDefinitionFetchTokenRef.current;
+    try {
+      const [freshProject, workflow] = await Promise.all([
+        fetchProject(projectId),
+        fetchProjectWorkflow(projectId),
+      ]);
+      if (projectDefinitionFetchTokenRef.current !== fetchToken || projectRef.current.id !== projectId) return;
+      setLocalProject({ ...freshProject, workflow });
+    } catch (error) {
+      console.error('Failed to refresh project settings:', error);
+      return;
+    }
+    // The workflow may now point at libraries this view has not loaded.
+    void refreshWorkflowLibraries().catch(() => {});
+  }, [localProject.id, refreshWorkflowLibraries]);
+
+  useEffect(() => {
+    refreshProjectDefinitionRef.current = () => {
+      void refreshProjectDefinition();
+    };
+  }, [refreshProjectDefinition]);
+
+  const scheduleProjectDefinitionRefresh = useCallback(() => {
+    if (projectDefinitionRefreshTimerRef.current !== null) return;
+    projectDefinitionRefreshTimerRef.current = window.setTimeout(() => {
+      projectDefinitionRefreshTimerRef.current = null;
+      refreshProjectDefinitionRef.current();
+    }, LIVE_REFRESH_DEBOUNCE_MS);
+  }, []);
+
+  // Libraries the workflow draws from may gain or lose items elsewhere, which
+  // changes the combination count and the library pickers.
+  useLiveRefresh((event) => event.resource === 'library', () => refreshWorkflowLibraries());
+
   useEffect(() => {
     if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
 
@@ -931,6 +980,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         try {
           const data = JSON.parse(event.data);
           if (data?.type !== 'project.changed' || data.projectId !== localProject.id) return;
+          if (PROJECT_DEFINITION_EVENT_REASONS.has(data.reason)) {
+            if (data.origin !== LIVE_CLIENT_ID) scheduleProjectDefinitionRefresh();
+            return;
+          }
           if (!RIGHT_PANEL_REFRESH_EVENT_REASONS.has(data.reason)) return;
           scheduleProjectLiveRefresh();
         } catch (error) {
@@ -964,6 +1017,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       }
       liveRefreshDueAtRef.current = 0;
       liveRefreshQueuedRef.current = false;
+      if (projectDefinitionRefreshTimerRef.current !== null) {
+        window.clearTimeout(projectDefinitionRefreshTimerRef.current);
+        projectDefinitionRefreshTimerRef.current = null;
+      }
       if (socket) {
         socket.onopen = null;
         socket.onmessage = null;
@@ -972,7 +1029,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         socket.close();
       }
     };
-  }, [localProject.id, scheduleProjectLiveRefresh]);
+  }, [localProject.id, scheduleProjectLiveRefresh, scheduleProjectDefinitionRefresh]);
 
   useEffect(() => {
     if (!isProcessing || isProjectLiveConnected) return;

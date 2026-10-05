@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { S3Storage } from '../storage/s3-storage';
+import type { LiveEventPublisher } from '../live/user-live-hub';
 import { collectPostMediaStorageKeys, deleteStorageKeys, safeStorageKeyPart } from '../utils/post-media-cleanup';
 
 async function presignStorageValue(storage: S3Storage, value?: string | null): Promise<string | null | undefined> {
@@ -29,7 +30,7 @@ async function signPostMediaUrls(storage: S3Storage, post: any) {
   };
 }
 
-export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) {
+export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage, liveEvents?: LiveEventPublisher) {
   const campaignsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
 
   // Must be registered BEFORE /api/campaigns/:id to avoid being caught by the param route
@@ -381,6 +382,7 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
         },
         include: { socialAccounts: true }
       });
+      liveEvents?.publishChange(user.userId, { resource: 'campaign', action: 'created', id: campaign.id });
       return c.json(campaign);
     } catch (error) {
       console.error('Failed to create campaign:', error);
@@ -461,6 +463,7 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
         },
         include: { socialAccounts: true }
       });
+      liveEvents?.publishChange(user.userId, { resource: 'campaign', action: 'updated', id });
 
       return c.json(updated);
     } catch (error) {
@@ -511,6 +514,7 @@ export function createCampaignsRouter(prisma: PrismaClient, storage: S3Storage) 
       await prisma.campaign.delete({
         where: { id },
       });
+      liveEvents?.publishChange(user.userId, { resource: 'campaign', action: 'deleted', id });
 
       return c.json({ success: true });
     } catch (error) {

@@ -1,12 +1,15 @@
 import type { IncomingMessage, Server as HttpServer } from 'node:http';
-import type { Duplex } from 'node:stream';
 import { WebSocket, WebSocketServer } from 'ws';
-import { verifyToken, type JwtPayload } from '../auth/auth';
 import type { UserRepository } from '../auth/user-repository';
 import type { IRepository } from '../db/repository';
-
-const HEARTBEAT_INTERVAL_MS = 30_000;
-const AUTH_RECHECK_INTERVAL_MS = 5 * 60_000;
+import { currentLiveOrigin } from './live-origin';
+import {
+  authenticateLiveRequest,
+  HEARTBEAT_INTERVAL_MS,
+  sweepLiveSockets,
+  writeUpgradeError,
+  type LiveSession,
+} from './live-socket';
 
 export type ProjectLiveEventReason =
   | 'connected'
@@ -34,36 +37,16 @@ export interface ProjectLiveEvent {
   reason: ProjectLiveEventReason;
   jobId?: string;
   itemId?: string;
+  /** Live client id of the browser tab whose request caused the change. */
+  origin?: string;
   at: number;
 }
 
 export interface ProjectEventPublisher {
-  notifyProjectChanged(event: Omit<ProjectLiveEvent, 'type' | 'at'> & { userId: string }): void;
+  notifyProjectChanged(event: Omit<ProjectLiveEvent, 'type' | 'at' | 'origin'> & { userId: string }): void;
 }
 
-type SocketMeta = {
-  userId: string;
-  projectId: string;
-  sessionVersion: number;
-  isAlive: boolean;
-  lastAuthCheckAt: number;
-  expiresAt?: number;
-};
-
-function parseCookies(header: string | undefined): Record<string, string> {
-  if (!header) return {};
-  return Object.fromEntries(
-    header
-      .split(';')
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((part) => {
-        const index = part.indexOf('=');
-        if (index === -1) return [part, ''];
-        return [part.slice(0, index), decodeURIComponent(part.slice(index + 1))];
-      })
-  );
-}
+type SocketMeta = LiveSession & { projectId: string };
 
 function getProjectIdFromUrl(url: string | undefined): string | null {
   if (!url) return null;
@@ -74,11 +57,6 @@ function getProjectIdFromUrl(url: string | undefined): string | null {
   } catch {
     return null;
   }
-}
-
-function writeUpgradeError(socket: Duplex, status: number, message: string) {
-  socket.write(`HTTP/1.1 ${status} ${message}\r\nConnection: close\r\n\r\n`);
-  socket.destroy();
 }
 
 export class ProjectLiveHub implements ProjectEventPublisher {
@@ -150,7 +128,7 @@ export class ProjectLiveHub implements ProjectEventPublisher {
     }
   }
 
-  notifyProjectChanged(event: Omit<ProjectLiveEvent, 'type' | 'at'> & { userId: string }) {
+  notifyProjectChanged(event: Omit<ProjectLiveEvent, 'type' | 'at' | 'origin'> & { userId: string }) {
     const { userId, ...payload } = event;
     const sockets = this.socketsByProject.get(this.subscriptionKey(userId, event.projectId));
     if (!sockets || sockets.size === 0) return;
@@ -158,6 +136,7 @@ export class ProjectLiveHub implements ProjectEventPublisher {
     const message = JSON.stringify({
       type: 'project.changed',
       ...payload,
+      origin: currentLiveOrigin(),
       at: Date.now(),
     } satisfies ProjectLiveEvent);
 
@@ -169,72 +148,17 @@ export class ProjectLiveHub implements ProjectEventPublisher {
   }
 
   private async authorize(request: IncomingMessage, projectId: string): Promise<SocketMeta | null> {
-    const token = parseCookies(request.headers.cookie).token;
-    if (!token) return null;
+    const session = await authenticateLiveRequest(request, this.userRepository);
+    if (!session) return null;
 
-    let payload: JwtPayload & { exp?: number };
-    try {
-      payload = verifyToken(token) as JwtPayload & { exp?: number };
-    } catch {
-      return null;
-    }
-
-    const user = await this.userRepository.findById(payload.userId);
-    if (!user || user.status === 'disabled') return null;
-    if ((user.sessionVersion ?? 0) !== payload.sessionVersion) return null;
-
-    const project = await this.repository.getProject(payload.userId, projectId);
+    const project = await this.repository.getProject(session.userId, projectId);
     if (!project) return null;
 
-    return {
-      userId: payload.userId,
-      projectId,
-      sessionVersion: payload.sessionVersion,
-      isAlive: true,
-      lastAuthCheckAt: Date.now(),
-      expiresAt: payload.exp ? payload.exp * 1000 : undefined,
-    };
+    return { ...session, projectId };
   }
 
-  private async heartbeat() {
-    const now = Date.now();
-    for (const ws of this.wss.clients) {
-      const meta = this.socketMeta.get(ws);
-      if (!meta) {
-        ws.terminate();
-        continue;
-      }
-
-      if (!meta.isAlive) {
-        ws.terminate();
-        this.removeSocket(ws);
-        continue;
-      }
-
-      if (meta.expiresAt && now >= meta.expiresAt) {
-        ws.close(4001, 'Session expired');
-        this.removeSocket(ws);
-        continue;
-      }
-
-      if (now - meta.lastAuthCheckAt >= AUTH_RECHECK_INTERVAL_MS) {
-        meta.lastAuthCheckAt = now;
-        const stillAuthorized = await this.isStillAuthorized(meta);
-        if (!stillAuthorized) {
-          ws.close(4001, 'Session expired');
-          this.removeSocket(ws);
-          continue;
-        }
-      }
-
-      meta.isAlive = false;
-      ws.ping();
-    }
-  }
-
-  private async isStillAuthorized(meta: SocketMeta): Promise<boolean> {
-    const user = await this.userRepository.findById(meta.userId);
-    return !!user && user.status !== 'disabled' && (user.sessionVersion ?? 0) === meta.sessionVersion;
+  private heartbeat() {
+    return sweepLiveSockets(this.wss.clients, this.socketMeta, this.userRepository, (ws) => this.removeSocket(ws));
   }
 
   private removeSocket(ws: WebSocket) {

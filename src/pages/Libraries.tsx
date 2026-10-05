@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library } from '../types';
@@ -11,6 +11,7 @@ import { PageHeader } from '../components/PageHeader';
 import { LibraryCard } from '../components/EntityCards';
 import { toast } from 'sonner';
 import { PageNav } from '../components/PageNav';
+import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 const MAX_PINNED_LIBRARIES = 6;
 
@@ -32,27 +33,35 @@ export function Libraries() {
   const [searchInput, setSearchInput] = useState(q);
 
   const navigate = useNavigate();
+  // Only the newest load may write the page, so a slow one can't overwrite a
+  // later page, search or live refresh.
+  const loadSeqRef = useRef(0);
+
+  /** Load the current page; `silent` keeps the grid in place instead of showing the spinner. */
+  const loadLibraries = async (silent = false) => {
+    const seq = ++loadSeqRef.current;
+    if (!silent) setIsLoading(true);
+    try {
+      const result = await fetchLibraries(page, 24, q);
+      if (seq !== loadSeqRef.current) return;
+      setLibraries(result.items);
+      setTotal(result.total);
+      setPages(result.pages);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (seq === loadSeqRef.current) setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const result = await fetchLibraries(page, 24, q);
-        if (mounted) {
-          setLibraries(result.items);
-          setTotal(result.total);
-          setPages(result.pages);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (mounted) setIsLoading(false);
-      }
-    };
-    load();
-    return () => { mounted = false; };
+    void loadLibraries();
+    // Invalidate the in-flight load when the page unmounts.
+    return () => { loadSeqRef.current++; };
   }, [page, q]);
+
+  // Libraries created, edited or filled elsewhere (another tab, an MCP agent).
+  useLiveRefresh((event) => event.resource === 'library', () => loadLibraries(true));
 
   const addLibrary = () => navigate('/library/new');
 

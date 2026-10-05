@@ -157,7 +157,11 @@ Use orphan cleanup when project usage is unexpectedly high after many uploads, r
 
 An authenticated WebSocket project hub publishes job, album, trash, and project changes. The viewer refreshes the relevant data when events arrive and falls back to periodic refresh while work is processing if a live connection is unavailable.
 
+Changes to the project's own settings and workflow — made in another tab, by the [assistant](/concepts/assistant) or by an [MCP](/integrations/mcp) client with `update_project` — are reloaded into an open project page as well. The page saves its own edits as you make them, so it skips reloading changes it made itself.
+
 The connection validates the user, account status, project ownership, and session version. It does not expose another user's project events.
+
+The projects list, the libraries list and pages, the campaigns list and pages, the post page, Scheduled Posts, Campaign History and the dashboard refresh the same way, over one per-user change feed at `/api/live` that each browser tab opens once. It carries only which record changed, never its content, so a page refetches through the normal API; every event is published for a single user, so a connection only ever hears about that user's records. Hidden tabs wait until they are shown again, and a page that lost its connection reloads once it reconnects, since it may have missed changes in between.
 
 ## Related
 

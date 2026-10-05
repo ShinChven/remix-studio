@@ -68,6 +68,10 @@ Rules the server enforces:
 
 These tools are offered to external MCP clients only. The in-app assistant has no way to send file bytes, so it does not see them.
 
+### Live page updates
+
+Open Remix Studio pages show what an MCP client changes without a reload: a library the client creates appears in the libraries list, prompts it adds appear on the library page, a workflow it replaces with `update_project` appears in the open project, and posts it creates or edits appear on the campaign and post pages. Each signed-in browser tab keeps one change feed for its user; see [live updates](/concepts/projects#live-updates).
+
 ### Record links
 
 Tools return absolute Remix Studio links next to the raw ids, so a client can show the user where a record lives instead of quoting an id:

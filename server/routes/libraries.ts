@@ -8,6 +8,8 @@ import { UserRepository } from '../auth/user-repository';
 import { checkStorageLimit } from '../utils/storage-check';
 import { formatError } from '../utils/error-handler';
 import { ExportManager } from '../queue/export-manager';
+import type { LiveEventPublisher } from '../live/user-live-hub';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 import type { AlbumItem, LibraryItem, Library } from '../../src/types';
 
 type Variables = { user: JwtPayload };
@@ -135,7 +137,15 @@ async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
   return { ...lib, items: await signLibraryImages(lib.items, storage, lib.type) };
 }
 
-export function createLibraryRouter(repository: IRepository, storage: S3Storage, userRepository: UserRepository, exportStorage: S3Storage, exportManager: ExportManager) {
+export function createLibraryRouter(
+  repository: IRepository,
+  storage: S3Storage,
+  userRepository: UserRepository,
+  exportStorage: S3Storage,
+  exportManager: ExportManager,
+  liveEvents?: LiveEventPublisher,
+  projectEvents?: ProjectEventPublisher,
+) {
   const router = new Hono<{ Variables: Variables }>();
 
   function isNotFoundError(error: any) {
@@ -196,6 +206,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       if (description && description.length > 2000) return c.json({ error: 'Description too long' }, 400);
 
       await repository.createLibrary(user.userId, { id, name, description: description || undefined, type });
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'created', id });
       return c.json({ success: true }, 201);
     } catch (e) {
       console.error('[POST /api/libraries]', e);
@@ -217,6 +228,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       if (typeof body?.type === 'string') updates.type = body.type.trim();
 
       await repository.updateLibrary(user.userId, c.req.param('id'), updates);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: c.req.param('id') });
       return c.json({ success: true });
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
@@ -267,6 +279,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
         );
         if (filtered.length !== workflow.length) {
           await repository.updateProject(user.userId, project.id, { workflow: filtered });
+          projectEvents?.notifyProjectChanged({ userId: user.userId, projectId: project.id, reason: 'workflow.updated' });
         }
       }
       return c.json({ success: true });
@@ -297,6 +310,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       }
 
       await repository.setLibraryPinned(user.userId, libraryId, pinned);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: libraryId });
       return c.json({ success: true });
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
@@ -309,6 +323,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       await repository.deleteLibrary(user.userId, c.req.param('id'));
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'deleted', id: c.req.param('id') });
       return c.json({ success: true });
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
@@ -361,6 +376,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       if (duplicatedItems.length > 0) {
         await repository.createLibraryItemsBatch(user.userId, duplicatedLibraryId, duplicatedItems);
       }
+
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'created', id: duplicatedLibraryId });
 
       const duplicatedLibrary = await repository.getLibrary(user.userId, duplicatedLibraryId);
       if (!duplicatedLibrary) {
@@ -500,6 +517,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       }
 
       await repository.createLibraryItem(user.userId, c.req.param('libId'), item);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: c.req.param('libId') });
       return c.json({ success: true }, 201);
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
@@ -536,6 +554,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       }
 
       await repository.createLibraryItemsBatch(user.userId, c.req.param('libId'), items);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: c.req.param('libId') });
       return c.json({ success: true }, 201);
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
@@ -622,6 +641,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       );
 
       await repository.createLibraryItemsBatch(user.userId, destinationLibraryId, clonedItems);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: destinationLibraryId });
       return c.json({ success: true, count: clonedItems.length }, 201);
     } catch (e: any) {
       console.error('[POST /api/libraries/:libId/items/copy]', e);
@@ -670,6 +690,8 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
         await repository.createLibraryItem(user.userId, destinationLibraryId, item);
       }
 
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: libId });
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: destinationLibraryId });
       return c.json({ success: true, count: itemsToMove.length });
     } catch (e: any) {
       console.error('[POST /api/libraries/:libId/items/move]', e);
@@ -689,6 +711,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
       if (Array.isArray(body?.tags)) updates.tags = body.tags;
 
       await repository.updateLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'), updates);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: c.req.param('libId') });
       return c.json({ success: true });
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
@@ -701,6 +724,7 @@ export function createLibraryRouter(repository: IRepository, storage: S3Storage,
     try {
       const user = c.get('user') as JwtPayload;
       await repository.deleteLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'));
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: c.req.param('libId') });
       return c.json({ success: true });
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);

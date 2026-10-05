@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import sharp from 'sharp';
+import type { LiveEventPublisher } from '../live/user-live-hub';
 
 export class MediaProcessingPoller {
   private timer: NodeJS.Timeout | null = null;
@@ -7,7 +8,8 @@ export class MediaProcessingPoller {
 
   constructor(
     private prisma: PrismaClient,
-    private storage: any // Replace with actual IS3Storage type if available
+    private storage: any, // Replace with actual IS3Storage type if available
+    private liveEvents?: LiveEventPublisher
   ) {}
 
   start(intervalMs = 5000) {
@@ -45,11 +47,24 @@ export class MediaProcessingPoller {
       });
 
       await this.processMedia(media);
+      await this.publishPostChange(media.postId);
 
     } catch (e) {
       console.error('[MediaProcessingPoller] Error polling:', e);
     } finally {
       this.isProcessing = false;
+    }
+  }
+
+  /** Tell the post owner's open pages that the media finished (or failed) processing. */
+  private async publishPostChange(postId: string) {
+    if (!this.liveEvents) return;
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { userId: true, campaignId: true },
+    });
+    if (post) {
+      this.liveEvents.publishChange(post.userId, { resource: 'post', action: 'updated', id: postId, campaignId: post.campaignId });
     }
   }
 

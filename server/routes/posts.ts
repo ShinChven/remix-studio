@@ -14,6 +14,7 @@ import { UserRepository } from '../auth/user-repository';
 import { generateOptimized, generateThumbnail } from '../utils/image-utils';
 import { extractFirstFramePng } from '../utils/video-utils';
 import { collectPostMediaStorageKeys, deleteStorageKeys } from '../utils/post-media-cleanup';
+import type { LiveEventPublisher } from '../live/user-live-hub';
 import { getTextModelsForProvider } from '../../src/types';
 import {
   bufferFromDataUrl,
@@ -189,8 +190,17 @@ export function createPostsRouter(
   exportStorage: S3Storage,
   repository: IRepository,
   userRepository: UserRepository,
+  liveEvents?: LiveEventPublisher,
 ) {
   const postsRouter = new Hono<{ Variables: { user: JwtPayload } }>();
+
+  /** Tell the user's open pages that posts changed. */
+  const publishPostChange = (
+    userId: string,
+    change: { action?: 'created' | 'updated' | 'deleted'; id?: string; campaignId?: string } = {},
+  ) => {
+    liveEvents?.publishChange(userId, { resource: 'post', action: 'updated', ...change });
+  };
   const batchGenerateTextTasks = new Map<string, BatchGenerateTextTask>();
   const pendingBatchGenerateTextTaskIds: string[] = [];
   let activeBatchGenerateTextTasks = 0;
@@ -328,6 +338,7 @@ export function createPostsRouter(
             where: { id: post.id },
             data: { textContent: text },
           });
+          publishPostChange(task.userId, { id: post.id, campaignId: post.campaignId });
           result.status = 'completed';
           result.ok = true;
           result.text = text;
@@ -464,6 +475,7 @@ export function createPostsRouter(
             if (!resolved) throw new Error('Media item not found or unsupported');
             created = await createImportMediaPost(task.userId, task.campaignId, safeCampaignId, resolved, task.watermarkSetting, job.content);
           }
+          publishPostChange(task.userId, { action: 'created', id: created.postId, campaignId: task.campaignId });
           result.status = 'completed';
           result.ok = true;
           result.postId = created.postId;
@@ -673,6 +685,7 @@ export function createPostsRouter(
           status: data.status,
         },
       });
+      publishPostChange(user.userId, { action: 'created', id: post.id, campaignId: post.campaignId });
       return c.json(await signPostMediaUrls(storage, post));
     } catch (error) {
       console.error('Failed to create post:', error);
@@ -904,13 +917,17 @@ export function createPostsRouter(
       const sources = await resolveImportSources(user.userId, data.sources);
       const created: Array<{ postId: string; mediaId: string }> = [];
 
-      for (const item of sources) {
-        try {
-          created.push(await createImportMediaPost(user.userId, campaignId, safeCampaignId, item, watermarkSetting));
-        } catch (error: any) {
-          if (error instanceof StorageLimitError) return c.json({ error: error.message }, 403);
-          throw error;
+      try {
+        for (const item of sources) {
+          try {
+            created.push(await createImportMediaPost(user.userId, campaignId, safeCampaignId, item, watermarkSetting));
+          } catch (error: any) {
+            if (error instanceof StorageLimitError) return c.json({ error: error.message }, 403);
+            throw error;
+          }
         }
+      } finally {
+        if (created.length > 0) publishPostChange(user.userId, { action: 'created', campaignId });
       }
 
       return c.json({ created, count: created.length });
@@ -955,13 +972,17 @@ export function createPostsRouter(
           : await findPostWatermarkSetting(user.userId);
         const created: Array<{ postId: string; mediaId: string }> = [];
 
-        for (const file of data.files) {
-          try {
-            created.push(await createUploadMediaPost(user.userId, campaignId, safeCampaignId, file, watermarkSetting));
-          } catch (error: any) {
-            if (error instanceof StorageLimitError) return c.json({ error: error.message }, 403);
-            throw error;
+        try {
+          for (const file of data.files) {
+            try {
+              created.push(await createUploadMediaPost(user.userId, campaignId, safeCampaignId, file, watermarkSetting));
+            } catch (error: any) {
+              if (error instanceof StorageLimitError) return c.json({ error: error.message }, 403);
+              throw error;
+            }
           }
+        } finally {
+          if (created.length > 0) publishPostChange(user.userId, { action: 'created', campaignId });
         }
 
         return c.json({ created, count: created.length });
@@ -1250,6 +1271,7 @@ export function createPostsRouter(
       await deleteStorageKeys(storage, keys, `[PostDelete:${post.id}]`);
 
       await prisma.post.delete({ where: { id: post.id } });
+      publishPostChange(user.userId, { action: 'deleted', id: post.id, campaignId: post.campaignId });
       return c.json({ success: true });
     } catch (error) {
       console.error('Failed to delete post:', error);
@@ -1287,6 +1309,7 @@ export function createPostsRouter(
           ...(data.status !== undefined && { status: data.status }),
         }
       });
+      publishPostChange(user.userId, { id, campaignId: updated.campaignId });
 
       return c.json(updated);
     } catch (error) {
@@ -1339,6 +1362,7 @@ export function createPostsRouter(
           status: 'pending' // MediaProcessingPoller will pick this up
         }
       });
+      publishPostChange(user.userId, { id: postId, campaignId: post.campaignId });
 
       return c.json(media);
     } catch (error) {
@@ -1371,6 +1395,7 @@ export function createPostsRouter(
       await prisma.postMedia.delete({
         where: { id: mediaId }
       });
+      publishPostChange(user.userId, { id: media.postId, campaignId: media.post.campaignId });
 
       return c.json({ success: true });
     } catch (error) {
@@ -1410,6 +1435,8 @@ export function createPostsRouter(
           prisma.postMedia.update({ where: { id }, data: { position: index } }),
         ),
       );
+
+      publishPostChange(user.userId, { id: postId, campaignId: post.campaignId });
 
       const updated = await prisma.postMedia.findMany({
         where: { postId },
@@ -1472,6 +1499,7 @@ export function createPostsRouter(
         updated++;
       }
 
+      if (updated > 0) publishPostChange(user.userId);
       return c.json({ updated, skipped });
     } catch (error) {
       console.error('Failed to batch-schedule posts:', error);
@@ -1511,6 +1539,7 @@ export function createPostsRouter(
         updated++;
       }
 
+      if (updated > 0) publishPostChange(user.userId);
       return c.json({ updated, skipped });
     } catch (error) {
       console.error('Failed to batch-unschedule posts:', error);
@@ -1546,6 +1575,7 @@ export function createPostsRouter(
         })
         : { count: 0 };
 
+      if (result.count > 0) publishPostChange(user.userId);
       return c.json({ updated: result.count, skipped });
     } catch (error) {
       console.error('Failed to batch-set post text:', error);
@@ -1566,6 +1596,7 @@ export function createPostsRouter(
       }
       // Synchronously fan out and execute — wait for real results
       const { results } = await postManager.fanOutAndExecute(id);
+      publishPostChange(user.userId, { id, campaignId: post.campaignId });
 
       const allOk = results.every((r) => r.ok);
       const anyOk = results.some((r) => r.ok);

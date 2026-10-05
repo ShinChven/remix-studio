@@ -8,6 +8,7 @@ import type { S3Storage } from '../storage/s3-storage';
 import type { QueueManager } from '../queue/queue-manager';
 import type { ExportManager, ExportTask } from '../queue/export-manager';
 import type { ProjectEventPublisher } from '../live/project-live-hub';
+import type { LiveEventPublisher, LiveResourceChange } from '../live/user-live-hub';
 import { checkStorageLimit } from '../utils/storage-check';
 import {
   ProjectExportError,
@@ -131,6 +132,8 @@ export interface ToolDependencies {
   exportManager: ExportManager;
   /** Optional live-update hub so open project views refresh after job changes. */
   projectEvents?: ProjectEventPublisher;
+  /** Optional per-user change feed so open library, campaign and post pages refresh. */
+  liveEvents?: LiveEventPublisher;
   /**
    * Public origin used to build browser links (library/project/campaign URLs)
    * returned by tools. Only consulted when `APP_URL` is not configured.
@@ -593,13 +596,18 @@ function toToolWorkflowItem(item: {
 }
 
 export function createAssistantToolDefinitions(deps: ToolDependencies): AssistantToolDefinition[] {
-  const { repository, userRepository, prisma, providerRepository, storage, exportStorage, exportManager, queueManager, projectEvents } = deps;
+  const { repository, userRepository, prisma, providerRepository, storage, exportStorage, exportManager, queueManager, projectEvents, liveEvents } = deps;
   const exportDeps = { repository, userRepository, storage, exportStorage, exportManager };
   const stagedUploadDeps = { prisma, storage, exportStorage, repository, userRepository };
   const campaignMedia = createCampaignMediaService(stagedUploadDeps);
   const appUrls = createAppUrlBuilder(deps.appBaseUrl);
 
   const tools: AssistantToolDefinition[] = [];
+
+  /** Tell the user's open pages that a library, campaign or post changed. */
+  function publishChange(userId: string, change: LiveResourceChange) {
+    liveEvents?.publishChange(userId, change);
+  }
 
   /** Draft / queue / done / album tallies for one project, shared by the job tools. */
   async function readProjectCounts(userId: string, projectId: string) {
@@ -826,6 +834,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       const id = crypto.randomUUID();
       const nextDescription = description?.trim() || undefined;
       await repository.createLibrary(userId, { id, name, description: nextDescription, type });
+      publishChange(userId, { resource: 'library', action: 'created', id });
       return {
         text: JSON.stringify({ id, name, description: nextDescription ?? null, type, url: appUrls.library(id), message: 'Library created successfully' }),
       };
@@ -861,6 +870,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         ...(nextName ? { name: nextName } : {}),
         ...(hasDescription ? { description: description.trim() || null } : {}),
       });
+      publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
       return {
         text: JSON.stringify({
           library_id,
@@ -901,6 +911,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       }
       const id = crypto.randomUUID();
       await repository.createLibraryItem(userId, library_id, { id, content, title, tags });
+      publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
       return {
         text: JSON.stringify({ id, library_id, libraryUrl: appUrls.library(library_id), name: library.name, title, tags, message: 'Prompt created successfully' }),
       };
@@ -938,6 +949,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         tags: item.tags,
       }));
       await repository.createLibraryItemsBatch(userId, library_id, libraryItems);
+      publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
       // libraryTotal lets the model compare progress against the requested
       // count and decide whether another batch is still owed.
       const libraryTotal = (library.items?.length ?? 0) + libraryItems.length;
@@ -1002,6 +1014,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
 
       try {
         await repository.updateLibraryItem(userId, library_id, item_id, updates);
+        publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
         return {
           text: JSON.stringify({
             item_id,
@@ -1051,6 +1064,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
 
       try {
         await repository.deleteLibraryItem(userId, library_id, item_id);
+        publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
         return {
           text: JSON.stringify({
             item_id,
@@ -1361,6 +1375,7 @@ Exactly one operation per call: "add" leaves existing tags alone, "remove" takes
         aspectRatios: aspect_ratios,
       });
       const tagCounts = await repository.getAlbumTagCounts(userId, project_id);
+      if (updated > 0) projectEvents?.notifyProjectChanged({ userId, projectId: project_id, reason: 'album.tagged' });
 
       const response = {
         projectId: project.id,
@@ -1727,6 +1742,7 @@ Staged files are kept for 24 hours and count toward the storage quota until then
         });
       }
       await repository.createLibraryItemsBatch(userId, library_id, items);
+      publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
 
       const libraryTotal = (library.items?.length ?? 0) + items.length;
       const payload = {
@@ -1807,6 +1823,8 @@ Staged files are kept for 24 hours and count toward the storage quota until then
           if (error instanceof StorageLimitError) break;
         }
       }
+
+      if (created.length > 0) publishChange(userId, { resource: 'post', action: 'created', campaignId });
 
       const payload = {
         campaignId,
@@ -2411,6 +2429,7 @@ Recommended workflow:
       };
 
       await repository.createProject(userId, project);
+      projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'project.created' });
 
       return {
         text: JSON.stringify({
@@ -2692,6 +2711,11 @@ Important workflow behavior:
       }
 
       await repository.updateProject(userId, projectId, updates);
+      projectEvents?.notifyProjectChanged({
+        userId,
+        projectId,
+        reason: updates.workflow ? 'workflow.updated' : 'project.updated',
+      });
       const updatedName = name ?? existingProject.name;
 
       return {
@@ -3208,6 +3232,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
 
       try {
         await repository.updateLibraryItem(userId, library_id, item_id, updates);
+        publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
         return {
           text: JSON.stringify({
             item_id,
@@ -3273,6 +3298,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
 
       const successCount = results.filter((r) => r.status === 'updated').length;
       const errorCount = results.filter((r) => r.status === 'error').length;
+      if (successCount > 0) publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
 
       return {
         text: JSON.stringify({
@@ -3335,6 +3361,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
+      publishChange(userId, { resource: 'campaign', action: 'created', id: campaign.id });
       const payload = { ...campaign, url: appUrls.campaign(campaign.id) };
       return { text: JSON.stringify(payload), structuredContent: payload };
     }
@@ -3389,6 +3416,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         },
         include: { socialAccounts: { select: SAFE_SOCIAL_ACCOUNT_SELECT } }
       });
+      publishChange(userId, { resource: 'campaign', action: 'updated', id: updated.id });
       const payload = { ...updated, url: appUrls.campaign(updated.id) };
       return { text: JSON.stringify(payload), structuredContent: payload };
     }
@@ -3425,6 +3453,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
           status: nextStatus,
         }
       });
+      publishChange(userId, { resource: 'post', action: 'created', id: post.id, campaignId: post.campaignId });
       const payload = {
         ...post,
         url: appUrls.campaignPost(post.campaignId, post.id),
@@ -3608,6 +3637,7 @@ Each entry carries the post's "url", its status and schedule, a short "textPrevi
           ...(status !== undefined && { status })
         }
       });
+      publishChange(userId, { resource: 'post', action: 'updated', id: updated.id, campaignId: updated.campaignId });
       const payload = {
         ...updated,
         url: appUrls.campaignPost(updated.campaignId, updated.id),
@@ -3645,6 +3675,7 @@ Each entry carries the post's "url", its status and schedule, a short "textPrevi
           campaign: { select: { id: true, name: true } },
         },
       });
+      publishChange(userId, { resource: 'post', action: 'updated', id: updated.id, campaignId: updated.campaignId });
       const payload = {
         postId: updated.id,
         url: appUrls.campaignPost(updated.campaignId, updated.id),
@@ -3724,6 +3755,7 @@ Each entry carries the post's "url", its status and schedule, a short "textPrevi
           status: 'pending'
         }
       });
+      publishChange(userId, { resource: 'post', action: 'updated', id: post.id, campaignId: post.campaignId });
       const payload = {
         ...media,
         campaignId: post.campaignId,
@@ -3760,6 +3792,7 @@ Each entry carries the post's "url", its status and schedule, a short "textPrevi
           status: 'scheduled'
         }
       });
+      publishChange(userId, { resource: 'post', action: 'updated', id: updated.id, campaignId: updated.campaignId });
       const payload = {
         ...updated,
         url: appUrls.campaignPost(updated.campaignId, updated.id),

@@ -18,6 +18,7 @@ import { Readable } from 'node:stream';
 import yauzl from 'yauzl';
 import { S3Storage } from '../storage/s3-storage';
 import { IRepository } from '../db/repository';
+import type { ProjectEventPublisher } from '../live/project-live-hub';
 import { UserRepository } from '../auth/user-repository';
 import { getUserStorageUsage } from '../utils/storage-check';
 import type { AlbumItem, Project, WorkflowItem } from '../../src/types';
@@ -134,7 +135,8 @@ export class ProjectImportManager {
     private repository: IRepository,
     private imageStorage: S3Storage,
     private exportStorage: S3Storage,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
+    private projectEvents?: ProjectEventPublisher
   ) {}
 
   // ─── Public API ───────────────────────────────────────────────────────────
@@ -343,6 +345,8 @@ export class ProjectImportManager {
       for (const item of album) {
         await this.repository.addAlbumItem(userId, projectId, item);
       }
+
+      this.projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'project.created' });
 
       await this.updateTask(userId, taskId, {
         status: 'completed',
