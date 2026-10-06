@@ -40,6 +40,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Changed**
 
+- **Nano Banana 2.1 on Google AI and Vertex AI** — Google's newest image model replaces nano banana 2, which Google stops serving on October 29, 2026. Projects set to nano banana 2 now generate with nano banana 2.1, with nothing to change on your side.
 - **Qwen Image 3 replaces Qwen Image 2 on RunningHub** — **Qwen Image 3 Pro** and **Qwen Image 3** take the place of Qwen Image 2 Pro, and projects set to the old model move to Qwen Image 3 Pro. 21:9 is no longer offered; projects using it switch to 16:9.
 - **Solid cards and dialogs** — Cards, panels, menus and dialogs are opaque now instead of translucent, so what is behind them no longer shows through their text.
 

@@ -41,7 +41,7 @@
   "apiKeyCheck": {
     "loading": "Loading...",
     "title": "API Key Required",
-    "description": "This application uses Nano Banana 2 (Gemini 3.1 Flash Image) which requires a paid Google Cloud API key.",
+    "description": "This application uses Nano Banana 2.1 which requires a paid Google Cloud API key.",
     "learnMore": "Learn more about billing",
     "selectApiKey": "Select API Key"
   },
