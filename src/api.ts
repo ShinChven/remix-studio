@@ -2211,6 +2211,50 @@ export async function updatePostWatermarkSettings(settings: Partial<PostWatermar
   return handleResponse<PostWatermarkSettings>(res, 'Failed to update watermark settings');
 }
 
+/** An album or library image to watermark on its own. */
+export type QuickWatermarkTarget = CampaignMediaImportSource;
+
+export interface QuickWatermarkSource {
+  /** Name of the project or library the image belongs to. */
+  containerName: string;
+  filename: string;
+  /** Name the watermarked JPEG downloads under. */
+  downloadName: string;
+  rawUrl?: string;
+  optimizedUrl?: string;
+  size?: number;
+  optimizedSize?: number;
+}
+
+function quickWatermarkPath(target: QuickWatermarkTarget): string {
+  return target.kind === 'album'
+    ? `/api/projects/${encodeURIComponent(target.projectId)}/album/${encodeURIComponent(target.itemId)}/watermark`
+    : `/api/libraries/${encodeURIComponent(target.libraryId)}/items/${encodeURIComponent(target.itemId)}/watermark`;
+}
+
+export async function fetchQuickWatermarkSource(target: QuickWatermarkTarget): Promise<QuickWatermarkSource> {
+  const res = await apiFetch(quickWatermarkPath(target), { headers: getHeaders(false) });
+  return handleResponse<QuickWatermarkSource>(res, 'Failed to load image');
+}
+
+/**
+ * Render a watermarked copy of one image. The server returns the JPEG
+ * directly and keeps nothing, so each call renders it afresh.
+ */
+export async function renderQuickWatermark(
+  target: QuickWatermarkTarget,
+  watermarkSettings: PostWatermarkSettings,
+  version: AlbumExportVersion,
+): Promise<Blob> {
+  const res = await apiFetch(quickWatermarkPath(target), {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ watermarkSettings, version }),
+  });
+  if (!res.ok) return handleResponse<never>(res, 'Failed to watermark image');
+  return res.blob();
+}
+
 export async function importCampaignMediaPosts(
   campaignId: string,
   sources: CampaignMediaImportSource[],

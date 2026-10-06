@@ -1,7 +1,7 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon, Stamp } from 'lucide-react';
 import { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../types';
 import { imageDisplayUrl, startAlbumExport } from '../../api';
 import type { AlbumExportVersion } from '../../api';
@@ -1004,6 +1004,21 @@ export function AlbumTab({
                       >
                         <ExternalLink className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
                       </a>
+
+                      {!isVideoProject && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/project/${projectId}/album/${item.id}/watermark`);
+                          }}
+                          className="w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
+                          title={t('projectViewer.album.quickWatermark')}
+                          aria-label={t('projectViewer.album.quickWatermark')}
+                        >
+                          <Stamp className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
+                        </button>
+                      )}
                     </div>
 
                     <img

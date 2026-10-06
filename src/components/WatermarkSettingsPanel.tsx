@@ -179,6 +179,8 @@ interface WatermarkSettingsPanelProps {
   description?: string;
   statusText?: string;
   savingText?: string;
+  /** Hide the Enabled checkbox where the watermark is the whole point of the page. */
+  showEnabledToggle?: boolean;
 }
 
 export function WatermarkSettingsPanel({
@@ -190,6 +192,7 @@ export function WatermarkSettingsPanel({
   description = 'Saved per user and applied to image posts created from this page.',
   statusText = 'Settings save after Confirm Batch runs.',
   savingText = 'Saving watermark settings...',
+  showEnabledToggle = true,
 }: WatermarkSettingsPanelProps) {
   const updateSetting = <K extends keyof PostWatermarkSettings>(key: K, value: PostWatermarkSettings[K]) => {
     onChange({ ...settings, [key]: value });
@@ -211,15 +214,17 @@ export function WatermarkSettingsPanel({
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>
             )}
           </div>
-          <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-bold text-neutral-700 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-indigo-600"
-              checked={settings.enabled}
-              onChange={(event) => updateSetting('enabled', event.target.checked)}
-            />
-            Enabled
-          </label>
+          {showEnabledToggle && (
+            <label className="inline-flex h-10 items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 text-sm font-bold text-neutral-700 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-indigo-600"
+                checked={settings.enabled}
+                onChange={(event) => updateSetting('enabled', event.target.checked)}
+              />
+              Enabled
+            </label>
+          )}
         </div>
 
         {settings.enabled && (

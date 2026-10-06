@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check, Rows3 } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check, Rows3, Stamp } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { PageNav } from './PageNav';
 import { TagModal } from './TagModal';
@@ -818,6 +818,16 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               {library.type.toUpperCase()}
                             </span>
                             <div className="flex items-center gap-1.5">
+                               {library.type === 'image' && (
+                                 <button
+                                   onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/items/${item.id}/watermark`); }}
+                                   className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-ui active:scale-90"
+                                   title={t('libraryEditor.quickWatermark')}
+                                   aria-label={t('libraryEditor.quickWatermark')}
+                                 >
+                                   <Stamp className="w-3.5 h-3.5" />
+                                 </button>
+                               )}
                                <button
                                  onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
                                  className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-ui active:scale-90"

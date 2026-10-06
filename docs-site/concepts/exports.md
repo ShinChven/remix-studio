@@ -88,6 +88,8 @@ The watermark screen previews the first selected image and configures text, posi
 
 The selected scope and raw/optimized choice are carried into the watermark screen. Watermarking creates processed bytes for the archive; it does not overwrite the album originals.
 
+To watermark one image without building an archive, use the stamp button on its album or library card. See [Watermarking a Single Image](/concepts/projects#watermarking-a-single-image).
+
 ## Drive Releases
 
 Drives are connected on the **Releases** page — a sub-page of Exports at `/exports/releases`, reachable from the link in the Exports header. Release history sits beside it at `/exports/history`. Google Drive and OneDrive are supported, and you can connect as many accounts as you like — several Google Drives side by side is fine.

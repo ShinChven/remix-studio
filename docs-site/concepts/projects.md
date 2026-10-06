@@ -114,6 +114,14 @@ For generated media, choose:
 
 Copying creates library items; it does not move or delete the album results.
 
+## Watermarking a Single Image
+
+The stamp button on an image album card opens **Quick Watermark** for that one result, without queueing an export. The page starts from your saved watermark settings — text, position, padding, font size, opacity, and color — and previews them over the image as you change them. When the result has an optimized version, choose **Raw** or **Optimized**; the preview shows the version that will be rendered.
+
+**Create** renders the watermarked image on the server and downloads it to your browser as `<name>_watermark.jpg`. Nothing is written to storage and nothing appears on the Exports page: the file is sent once, and creating it again renders it again. Changes made on the page are not saved, so your saved watermark — which campaign uploads also use — stays as it was.
+
+Image libraries have the same button on each card, and ComfyUI projects offer it for their image results.
+
 ## Exports
 
 Export selected album items or the full collection as a named ZIP. For supported assets, choose raw or optimized versions. Image projects can open the watermark configuration screen before queueing the archive.

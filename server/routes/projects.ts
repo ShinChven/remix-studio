@@ -22,6 +22,13 @@ import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWo
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 import type { LiveEventPublisher } from '../live/user-live-hub';
 import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
+import {
+  describeQuickWatermarkSource,
+  QuickWatermarkError,
+  renderQuickWatermark,
+  toStorageKey,
+  type QuickWatermarkSource,
+} from '../services/quick-watermark';
 
 type Variables = { user: JwtPayload };
 
@@ -1052,6 +1059,61 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[PATCH /api/projects/:id/album/:itemId/filename]', e);
       return c.json({ error: 'Failed to rename album item' }, 500);
+    }
+  });
+
+  const findAlbumWatermarkSource = async (userId: string, projectId: string, itemId: string): Promise<QuickWatermarkSource> => {
+    const project = await repository.getProject(userId, projectId);
+    if (!project) throw new QuickWatermarkError('Project not found', 404);
+    const item = await repository.getAlbumItem(userId, projectId, itemId);
+    if (!item) throw new QuickWatermarkError('Album item not found', 404);
+    // ComfyUI projects can hold images and videos side by side, so the item's
+    // own format decides; older image items may carry no format at all.
+    const isImage = ['image', 'comfyui'].includes(project.type ?? 'image')
+      && (!item.format || ['png', 'jpeg', 'webp'].includes(item.format));
+    if (!isImage) throw new QuickWatermarkError('Only images can be watermarked', 400);
+    return {
+      containerName: project.name,
+      filename: basenameFromKey(stripToKey(item.imageUrl, storage.getBucketName())) || item.id,
+      rawKey: toStorageKey(item.imageUrl, storage),
+      optimizedKey: toStorageKey(item.optimizedUrl, storage),
+      size: item.size,
+      optimizedSize: item.optimizedSize,
+    };
+  };
+
+  /**
+   * GET /api/projects/:id/album/:itemId/watermark
+   *
+   * Describe one album image for the quick watermark page.
+   */
+  router.get('/api/projects/:id/album/:itemId/watermark', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const source = await findAlbumWatermarkSource(user.userId, c.req.param('id'), c.req.param('itemId'));
+      return c.json(await describeQuickWatermarkSource(source, storage));
+    } catch (e) {
+      if (e instanceof QuickWatermarkError) return c.json({ error: e.message }, e.status);
+      console.error('[GET /api/projects/:id/album/:itemId/watermark]', e);
+      return c.json({ error: 'Failed to load album item' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/album/:itemId/watermark
+   *
+   * Watermark one album image and return the JPEG in the response. Nothing is
+   * written to storage.
+   */
+  router.post('/api/projects/:id/album/:itemId/watermark', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const source = await findAlbumWatermarkSource(user.userId, c.req.param('id'), c.req.param('itemId'));
+      return await renderQuickWatermark(source, await c.req.json().catch(() => null), storage);
+    } catch (e) {
+      if (e instanceof QuickWatermarkError) return c.json({ error: e.message }, e.status);
+      console.error('[POST /api/projects/:id/album/:itemId/watermark]', e);
+      return c.json({ error: 'Failed to watermark image' }, 500);
     }
   });
 
