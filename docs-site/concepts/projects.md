@@ -118,8 +118,6 @@ Copying creates library items; it does not move or delete the album results.
 
 The stamp button on an image album card opens **Quick Watermark** for that one result, without queueing an export. The page starts from your saved watermark settings — text, position, padding, font size, opacity, and color — and previews them over the image as you change them. When the result has an optimized version, choose **Raw** or **Optimized**; the preview shows the version that will be rendered.
 
-**Choose image** opens the same picker that fills workflow items, limited to images: browse any library or any project's album and click an image to switch to it. The picker opens on the current image's album or library, and the text, position, color, and version you have set carry over to the new image. **Back** still returns to the page you opened the watermark screen from.
-
 **Create** renders the watermarked image on the server and downloads it to your browser as `<name>_watermark.jpg`. Nothing is written to storage and nothing appears on the Exports page: the file is sent once, and creating it again renders it again. Changes made on the page are not saved, so your saved watermark — which campaign uploads also use — stays as it was.
 
 Image libraries have the same button on each card, and ComfyUI projects offer it for their image results.

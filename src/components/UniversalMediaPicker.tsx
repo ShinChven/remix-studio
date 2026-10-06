@@ -76,8 +76,6 @@ interface UniversalMediaPickerProps {
   title?: string;
   allowedTypes?: LibraryType[];
   defaultSourceKind?: PickerSourceKind;
-  /** Source of `defaultSourceKind` to open on, ahead of the remembered one. */
-  defaultSourceId?: string;
   fixedSourceId?: string;
   sourceKinds?: PickerSourceKind[];
   multiple?: boolean;
@@ -198,7 +196,6 @@ export function UniversalMediaPicker({
   title = 'Media Picker',
   allowedTypes = ALL_TYPES,
   defaultSourceKind = 'library',
-  defaultSourceId,
   fixedSourceId,
   sourceKinds = DEFAULT_SOURCE_KINDS,
   multiple = true,
@@ -218,12 +215,11 @@ export function UniversalMediaPicker({
     () => (memoryEnabled && isOpen ? getLastMediaPickerSource(memoryKey!) : null),
     [memoryEnabled, memoryKey, isOpen],
   );
-  const preferredKind = !defaultSourceId && rememberedSource && enabledKinds.includes(rememberedSource.kind)
+  const preferredKind = rememberedSource && enabledKinds.includes(rememberedSource.kind)
     ? rememberedSource.kind
     : defaultSourceKind;
   const initialKind = enabledKinds.includes(preferredKind) ? preferredKind : (enabledKinds[0] || 'library');
   const initialSourceId = fixedSourceId
-    || (defaultSourceId && defaultSourceKind === initialKind ? defaultSourceId : null)
     || (rememberedSource && rememberedSource.kind === initialKind ? rememberedSource.sourceId : null);
 
   const [activeKind, setActiveKind] = useState<PickerSourceKind>(initialKind);
