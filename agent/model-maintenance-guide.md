@@ -192,13 +192,13 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 
 ---
 
-## Current Model Inventory (September 2026)
+## Current Model Inventory (October 2026)
 
 ### Google AI / Vertex AI
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
 | nano banana Pro | `gemini-3-pro-image` | image | 32,768 |
-| nano banana 2 | `gemini-3.1-flash-image` | image | 32,768 |
+| nano banana 2.1 | `gemini-nano-banana-2.1` | image | 32,768 |
 | nano banana 2 Lite | `gemini-3.1-flash-lite-image` | image | 32,768 |
 | Gemini 3.8 Flash | `gemini-3.8-flash` | text | 65,536 |
 | Gemini 3.7 Flash | `gemini-3.7-flash` | text | 65,536 |
@@ -235,6 +235,22 @@ ID in this catalog is a thing to re-check, not a stable pin. The Veo and Lyria
 rows are still preview-only on the Gemini API this app calls, so they keep the
 suffix; the `-001` GA IDs published for Veo 3.1 belong to Vertex's own endpoint,
 not this one.
+
+Nano Banana 2.1 (`gemini-nano-banana-2.1`, GA on October 6, 2026, on both the
+Gemini API and Vertex) replaced `gemini-3.1-flash-image`, which Google deprecated
+the same day and stops serving on October 29, 2026. The request shape is the same
+`generateContent` call with `imageConfig.aspectRatio` and `imageSize`, so the
+move was a `modelId` swap on the `google-nano-banana-2` and `vertex-nano-banana-2`
+entries plus both image generators' fallbacks. The entries keep their `id`s so
+projects pinned to nano banana 2 carry over instead of falling back. The new ID
+drops the `gemini-<version>-<tier>-image` naming, and `categorizeGoogleModel` in
+`provider-model-lister.ts` recognised image models only by `flash-image` and
+`pro-image`, so it now matches `nano-banana` as well — check that predicate
+again when Google ships the next image model. The aspect ratios, quality tiers,
+prompt limit and max output were carried over from nano banana 2 rather than
+re-verified: Vertex documents the same 15 ratios, but one Gemini API listing
+omits `9:21`, and the 131,072-token prompt limit has not been checked against
+the 2.1 docs.
 
 ### OpenAI
 | Name | Model ID | Category | Max Output |

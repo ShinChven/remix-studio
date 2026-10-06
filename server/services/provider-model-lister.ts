@@ -121,8 +121,9 @@ function categorizeGoogleModel(m: any): 'text' | 'image' | 'video' | 'audio' {
   if (name.includes('veo') || name.includes('video')) return 'video';
   if (name.includes('imagen') || name.includes('image-generation')) return 'image';
 
-  // Models supporting generateContent with "image" in the name might generate images
-  if (name.includes('flash-image') || name.includes('pro-image')) return 'image';
+  // Models supporting generateContent with "image" in the name might generate images.
+  // Nano Banana 2.1 dropped that naming (`gemini-nano-banana-2.1`), so match the brand too.
+  if (name.includes('flash-image') || name.includes('pro-image') || name.includes('nano-banana')) return 'image';
 
   if (methods.includes('generateContent') || methods.includes('streamGenerateContent')) return 'text';
 

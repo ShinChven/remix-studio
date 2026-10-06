@@ -41,7 +41,7 @@
   "apiKeyCheck": {
     "loading": "로딩 중...",
     "title": "API 키 필요",
-    "description": "이 애플리케이션은 유료 Google Cloud API 키가 필요한 Nano Banana 2(Gemini 3.1 Flash Image)를 사용합니다.",
+    "description": "이 애플리케이션은 유료 Google Cloud API 키가 필요한 Nano Banana 2.1을 사용합니다.",
     "learnMore": "결제에 대해 자세히 알아보기",
     "selectApiKey": "API 키 선택"
   },

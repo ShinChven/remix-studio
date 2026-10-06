@@ -70,9 +70,9 @@ export type ProjectStatus = 'active' | 'archived';
 
 export interface ModelConfig {
   id: string; // Local UUID
-  name: string; // Display name e.g. "nano banana 2"
+  name: string; // Display name e.g. "nano banana 2.1"
   generatorId: ProviderType; // Which generator type to use
-  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image')
+  modelId: string; // The actual API model string (e.g. 'gemini-nano-banana-2.1')
   category: Exclude<ProjectType, 'comfyui'>; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
@@ -272,10 +272,13 @@ export function formatPromptLimit(limit?: PromptLimitMeta): string {
 export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   GoogleAI: [
     {
+      // `id` stays on the nano banana 2 name so projects pinned to the retired
+      // gemini-3.1-flash-image land on 2.1 — same request shape, so only the
+      // model ID moves.
       id: 'google-nano-banana-2',
-      name: 'nano banana 2',
+      name: 'nano banana 2.1',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3.1-flash-image',
+      modelId: 'gemini-nano-banana-2.1',
       category: 'image',
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {
@@ -498,10 +501,13 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   VertexAI: [
     {
+      // `id` stays on the nano banana 2 name so projects pinned to the retired
+      // gemini-3.1-flash-image land on 2.1 — same request shape, so only the
+      // model ID moves.
       id: 'vertex-nano-banana-2',
-      name: 'nano banana 2',
+      name: 'nano banana 2.1',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3.1-flash-image',
+      modelId: 'gemini-nano-banana-2.1',
       category: 'image',
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {

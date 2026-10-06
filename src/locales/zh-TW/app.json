@@ -41,7 +41,7 @@
   "apiKeyCheck": {
     "loading": "載入中...",
     "title": "需要 API 金鑰",
-    "description": "此應用程式使用 Nano Banana 2 (Gemini 3.1 Flash Image) ，需要付費的 Google Cloud API 金鑰。",
+    "description": "此應用程式使用 Nano Banana 2.1，需要付費的 Google Cloud API 金鑰。",
     "learnMore": "了解更多關於計費的資訊",
     "selectApiKey": "選擇 API 金鑰"
   },
