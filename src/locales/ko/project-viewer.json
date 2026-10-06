@@ -70,6 +70,8 @@
       "manageOrphans": "고아 파일",
       "deleteProject": "삭제",
       "duplicateProject": "복제",
+      "importWorkflow": "워크플로 가져오기",
+      "importWorkflowTitle": "앨범에서 워크플로 가져오기",
       "archiveProject": "보관",
       "unarchiveProject": "복원",
       "archivedBadge": "보관됨",

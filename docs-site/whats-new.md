@@ -20,6 +20,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 - **File uploads over MCP** — An external agent could organise your media but never add any. It can now upload images, videos and audio and put them in a library, a project workflow or a campaign, including one draft post per file. The file goes straight to the server rather than through the conversation. See [file uploads](/integrations/mcp#file-uploads).
 - **Pages that keep up with your agents** — What an MCP client, the assistant or another tab changes now shows up on the page you have open, without a reload: new libraries and prompts, new and renamed projects, a project's workflow, campaigns, posts, and posts the scheduler publishes. You only ever receive updates about your own work. See [live updates](/concepts/projects#live-updates).
 - **Quick watermark for one image** — A stamp button on image album and library cards opens a page to watermark just that picture: adjust the text, position, size, opacity and color with a live preview, then **Create** downloads the watermarked JPEG. Nothing is saved to your storage, and your saved watermark settings stay as they were. See [watermarking a single image](/concepts/projects#watermarking-a-single-image).
+- **Import a workflow from another project** — **Import Workflow** in the workflow panel's menu opens your albums across projects of the same type; pick a result and its workflow and settings replace this project's after you confirm. See [reusing configuration](/concepts/projects#reusing-configuration).
 
 **Improved**
 
