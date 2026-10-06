@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Image as ImageIcon, Loader2, Sparkles, Stamp } from 'lucide-react';
+import { Image as ImageIcon, Images, Loader2, Sparkles, Stamp } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AlbumExportVersion,
@@ -12,6 +12,7 @@ import {
   renderQuickWatermark,
 } from '../api';
 import { PageHeader } from '../components/PageHeader';
+import { UniversalMediaPicker, UniversalPickedItem } from '../components/UniversalMediaPicker';
 import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
 
 function formatSize(bytes?: number) {
@@ -37,6 +38,25 @@ interface QuickWatermarkProps {
 }
 
 /**
+ * Choosing another image replaces this page's URL; what the user has set up
+ * so far rides along in the navigation state.
+ */
+type QuickWatermarkLocationState = {
+  watermarkSettings?: PostWatermarkSettings;
+  version?: AlbumExportVersion;
+  /** Where Back goes: a path, or null to step back through history. */
+  back?: { path: string | null; label: string };
+};
+
+function quickWatermarkRoute(item: UniversalPickedItem) {
+  const sourceId = encodeURIComponent(item.sourceId);
+  const itemId = encodeURIComponent(item.itemId);
+  return item.sourceKind === 'album'
+    ? `/project/${sourceId}/album/${itemId}/watermark`
+    : `/library/${sourceId}/items/${itemId}/watermark`;
+}
+
+/**
  * Watermark a single album or library image. The server renders the result
  * and sends it straight to the browser as a download; nothing is written to
  * storage, and the user's saved watermark settings are only read, never
@@ -53,24 +73,40 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
       : { kind: 'library', libraryId: id, itemId };
   }, [source, id, itemId]);
   const fallbackPath = source === 'album' ? `/project/${id}?tab=album` : `/library/${id}`;
-  const backLabel = source === 'album' ? 'Back to Album' : 'Back to Library';
+  const locationState = location.state as QuickWatermarkLocationState | null;
 
   const [image, setImage] = useState<QuickWatermarkSource | null>(null);
   const [watermarkSettings, setWatermarkSettings] = useState<PostWatermarkSettings>({ ...DEFAULT_WATERMARK_SETTINGS, enabled: true });
   const [version, setVersion] = useState<AlbumExportVersion>('raw');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  // Back returns to the exact album or library view (page, filters) this was
+  // opened from; a page loaded directly has no such history, so it goes to the
+  // image's own album or library. Settled on arrival, then carried through
+  // image switches, which replace this history entry.
+  const [back] = useState(() => locationState?.back ?? {
+    path: location.key === 'default' ? fallbackPath : null,
+    label: source === 'album' ? 'Back to Album' : 'Back to Library',
+  });
 
-  // Back to the exact album or library view (page, filters) this was opened
-  // from; a page loaded directly has no such history to return to.
   const goBack = () => {
-    if (location.key !== 'default') navigate(-1);
-    else navigate(fallbackPath);
+    if (back.path) navigate(back.path);
+    else navigate(-1);
+  };
+
+  const handlePickImage = (items: UniversalPickedItem[]) => {
+    const picked = items[0];
+    setIsPickerOpen(false);
+    if (!picked || (picked.sourceKind === source && picked.sourceId === id && picked.itemId === itemId)) return;
+    const state: QuickWatermarkLocationState = { watermarkSettings, version, back };
+    navigate(quickWatermarkRoute(picked), { replace: true, state });
   };
 
   useEffect(() => {
     if (!target) return;
     const currentTarget = target;
+    const carried = locationState;
     let cancelled = false;
 
     async function loadPage() {
@@ -78,7 +114,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
       try {
         const [imageData, watermarkData] = await Promise.all([
           fetchQuickWatermarkSource(currentTarget),
-          fetchPostWatermarkSettings().catch((error) => {
+          carried?.watermarkSettings ?? fetchPostWatermarkSettings().catch((error) => {
             console.warn('Failed to load watermark settings', error);
             return DEFAULT_WATERMARK_SETTINGS;
           }),
@@ -86,6 +122,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
         if (cancelled) return;
         setImage(imageData);
         setWatermarkSettings({ ...DEFAULT_WATERMARK_SETTINGS, ...watermarkData, enabled: true });
+        setVersion(carried?.version === 'optimized' && imageData.optimizedUrl ? 'optimized' : 'raw');
       } catch (error: any) {
         if (!cancelled) {
           toast.error(error?.message || 'Failed to load image');
@@ -102,7 +139,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
     };
   }, [target, navigate, fallbackPath]);
 
-  const canCreate = Boolean(target && image && watermarkSettings.text.trim() && !isCreating);
+  const canCreate = Boolean(target && image && watermarkSettings.text.trim() && !isCreating && !isLoading);
   const selectedSize = version === 'optimized' ? image?.optimizedSize || image?.size : image?.size;
   // Preview the same file the server will render, with the same fallback.
   const previewUrl = version === 'optimized'
@@ -124,7 +161,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
     }
   };
 
-  if (isLoading || !image) {
+  if (!image) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 p-8">
         <Loader2 className="h-12 w-12 animate-spin text-neutral-950 dark:text-white" />
@@ -138,14 +175,8 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
       <div className="w-full space-y-6 pb-32">
         <PageHeader
           title="Quick Watermark"
-          description={(
-            <>
-              Watermark <span className="font-semibold text-neutral-950 dark:text-white">{image.filename}</span> from{' '}
-              <span className="font-semibold text-neutral-950 dark:text-white">{image.containerName}</span>.
-              The result downloads to this browser once and is not saved to storage.
-            </>
-          )}
-          backLink={{ onClick: goBack, label: backLabel }}
+          description="Watermark one image from any album or library. The result downloads to this browser once and is not saved to storage."
+          backLink={{ onClick: goBack, label: back.label }}
           actions={(
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
               <button
@@ -171,13 +202,28 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
         />
 
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
-            <span className="mb-2 block text-xs font-black uppercase tracking-widest text-neutral-500">Download as</span>
-            <p className="truncate font-mono text-sm font-bold text-neutral-950 dark:text-white" title={image.downloadName}>
-              {image.downloadName}
+          <div className="min-w-0 rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="text-xs font-black uppercase tracking-widest text-neutral-500">Image</span>
+              <button
+                type="button"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 text-xs font-bold text-neutral-700 transition hover:border-indigo-500/40 hover:text-indigo-600 disabled:opacity-60 dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:text-indigo-400"
+                onClick={() => setIsPickerOpen(true)}
+                disabled={isCreating || isLoading}
+              >
+                {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Images className="h-3.5 w-3.5" />}
+                Choose image
+              </button>
+            </div>
+            <p className="truncate text-sm font-bold text-neutral-950 dark:text-white" title={image.filename}>
+              {image.filename}
             </p>
-            <p className="mt-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-              JPEG{formatSize(selectedSize) ? ` - source ${formatSize(selectedSize)}` : ''}
+            <p className="mt-1 truncate text-xs font-medium text-neutral-500 dark:text-neutral-400" title={image.containerName}>
+              {source === 'album' ? 'Album' : 'Library'} - {image.containerName}
+            </p>
+            <p className="mt-2 truncate text-xs font-medium text-neutral-500 dark:text-neutral-400" title={image.downloadName}>
+              Downloads as <span className="font-mono font-bold text-neutral-700 dark:text-neutral-200">{image.downloadName}</span>
+              {formatSize(selectedSize) ? ` - source ${formatSize(selectedSize)}` : ''}
             </p>
           </div>
 
@@ -221,6 +267,17 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
           showEnabledToggle={false}
         />
       </div>
+
+      <UniversalMediaPicker
+        isOpen={isPickerOpen}
+        title="Choose Image"
+        allowedTypes={['image']}
+        defaultSourceKind={source}
+        defaultSourceId={id}
+        multiple={false}
+        onClose={() => setIsPickerOpen(false)}
+        onConfirm={handlePickImage}
+      />
     </div>
   );
 }
