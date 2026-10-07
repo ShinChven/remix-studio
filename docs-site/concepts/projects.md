@@ -139,6 +139,8 @@ The same action is available from the results themselves, so you can pick a setu
 - Album, text, and audio entries each carry a **Reuse workflow** control that resolves the settings through the job that produced them.
 - The image lightbox offers the same control (shortcut `R`), and closes on confirmation so you land on the restored workflow.
 
+To start from a result in a different project, choose **Import Workflow** from the workflow panel's menu. It opens the album picker across your projects of the same type; click a result to load the workflow and settings behind it, then confirm to replace this project's. The imported items are copies, so later edits in either project do not affect the other. ComfyUI projects do not offer it.
+
 Reuse changes the current editable workflow/settings only after confirmation; it does not alter the old job or album item.
 
 The snapshot lives on the job record. When it is missing — the Done record was deleted, or the job predates workflow snapshots — the workflow is rebuilt from the result's own prompt and media references instead. A rebuilt workflow reproduces that single result rather than the recipe that varied it, and the confirmation says so before replacing anything. Only a result with neither a prompt nor references reports that no workflow is available.

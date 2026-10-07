@@ -70,6 +70,8 @@
       "manageOrphans": "孤立ファイル",
       "deleteProject": "削除",
       "duplicateProject": "複製",
+      "importWorkflow": "ワークフローを読み込む",
+      "importWorkflowTitle": "アルバムからワークフローを読み込む",
       "archiveProject": "アーカイブ",
       "unarchiveProject": "復元",
       "archivedBadge": "アーカイブ済み",

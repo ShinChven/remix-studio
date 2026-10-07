@@ -70,6 +70,8 @@
       "manageOrphans": "孤兒檔案",
       "deleteProject": "刪除",
       "duplicateProject": "複製",
+      "importWorkflow": "匯入工作流",
+      "importWorkflowTitle": "從相簿匯入工作流",
       "archiveProject": "封存",
       "unarchiveProject": "還原",
       "archivedBadge": "已封存",

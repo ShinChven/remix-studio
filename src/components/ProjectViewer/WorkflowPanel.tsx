@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, Eye, EyeOff, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, Eye, EyeOff, HardDrive, Hash, ImageIcon, Import, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
@@ -31,6 +31,8 @@ interface WorkflowPanelProps {
   onNavigateToEdit: () => void;
   onNavigateToOrphans: () => void;
   onNavigateToDuplicate: () => void;
+  /** Replace the workflow with the one behind an album item from any project. */
+  onImportWorkflow?: () => void;
   onStartAssistantChat: () => void;
   onShowDeleteProject: () => void;
   onToggleArchive: () => Promise<void>;
@@ -92,6 +94,7 @@ export function WorkflowPanel({
   onNavigateToEdit,
   onNavigateToOrphans,
   onNavigateToDuplicate,
+  onImportWorkflow,
   onStartAssistantChat,
   onShowDeleteProject,
   onToggleArchive,
@@ -316,6 +319,16 @@ export function WorkflowPanel({
                       </kbd>
                     </span>
                   </button>
+
+                  {onImportWorkflow && (
+                    <button
+                      onClick={() => closeMenuAndRun(onImportWorkflow)}
+                      className={`${menuButtonBaseClass} text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/80 dark:hover:bg-neutral-800/80`}
+                    >
+                      <Import className="w-3.5 h-3.5" />
+                      {t('projectViewer.main.importWorkflow')}
+                    </button>
+                  )}
 
                   <div className="my-1 h-px bg-neutral-200/60 dark:bg-white/10" />
 
