@@ -37,6 +37,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 - **RunningHub reference images** — Jobs that uploaded a reference image to RunningHub failed with an unrecognised API key.
 - **Prompt dialogs under the sidebar** — **Edit Prompt** and the album prompt dialog opened partly hidden behind the sidebar.
 - **Sign-in keeps your place** — After an expired session, signing in returns you to the page you were opening rather than the home page.
+- **Images from Gboard in the assistant chat box** — On Android, a copied image, GIF or sticker picked in Gboard now lands in the assistant chat box as an attachment, in versions of Chrome that let the keyboard insert images.
 
 **Changed**
 
