@@ -12,13 +12,22 @@ export interface WorkflowItem {
   selectedTags?: string[];
   tagMatchMode?: 'and' | 'or';
   /** ComfyUI projects only: the workflow input this item feeds. */
-  comfyTarget?: ComfyInputTarget;
+  comfyTarget?: ComfyBinding;
 }
 
 /** One input of a node in a ComfyUI API-format workflow. */
 export interface ComfyInputTarget {
   nodeId: string;
   input: string;
+}
+
+/**
+ * The input a workflow item feeds. `remix` marks the items of a remixed text
+ * input — typed text and libraries joined in order, like a regular project's
+ * workflow — so a remix of a single text item still reads as one.
+ */
+export interface ComfyBinding extends ComfyInputTarget {
+  remix?: boolean;
 }
 
 /**

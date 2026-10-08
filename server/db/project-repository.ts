@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyInputTarget, ComfyJobInput } from '../../src/types';
+import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput } from '../../src/types';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
@@ -1804,7 +1804,9 @@ export class ProjectRepository {
           optimizedUrl: item.optimizedUrl ?? null,
           selectedTags: this.toNullableJsonArray(item.selectedTags),
           disabled: item.disabled ?? false,
-          comfyTarget: item.comfyTarget ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input } : Prisma.DbNull,
+          comfyTarget: item.comfyTarget
+            ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input, ...(item.comfyTarget.remix ? { remix: true } : {}) }
+            : Prisma.DbNull,
         })),
       });
     });
@@ -1858,7 +1860,7 @@ export class ProjectRepository {
       optimizedUrl: w.optimizedUrl ?? undefined,
       selectedTags: (w.selectedTags as string[]) ?? undefined,
       disabled: w.disabled ?? false,
-      comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyInputTarget) : undefined,
+      comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyBinding) : undefined,
     };
   }
 

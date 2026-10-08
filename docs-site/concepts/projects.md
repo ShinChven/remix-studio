@@ -26,14 +26,16 @@ A ComfyUI project runs a workflow on a ComfyUI instance you host — a local mac
 3. **Inputs** — every widget value in the workflow is listed by node.
    - **Numbers and toggles** are edited in place, starting from the workflow's value. Change one to override it; the reset button (or typing the workflow's value back) drops the override.
    - **Seeds** are random for every job by default, so a batch does not repeat the same image. Turn off the dice to pin a seed and type it.
-   - **Text and file inputs** choose where their value comes from:
+   - **Text inputs**, such as a prompt, choose where their value comes from:
      - **Default** keeps the value from the workflow.
      - **Input** takes text you type.
-     - **Import** takes a file you upload, for `Load Image`, video and audio loader nodes. It is uploaded to ComfyUI's input folder when the job runs.
-     - **Library** varies the input over a library's items (text libraries for text inputs, media libraries for loader nodes), with the same tag filters a regular workflow uses.
-   - **Compose a text input from parts** — once a text input takes typed text or a library, **Add text** and **Add library** add more parts to it, the way a regular project builds its prompt from several workflow steps. The parts are joined in order, separated by a blank line, into the one value the input receives; reorder them with the arrows beside each part, and an empty part adds nothing. For example `a photo of` + a library of 3 subjects + a library of 4 styles gives the prompt input 12 variations. Switching an input with several parts to another source replaces them all, after you confirm.
+     - **Remix** builds the value the way a regular project's workflow builds a prompt. It opens a list of workflow items — the same cards a regular project uses — starting from the input's current text. **Add text** and **Add library** add items; drag a card to reorder it, and disable, edit or delete it as in a regular workflow. The items are joined in order, separated by a blank line, and every library multiplies the variations: `a photo of` + a library of 3 subjects + a library of 4 styles gives the prompt 12. Leaving a remix of several items asks first, since its items are removed.
+   - **File inputs**, for `Load Image`, video and audio loader nodes, choose:
+     - **Default** keeps the file named in the workflow.
+     - **Import** takes a file you upload. It is uploaded to ComfyUI's input folder when the job runs.
+     - **Library** varies the input over a media library's items, with the same tag filters a regular workflow uses.
 
-Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, whether they feed one input as parts or two different inputs, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
+Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, whether they are remixed into one input or feed two different inputs, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
 
 Jobs run up to two at a time per project. Each result is downloaded from ComfyUI and stored like any other generation; choose **Image** (PNG, JPEG, WebP) or **Video** output — video files that are not mp4 are converted. A job's expanded view lists the values it sent, including the seed it rolled. When a prompt fails in ComfyUI, the job fails with ComfyUI's own error (for example the node that ran out of memory); when the instance restarted and forgot the prompt, retry the job after updating the address.
 

@@ -26,10 +26,10 @@ function toComfyInput(choice: Choice): ComfyJobInput | null {
 }
 
 /**
- * A ComfyUI text input can be built from several parts — typed text and
+ * A remixed ComfyUI text input is built from several items — typed text and
  * libraries — which make up its value together, joined in workflow order the
- * way a regular project's text steps make up its prompt. Empty parts add
- * nothing; an input whose parts are all empty is still sent, as empty.
+ * way a regular project's text steps make up its prompt. Empty items add
+ * nothing; an input whose items are all empty is still sent, as empty.
  */
 function mergeComfyTextInputs(inputs: ComfyJobInput[]): ComfyJobInput[] {
   const merged: ComfyJobInput[] = [];
@@ -68,7 +68,7 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
   for (const item of workflow) {
     if (item.disabled) continue;
 
-    const target = item.comfyTarget;
+    const target = item.comfyTarget ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input } : undefined;
     if (item.type === 'text') {
       if (hasTextValue(item)) allChoices.push([{ type: 'text', value: item.value.trim(), target }]);
     } else if (item.type === 'image') {

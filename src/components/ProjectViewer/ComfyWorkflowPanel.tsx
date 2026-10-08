@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   AlertCircle,
+  Blend,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  ChevronUp,
   ClipboardPaste,
   Dices,
   Eye,
@@ -31,7 +31,7 @@ import {
   X,
 } from 'lucide-react';
 import { imageDisplayUrl, testComfyConnection, type ComfyConnectionResult } from '../../api';
-import type { Library, Project, WorkflowItem } from '../../types';
+import type { ComfyBinding, Library, Project, WorkflowItem } from '../../types';
 import {
   ComfyInputInfo,
   comfyTargetKey,
@@ -43,30 +43,28 @@ import {
   parseComfyWorkflow,
 } from '../../lib/comfyWorkflow';
 import { LibrarySelectionModal } from './LibrarySelectionModal';
+import { WorkflowItem as WorkflowItemCard } from './WorkflowItem';
 import { ConfirmModal } from '../ConfirmModal';
 import { NumberInput } from '../NumberInput';
 
 const LAST_URL_STORAGE_KEY = 'remix-studio:comfyui:last-url';
 
-type BindingSource = 'default' | 'input' | 'import' | 'library';
-
-function partSource(item: WorkflowItem): BindingSource {
-  if (item.type === 'library') return 'library';
-  if (item.type === 'text') return 'input';
-  return 'import';
-}
+type BindingSource = 'default' | 'input' | 'remix' | 'import' | 'library';
 
 /**
- * Where an input's value comes from. A text input can be built from several
- * parts; when they mix typed text and libraries there is no single source.
+ * Where an input's value comes from. A text input takes typed text, or is
+ * remixed: built from items — typed text and libraries — joined in order like
+ * a regular project's workflow. A text input bound to a library on its own,
+ * from before remixing, reads as a remix of that one library.
  */
-function sourceOf(parts: WorkflowItem[] | undefined): BindingSource | null {
-  if (!parts || parts.length === 0) return 'default';
-  const first = partSource(parts[0]);
-  return parts.every((part) => partSource(part) === first) ? first : null;
+function sourceOf(info: ComfyInputInfo, parts: WorkflowItem[]): BindingSource {
+  if (parts.length === 0) return 'default';
+  if (info.mediaKind) return parts[0].type === 'library' ? 'library' : 'import';
+  const isTypedText = parts.length === 1 && parts[0].type === 'text' && !parts[0].comfyTarget?.remix;
+  return isTypedText ? 'input' : 'remix';
 }
 
-/** What picking a library does: bind the input to it alone, add it as a part, or swap one part for it. */
+/** What picking a library does: bind a file input to it, add it to a remix, or swap one item for it. */
 interface LibraryPick {
   info: ComfyInputInfo;
   append?: boolean;
@@ -167,6 +165,9 @@ interface ComfyWorkflowPanelProps {
   onEditItem: (item: WorkflowItem) => void;
   onPreviewLibrary: (library: Library, workflowItemId: string) => void;
   onLightbox: (images: string[], index: number) => void;
+  onUpdateTags: (id: string, tags: string[]) => void;
+  onSelectFromLibrary: (id: string) => void;
+  onSaveToLibrary: (item: WorkflowItem) => void;
 }
 
 /**
@@ -191,6 +192,9 @@ export function ComfyWorkflowPanel({
   onEditItem,
   onPreviewLibrary,
   onLightbox,
+  onUpdateTags,
+  onSelectFromLibrary,
+  onSaveToLibrary,
 }: ComfyWorkflowPanelProps) {
   const { t } = useTranslation();
   const workflow = localProject.comfyWorkflow;
@@ -322,8 +326,10 @@ export function ComfyWorkflowPanel({
   const [mappedOnly, setMappedOnly] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [libraryPick, setLibraryPick] = useState<LibraryPick | null>(null);
-  // A source switch that would replace an input's several parts, awaiting confirmation.
+  // A source switch that would drop a remix's items, awaiting confirmation.
   const [pendingSwitch, setPendingSwitch] = useState<{ info: ComfyInputInfo; source: BindingSource } | null>(null);
+  // A remix item being dragged to a new position, within its own input.
+  const [remixDrag, setRemixDrag] = useState<{ key: string; from: number; over: number | null } | null>(null);
 
   const visibleNodes = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -369,44 +375,65 @@ export function ComfyWorkflowPanel({
     saveItems(next);
   };
 
-  /** Add a part after the input's last one, so its parts stay together and in order. */
-  const addPart = (info: ComfyInputInfo, item: WorkflowItem) => {
+  const bindingOf = (info: ComfyInputInfo, remix = false): ComfyBinding => ({
+    nodeId: info.nodeId,
+    input: info.input,
+    ...(remix ? { remix: true } : {}),
+  });
+
+  const newTextItem = (info: ComfyInputInfo, value: string, remix = false): WorkflowItem => ({
+    id: crypto.randomUUID(),
+    type: 'text',
+    value,
+    comfyTarget: bindingOf(info, remix),
+  });
+
+  /** Add an item to an input's remix, after its last one so the remix stays together and in order. */
+  const addRemixItem = (info: ComfyInputInfo, item: WorkflowItem) => {
     const parts = bindings.get(info.key) || [];
     const last = parts[parts.length - 1];
     const index = last ? items.findIndex((existing) => existing.id === last.id) + 1 : items.length;
     saveItems([...items.slice(0, index), item, ...items.slice(index)]);
   };
 
-  const removePart = (id: string) => {
+  const removeItem = (id: string) => {
     saveItems(items.filter((item) => item.id !== id));
   };
 
-  /** Swap a part with its neighbour among the same input's parts. */
-  const movePart = (info: ComfyInputInfo, id: string, offset: -1 | 1) => {
-    const parts = bindings.get(info.key) || [];
-    const neighbour = parts[parts.findIndex((part) => part.id === id) + offset];
-    if (!neighbour) return;
-    const from = items.findIndex((item) => item.id === id);
-    const to = items.findIndex((item) => item.id === neighbour.id);
-    const next = [...items];
-    [next[from], next[to]] = [next[to], next[from]];
-    saveItems(next);
+  const toggleItemDisabled = (id: string) => {
+    onSaveProject({ ...localProject, workflow: items.map((item) => (item.id === id ? { ...item, disabled: !item.disabled } : item)) });
   };
 
-  const newTextPart = (info: ComfyInputInfo, value: string): WorkflowItem => ({
-    id: crypto.randomUUID(),
-    type: 'text',
-    value,
-    comfyTarget: { nodeId: info.nodeId, input: info.input },
-  });
+  /** Move one of a remix's items to another position within that remix. */
+  const moveRemixItem = (info: ComfyInputInfo, from: number, to: number) => {
+    const parts = bindings.get(info.key) || [];
+    if (from === to || !parts[from] || !parts[to]) return;
+    const reordered = [...parts];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    let next = 0;
+    saveItems(items.map((item) => (isSameComfyTarget(item.comfyTarget, info) ? reordered[next++] : item)));
+  };
 
   const openLibraryPicker = (pick: LibraryPick) => {
     setLibraryPick(pick);
     void onRefreshLibraries().catch(() => {});
   };
 
-  /** Switch an input to one source, replacing all of its parts. */
-  const applySource = (info: ComfyInputInfo, source: BindingSource) => {
+  /**
+   * Remix a text input. Nothing is lost on the way in: typed text becomes the
+   * remix's first item, and an input left at its default starts from the
+   * workflow's own value.
+   */
+  const startRemix = (info: ComfyInputInfo, parts: WorkflowItem[]) => {
+    const typed = parts[0];
+    saveBinding(info, typed
+      ? { ...typed, comfyTarget: bindingOf(info, true) }
+      : newTextItem(info, String(info.value), true));
+  };
+
+  /** Switch an input to one source, replacing all of its items. */
+  const applySource = (info: ComfyInputInfo, source: BindingSource, parts: WorkflowItem[]) => {
     if (source === 'library') {
       openLibraryPicker({ info });
       return;
@@ -415,20 +442,29 @@ export function ComfyWorkflowPanel({
       saveBinding(info, null);
       return;
     }
-    saveBinding(info, source === 'input'
-      ? newTextPart(info, String(info.value))
-      : { id: crypto.randomUUID(), type: info.mediaKind || 'image', value: '', comfyTarget: { nodeId: info.nodeId, input: info.input } });
+    if (source === 'input') {
+      // Keep the remix's first typed text, if it has one.
+      const text = parts.find((part) => part.type === 'text');
+      saveBinding(info, text ? { ...text, comfyTarget: bindingOf(info) } : newTextItem(info, String(info.value)));
+      return;
+    }
+    saveBinding(info, { id: crypto.randomUUID(), type: info.mediaKind || 'image', value: '', comfyTarget: bindingOf(info) });
   };
 
   const setSource = (info: ComfyInputInfo, source: BindingSource) => {
     const parts = bindings.get(info.key) || [];
-    if (source !== 'library' && sourceOf(parts) === source) return;
-    // Switching drops every part, so ask first when there is more than one to lose.
+    const current = sourceOf(info, parts);
+    if (source === current && source !== 'library') return;
+    if (source === 'remix') {
+      startRemix(info, parts);
+      return;
+    }
+    // Leaving a remix drops its items, so ask first when there is more than one to lose.
     if (parts.length > 1) {
       setPendingSwitch({ info, source });
       return;
     }
-    applySource(info, source);
+    applySource(info, source, parts);
   };
 
   const updateItemValue = (id: string, value: string) => {
@@ -461,14 +497,15 @@ export function ComfyWorkflowPanel({
     if (!pick) return;
     const { info } = pick;
     const parts = bindings.get(info.key) || [];
+    // Text inputs only take libraries as part of a remix.
     const item: WorkflowItem = {
       id: crypto.randomUUID(),
       type: 'library',
       value: libraryId,
-      comfyTarget: { nodeId: info.nodeId, input: info.input },
+      comfyTarget: bindingOf(info, !info.mediaKind),
     };
     if (pick.append) {
-      addPart(info, item);
+      addRemixItem(info, item);
       return;
     }
     if (pick.partId) {
@@ -492,9 +529,14 @@ export function ComfyWorkflowPanel({
   const sourceOptions = (info: ComfyInputInfo): Array<{ source: BindingSource; label: string; icon: typeof Type }> => [
     { source: 'default', label: t('projectViewer.comfy.sourceDefault'), icon: RefreshCw },
     ...(info.mediaKind
-      ? [{ source: 'import' as const, label: t('projectViewer.comfy.sourceImport'), icon: Upload }]
-      : [{ source: 'input' as const, label: t('projectViewer.comfy.sourceInput'), icon: Type }]),
-    { source: 'library', label: t('projectViewer.comfy.sourceLibrary'), icon: LibraryIcon },
+      ? [
+        { source: 'import' as const, label: t('projectViewer.comfy.sourceImport'), icon: Upload },
+        { source: 'library' as const, label: t('projectViewer.comfy.sourceLibrary'), icon: LibraryIcon },
+      ]
+      : [
+        { source: 'input' as const, label: t('projectViewer.comfy.sourceInput'), icon: Type },
+        { source: 'remix' as const, label: t('projectViewer.comfy.sourceRemix'), icon: Blend },
+      ]),
   ];
 
   const renderValuePreview = (info: ComfyInputInfo) => {
@@ -662,68 +704,67 @@ export function ComfyWorkflowPanel({
     );
   };
 
-  const partControlClass = 'p-1 rounded-md text-neutral-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all disabled:opacity-30 disabled:pointer-events-none';
-
   /**
-   * An input's parts, each with its editor. A text input can be built from
-   * several — typed text and libraries, joined in order like a regular
-   * project's prompt — so it also gets controls to add, reorder and remove them.
+   * A remixed text input: its items as the cards a regular project's workflow
+   * uses — drag to reorder, edit, pick from a library, filter by tags, disable —
+   * joined in order into the input's value, with every library multiplying the
+   * combinations.
    */
-  const renderParts = (info: ComfyInputInfo, parts: WorkflowItem[]) => (
-    <div className="space-y-2">
-      {parts.map((part, index) => (
-        <div key={part.id} className="flex items-start gap-1">
-          <div className="min-w-0 flex-1">{renderEditor(info, part)}</div>
-          {parts.length > 1 && (
-            <div className="flex shrink-0 flex-col">
-              <button
-                type="button"
-                onClick={() => movePart(info, part.id, -1)}
-                disabled={index === 0}
-                className={partControlClass}
-                title={t('projectViewer.comfy.movePartUp')}
-                aria-label={t('projectViewer.comfy.movePartUp')}
-              >
-                <ChevronUp className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => movePart(info, part.id, 1)}
-                disabled={index === parts.length - 1}
-                className={partControlClass}
-                title={t('projectViewer.comfy.movePartDown')}
-                aria-label={t('projectViewer.comfy.movePartDown')}
-              >
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => removePart(part.id)}
-                className={`${partControlClass} hover:!text-red-500 hover:!bg-red-500/10`}
-                title={t('projectViewer.comfy.removePart')}
-                aria-label={t('projectViewer.comfy.removePart')}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
+  const renderRemix = (info: ComfyInputInfo, parts: WorkflowItem[]) => {
+    const drag = remixDrag?.key === info.key ? remixDrag : null;
+    return (
+      <div className="space-y-2 rounded-xl border border-dashed border-orange-500/30 bg-orange-500/[0.03] p-2">
+        {parts.map((part, index) => (
+          <WorkflowItemCard
+            key={part.id}
+            item={part}
+            index={index}
+            draggedIndex={drag ? drag.from : null}
+            dragOverIndex={drag ? drag.over : null}
+            onDragStart={(e, from) => {
+              e.dataTransfer.effectAllowed = 'move';
+              setRemixDrag({ key: info.key, from, over: null });
+            }}
+            onDragOver={(e, over) => {
+              if (!drag) return;
+              e.preventDefault();
+              if (drag.over !== over) setRemixDrag({ ...drag, over });
+            }}
+            onDrop={(e, to) => {
+              if (!drag) return;
+              e.preventDefault();
+              moveRemixItem(info, drag.from, to);
+              setRemixDrag(null);
+            }}
+            onDragEnd={() => setRemixDrag(null)}
+            onRemove={removeItem}
+            onEdit={onEditItem}
+            onPreviewLibrary={(library) => onPreviewLibrary(library, part.id)}
+            onImageUpload={onImageUpload}
+            onVideoUpload={onVideoUpload}
+            onAudioUpload={onAudioUpload}
+            uploadingItemIds={uploadingItemIds}
+            onLightbox={onLightbox}
+            onUpdateTags={onUpdateTags}
+            onSelectFromLibrary={onSelectFromLibrary}
+            onChangeLibrary={(id) => openLibraryPicker({ info, partId: id })}
+            onSaveToLibrary={onSaveToLibrary}
+            libraries={libraries}
+            onToggleDisable={toggleItemDisabled}
+          />
+        ))}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => addRemixItem(info, newTextItem(info, '', true))} className={smallButtonClass}>
+            <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addTextPart')}
+          </button>
+          <button type="button" onClick={() => openLibraryPicker({ info, append: true })} className={smallButtonClass}>
+            <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addLibraryPart')}
+          </button>
         </div>
-      ))}
-      {!info.mediaKind && (
-        <>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => addPart(info, newTextPart(info, ''))} className={smallButtonClass}>
-              <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addTextPart')}
-            </button>
-            <button type="button" onClick={() => openLibraryPicker({ info, append: true })} className={smallButtonClass}>
-              <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addLibraryPart')}
-            </button>
-          </div>
-          {parts.length > 1 && <p className="text-[10px] leading-relaxed text-neutral-500">{t('projectViewer.comfy.partsHint')}</p>}
-        </>
-      )}
-    </div>
-  );
+        <p className="px-0.5 text-[10px] leading-relaxed text-neutral-500">{t('projectViewer.comfy.remixHint')}</p>
+      </div>
+    );
+  };
 
   return (
     <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4 ${isExpanded ? 'lg:px-8' : ''}`}>
@@ -903,7 +944,7 @@ export function ComfyWorkflowPanel({
                     <div className="divide-y divide-neutral-200/60 dark:divide-white/5 border-t border-neutral-200/60 dark:border-white/5">
                       {node.inputs.map((info) => {
                         const parts = bindings.get(info.key) || [];
-                        const source = sourceOf(parts);
+                        const source = sourceOf(info, parts);
                         if (!info.mediaKind && info.valueType !== 'string') {
                           return (
                             <div key={info.key} className="px-3 py-2.5">
@@ -941,7 +982,7 @@ export function ComfyWorkflowPanel({
                                 ))}
                               </div>
                             </div>
-                            {parts.length > 0 && renderParts(info, parts)}
+                            {source === 'remix' ? renderRemix(info, parts) : parts[0] && renderEditor(info, parts[0])}
                           </div>
                         );
                       })}
@@ -975,7 +1016,7 @@ export function ComfyWorkflowPanel({
         isOpen={pendingSwitch !== null}
         onClose={() => setPendingSwitch(null)}
         onConfirm={() => {
-          if (pendingSwitch) applySource(pendingSwitch.info, pendingSwitch.source);
+          if (pendingSwitch) applySource(pendingSwitch.info, pendingSwitch.source, bindings.get(pendingSwitch.info.key) || []);
           setPendingSwitch(null);
         }}
         title={t('projectViewer.comfy.replacePartsTitle')}
