@@ -4,6 +4,7 @@ import { S3Storage } from '../storage/s3-storage';
 import { ImageProcessor } from './image-processor';
 import { VideoProcessor } from './video-processor';
 import {
+  COMFY_UPLOAD_SUBFOLDER,
   ComfyApiError,
   ComfyClient,
   ComfyOutputFile,
@@ -23,9 +24,10 @@ import { assertSafeReferenceImageUrl } from '../utils/url-safety';
 import { transcodeToMp4 } from '../utils/video-utils';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 
-// Prompts handed to one project's ComfyUI at a time. Two keeps the GPU busy
-// while the previous result downloads, without queueing a whole batch on an
-// instance whose address may change before it gets to them.
+// Prompts waiting or running in one project's ComfyUI at a time. Two keep the
+// GPU busy without queueing a whole batch on an instance whose address may
+// change before it gets to them. A prompt ComfyUI has finished stops counting
+// while its result downloads, so a slow download never leaves the GPU idle.
 const MAX_IN_FLIGHT_PER_PROJECT = 2;
 const POLL_INTERVAL_MS = 2_000;
 // A finished prompt leaves the queue a moment before its history is written,
@@ -33,6 +35,10 @@ const POLL_INTERVAL_MS = 2_000;
 const MISSING_PROMPT_GRACE_POLLS = 3;
 // How long ComfyUI may stay unreachable before its in-flight jobs fail.
 const UNREACHABLE_TIMEOUT_MS = 10 * 60_000;
+// A check that keeps throwing — most often a result that won't download over
+// a slow link — fails its job after this many attempts in a row, instead of
+// leaving it processing, with its slot taken, for good.
+const MAX_CHECK_ERRORS = 3;
 
 const VIDEO_EXTENSIONS = new Set(['mp4', 'webm', 'mov', 'mkv', 'avi', 'gif']);
 const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tif', 'tiff', 'gif']);
@@ -73,6 +79,9 @@ interface InFlightJob {
   promptId: string;
   missingPolls: number;
   unreachableSince?: number;
+  checkErrors?: number;
+  /** ComfyUI has finished the prompt and its result is being collected. */
+  collecting?: boolean;
 }
 
 /**
@@ -88,7 +97,9 @@ export class ComfyUIRunner {
   private inFlight = new Map<string, InFlightJob>();
   private tracked = new Set<string>();
   private pumping = new Set<string>();
-  private isPolling = false;
+  // Jobs being checked right now. Each job is checked on its own, so one slow
+  // download does not hold up every other job.
+  private checking = new Set<string>();
   private intervalId?: NodeJS.Timeout;
 
   constructor(
@@ -101,9 +112,7 @@ export class ComfyUIRunner {
 
   public start() {
     if (this.intervalId) return;
-    this.intervalId = setInterval(() => {
-      this.pollInFlight().catch((e) => console.error('[ComfyUIRunner] Poll error:', e));
-    }, POLL_INTERVAL_MS);
+    this.intervalId = setInterval(() => this.pollInFlight(), POLL_INTERVAL_MS);
   }
 
   public stop() {
@@ -140,7 +149,7 @@ export class ComfyUIRunner {
   private activeCount(projectId: string): number {
     let count = this.submitting.get(projectId) || 0;
     for (const job of this.inFlight.values()) {
-      if (job.projectId === projectId) count++;
+      if (job.projectId === projectId && !job.collecting) count++;
     }
     return count;
   }
@@ -255,7 +264,7 @@ export class ComfyUIRunner {
         // Name uploads by content so the same reference is stored once and
         // ComfyUI can reuse its cached load across a batch.
         const hash = createHash('sha1').update(media.bytes).digest('hex').slice(0, 16);
-        name = await client.uploadFile(media.bytes, `remix-${hash}.${media.ext}`, media.mimeType);
+        name = await this.ensureUploaded(client, media, `remix-${hash}.${media.ext}`);
         uploaded.set(input.value, name);
       }
       values.push({ nodeId: input.nodeId, input: input.input, value: name });
@@ -276,6 +285,18 @@ export class ComfyUIRunner {
     return { values, seedInputs };
   }
 
+  /**
+   * Upload a reference unless ComfyUI already holds it. Uploads are named by
+   * content, so a file of that name is this file, and a batch sends each
+   * reference once rather than once per job — over a slow link, repeating a
+   * large upload is what times out.
+   */
+  private async ensureUploaded(client: ComfyClient, media: { bytes: Buffer; mimeType: string }, filename: string): Promise<string> {
+    const existing = `${COMFY_UPLOAD_SUBFOLDER}/${filename}`;
+    if (await client.hasInputFile(existing).catch(() => false)) return existing;
+    return client.uploadFile(media.bytes, filename, media.mimeType);
+  }
+
   private async loadMedia(value: string): Promise<{ bytes: Buffer; mimeType: string; ext: string }> {
     const dataUrl = value.match(/^data:([^;]+);base64,(.*)$/s);
     if (dataUrl) {
@@ -294,20 +315,29 @@ export class ComfyUIRunner {
     return { bytes: await this.storage.read(value), mimeType: MIME_BY_EXTENSION[ext] || 'application/octet-stream', ext };
   }
 
-  private async pollInFlight() {
-    if (this.isPolling || this.inFlight.size === 0) return;
-    this.isPolling = true;
-    try {
-      for (const job of Array.from(this.inFlight.values())) {
-        try {
-          await this.checkJob(job);
-        } catch (e) {
-          console.error(`[ComfyUIRunner] Checking job ${job.jobId} failed:`, e);
-        }
-      }
-    } finally {
-      this.isPolling = false;
+  private pollInFlight() {
+    for (const entry of this.inFlight.values()) {
+      if (this.checking.has(entry.jobId)) continue;
+      this.checking.add(entry.jobId);
+      void this.checkJob(entry)
+        .then(() => { entry.checkErrors = 0; })
+        .catch((e) => this.recordCheckError(entry, e))
+        .catch((e) => console.error(`[ComfyUIRunner] Failing job ${entry.jobId} failed:`, e))
+        .finally(() => this.checking.delete(entry.jobId));
     }
+  }
+
+  /**
+   * A check threw: retried on the next poll, and after MAX_CHECK_ERRORS in a
+   * row the job fails with the error. The prompt id is kept, so retrying the
+   * job collects a result ComfyUI already finished instead of running it again.
+   */
+  private async recordCheckError(entry: InFlightJob, e: any) {
+    entry.checkErrors = (entry.checkErrors || 0) + 1;
+    console.error(`[ComfyUIRunner] Checking job ${entry.jobId} failed (${entry.checkErrors}/${MAX_CHECK_ERRORS}):`, e?.message || e);
+    if (entry.checkErrors < MAX_CHECK_ERRORS || !this.inFlight.has(entry.jobId)) return;
+    const message = e?.message || 'Checking the job in ComfyUI failed';
+    await this.fail(entry, `${message}. Retry the job to try again — a result ComfyUI already finished is downloaded, not generated again.`, true);
   }
 
   private async checkJob(entry: InFlightJob) {
@@ -383,6 +413,12 @@ export class ComfyUIRunner {
       return;
     }
 
+    // The GPU is done with this prompt: send the next job while the result
+    // downloads, which over a slow link can take longer than generating it.
+    if (!entry.collecting) {
+      entry.collecting = true;
+      void this.pump(projectId);
+    }
     await this.complete(entry, job, client, file);
   }
 
@@ -401,6 +437,7 @@ export class ComfyUIRunner {
       throw e;
     }
     const { bytes, contentType } = download;
+    console.log(`[ComfyUIRunner] Job ${entry.jobId} downloaded ${file.filename} (${(bytes.length / 1024 ** 2).toFixed(1)} MB)`);
     const ext = extensionOf(file.filename);
     const isVideo = ext === 'gif' ? job.format === 'mp4' : VIDEO_EXTENSIONS.has(ext);
 
@@ -428,12 +465,13 @@ export class ComfyUIRunner {
     this.release(entry);
   }
 
-  private async fail(entry: InFlightJob, error: string) {
+  /** Fail a job. `keepPrompt` keeps its prompt id, for a retry to collect the result. */
+  private async fail(entry: InFlightJob, error: string, keepPrompt = false) {
     console.warn(`[ComfyUIRunner] Job ${entry.jobId} failed: ${error}`);
     await this.updateJobStatus(entry.userId, entry.projectId, entry.jobId, {
       status: 'failed',
       error,
-      taskId: null as any,
+      ...(keepPrompt ? {} : { taskId: null as any }),
     });
     this.release(entry);
   }
