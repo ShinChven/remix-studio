@@ -31,8 +31,9 @@ A ComfyUI project runs a workflow on a ComfyUI instance you host — a local mac
      - **Input** takes text you type.
      - **Import** takes a file you upload, for `Load Image`, video and audio loader nodes. It is uploaded to ComfyUI's input folder when the job runs.
      - **Library** varies the input over a library's items (text libraries for text inputs, media libraries for loader nodes), with the same tag filters a regular workflow uses.
+   - **Compose a text input from parts** — once a text input takes typed text or a library, **Add text** and **Add library** add more parts to it, the way a regular project builds its prompt from several workflow steps. The parts are joined in order, separated by a blank line, into the one value the input receives; reorder them with the arrows beside each part, and an empty part adds nothing. For example `a photo of` + a library of 3 subjects + a library of 4 styles gives the prompt input 12 variations. Switching an input with several parts to another source replaces them all, after you confirm.
 
-Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
+Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, whether they feed one input as parts or two different inputs, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
 
 Jobs run up to two at a time per project. Each result is downloaded from ComfyUI and stored like any other generation; choose **Image** (PNG, JPEG, WebP) or **Video** output — video files that are not mp4 are converted. A job's expanded view lists the values it sent, including the seed it rolled. When a prompt fails in ComfyUI, the job fails with ComfyUI's own error (for example the node that ran out of memory); when the instance restarted and forgot the prompt, retry the job after updating the address.
 

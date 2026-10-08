@@ -1,4 +1,5 @@
 import { ComfyInputTarget, ComfyJobInput, Library, WorkflowItem } from '../types';
+import { isSameComfyTarget } from './comfyWorkflow';
 
 export interface Combination {
   prompt: string;
@@ -22,6 +23,27 @@ function hasTextValue(item: WorkflowItem): boolean {
 
 function toComfyInput(choice: Choice): ComfyJobInput | null {
   return choice.target ? { ...choice.target, kind: choice.type, value: choice.value } : null;
+}
+
+/**
+ * A ComfyUI text input can be built from several parts — typed text and
+ * libraries — which make up its value together, joined in workflow order the
+ * way a regular project's text steps make up its prompt. Empty parts add
+ * nothing; an input whose parts are all empty is still sent, as empty.
+ */
+function mergeComfyTextInputs(inputs: ComfyJobInput[]): ComfyJobInput[] {
+  const merged: ComfyJobInput[] = [];
+  for (const input of inputs) {
+    const existing = input.kind === 'text'
+      ? merged.find((other) => other.kind === 'text' && isSameComfyTarget(other, input))
+      : undefined;
+    if (existing) {
+      existing.value = [existing.value, input.value].filter((value) => value.trim() !== '').join('\n\n');
+    } else {
+      merged.push({ ...input });
+    }
+  }
+  return merged;
 }
 
 export function filterItemsByTags<T extends { tags?: string[] }>(
@@ -104,7 +126,7 @@ function choicesToCombination(combo: Choice[]): Combination {
     videoContexts: videos.length > 0 ? videos : undefined,
     audioContexts: audios.length > 0 ? audios : undefined,
     filenameParts: stepParts,
-    comfyInputs: comfyInputs.length > 0 ? comfyInputs : undefined,
+    comfyInputs: comfyInputs.length > 0 ? mergeComfyTextInputs(comfyInputs) : undefined,
   };
 }
 

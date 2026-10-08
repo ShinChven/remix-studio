@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   ClipboardPaste,
   Dices,
   Eye,
@@ -49,11 +50,27 @@ const LAST_URL_STORAGE_KEY = 'remix-studio:comfyui:last-url';
 
 type BindingSource = 'default' | 'input' | 'import' | 'library';
 
-function sourceOf(item: WorkflowItem | undefined): BindingSource {
-  if (!item) return 'default';
+function partSource(item: WorkflowItem): BindingSource {
   if (item.type === 'library') return 'library';
   if (item.type === 'text') return 'input';
   return 'import';
+}
+
+/**
+ * Where an input's value comes from. A text input can be built from several
+ * parts; when they mix typed text and libraries there is no single source.
+ */
+function sourceOf(parts: WorkflowItem[] | undefined): BindingSource | null {
+  if (!parts || parts.length === 0) return 'default';
+  const first = partSource(parts[0]);
+  return parts.every((part) => partSource(part) === first) ? first : null;
+}
+
+/** What picking a library does: bind the input to it alone, add it as a part, or swap one part for it. */
+interface LibraryPick {
+  info: ComfyInputInfo;
+  append?: boolean;
+  partId?: string;
 }
 
 /** Inputs worth opening a node for: prompts, loaded files, seeds and sizes. */
@@ -291,17 +308,22 @@ export function ComfyWorkflowPanel({
 
   // ---- Inputs ----
   const nodes = useMemo(() => (workflow ? listComfyNodeInputs(workflow) : []), [workflow]);
+  // Each bound input's parts, in workflow order. Only text inputs take more than one.
   const bindings = useMemo(() => {
-    const map = new Map<string, WorkflowItem>();
+    const map = new Map<string, WorkflowItem[]>();
     for (const item of items) {
-      if (item.comfyTarget) map.set(comfyTargetKey(item.comfyTarget), item);
+      if (!item.comfyTarget) continue;
+      const key = comfyTargetKey(item.comfyTarget);
+      map.set(key, [...(map.get(key) || []), item]);
     }
     return map;
   }, [items]);
   const [query, setQuery] = useState('');
   const [mappedOnly, setMappedOnly] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
-  const [libraryPickerFor, setLibraryPickerFor] = useState<ComfyInputInfo | null>(null);
+  const [libraryPick, setLibraryPick] = useState<LibraryPick | null>(null);
+  // A source switch that would replace an input's several parts, awaiting confirmation.
+  const [pendingSwitch, setPendingSwitch] = useState<{ info: ComfyInputInfo; source: BindingSource } | null>(null);
 
   const visibleNodes = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -323,7 +345,15 @@ export function ComfyWorkflowPanel({
       ?? node.inputs.some((info) => bindings.has(info.key) || isNotableInput(info));
   };
 
-  /** Bind (or rebind) one input, keeping the binding's place in the item order. */
+  /**
+   * Save the items in this order. Items load sorted by their stored `order`,
+   * so it is renumbered here — an input's parts are joined in that order.
+   */
+  const saveItems = (next: WorkflowItem[]) => {
+    onSaveProject({ ...localProject, workflow: next.map((item, order) => ({ ...item, order })) });
+  };
+
+  /** Bind (or rebind) one input to a single item, keeping the binding's place in the item order. */
   const saveBinding = (info: ComfyInputInfo, item: WorkflowItem | null) => {
     let replaced = false;
     const next: WorkflowItem[] = [];
@@ -336,25 +366,69 @@ export function ComfyWorkflowPanel({
       }
     }
     if (item && !replaced) next.push(item);
-    onSaveProject({ ...localProject, workflow: next });
+    saveItems(next);
   };
 
-  const setSource = (info: ComfyInputInfo, source: BindingSource) => {
-    const current = bindings.get(info.key);
+  /** Add a part after the input's last one, so its parts stay together and in order. */
+  const addPart = (info: ComfyInputInfo, item: WorkflowItem) => {
+    const parts = bindings.get(info.key) || [];
+    const last = parts[parts.length - 1];
+    const index = last ? items.findIndex((existing) => existing.id === last.id) + 1 : items.length;
+    saveItems([...items.slice(0, index), item, ...items.slice(index)]);
+  };
+
+  const removePart = (id: string) => {
+    saveItems(items.filter((item) => item.id !== id));
+  };
+
+  /** Swap a part with its neighbour among the same input's parts. */
+  const movePart = (info: ComfyInputInfo, id: string, offset: -1 | 1) => {
+    const parts = bindings.get(info.key) || [];
+    const neighbour = parts[parts.findIndex((part) => part.id === id) + offset];
+    if (!neighbour) return;
+    const from = items.findIndex((item) => item.id === id);
+    const to = items.findIndex((item) => item.id === neighbour.id);
+    const next = [...items];
+    [next[from], next[to]] = [next[to], next[from]];
+    saveItems(next);
+  };
+
+  const newTextPart = (info: ComfyInputInfo, value: string): WorkflowItem => ({
+    id: crypto.randomUUID(),
+    type: 'text',
+    value,
+    comfyTarget: { nodeId: info.nodeId, input: info.input },
+  });
+
+  const openLibraryPicker = (pick: LibraryPick) => {
+    setLibraryPick(pick);
+    void onRefreshLibraries().catch(() => {});
+  };
+
+  /** Switch an input to one source, replacing all of its parts. */
+  const applySource = (info: ComfyInputInfo, source: BindingSource) => {
     if (source === 'library') {
-      setLibraryPickerFor(info);
-      void onRefreshLibraries().catch(() => {});
+      openLibraryPicker({ info });
       return;
     }
-    if (sourceOf(current) === source) return;
     if (source === 'default') {
       saveBinding(info, null);
       return;
     }
-    const target = { nodeId: info.nodeId, input: info.input };
     saveBinding(info, source === 'input'
-      ? { id: crypto.randomUUID(), type: 'text', value: String(info.value), comfyTarget: target }
-      : { id: crypto.randomUUID(), type: info.mediaKind || 'image', value: '', comfyTarget: target });
+      ? newTextPart(info, String(info.value))
+      : { id: crypto.randomUUID(), type: info.mediaKind || 'image', value: '', comfyTarget: { nodeId: info.nodeId, input: info.input } });
+  };
+
+  const setSource = (info: ComfyInputInfo, source: BindingSource) => {
+    const parts = bindings.get(info.key) || [];
+    if (source !== 'library' && sourceOf(parts) === source) return;
+    // Switching drops every part, so ask first when there is more than one to lose.
+    if (parts.length > 1) {
+      setPendingSwitch({ info, source });
+      return;
+    }
+    applySource(info, source);
   };
 
   const updateItemValue = (id: string, value: string) => {
@@ -367,7 +441,7 @@ export function ComfyWorkflowPanel({
    * exception — left alone it is random, so any typed value pins it.
    */
   const setScalarValue = (info: ComfyInputInfo, raw: string) => {
-    const current = bindings.get(info.key);
+    const current = bindings.get(info.key)?.[0];
     const matchesWorkflow = info.valueType === 'number' ? Number(raw) === info.value : raw === String(info.value);
     if (matchesWorkflow && !info.isSeed) {
       if (current) saveBinding(info, null);
@@ -382,24 +456,36 @@ export function ComfyWorkflowPanel({
   };
 
   const handleLibraryPicked = (libraryId: string) => {
-    const info = libraryPickerFor;
-    setLibraryPickerFor(null);
-    if (!info) return;
-    const current = bindings.get(info.key);
-    if (current?.type === 'library' && current.value === libraryId) return;
-    saveBinding(info, {
+    const pick = libraryPick;
+    setLibraryPick(null);
+    if (!pick) return;
+    const { info } = pick;
+    const parts = bindings.get(info.key) || [];
+    const item: WorkflowItem = {
       id: crypto.randomUUID(),
       type: 'library',
       value: libraryId,
       comfyTarget: { nodeId: info.nodeId, input: info.input },
-    });
+    };
+    if (pick.append) {
+      addPart(info, item);
+      return;
+    }
+    if (pick.partId) {
+      // A different library brings different tags, so its tag filter starts over.
+      if (parts.some((part) => part.id === pick.partId && part.type === 'library' && part.value === libraryId)) return;
+      saveItems(items.map((existing) => (existing.id === pick.partId ? item : existing)));
+      return;
+    }
+    if (parts.length === 1 && parts[0].type === 'library' && parts[0].value === libraryId) return;
+    saveBinding(info, item);
   };
 
   const pickerLibraries = useMemo(() => {
-    if (!libraryPickerFor) return [];
-    const kind = libraryPickerFor.mediaKind || 'text';
+    if (!libraryPick) return [];
+    const kind = libraryPick.info.mediaKind || 'text';
     return libraries.filter((library) => (library.type || 'text') === kind);
-  }, [libraries, libraryPickerFor]);
+  }, [libraries, libraryPick]);
 
   const mappedCount = bindings.size;
 
@@ -526,7 +612,7 @@ export function ComfyWorkflowPanel({
           </button>
           <button
             type="button"
-            onClick={() => setSource(info, 'library')}
+            onClick={() => openLibraryPicker({ info, partId: item.id })}
             className="p-2 rounded-lg border border-transparent text-neutral-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
             title={t('projectViewer.workflow.changeLibrary')}
             aria-label={t('projectViewer.workflow.changeLibrary')}
@@ -575,6 +661,69 @@ export function ComfyWorkflowPanel({
       </div>
     );
   };
+
+  const partControlClass = 'p-1 rounded-md text-neutral-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all disabled:opacity-30 disabled:pointer-events-none';
+
+  /**
+   * An input's parts, each with its editor. A text input can be built from
+   * several — typed text and libraries, joined in order like a regular
+   * project's prompt — so it also gets controls to add, reorder and remove them.
+   */
+  const renderParts = (info: ComfyInputInfo, parts: WorkflowItem[]) => (
+    <div className="space-y-2">
+      {parts.map((part, index) => (
+        <div key={part.id} className="flex items-start gap-1">
+          <div className="min-w-0 flex-1">{renderEditor(info, part)}</div>
+          {parts.length > 1 && (
+            <div className="flex shrink-0 flex-col">
+              <button
+                type="button"
+                onClick={() => movePart(info, part.id, -1)}
+                disabled={index === 0}
+                className={partControlClass}
+                title={t('projectViewer.comfy.movePartUp')}
+                aria-label={t('projectViewer.comfy.movePartUp')}
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => movePart(info, part.id, 1)}
+                disabled={index === parts.length - 1}
+                className={partControlClass}
+                title={t('projectViewer.comfy.movePartDown')}
+                aria-label={t('projectViewer.comfy.movePartDown')}
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => removePart(part.id)}
+                className={`${partControlClass} hover:!text-red-500 hover:!bg-red-500/10`}
+                title={t('projectViewer.comfy.removePart')}
+                aria-label={t('projectViewer.comfy.removePart')}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      ))}
+      {!info.mediaKind && (
+        <>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => addPart(info, newTextPart(info, ''))} className={smallButtonClass}>
+              <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addTextPart')}
+            </button>
+            <button type="button" onClick={() => openLibraryPicker({ info, append: true })} className={smallButtonClass}>
+              <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addLibraryPart')}
+            </button>
+          </div>
+          {parts.length > 1 && <p className="text-[10px] leading-relaxed text-neutral-500">{t('projectViewer.comfy.partsHint')}</p>}
+        </>
+      )}
+    </div>
+  );
 
   return (
     <div className={`flex-1 min-h-0 overflow-y-auto custom-scrollbar p-4 space-y-4 ${isExpanded ? 'lg:px-8' : ''}`}>
@@ -753,12 +902,12 @@ export function ComfyWorkflowPanel({
                   {open && (
                     <div className="divide-y divide-neutral-200/60 dark:divide-white/5 border-t border-neutral-200/60 dark:border-white/5">
                       {node.inputs.map((info) => {
-                        const item = bindings.get(info.key);
-                        const source = sourceOf(item);
+                        const parts = bindings.get(info.key) || [];
+                        const source = sourceOf(parts);
                         if (!info.mediaKind && info.valueType !== 'string') {
                           return (
                             <div key={info.key} className="px-3 py-2.5">
-                              {renderScalarRow(info, item)}
+                              {renderScalarRow(info, parts[0])}
                             </div>
                           );
                         }
@@ -792,7 +941,7 @@ export function ComfyWorkflowPanel({
                                 ))}
                               </div>
                             </div>
-                            {item && renderEditor(info, item)}
+                            {parts.length > 0 && renderParts(info, parts)}
                           </div>
                         );
                       })}
@@ -806,20 +955,38 @@ export function ComfyWorkflowPanel({
       )}
 
       <LibrarySelectionModal
-        isOpen={libraryPickerFor !== null}
-        onClose={() => setLibraryPickerFor(null)}
+        isOpen={libraryPick !== null}
+        onClose={() => setLibraryPick(null)}
         onSelect={handleLibraryPicked}
         libraries={pickerLibraries}
         selectedLibraryIds={items.filter((item) => item.comfyTarget && item.type === 'library').map((item) => item.value)}
         isLoading={isRefreshingLibraries}
         error={libraryRefreshError}
-        description={libraryPickerFor
+        description={libraryPick
           ? t('projectViewer.comfy.libraryPickerDescription', {
-            input: libraryPickerFor.input,
-            node: libraryPickerFor.nodeTitle,
-            kind: t(`projectViewer.comfy.kind.${libraryPickerFor.mediaKind || 'text'}`),
+            input: libraryPick.info.input,
+            node: libraryPick.info.nodeTitle,
+            kind: t(`projectViewer.comfy.kind.${libraryPick.info.mediaKind || 'text'}`),
           })
           : undefined}
+      />
+
+      <ConfirmModal
+        isOpen={pendingSwitch !== null}
+        onClose={() => setPendingSwitch(null)}
+        onConfirm={() => {
+          if (pendingSwitch) applySource(pendingSwitch.info, pendingSwitch.source);
+          setPendingSwitch(null);
+        }}
+        title={t('projectViewer.comfy.replacePartsTitle')}
+        message={pendingSwitch
+          ? t('projectViewer.comfy.replacePartsMessage', {
+            count: bindings.get(pendingSwitch.info.key)?.length ?? 0,
+            input: pendingSwitch.info.input,
+          })
+          : ''}
+        confirmText={t('projectViewer.comfy.replaceParts')}
+        type="danger"
       />
 
       <ConfirmModal

@@ -26,6 +26,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Improved**
 
+- **Remix materials inside a ComfyUI prompt** — A ComfyUI text input took one typed text or one library, so a prompt could not be assembled from several materials the way a regular project's workflow builds one. Once an input is mapped, **Add text** and **Add library** add more parts to it — say `a photo of`, a library of subjects and a library of styles — joined in order into the prompt, with every combination of library items becoming its own job. See [ComfyUI Projects](/concepts/projects#comfyui-projects).
 - **Edit and create a project from a dialog** — Editing a project no longer takes you away from it, and creating one no longer leaves the list it will land in. On a phone the dialog is full screen and keeps the keyboard down until you tap a field.
 - **Moving album items, in a dialog that remembers where they went** — **Move to Project** opens over the album instead of on a page of its own, so your selection is still there if you back out, and it proposes the project you last moved items to.
 - **Quieter TV slideshows** — Only the pictures are shown; the caption and progress appear for a few seconds when you touch the remote. A running slideshow no longer lets the TV's screensaver start.
