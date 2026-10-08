@@ -8,6 +8,7 @@ import enWorkspace from './en/workspace.json';
 import enCampaigns from './en/campaigns.json';
 import enReleases from './en/releases.json';
 import enMediaShare from './en/media-share.json';
+import enModels from './en/models.json';
 import frAdmin from './fr/admin.json';
 import frApp from './fr/app.json';
 import frLibraries from './fr/libraries.json';
@@ -18,6 +19,7 @@ import frWorkspace from './fr/workspace.json';
 import frCampaigns from './fr/campaigns.json';
 import frReleases from './fr/releases.json';
 import frMediaShare from './fr/media-share.json';
+import frModels from './fr/models.json';
 import jaAdmin from './ja/admin.json';
 import jaApp from './ja/app.json';
 import jaLibraries from './ja/libraries.json';
@@ -28,6 +30,7 @@ import jaWorkspace from './ja/workspace.json';
 import jaCampaigns from './ja/campaigns.json';
 import jaReleases from './ja/releases.json';
 import jaMediaShare from './ja/media-share.json';
+import jaModels from './ja/models.json';
 import koAdmin from './ko/admin.json';
 import koApp from './ko/app.json';
 import koLibraries from './ko/libraries.json';
@@ -38,6 +41,7 @@ import koWorkspace from './ko/workspace.json';
 import koCampaigns from './ko/campaigns.json';
 import koReleases from './ko/releases.json';
 import koMediaShare from './ko/media-share.json';
+import koModels from './ko/models.json';
 import zhCNAdmin from './zh-CN/admin.json';
 import zhCNApp from './zh-CN/app.json';
 import zhCNLibraries from './zh-CN/libraries.json';
@@ -48,6 +52,7 @@ import zhCNWorkspace from './zh-CN/workspace.json';
 import zhCNCampaigns from './zh-CN/campaigns.json';
 import zhCNReleases from './zh-CN/releases.json';
 import zhCNMediaShare from './zh-CN/media-share.json';
+import zhCNModels from './zh-CN/models.json';
 import zhTWAdmin from './zh-TW/admin.json';
 import zhTWApp from './zh-TW/app.json';
 import zhTWLibraries from './zh-TW/libraries.json';
@@ -58,6 +63,7 @@ import zhTWWorkspace from './zh-TW/workspace.json';
 import zhTWCampaigns from './zh-TW/campaigns.json';
 import zhTWReleases from './zh-TW/releases.json';
 import zhTWMediaShare from './zh-TW/media-share.json';
+import zhTWModels from './zh-TW/models.json';
 
 type LocaleMessages = Record<string, unknown>;
 
@@ -74,7 +80,8 @@ export const en = mergeLocale(
   enWorkspace,
   enCampaigns,
   enReleases,
-  enMediaShare
+  enMediaShare,
+  enModels
 );
 
 export const fr = mergeLocale(
@@ -87,7 +94,8 @@ export const fr = mergeLocale(
   frWorkspace,
   frCampaigns,
   frReleases,
-  frMediaShare
+  frMediaShare,
+  frModels
 );
 
 export const ja = mergeLocale(
@@ -100,7 +108,8 @@ export const ja = mergeLocale(
   jaWorkspace,
   jaCampaigns,
   jaReleases,
-  jaMediaShare
+  jaMediaShare,
+  jaModels
 );
 
 export const ko = mergeLocale(
@@ -113,7 +122,8 @@ export const ko = mergeLocale(
   koWorkspace,
   koCampaigns,
   koReleases,
-  koMediaShare
+  koMediaShare,
+  koModels
 );
 
 export const zhCN = mergeLocale(
@@ -126,7 +136,8 @@ export const zhCN = mergeLocale(
   zhCNWorkspace,
   zhCNCampaigns,
   zhCNReleases,
-  zhCNMediaShare
+  zhCNMediaShare,
+  zhCNModels
 );
 
 export const zhTW = mergeLocale(
@@ -139,5 +150,6 @@ export const zhTW = mergeLocale(
   zhTWWorkspace,
   zhTWCampaigns,
   zhTWReleases,
-  zhTWMediaShare
+  zhTWMediaShare,
+  zhTWModels
 );

@@ -14,6 +14,7 @@ import {
   PROVIDER_MODELS_MAP,
   parseAudioProjectConfig,
   resolveCustomModels,
+  getProviderRecordModels,
   resolveSupportedAspectRatio,
   resolveSupportedOption,
   QueueMonitorJob,
@@ -60,12 +61,7 @@ export interface QueuedJob {
 /**
  * Build the full model list for a provider record: built-in models + resolved custom variants.
  */
-function getAllModels(providerRecord: any): ModelConfig[] {
-  const providerType = providerRecord.type as ProviderType;
-  const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
-  const customAliases = Array.isArray(providerRecord.models) ? providerRecord.models : [];
-  return [...baseModels, ...resolveCustomModels(providerType, customAliases)];
-}
+const getAllModels = getProviderRecordModels;
 
 function inferImageMimeType(value: string): string {
   const dataUrlMatch = value.match(/^data:(image\/[\w+.-]+);base64,/i);

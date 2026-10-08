@@ -862,8 +862,10 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      // Named the way RunningHub lists it, which also keeps it apart from
+      // `seedream-v5-pro` below — a separate RunningHub listing.
       id: 'runninghub-seedream-5-0-pro',
-      name: 'Seedream 5.0 Pro',
+      name: 'Dola Seedream 5.0 Pro',
       generatorId: 'RunningHub',
       modelId: 'dola-Seedream-5.0-pro',
       category: 'image',
@@ -871,6 +873,22 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
         qualities: ['1K', '2K'],
+      },
+    },
+    {
+      // Splits one source image into a base image plus up to 16 transparent
+      // PNG layers, each saved as its own album item. The endpoint is part of
+      // the model ID, and the request has no size: the output follows the
+      // source, at the resolution tier picked here.
+      id: 'runninghub-seedream-5-0-pro-layer-decomposition',
+      name: 'Dola Seedream 5.0 Pro Layer Decomposition',
+      generatorId: 'RunningHub',
+      modelId: 'dola-Seedream-5.0-pro/layer-decomposition',
+      category: 'image',
+      promptLimit: { value: 2000, unit: 'characters' },
+      options: {
+        aspectRatios: ['auto'],
+        qualities: ['Auto', '1K', '1.5K', '2K'],
       },
     },
     {
@@ -1961,6 +1979,13 @@ export function resolveCustomModels(
       };
     })
     .filter((m): m is ModelConfig => m !== null);
+}
+
+/** A provider record's bundled models plus the custom variants saved on it. */
+export function getProviderRecordModels(providerRecord: { type: string; models?: unknown }): ModelConfig[] {
+  const providerType = providerRecord.type as ProviderType;
+  const customAliases = Array.isArray(providerRecord.models) ? providerRecord.models : [];
+  return [...(PROVIDER_MODELS_MAP[providerType] || []), ...resolveCustomModels(providerType, customAliases)];
 }
 
 /**
