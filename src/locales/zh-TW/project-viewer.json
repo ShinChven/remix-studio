@@ -557,6 +557,8 @@
       "addTextPart": "新增文字",
       "addLibraryPart": "新增素材庫",
       "remixHint": "各項目會像一般專案的工作流程一樣，依此順序串接成這個輸入的值。每個素材庫都會讓組合數相乘。",
+      "remixEmpty": "尚無項目。新增文字或素材庫來 Remix 這個輸入；在此之前會沿用工作流程的值。",
+      "remixAllDisabled": "#{{node}} 的「{{input}}」所有 Remix 項目都已停用。請啟用其中一個，或將輸入設回預設。",
       "replacePartsTitle": "要離開 Remix 嗎？",
       "replacePartsMessage_one": "「{{input}}」由 {{count}} 個項目 Remix 而成。切換來源會將其移除。",
       "replacePartsMessage_other": "「{{input}}」由 {{count}} 個項目 Remix 而成。切換來源會移除全部項目。",

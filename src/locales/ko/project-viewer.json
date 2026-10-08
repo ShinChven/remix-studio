@@ -557,6 +557,8 @@
       "addTextPart": "텍스트 추가",
       "addLibraryPart": "라이브러리 추가",
       "remixHint": "항목은 일반 프로젝트의 워크플로처럼 이 순서대로 이 입력에 이어 붙여집니다. 라이브러리마다 조합 수가 곱해집니다.",
+      "remixEmpty": "아직 항목이 없습니다. 텍스트나 라이브러리를 추가해 이 입력을 리믹스하세요. 추가하기 전까지는 워크플로의 값이 사용됩니다.",
+      "remixAllDisabled": "#{{node}}의 「{{input}}」은(는) 리믹스 항목이 모두 비활성화되어 있습니다. 하나를 활성화하거나 입력을 기본값으로 되돌리세요.",
       "replacePartsTitle": "리믹스를 종료할까요?",
       "replacePartsMessage_one": "「{{input}}」은(는) {{count}}개의 항목으로 리믹스되어 있습니다. 소스를 전환하면 삭제됩니다.",
       "replacePartsMessage_other": "「{{input}}」은(는) {{count}}개의 항목으로 리믹스되어 있습니다. 소스를 전환하면 모두 삭제됩니다.",

@@ -557,6 +557,8 @@
       "addTextPart": "Add text",
       "addLibraryPart": "Add library",
       "remixHint": "Items are joined in order into this input, like a regular project's workflow. Each library multiplies the combinations.",
+      "remixEmpty": "No items yet. Add text or a library to remix this input — until then it keeps the workflow's value.",
+      "remixAllDisabled": "\"{{input}}\" on #{{node}} has every remix item disabled. Enable one, or set the input to Default.",
       "replacePartsTitle": "Leave the remix?",
       "replacePartsMessage_one": "\"{{input}}\" is remixed from {{count}} item. Switching its source removes it.",
       "replacePartsMessage_other": "\"{{input}}\" is remixed from {{count}} items. Switching its source removes them.",

@@ -557,6 +557,8 @@
       "addTextPart": "Ajouter du texte",
       "addLibraryPart": "Ajouter une bibliothèque",
       "remixHint": "Les éléments sont assemblés dans cet ordre pour former cette entrée, comme le workflow d’un projet classique. Chaque bibliothèque multiplie les combinaisons.",
+      "remixEmpty": "Aucun élément pour l’instant. Ajoutez du texte ou une bibliothèque pour remixer cette entrée — d’ici là, elle garde la valeur du workflow.",
+      "remixAllDisabled": "Tous les éléments du remix de « {{input}} » sur #{{node}} sont désactivés. Activez-en un ou remettez l’entrée sur Défaut.",
       "replacePartsTitle": "Quitter le remix ?",
       "replacePartsMessage_one": "« {{input}} » est remixé à partir de {{count}} élément. Changer sa source le supprime.",
       "replacePartsMessage_other": "« {{input}} » est remixé à partir de {{count}} éléments. Changer sa source les supprime tous.",

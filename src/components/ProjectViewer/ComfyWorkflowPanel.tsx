@@ -34,9 +34,10 @@ import { imageDisplayUrl, testComfyConnection, type ComfyConnectionResult } from
 import type { ComfyBinding, Library, Project, WorkflowItem } from '../../types';
 import {
   ComfyInputInfo,
-  comfyTargetKey,
   detectComfyOutputKind,
   getComfyInputValue,
+  groupComfyBindings,
+  isComfyRemix,
   isSameComfyTarget,
   listComfyNodeInputs,
   normalizeComfyAddress,
@@ -60,8 +61,7 @@ type BindingSource = 'default' | 'input' | 'remix' | 'import' | 'library';
 function sourceOf(info: ComfyInputInfo, parts: WorkflowItem[]): BindingSource {
   if (parts.length === 0) return 'default';
   if (info.mediaKind) return parts[0].type === 'library' ? 'library' : 'import';
-  const isTypedText = parts.length === 1 && parts[0].type === 'text' && !parts[0].comfyTarget?.remix;
-  return isTypedText ? 'input' : 'remix';
+  return isComfyRemix(parts) ? 'remix' : 'input';
 }
 
 /** What picking a library does: bind a file input to it, add it to a remix, or swap one item for it. */
@@ -165,6 +165,8 @@ interface ComfyWorkflowPanelProps {
   onEditItem: (item: WorkflowItem) => void;
   onPreviewLibrary: (library: Library, workflowItemId: string) => void;
   onLightbox: (images: string[], index: number) => void;
+  /** Asks before removing a workflow item, as the regular workflow does. */
+  onRemoveItem: (id: string) => void;
   onUpdateTags: (id: string, tags: string[]) => void;
   onSelectFromLibrary: (id: string) => void;
   onSaveToLibrary: (item: WorkflowItem) => void;
@@ -192,6 +194,7 @@ export function ComfyWorkflowPanel({
   onEditItem,
   onPreviewLibrary,
   onLightbox,
+  onRemoveItem,
   onUpdateTags,
   onSelectFromLibrary,
   onSaveToLibrary,
@@ -312,16 +315,8 @@ export function ComfyWorkflowPanel({
 
   // ---- Inputs ----
   const nodes = useMemo(() => (workflow ? listComfyNodeInputs(workflow) : []), [workflow]);
-  // Each bound input's parts, in workflow order. Only text inputs take more than one.
-  const bindings = useMemo(() => {
-    const map = new Map<string, WorkflowItem[]>();
-    for (const item of items) {
-      if (!item.comfyTarget) continue;
-      const key = comfyTargetKey(item.comfyTarget);
-      map.set(key, [...(map.get(key) || []), item]);
-    }
-    return map;
-  }, [items]);
+  // Each bound input's items, in workflow order. Only a remix has more than one.
+  const bindings = useMemo(() => groupComfyBindings(items), [items]);
   const [query, setQuery] = useState('');
   const [mappedOnly, setMappedOnly] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
@@ -330,6 +325,12 @@ export function ComfyWorkflowPanel({
   const [pendingSwitch, setPendingSwitch] = useState<{ info: ComfyInputInfo; source: BindingSource } | null>(null);
   // A remix item being dragged to a new position, within its own input.
   const [remixDrag, setRemixDrag] = useState<{ key: string; from: number; over: number | null } | null>(null);
+  // Remixes whose last item was removed. An empty remix has nothing to store, so
+  // it stays open until another source is picked rather than closing at once.
+  const [emptyRemixKeys, setEmptyRemixKeys] = useState<Set<string>>(() => new Set());
+
+  const sourceFor = (info: ComfyInputInfo, parts: WorkflowItem[]): BindingSource =>
+    (parts.length === 0 && !info.mediaKind && emptyRemixKeys.has(info.key) ? 'remix' : sourceOf(info, parts));
 
   const visibleNodes = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -396,8 +397,9 @@ export function ComfyWorkflowPanel({
     saveItems([...items.slice(0, index), item, ...items.slice(index)]);
   };
 
-  const removeItem = (id: string) => {
-    saveItems(items.filter((item) => item.id !== id));
+  const removeRemixItem = (info: ComfyInputInfo, parts: WorkflowItem[], id: string) => {
+    if (parts.length === 1) setEmptyRemixKeys((keys) => new Set(keys).add(info.key));
+    onRemoveItem(id);
   };
 
   const toggleItemDisabled = (id: string) => {
@@ -453,8 +455,15 @@ export function ComfyWorkflowPanel({
 
   const setSource = (info: ComfyInputInfo, source: BindingSource) => {
     const parts = bindings.get(info.key) || [];
-    const current = sourceOf(info, parts);
+    const current = sourceFor(info, parts);
     if (source === current && source !== 'library') return;
+    if (emptyRemixKeys.has(info.key)) {
+      setEmptyRemixKeys((keys) => {
+        const next = new Set(keys);
+        next.delete(info.key);
+        return next;
+      });
+    }
     if (source === 'remix') {
       startRemix(info, parts);
       return;
@@ -737,7 +746,7 @@ export function ComfyWorkflowPanel({
               setRemixDrag(null);
             }}
             onDragEnd={() => setRemixDrag(null)}
-            onRemove={removeItem}
+            onRemove={(id) => removeRemixItem(info, parts, id)}
             onEdit={onEditItem}
             onPreviewLibrary={(library) => onPreviewLibrary(library, part.id)}
             onImageUpload={onImageUpload}
@@ -753,6 +762,17 @@ export function ComfyWorkflowPanel({
             onToggleDisable={toggleItemDisabled}
           />
         ))}
+        {parts.length === 0 && (
+          <div className="py-6 px-3 text-center text-[10px] font-bold leading-relaxed text-neutral-500 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
+            {t('projectViewer.comfy.remixEmpty')}
+          </div>
+        )}
+        {parts.length > 0 && parts.every((part) => part.disabled) && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-amber-500/10 border-amber-500/20 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{t('projectViewer.comfy.remixAllDisabled', { input: info.input, node: info.nodeId })}</span>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => addRemixItem(info, newTextItem(info, '', true))} className={smallButtonClass}>
             <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addTextPart')}
@@ -944,7 +964,7 @@ export function ComfyWorkflowPanel({
                     <div className="divide-y divide-neutral-200/60 dark:divide-white/5 border-t border-neutral-200/60 dark:border-white/5">
                       {node.inputs.map((info) => {
                         const parts = bindings.get(info.key) || [];
-                        const source = sourceOf(info, parts);
+                        const source = sourceFor(info, parts);
                         if (!info.mediaKind && info.valueType !== 'string') {
                           return (
                             <div key={info.key} className="px-3 py-2.5">

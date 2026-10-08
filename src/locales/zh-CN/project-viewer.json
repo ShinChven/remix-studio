@@ -557,6 +557,8 @@
       "addTextPart": "添加文本",
       "addLibraryPart": "添加素材库",
       "remixHint": "各条目会像普通项目的工作流一样，按此顺序拼接成这个输入的值。每个素材库都会使组合数相乘。",
+      "remixEmpty": "还没有条目。添加文本或素材库来 Remix 这个输入；在此之前会沿用工作流的值。",
+      "remixAllDisabled": "#{{node}} 的「{{input}}」所有 Remix 条目都已停用。请启用其中一个，或将输入设回默认。",
       "replacePartsTitle": "要退出 Remix 吗？",
       "replacePartsMessage_one": "「{{input}}」由 {{count}} 个条目 Remix 而成。切换来源会将其移除。",
       "replacePartsMessage_other": "「{{input}}」由 {{count}} 个条目 Remix 而成。切换来源会移除全部条目。",

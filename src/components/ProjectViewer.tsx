@@ -28,7 +28,7 @@ import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchPro
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
-import { summarizeComfyPrompt } from '../lib/comfyWorkflow';
+import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { ConfirmModal } from './ConfirmModal';
@@ -1528,10 +1528,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const addComfyDraftsToQueue = async () => {
     const comfyWorkflow = localProject.comfyWorkflow;
     if (!comfyWorkflow) return;
-    const bindings = (localProject.workflow || []).filter((item) => item.comfyTarget && !item.disabled);
-    const missing = bindings.filter((item) => item.type !== 'text' && !item.value.trim());
+    const comfyItems = (localProject.workflow || []).filter((item) => item.comfyTarget);
+    const bindings = comfyItems.filter((item) => !item.disabled);
+    const remixes = Array.from(groupComfyBindings(comfyItems).values()).filter(isComfyRemix);
+    // A remix's items are workflow steps, so an empty text item holds the batch
+    // up as it does in a regular workflow. A typed input may be left empty.
+    const missing = [
+      ...bindings.filter((item) => item.type !== 'text' && !item.value.trim()),
+      ...remixes.flatMap((remix) => remix.filter((item) => item.type === 'text' && !item.value.trim())),
+    ];
     if (missing.length > 0) {
       setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: missing.length }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+    // With every item disabled a remix has nothing to join. A regular workflow
+    // in that state generates nothing, so stop here rather than quietly run the
+    // workflow's own value.
+    const disabledRemix = remixes.find((remix) => remix.every((item) => item.disabled));
+    if (disabledRemix) {
+      const target = disabledRemix[0].comfyTarget!;
+      setWorkflowError(t('projectViewer.comfy.remixAllDisabled', { input: target.input, node: target.nodeId }));
       setTimeout(() => setWorkflowError(null), 4000);
       return;
     }
