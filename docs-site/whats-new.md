@@ -21,6 +21,9 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 - **Pages that keep up with your agents** — What an MCP client, the assistant or another tab changes now shows up on the page you have open, without a reload: new libraries and prompts, new and renamed projects, a project's workflow, campaigns, posts, and posts the scheduler publishes. You only ever receive updates about your own work. See [live updates](/concepts/projects#live-updates).
 - **Quick watermark for one image** — A stamp button on image album and library cards opens a page to watermark just that picture: adjust the text, position, size, opacity and color with a live preview, then **Create** downloads the watermarked JPEG. Nothing is saved to your storage, and your saved watermark settings stay as they were. See [watermarking a single image](/concepts/projects#watermarking-a-single-image).
 
+- **Split an image into layers** — **Dola Seedream 5.0 Pro Layer Decomposition** on RunningHub takes one image from the workflow and returns a base image plus up to 16 transparent PNG layers, one per element, each saved to the album on its own. A prompt is optional: name what to separate, or leave it out to split every major element.
+- **Model explanations** — Every model now explains itself: what it is for, how it differs from its neighbours, and limits worth knowing, like a prompt cap or a required source image. The explanation shows under the model in the project settings and on each card in the model selector, whose search now finds models by it too. In all six languages.
+
 **Improved**
 
 - **Edit and create a project from a dialog** — Editing a project no longer takes you away from it, and creating one no longer leaves the list it will land in. On a phone the dialog is full screen and keeps the keyboard down until you tap a field.
@@ -41,6 +44,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 **Changed**
 
+- **Dola Seedream 5.0 Pro on RunningHub** — The RunningHub entry called **Seedream 5.0 Pro** is now **Dola Seedream 5.0 Pro**, as RunningHub lists it, so it is no longer confused with **Seedream V5 Pro**, a separate RunningHub listing. Projects keep their selection.
 - **Nano Banana 2.1 on Google AI and Vertex AI** — Google's newest image model replaces nano banana 2, which Google stops serving on October 29, 2026. Projects set to nano banana 2 now generate with nano banana 2.1, with nothing to change on your side.
 - **Qwen Image 3 replaces Qwen Image 2 on RunningHub** — **Qwen Image 3 Pro** and **Qwen Image 3** take the place of Qwen Image 2 Pro, and projects set to the old model move to Qwen Image 3 Pro. 21:9 is no longer offered; projects using it switch to 16:9.
 - **Solid cards and dialogs** — Cards, panels, menus and dialogs are opaque now instead of translucent, so what is behind them no longer shows through their text.

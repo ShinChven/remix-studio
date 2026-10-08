@@ -1,4 +1,4 @@
-import { ImageGenerator, GenerateRequest, GenerateResult, CheckStatusResult } from './image-generator';
+import { ImageGenerator, GenerateRequest, GenerateResult, CheckStatusResult, CheckStatusContext } from './image-generator';
 
 const SUBMIT_URL = 'https://www.runninghub.ai/openapi/v2/rhart-image-n-g31-flash/image-to-image';
 const QUERY_URL  = 'https://www.runninghub.ai/openapi/v2/query';
@@ -148,6 +148,23 @@ function isSeedream5Pro(modelId?: string, apiUrl?: string): boolean {
   return target.includes('dola-seedream-5.0-pro') || target.includes('seedream-v5-pro');
 }
 
+// Dola Seedream 5.0 Pro layer decomposition splits one source image into a base
+// image plus up to 16 transparent PNG layers. Its `modelId` carries the
+// endpoint (`dola-Seedream-5.0-pro/layer-decomposition`), so it also matches
+// `isSeedream5Pro` and has to be tested first. The body is its own: a single
+// `imageUrl`, an optional prompt naming what to split out, and a `resolution`
+// tier with no width or height.
+const LAYER_MAX_PROMPT_LENGTH = 2000;
+const LAYER_MAX_REF_IMAGES = 1;
+const LAYER_RESOLUTIONS = ['auto', '1k', '1.5k', '2k'];
+
+function isLayerDecomposition(modelId?: string, apiUrl?: string): boolean {
+  const target = `${modelId || ''} ${apiUrl || ''}`.toLowerCase();
+  return target.includes('layer-decomposition');
+}
+
+const IMAGE_OUTPUT_TYPES = new Set(['png', 'jpg', 'jpeg', 'webp']);
+
 // Wan 2.7 Pro also takes explicit width/height and uses `-pro` endpoint
 // suffixes (`text-to-image-pro`, `image-edit-pro`). The Seedream size buckets
 // satisfy its pixel constraints (>= 768*768 total, each side 512 - 4096).
@@ -215,7 +232,8 @@ export class RunningHubGenerator extends ImageGenerator {
 
     const isQwen = isQwenImage3(modelId, reqApiUrl);
     const isGrok = isGrokImagineQuality(modelId, reqApiUrl);
-    const isSeedream = isSeedream5Pro(modelId, reqApiUrl);
+    const isLayers = isLayerDecomposition(modelId, reqApiUrl);
+    const isSeedream = !isLayers && isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
     const isGptOfficial = isGptImage2Official(modelId, reqApiUrl);
@@ -223,11 +241,14 @@ export class RunningHubGenerator extends ImageGenerator {
     const isGpt25 = isGptImage25(modelId, reqApiUrl);
 
     // --- Step 1: optional image upload ---
-    // Grok Imagine Quality's /edit carries a single imageUrl and Qwen Image 3's
-    // /image-edit at most three, so uploading the rest costs a round trip each
-    // for bytes the request cannot hold.
-    const maxRefImages = isGrok ? GROK_MAX_REF_IMAGES : isQwen ? QWEN_MAX_REF_IMAGES : undefined;
+    // Grok Imagine Quality's /edit and layer decomposition carry a single
+    // imageUrl and Qwen Image 3's /image-edit at most three, so uploading the
+    // rest costs a round trip each for bytes the request cannot hold.
+    const maxRefImages = isGrok ? GROK_MAX_REF_IMAGES : isLayers ? LAYER_MAX_REF_IMAGES : isQwen ? QWEN_MAX_REF_IMAGES : undefined;
     const refImages = (refImagesBase64 || []).slice(0, maxRefImages);
+    if (isLayers && refImages.length === 0) {
+      return { ok: false, error: 'Layer decomposition needs a source image. Add one image to the workflow.' };
+    }
     const imageUrls: string[] = [];
     for (const base64 of refImages) {
       const up = await this.uploadImage(base64);
@@ -246,7 +267,10 @@ export class RunningHubGenerator extends ImageGenerator {
 
     let actualSubmitUrl = reqApiUrl;
     if (!actualSubmitUrl) {
-      if (modelId) {
+      if (modelId && isLayers) {
+        // The endpoint is already part of the model ID.
+        actualSubmitUrl = `https://www.runninghub.ai/openapi/v2/${modelId}`;
+      } else if (modelId) {
         actualSubmitUrl = `https://www.runninghub.ai/openapi/v2/${modelId}/${endpointType}`;
       } else {
         // Fallback to this.submitUrl but swap the type if needed
@@ -261,7 +285,25 @@ export class RunningHubGenerator extends ImageGenerator {
 
     // --- Step 2: submit task ---
     let payload: any;
-    if (isQwen) {
+    if (isLayers) {
+      const resolution = imageSize.toLowerCase();
+      payload = {
+        imageUrl: imageUrls[0],
+        resolution: LAYER_RESOLUTIONS.includes(resolution) ? resolution : 'auto',
+      };
+      // The prompt is optional: without one the API splits out every major
+      // element it finds.
+      const layerPrompt = prompt.trim();
+      if (layerPrompt) {
+        payload.prompt = layerPrompt.slice(0, LAYER_MAX_PROMPT_LENGTH);
+      }
+      // Sets the base image only — the layers are always PNG — and the enum is
+      // jpeg/png, so webp is left to the API default.
+      const baseFormat = format?.toLowerCase() === 'jpg' ? 'jpeg' : format?.toLowerCase();
+      if (baseFormat === 'jpeg' || baseFormat === 'png') {
+        payload.outputFormat = baseFormat;
+      }
+    } else if (isQwen) {
       payload = {
         prompt,
         size: resolveQwenSize(aspectRatio, imageSize),
@@ -376,7 +418,15 @@ export class RunningHubGenerator extends ImageGenerator {
     return { ok: true, status: 'processing', taskId };
   }
 
-  async checkStatus(taskId: string): Promise<CheckStatusResult> {
+  private async downloadResult(url: string): Promise<{ ok: true; bytes: Buffer } | { ok: false; error: string }> {
+    const imgRes = await fetch(url, { timeout: 60_000 } as any);
+    if (!imgRes.ok) {
+      return { ok: false, error: `Failed to download result image: HTTP ${imgRes.status}` };
+    }
+    return { ok: true, bytes: Buffer.from(await imgRes.arrayBuffer()) };
+  }
+
+  async checkStatus(taskId: string, context?: CheckStatusContext): Promise<CheckStatusResult> {
     try {
       const queryRes = await fetch(QUERY_URL, {
         method: 'POST',
@@ -404,16 +454,31 @@ export class RunningHubGenerator extends ImageGenerator {
       }
 
       if (status === 'SUCCESS') {
-        const imageUrl: string | undefined = result.results?.[0]?.url;
-        if (!imageUrl) return { status: 'failed', error: 'Task succeeded but no image URL in results' };
+        if (!isLayerDecomposition(context?.modelId, context?.apiUrl)) {
+          const imageUrl: string | undefined = result.results?.[0]?.url;
+          if (!imageUrl) return { status: 'failed', error: 'Task succeeded but no image URL in results' };
 
-        const imgRes = await fetch(imageUrl, { timeout: 60_000 } as any);
-        if (!imgRes.ok) {
-          return { status: 'failed', error: `Failed to download result image: HTTP ${imgRes.status}` };
+          const downloaded = await this.downloadResult(imageUrl);
+          if (downloaded.ok === false) return { status: 'failed', error: downloaded.error };
+          return { status: 'completed', imageBytes: downloaded.bytes };
         }
 
-        const arrayBuffer = await imgRes.arrayBuffer();
-        return { status: 'completed', imageBytes: Buffer.from(arrayBuffer) };
+        // Layer decomposition returns the base image plus one PNG per layer.
+        // The layers are always PNG, so a non-PNG result is the base; with a
+        // PNG base the first result is taken as it.
+        const typeOf = (r: any) => String(r?.outputType || '').toLowerCase();
+        const outputs: any[] = (result.results || []).filter((r: any) => r?.url && (!typeOf(r) || IMAGE_OUTPUT_TYPES.has(typeOf(r))));
+        if (outputs.length === 0) return { status: 'failed', error: 'Task succeeded but no image URL in results' };
+        const baseIndex = Math.max(0, outputs.findIndex((r) => typeOf(r) !== '' && typeOf(r) !== 'png'));
+        const ordered = [outputs[baseIndex], ...outputs.filter((_, i) => i !== baseIndex)];
+
+        const images: Buffer[] = [];
+        for (const output of ordered) {
+          const downloaded = await this.downloadResult(output.url);
+          if (downloaded.ok === false) return { status: 'failed', error: downloaded.error };
+          images.push(downloaded.bytes);
+        }
+        return { status: 'completed', imageBytes: images[0], additionalImages: images.slice(1) };
       }
 
       if (status === 'FAILED') {

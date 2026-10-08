@@ -3,7 +3,7 @@ import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { buildGenerator } from '../generators/build-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
-import { Job, ProviderType } from '../../src/types';
+import { Job, ProviderType, getProviderRecordModels } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { VideoProcessor } from './video-processor';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
@@ -228,7 +228,8 @@ export class DetachedPoller {
       }
 
       console.log(`[DetachedPoller] Checking status for Job ${job.id} (TaskId: ${job.taskId})`);
-      const res = await generator.checkStatus(job.taskId!);
+      const modelConfig = getProviderRecordModels(providerRecord).find((m) => m.id === job.modelConfigId);
+      const res = await generator.checkStatus(job.taskId!, { modelId: modelConfig?.modelId, apiUrl: modelConfig?.apiUrl });
       console.log(`[DetachedPoller] Job ${job.id} Status: ${res.status}`);
 
       if (res.status === 'completed' && res.imageBytes) {
@@ -238,6 +239,7 @@ export class DetachedPoller {
           projectId,
           job,
           imageBytes: res.imageBytes,
+          additionalImages: res.additionalImages,
           format: job.format,
           quality: job.quality,
           aspectRatio: job.aspectRatio,
