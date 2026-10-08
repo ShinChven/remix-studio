@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   AlertCircle,
+  Blend,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -30,30 +31,44 @@ import {
   X,
 } from 'lucide-react';
 import { imageDisplayUrl, testComfyConnection, type ComfyConnectionResult } from '../../api';
-import type { Library, Project, WorkflowItem } from '../../types';
+import type { ComfyBinding, Library, Project, WorkflowItem } from '../../types';
 import {
   ComfyInputInfo,
-  comfyTargetKey,
   detectComfyOutputKind,
   getComfyInputValue,
+  groupComfyBindings,
+  isComfyRemix,
   isSameComfyTarget,
   listComfyNodeInputs,
   normalizeComfyAddress,
   parseComfyWorkflow,
 } from '../../lib/comfyWorkflow';
 import { LibrarySelectionModal } from './LibrarySelectionModal';
+import { WorkflowItem as WorkflowItemCard } from './WorkflowItem';
 import { ConfirmModal } from '../ConfirmModal';
 import { NumberInput } from '../NumberInput';
 
 const LAST_URL_STORAGE_KEY = 'remix-studio:comfyui:last-url';
 
-type BindingSource = 'default' | 'input' | 'import' | 'library';
+type BindingSource = 'default' | 'input' | 'remix' | 'import' | 'library';
 
-function sourceOf(item: WorkflowItem | undefined): BindingSource {
-  if (!item) return 'default';
-  if (item.type === 'library') return 'library';
-  if (item.type === 'text') return 'input';
-  return 'import';
+/**
+ * Where an input's value comes from. A text input takes typed text, or is
+ * remixed: built from items — typed text and libraries — joined in order like
+ * a regular project's workflow. A text input bound to a library on its own,
+ * from before remixing, reads as a remix of that one library.
+ */
+function sourceOf(info: ComfyInputInfo, parts: WorkflowItem[]): BindingSource {
+  if (parts.length === 0) return 'default';
+  if (info.mediaKind) return parts[0].type === 'library' ? 'library' : 'import';
+  return isComfyRemix(parts) ? 'remix' : 'input';
+}
+
+/** What picking a library does: bind a file input to it, add it to a remix, or swap one item for it. */
+interface LibraryPick {
+  info: ComfyInputInfo;
+  append?: boolean;
+  partId?: string;
 }
 
 /** Inputs worth opening a node for: prompts, loaded files, seeds and sizes. */
@@ -150,6 +165,11 @@ interface ComfyWorkflowPanelProps {
   onEditItem: (item: WorkflowItem) => void;
   onPreviewLibrary: (library: Library, workflowItemId: string) => void;
   onLightbox: (images: string[], index: number) => void;
+  /** Asks before removing a workflow item, as the regular workflow does. */
+  onRemoveItem: (id: string) => void;
+  onUpdateTags: (id: string, tags: string[]) => void;
+  onSelectFromLibrary: (id: string) => void;
+  onSaveToLibrary: (item: WorkflowItem) => void;
 }
 
 /**
@@ -174,6 +194,10 @@ export function ComfyWorkflowPanel({
   onEditItem,
   onPreviewLibrary,
   onLightbox,
+  onRemoveItem,
+  onUpdateTags,
+  onSelectFromLibrary,
+  onSaveToLibrary,
 }: ComfyWorkflowPanelProps) {
   const { t } = useTranslation();
   const workflow = localProject.comfyWorkflow;
@@ -291,17 +315,22 @@ export function ComfyWorkflowPanel({
 
   // ---- Inputs ----
   const nodes = useMemo(() => (workflow ? listComfyNodeInputs(workflow) : []), [workflow]);
-  const bindings = useMemo(() => {
-    const map = new Map<string, WorkflowItem>();
-    for (const item of items) {
-      if (item.comfyTarget) map.set(comfyTargetKey(item.comfyTarget), item);
-    }
-    return map;
-  }, [items]);
+  // Each bound input's items, in workflow order. Only a remix has more than one.
+  const bindings = useMemo(() => groupComfyBindings(items), [items]);
   const [query, setQuery] = useState('');
   const [mappedOnly, setMappedOnly] = useState(false);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
-  const [libraryPickerFor, setLibraryPickerFor] = useState<ComfyInputInfo | null>(null);
+  const [libraryPick, setLibraryPick] = useState<LibraryPick | null>(null);
+  // A source switch that would drop a remix's items, awaiting confirmation.
+  const [pendingSwitch, setPendingSwitch] = useState<{ info: ComfyInputInfo; source: BindingSource } | null>(null);
+  // A remix item being dragged to a new position, within its own input.
+  const [remixDrag, setRemixDrag] = useState<{ key: string; from: number; over: number | null } | null>(null);
+  // Remixes whose last item was removed. An empty remix has nothing to store, so
+  // it stays open until another source is picked rather than closing at once.
+  const [emptyRemixKeys, setEmptyRemixKeys] = useState<Set<string>>(() => new Set());
+
+  const sourceFor = (info: ComfyInputInfo, parts: WorkflowItem[]): BindingSource =>
+    (parts.length === 0 && !info.mediaKind && emptyRemixKeys.has(info.key) ? 'remix' : sourceOf(info, parts));
 
   const visibleNodes = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -323,7 +352,15 @@ export function ComfyWorkflowPanel({
       ?? node.inputs.some((info) => bindings.has(info.key) || isNotableInput(info));
   };
 
-  /** Bind (or rebind) one input, keeping the binding's place in the item order. */
+  /**
+   * Save the items in this order. Items load sorted by their stored `order`,
+   * so it is renumbered here — an input's parts are joined in that order.
+   */
+  const saveItems = (next: WorkflowItem[]) => {
+    onSaveProject({ ...localProject, workflow: next.map((item, order) => ({ ...item, order })) });
+  };
+
+  /** Bind (or rebind) one input to a single item, keeping the binding's place in the item order. */
   const saveBinding = (info: ComfyInputInfo, item: WorkflowItem | null) => {
     let replaced = false;
     const next: WorkflowItem[] = [];
@@ -336,25 +373,107 @@ export function ComfyWorkflowPanel({
       }
     }
     if (item && !replaced) next.push(item);
-    onSaveProject({ ...localProject, workflow: next });
+    saveItems(next);
   };
 
-  const setSource = (info: ComfyInputInfo, source: BindingSource) => {
-    const current = bindings.get(info.key);
+  const bindingOf = (info: ComfyInputInfo, remix = false): ComfyBinding => ({
+    nodeId: info.nodeId,
+    input: info.input,
+    ...(remix ? { remix: true } : {}),
+  });
+
+  const newTextItem = (info: ComfyInputInfo, value: string, remix = false): WorkflowItem => ({
+    id: crypto.randomUUID(),
+    type: 'text',
+    value,
+    comfyTarget: bindingOf(info, remix),
+  });
+
+  /** Add an item to an input's remix, after its last one so the remix stays together and in order. */
+  const addRemixItem = (info: ComfyInputInfo, item: WorkflowItem) => {
+    const parts = bindings.get(info.key) || [];
+    const last = parts[parts.length - 1];
+    const index = last ? items.findIndex((existing) => existing.id === last.id) + 1 : items.length;
+    saveItems([...items.slice(0, index), item, ...items.slice(index)]);
+  };
+
+  const removeRemixItem = (info: ComfyInputInfo, parts: WorkflowItem[], id: string) => {
+    if (parts.length === 1) setEmptyRemixKeys((keys) => new Set(keys).add(info.key));
+    onRemoveItem(id);
+  };
+
+  const toggleItemDisabled = (id: string) => {
+    onSaveProject({ ...localProject, workflow: items.map((item) => (item.id === id ? { ...item, disabled: !item.disabled } : item)) });
+  };
+
+  /** Move one of a remix's items to another position within that remix. */
+  const moveRemixItem = (info: ComfyInputInfo, from: number, to: number) => {
+    const parts = bindings.get(info.key) || [];
+    if (from === to || !parts[from] || !parts[to]) return;
+    const reordered = [...parts];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    let next = 0;
+    saveItems(items.map((item) => (isSameComfyTarget(item.comfyTarget, info) ? reordered[next++] : item)));
+  };
+
+  const openLibraryPicker = (pick: LibraryPick) => {
+    setLibraryPick(pick);
+    void onRefreshLibraries().catch(() => {});
+  };
+
+  /**
+   * Remix a text input. Nothing is lost on the way in: typed text becomes the
+   * remix's first item, and an input left at its default starts from the
+   * workflow's own value.
+   */
+  const startRemix = (info: ComfyInputInfo, parts: WorkflowItem[]) => {
+    const typed = parts[0];
+    saveBinding(info, typed
+      ? { ...typed, comfyTarget: bindingOf(info, true) }
+      : newTextItem(info, String(info.value), true));
+  };
+
+  /** Switch an input to one source, replacing all of its items. */
+  const applySource = (info: ComfyInputInfo, source: BindingSource, parts: WorkflowItem[]) => {
     if (source === 'library') {
-      setLibraryPickerFor(info);
-      void onRefreshLibraries().catch(() => {});
+      openLibraryPicker({ info });
       return;
     }
-    if (sourceOf(current) === source) return;
     if (source === 'default') {
       saveBinding(info, null);
       return;
     }
-    const target = { nodeId: info.nodeId, input: info.input };
-    saveBinding(info, source === 'input'
-      ? { id: crypto.randomUUID(), type: 'text', value: String(info.value), comfyTarget: target }
-      : { id: crypto.randomUUID(), type: info.mediaKind || 'image', value: '', comfyTarget: target });
+    if (source === 'input') {
+      // Keep the remix's first typed text, if it has one.
+      const text = parts.find((part) => part.type === 'text');
+      saveBinding(info, text ? { ...text, comfyTarget: bindingOf(info) } : newTextItem(info, String(info.value)));
+      return;
+    }
+    saveBinding(info, { id: crypto.randomUUID(), type: info.mediaKind || 'image', value: '', comfyTarget: bindingOf(info) });
+  };
+
+  const setSource = (info: ComfyInputInfo, source: BindingSource) => {
+    const parts = bindings.get(info.key) || [];
+    const current = sourceFor(info, parts);
+    if (source === current && source !== 'library') return;
+    if (emptyRemixKeys.has(info.key)) {
+      setEmptyRemixKeys((keys) => {
+        const next = new Set(keys);
+        next.delete(info.key);
+        return next;
+      });
+    }
+    if (source === 'remix') {
+      startRemix(info, parts);
+      return;
+    }
+    // Leaving a remix drops its items, so ask first when there is more than one to lose.
+    if (parts.length > 1) {
+      setPendingSwitch({ info, source });
+      return;
+    }
+    applySource(info, source, parts);
   };
 
   const updateItemValue = (id: string, value: string) => {
@@ -367,7 +486,7 @@ export function ComfyWorkflowPanel({
    * exception — left alone it is random, so any typed value pins it.
    */
   const setScalarValue = (info: ComfyInputInfo, raw: string) => {
-    const current = bindings.get(info.key);
+    const current = bindings.get(info.key)?.[0];
     const matchesWorkflow = info.valueType === 'number' ? Number(raw) === info.value : raw === String(info.value);
     if (matchesWorkflow && !info.isSeed) {
       if (current) saveBinding(info, null);
@@ -382,33 +501,51 @@ export function ComfyWorkflowPanel({
   };
 
   const handleLibraryPicked = (libraryId: string) => {
-    const info = libraryPickerFor;
-    setLibraryPickerFor(null);
-    if (!info) return;
-    const current = bindings.get(info.key);
-    if (current?.type === 'library' && current.value === libraryId) return;
-    saveBinding(info, {
+    const pick = libraryPick;
+    setLibraryPick(null);
+    if (!pick) return;
+    const { info } = pick;
+    const parts = bindings.get(info.key) || [];
+    // Text inputs only take libraries as part of a remix.
+    const item: WorkflowItem = {
       id: crypto.randomUUID(),
       type: 'library',
       value: libraryId,
-      comfyTarget: { nodeId: info.nodeId, input: info.input },
-    });
+      comfyTarget: bindingOf(info, !info.mediaKind),
+    };
+    if (pick.append) {
+      addRemixItem(info, item);
+      return;
+    }
+    if (pick.partId) {
+      // A different library brings different tags, so its tag filter starts over.
+      if (parts.some((part) => part.id === pick.partId && part.type === 'library' && part.value === libraryId)) return;
+      saveItems(items.map((existing) => (existing.id === pick.partId ? item : existing)));
+      return;
+    }
+    if (parts.length === 1 && parts[0].type === 'library' && parts[0].value === libraryId) return;
+    saveBinding(info, item);
   };
 
   const pickerLibraries = useMemo(() => {
-    if (!libraryPickerFor) return [];
-    const kind = libraryPickerFor.mediaKind || 'text';
+    if (!libraryPick) return [];
+    const kind = libraryPick.info.mediaKind || 'text';
     return libraries.filter((library) => (library.type || 'text') === kind);
-  }, [libraries, libraryPickerFor]);
+  }, [libraries, libraryPick]);
 
   const mappedCount = bindings.size;
 
   const sourceOptions = (info: ComfyInputInfo): Array<{ source: BindingSource; label: string; icon: typeof Type }> => [
     { source: 'default', label: t('projectViewer.comfy.sourceDefault'), icon: RefreshCw },
     ...(info.mediaKind
-      ? [{ source: 'import' as const, label: t('projectViewer.comfy.sourceImport'), icon: Upload }]
-      : [{ source: 'input' as const, label: t('projectViewer.comfy.sourceInput'), icon: Type }]),
-    { source: 'library', label: t('projectViewer.comfy.sourceLibrary'), icon: LibraryIcon },
+      ? [
+        { source: 'import' as const, label: t('projectViewer.comfy.sourceImport'), icon: Upload },
+        { source: 'library' as const, label: t('projectViewer.comfy.sourceLibrary'), icon: LibraryIcon },
+      ]
+      : [
+        { source: 'input' as const, label: t('projectViewer.comfy.sourceInput'), icon: Type },
+        { source: 'remix' as const, label: t('projectViewer.comfy.sourceRemix'), icon: Blend },
+      ]),
   ];
 
   const renderValuePreview = (info: ComfyInputInfo) => {
@@ -526,7 +663,7 @@ export function ComfyWorkflowPanel({
           </button>
           <button
             type="button"
-            onClick={() => setSource(info, 'library')}
+            onClick={() => openLibraryPicker({ info, partId: item.id })}
             className="p-2 rounded-lg border border-transparent text-neutral-400 hover:text-orange-500 hover:bg-orange-500/10 transition-all"
             title={t('projectViewer.workflow.changeLibrary')}
             aria-label={t('projectViewer.workflow.changeLibrary')}
@@ -572,6 +709,79 @@ export function ComfyWorkflowPanel({
         )}
         {item.type === 'audio' && <audio src={imageDisplayUrl(item.value)} controls className="flex-1 min-w-0" />}
         <div className={item.type === 'audio' ? '' : 'flex-1'}>{uploadButton}</div>
+      </div>
+    );
+  };
+
+  /**
+   * A remixed text input: its items as the cards a regular project's workflow
+   * uses — drag to reorder, edit, pick from a library, filter by tags, disable —
+   * joined in order into the input's value, with every library multiplying the
+   * combinations.
+   */
+  const renderRemix = (info: ComfyInputInfo, parts: WorkflowItem[]) => {
+    const drag = remixDrag?.key === info.key ? remixDrag : null;
+    return (
+      <div className="space-y-2 rounded-xl border border-dashed border-orange-500/30 bg-orange-500/[0.03] p-2">
+        {parts.map((part, index) => (
+          <WorkflowItemCard
+            key={part.id}
+            item={part}
+            index={index}
+            draggedIndex={drag ? drag.from : null}
+            dragOverIndex={drag ? drag.over : null}
+            onDragStart={(e, from) => {
+              e.dataTransfer.effectAllowed = 'move';
+              setRemixDrag({ key: info.key, from, over: null });
+            }}
+            onDragOver={(e, over) => {
+              if (!drag) return;
+              e.preventDefault();
+              if (drag.over !== over) setRemixDrag({ ...drag, over });
+            }}
+            onDrop={(e, to) => {
+              if (!drag) return;
+              e.preventDefault();
+              moveRemixItem(info, drag.from, to);
+              setRemixDrag(null);
+            }}
+            onDragEnd={() => setRemixDrag(null)}
+            onRemove={(id) => removeRemixItem(info, parts, id)}
+            onEdit={onEditItem}
+            onPreviewLibrary={(library) => onPreviewLibrary(library, part.id)}
+            onImageUpload={onImageUpload}
+            onVideoUpload={onVideoUpload}
+            onAudioUpload={onAudioUpload}
+            uploadingItemIds={uploadingItemIds}
+            onLightbox={onLightbox}
+            onUpdateTags={onUpdateTags}
+            onSelectFromLibrary={onSelectFromLibrary}
+            onChangeLibrary={(id) => openLibraryPicker({ info, partId: id })}
+            onSaveToLibrary={onSaveToLibrary}
+            libraries={libraries}
+            onToggleDisable={toggleItemDisabled}
+          />
+        ))}
+        {parts.length === 0 && (
+          <div className="py-6 px-3 text-center text-[10px] font-bold leading-relaxed text-neutral-500 border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl">
+            {t('projectViewer.comfy.remixEmpty')}
+          </div>
+        )}
+        {parts.length > 0 && parts.every((part) => part.disabled) && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl border bg-amber-500/10 border-amber-500/20 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{t('projectViewer.comfy.remixAllDisabled', { input: info.input, node: info.nodeId })}</span>
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => addRemixItem(info, newTextItem(info, '', true))} className={smallButtonClass}>
+            <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addTextPart')}
+          </button>
+          <button type="button" onClick={() => openLibraryPicker({ info, append: true })} className={smallButtonClass}>
+            <Plus className="w-3 h-3" /> {t('projectViewer.comfy.addLibraryPart')}
+          </button>
+        </div>
+        <p className="px-0.5 text-[10px] leading-relaxed text-neutral-500">{t('projectViewer.comfy.remixHint')}</p>
       </div>
     );
   };
@@ -753,12 +963,12 @@ export function ComfyWorkflowPanel({
                   {open && (
                     <div className="divide-y divide-neutral-200/60 dark:divide-white/5 border-t border-neutral-200/60 dark:border-white/5">
                       {node.inputs.map((info) => {
-                        const item = bindings.get(info.key);
-                        const source = sourceOf(item);
+                        const parts = bindings.get(info.key) || [];
+                        const source = sourceFor(info, parts);
                         if (!info.mediaKind && info.valueType !== 'string') {
                           return (
                             <div key={info.key} className="px-3 py-2.5">
-                              {renderScalarRow(info, item)}
+                              {renderScalarRow(info, parts[0])}
                             </div>
                           );
                         }
@@ -792,7 +1002,7 @@ export function ComfyWorkflowPanel({
                                 ))}
                               </div>
                             </div>
-                            {item && renderEditor(info, item)}
+                            {source === 'remix' ? renderRemix(info, parts) : parts[0] && renderEditor(info, parts[0])}
                           </div>
                         );
                       })}
@@ -806,20 +1016,38 @@ export function ComfyWorkflowPanel({
       )}
 
       <LibrarySelectionModal
-        isOpen={libraryPickerFor !== null}
-        onClose={() => setLibraryPickerFor(null)}
+        isOpen={libraryPick !== null}
+        onClose={() => setLibraryPick(null)}
         onSelect={handleLibraryPicked}
         libraries={pickerLibraries}
         selectedLibraryIds={items.filter((item) => item.comfyTarget && item.type === 'library').map((item) => item.value)}
         isLoading={isRefreshingLibraries}
         error={libraryRefreshError}
-        description={libraryPickerFor
+        description={libraryPick
           ? t('projectViewer.comfy.libraryPickerDescription', {
-            input: libraryPickerFor.input,
-            node: libraryPickerFor.nodeTitle,
-            kind: t(`projectViewer.comfy.kind.${libraryPickerFor.mediaKind || 'text'}`),
+            input: libraryPick.info.input,
+            node: libraryPick.info.nodeTitle,
+            kind: t(`projectViewer.comfy.kind.${libraryPick.info.mediaKind || 'text'}`),
           })
           : undefined}
+      />
+
+      <ConfirmModal
+        isOpen={pendingSwitch !== null}
+        onClose={() => setPendingSwitch(null)}
+        onConfirm={() => {
+          if (pendingSwitch) applySource(pendingSwitch.info, pendingSwitch.source, bindings.get(pendingSwitch.info.key) || []);
+          setPendingSwitch(null);
+        }}
+        title={t('projectViewer.comfy.replacePartsTitle')}
+        message={pendingSwitch
+          ? t('projectViewer.comfy.replacePartsMessage', {
+            count: bindings.get(pendingSwitch.info.key)?.length ?? 0,
+            input: pendingSwitch.info.input,
+          })
+          : ''}
+        confirmText={t('projectViewer.comfy.replaceParts')}
+        type="danger"
       />
 
       <ConfirmModal

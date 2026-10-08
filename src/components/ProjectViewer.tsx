@@ -28,7 +28,7 @@ import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchPro
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
-import { summarizeComfyPrompt } from '../lib/comfyWorkflow';
+import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { ConfirmModal } from './ConfirmModal';
@@ -1154,6 +1154,36 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     [localProject.workflow, liveLibraries]
   );
 
+  /**
+   * Apply a workflow change on screen and save it. The saved copy is built from
+   * projectRef rather than captured inside a setLocalProject updater: once this
+   * view has re-rendered, React runs updaters lazily, so a copy captured that
+   * way is still unset when the save reads it and the change is never stored.
+   * `stored` is the change as the database keeps it, when that differs from
+   * what is shown — an upload is shown by its signed URL but stored by its key.
+   */
+  const commitWorkflowChange = (
+    change: (workflow: WorkflowItemType[]) => WorkflowItemType[],
+    stored: (workflow: WorkflowItemType[]) => WorkflowItemType[] = change,
+  ) => {
+    const latest = projectRef.current;
+    // Stay ahead of the render so back-to-back changes build on each other.
+    projectRef.current = { ...latest, workflow: change(latest.workflow || []) };
+    setLocalProject((prev) => ({ ...prev, workflow: change(prev.workflow || []) }));
+    skipProjectSyncRef.current = true;
+    onUpdate({ ...latest, workflow: stored(latest.workflow || []) });
+  };
+
+  /** Point a workflow item at its uploaded file, replacing the local preview. */
+  const commitUploadedFile = (id: string, shown: Partial<WorkflowItemType>, stored: Partial<WorkflowItemType>) => {
+    const preview = projectRef.current.workflow?.find((item) => item.id === id)?.value;
+    if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+    commitWorkflowChange(
+      (workflow) => workflow.map((item) => (item.id === id ? { ...item, ...shown } : item)),
+      (workflow) => workflow.map((item) => (item.id === id ? { ...item, ...stored } : item)),
+    );
+  };
+
   const addWorkflowItem = (type: WorkflowItemTypeKind, initialValue: string = '') => {
     // A ComfyUI project's items are bindings, made from its input list.
     if (isComfyProject) return;
@@ -1174,17 +1204,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       return;
     }
     const newItem: WorkflowItemType = { id: crypto.randomUUID(), type, value: initialValue };
-    let dbProjectToSave: Project | undefined;
-    setLocalProject(prev => {
-      dbProjectToSave = { ...prev, workflow: [...(prev.workflow || []), newItem] };
-      return dbProjectToSave;
-    });
-    if (dbProjectToSave) {
-      skipProjectSyncRef.current = true;
-      setTimeout(() => {
-        onUpdate(dbProjectToSave!);
-      }, 0);
-    }
+    commitWorkflowChange((workflow) => [...workflow, newItem]);
     scrollWorkflowToBottom();
   };
 
@@ -1353,17 +1373,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     });
 
     if (newItems.length > 0) {
-      let dbProjectToSave: Project | undefined;
-      setLocalProject(prev => {
-        dbProjectToSave = { ...prev, workflow: [...(prev.workflow || []), ...newItems] };
-        return dbProjectToSave;
-      });
-      if (dbProjectToSave) {
-        skipProjectSyncRef.current = true;
-        setTimeout(() => {
-          onUpdate(dbProjectToSave!);
-        }, 0);
-      }
+      commitWorkflowChange((workflow) => [...workflow, ...newItems]);
       scrollWorkflowToBottom();
 
       filesToUpload.forEach(({ type, file, id }) => {
@@ -1446,24 +1456,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       try {
         const base64 = await readFileAsDataUrl(file);
         const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
-        // Calculate DB state and local display state using the latest 'prev' to avoid stale closure issues
-        let dbProjectToSave: Project | undefined;
-        setLocalProject(prev => {
-          dbProjectToSave = { ...prev, workflow: prev.workflow.map(item => item.id === id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
-          return { ...prev, workflow: prev.workflow.map(item => {
-            if (item.id === id) {
-              if (item.value.startsWith('blob:')) URL.revokeObjectURL(item.value);
-              return { ...item, value: url, thumbnailUrl, optimizedUrl, size };
-            }
-            return item;
-          }) };
-        });
-        if (dbProjectToSave) {
-          setTimeout(() => {
-            skipProjectSyncRef.current = true;
-            onUpdate(dbProjectToSave as Project);
-          }, 0);
-        }
+        commitUploadedFile(
+          id,
+          { value: url, thumbnailUrl, optimizedUrl, size },
+          { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
+        );
       } catch (err: any) {
         console.error('Failed to upload image:', err);
         toast.error(err.message || t('projectViewer.toasts.uploadImageFailed'));
@@ -1485,41 +1482,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     try {
       const base64 = await readFileAsDataUrl(file);
       const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveVideo(base64, localProject.id);
-      let dbProjectToSave: Project | undefined;
-      setLocalProject((prev) => {
-        dbProjectToSave = {
-          ...prev,
-          workflow: prev.workflow.map((item) => item.id === id ? {
-            ...item,
-            value: key,
-            thumbnailUrl: thumbnailKey,
-            optimizedUrl: optimizedKey,
-            size,
-          } : item),
-        };
-        return {
-          ...prev,
-          workflow: prev.workflow.map((item) => {
-            if (item.id === id) {
-              if (item.value.startsWith('blob:')) URL.revokeObjectURL(item.value);
-              return {
-                ...item,
-                value: url,
-                thumbnailUrl,
-                optimizedUrl,
-                size,
-              };
-            }
-            return item;
-          }),
-        };
-      });
-      if (dbProjectToSave) {
-        setTimeout(() => {
-          skipProjectSyncRef.current = true;
-          onUpdate(dbProjectToSave as Project);
-        }, 0);
-      }
+      commitUploadedFile(
+        id,
+        { value: url, thumbnailUrl, optimizedUrl, size },
+        { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
+      );
     } catch (err: any) {
       console.error('Failed to upload video:', err);
       toast.error(err.message || 'Failed to upload video');
@@ -1540,29 +1507,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     try {
       const base64 = await readFileAsDataUrl(file);
       const { key, url, size } = await saveAudio(base64, localProject.id);
-      let dbProjectToSave: Project | undefined;
-      setLocalProject((prev) => {
-        dbProjectToSave = {
-          ...prev,
-          workflow: prev.workflow.map((item) => item.id === id ? { ...item, value: key, size } : item),
-        };
-        return {
-          ...prev,
-          workflow: prev.workflow.map((item) => {
-            if (item.id === id) {
-              if (item.value.startsWith('blob:')) URL.revokeObjectURL(item.value);
-              return { ...item, value: url, size };
-            }
-            return item;
-          }),
-        };
-      });
-      if (dbProjectToSave) {
-        setTimeout(() => {
-          skipProjectSyncRef.current = true;
-          onUpdate(dbProjectToSave as Project);
-        }, 0);
-      }
+      commitUploadedFile(id, { value: url, size }, { value: key, size });
     } catch (err: any) {
       console.error('Failed to upload audio:', err);
       toast.error(err.message || 'Failed to upload audio');
@@ -1583,10 +1528,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const addComfyDraftsToQueue = async () => {
     const comfyWorkflow = localProject.comfyWorkflow;
     if (!comfyWorkflow) return;
-    const bindings = (localProject.workflow || []).filter((item) => item.comfyTarget && !item.disabled);
-    const missing = bindings.filter((item) => item.type !== 'text' && !item.value.trim());
+    const comfyItems = (localProject.workflow || []).filter((item) => item.comfyTarget);
+    const bindings = comfyItems.filter((item) => !item.disabled);
+    const remixes = Array.from(groupComfyBindings(comfyItems).values()).filter(isComfyRemix);
+    // A remix's items are workflow steps, so an empty text item holds the batch
+    // up as it does in a regular workflow. A typed input may be left empty.
+    const missing = [
+      ...bindings.filter((item) => item.type !== 'text' && !item.value.trim()),
+      ...remixes.flatMap((remix) => remix.filter((item) => item.type === 'text' && !item.value.trim())),
+    ];
     if (missing.length > 0) {
       setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: missing.length }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+    // With every item disabled a remix has nothing to join. A regular workflow
+    // in that state generates nothing, so stop here rather than quietly run the
+    // workflow's own value.
+    const disabledRemix = remixes.find((remix) => remix.every((item) => item.disabled));
+    if (disabledRemix) {
+      const target = disabledRemix[0].comfyTarget!;
+      setWorkflowError(t('projectViewer.comfy.remixAllDisabled', { input: target.input, node: target.nodeId }));
       setTimeout(() => setWorkflowError(null), 4000);
       return;
     }
@@ -2684,22 +2646,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           imageUrl={apiImageDisplayUrl(editingImageItem.value)}
           onSave={async (base64) => {
             const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
-            let dbProjectToSave: Project | undefined;
-            setLocalProject(prev => {
-              dbProjectToSave = { ...prev, workflow: prev.workflow.map(item => item.id === editingImageItem.id ? { ...item, value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size } : item) };
-              return { ...prev, workflow: prev.workflow.map(item => {
-                if (item.id === editingImageItem.id) {
-                  return { ...item, value: url, thumbnailUrl, optimizedUrl, size };
-                }
-                return item;
-              }) };
-            });
-            if (dbProjectToSave) {
-              setTimeout(() => {
-                skipProjectSyncRef.current = true;
-                onUpdate(dbProjectToSave as Project);
-              }, 0);
-            }
+            commitUploadedFile(
+              editingImageItem.id,
+              { value: url, thumbnailUrl, optimizedUrl, size },
+              { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
+            );
             setEditingImageItem(null);
           }}
         />

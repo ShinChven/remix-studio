@@ -1,4 +1,5 @@
 import { ComfyInputTarget, ComfyJobInput, Library, WorkflowItem } from '../types';
+import { isSameComfyTarget } from './comfyWorkflow';
 
 export interface Combination {
   prompt: string;
@@ -24,6 +25,27 @@ function toComfyInput(choice: Choice): ComfyJobInput | null {
   return choice.target ? { ...choice.target, kind: choice.type, value: choice.value } : null;
 }
 
+/**
+ * A remixed ComfyUI text input is built from several items — typed text and
+ * libraries — which make up its value together, joined in workflow order the
+ * way a regular project's text steps make up its prompt. Empty items add
+ * nothing; an input whose items are all empty is still sent, as empty.
+ */
+function mergeComfyTextInputs(inputs: ComfyJobInput[]): ComfyJobInput[] {
+  const merged: ComfyJobInput[] = [];
+  for (const input of inputs) {
+    const existing = input.kind === 'text'
+      ? merged.find((other) => other.kind === 'text' && isSameComfyTarget(other, input))
+      : undefined;
+    if (existing) {
+      existing.value = [existing.value, input.value].filter((value) => value.trim() !== '').join('\n\n');
+    } else {
+      merged.push({ ...input });
+    }
+  }
+  return merged;
+}
+
 export function filterItemsByTags<T extends { tags?: string[] }>(
   items: T[],
   selectedTags: string[] | undefined,
@@ -46,7 +68,7 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
   for (const item of workflow) {
     if (item.disabled) continue;
 
-    const target = item.comfyTarget;
+    const target = item.comfyTarget ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input } : undefined;
     if (item.type === 'text') {
       if (hasTextValue(item)) allChoices.push([{ type: 'text', value: item.value.trim(), target }]);
     } else if (item.type === 'image') {
@@ -104,7 +126,7 @@ function choicesToCombination(combo: Choice[]): Combination {
     videoContexts: videos.length > 0 ? videos : undefined,
     audioContexts: audios.length > 0 ? audios : undefined,
     filenameParts: stepParts,
-    comfyInputs: comfyInputs.length > 0 ? comfyInputs : undefined,
+    comfyInputs: comfyInputs.length > 0 ? mergeComfyTextInputs(comfyInputs) : undefined,
   };
 }
 

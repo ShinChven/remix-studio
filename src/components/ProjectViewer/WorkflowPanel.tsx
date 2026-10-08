@@ -457,6 +457,10 @@ export function WorkflowPanel({
             onEditItem={onEditItem}
             onPreviewLibrary={onPreviewLibrary}
             onLightbox={onLightbox}
+            onRemoveItem={onRemoveItem}
+            onUpdateTags={onUpdateTags}
+            onSelectFromLibrary={onSelectFromLibrary}
+            onSaveToLibrary={onSaveToLibrary}
           />
           <ComfySettingsPanel
             localProject={localProject}
