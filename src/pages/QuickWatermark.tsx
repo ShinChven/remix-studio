@@ -140,7 +140,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
           title="Quick Watermark"
           description={(
             <>
-              Watermark <span className="font-semibold text-neutral-950 dark:text-white">{image.filename}</span> from{' '}
+              Watermark <span className="font-semibold text-neutral-950 wrap-anywhere dark:text-white">{image.filename}</span> from{' '}
               <span className="font-semibold text-neutral-950 dark:text-white">{image.containerName}</span>.
               The result downloads to this browser once and is not saved to storage.
             </>
@@ -170,7 +170,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
           )}
         />
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="rounded-card border border-neutral-200/60 bg-white p-4 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900">
             <span className="mb-2 block text-xs font-black uppercase tracking-widest text-neutral-500">Download as</span>
             <p className="truncate font-mono text-sm font-bold text-neutral-950 dark:text-white" title={image.downloadName}>
