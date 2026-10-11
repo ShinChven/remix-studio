@@ -581,8 +581,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const excludeStatus = excludeStatusRaw
         ? excludeStatusRaw.split(',').map((s) => s.trim()).filter(Boolean)
         : undefined;
-      const jobs = await repository.getProjectJobs(user.userId, projectId, { excludeStatus });
-      return c.json(await signJobs(jobs, storage));
+      // Rows only: a job's media, inputs, result and error load when it is opened.
+      const jobs = await repository.getProjectJobs(user.userId, projectId, { excludeStatus, summary: true });
+      return c.json(jobs);
     } catch (e) {
       console.error('[GET /api/projects/:id/jobs]', e);
       return c.json({ error: 'Failed to get jobs' }, 500);
@@ -598,14 +599,30 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const limit = parseInt(c.req.query('limit') || '500', 10);
       const sortRaw = c.req.query('sort');
       const sort: 'newest' | 'oldest' = sortRaw === 'oldest' ? 'oldest' : 'newest';
+      // Rows only, as above.
       const result = await repository.getProjectCompletedJobs(user.userId, projectId, { page, limit, sort });
-      return c.json({
-        ...result,
-        items: await signJobs(result.items, storage),
-      });
+      return c.json(result);
     } catch (e) {
       console.error('[GET /api/projects/:id/jobs/completed]', e);
       return c.json({ error: 'Failed to get completed jobs' }, 500);
+    }
+  });
+
+  // One job in full, for when its row is opened. Registered after
+  // /jobs/completed so that path is not read as a job id.
+  router.get('/api/projects/:id/jobs/:jobId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const jobId = c.req.param('jobId');
+      if (!projectId || !jobId) return c.json({ error: 'Project and job ids are required' }, 400);
+      const [job] = await repository.getProjectJobsByIds(user.userId, projectId, [jobId]);
+      if (!job) return c.json({ error: 'Not found' }, 404);
+      const [signed] = await signJobs([job], storage);
+      return c.json(signed);
+    } catch (e) {
+      console.error('[GET /api/projects/:id/jobs/:jobId]', e);
+      return c.json({ error: 'Failed to get job' }, 500);
     }
   });
 

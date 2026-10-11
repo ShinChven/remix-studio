@@ -63,6 +63,20 @@ export function normalizeAlbumTags(values: unknown): string[] {
  */
 const JOB_LIST_OMIT = { workflowSnapshot: true } as const;
 
+/**
+ * What the project page's job lists leave out besides: everything a row only
+ * shows once it is opened, which then loads on its own (GET .../jobs/:jobId).
+ */
+const JOB_SUMMARY_OMIT = {
+  ...JOB_LIST_OMIT,
+  resultText: true,
+  error: true,
+  comfyInputs: true,
+  imageUrl: true,
+  thumbnailUrl: true,
+  optimizedUrl: true,
+} as const;
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -228,7 +242,7 @@ export class ProjectRepository {
     return items.map((w) => this.mapWorkflow(w));
   }
 
-  async getProjectJobs(userId: string, projectId: string, options: { excludeStatus?: string[]; includeWorkflowSnapshot?: boolean } = {}): Promise<Job[]> {
+  async getProjectJobs(userId: string, projectId: string, options: { excludeStatus?: string[]; includeWorkflowSnapshot?: boolean; summary?: boolean } = {}): Promise<Job[]> {
     const where: any = { projectId, userId };
     if (options.excludeStatus && options.excludeStatus.length > 0) {
       where.status = { notIn: options.excludeStatus };
@@ -236,7 +250,7 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-      omit: options.includeWorkflowSnapshot ? undefined : JOB_LIST_OMIT,
+      omit: options.summary ? JOB_SUMMARY_OMIT : options.includeWorkflowSnapshot ? undefined : JOB_LIST_OMIT,
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -523,7 +537,8 @@ export class ProjectRepository {
 
     const [total, jobs] = await Promise.all([
       this.prisma.job.count({ where }),
-      this.prisma.job.findMany({ where, skip, take: limit, orderBy, omit: JOB_LIST_OMIT }),
+      // Only the project page's Completed list reads this.
+      this.prisma.job.findMany({ where, skip, take: limit, orderBy, omit: JOB_SUMMARY_OMIT }),
     ]);
 
     return {

@@ -24,7 +24,7 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, fetchLibraryChoices, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectJob, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, fetchLibraryChoices, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -287,6 +287,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [savingLibraryItemId, setSavingLibraryItemId] = useState<string | null>(null);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  // Job lists carry rows only; the opened row's details load on their own.
+  const [expandedJobDetail, setExpandedJobDetail] = useState<Job | null>(null);
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<LightboxData | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
@@ -1834,6 +1836,26 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
 
+  // Load the opened row's details, and again when its status moves on.
+  const expandedJobStatus = expandedJobId
+    ? (localJobs.find((job) => job.id === expandedJobId) ?? completedJobs.find((job) => job.id === expandedJobId))?.status
+    : undefined;
+  useEffect(() => {
+    if (!expandedJobId || !expandedJobStatus) {
+      setExpandedJobDetail(null);
+      return;
+    }
+    let cancelled = false;
+    fetchProjectJob(localProject.id, expandedJobId)
+      .then((job) => {
+        if (!cancelled) setExpandedJobDetail(job);
+      })
+      .catch((error) => console.error('Failed to load job details:', error));
+    return () => {
+      cancelled = true;
+    };
+  }, [localProject.id, expandedJobId, expandedJobStatus]);
+
   const startDraftJobsAndOpenQueue = async (
     request: { mode: 'allDrafts' } | { mode: 'selected'; jobIds: string[] },
     expectedJobIds: string[],
@@ -2603,7 +2625,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               setShowDeleteSelectedModal={setShowDeleteSelectedModal} runSelectedDrafts={runSelectedDrafts}
               setShowDeleteAllDraftsModal={setShowDeleteAllDraftsModal} runAllDrafts={runAllDrafts}
               isStartingDraftBatch={isStartingDraftBatch} startingDraftJobIds={startingDraftJobIds}
-              expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand} toggleDraftSelection={toggleDraftSelection}
+              expandedJobId={expandedJobId} expandedJobDetail={expandedJobDetail} toggleJobExpand={toggleJobExpand} toggleDraftSelection={toggleDraftSelection}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runDraftJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               albumItems={albumPreviewItems}
@@ -2623,7 +2645,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               queueJobs={queueJobs} selectedQueueIds={selectedQueueIds} toggleSelectAllQueue={toggleSelectAllQueue}
               toggleQueueSelection={toggleQueueSelection} retrySelectedQueue={retrySelectedQueue} deleteSelectedQueue={() => setShowDeleteQueueSelectedModal(true)}
               isRetryingQueueBatch={isRetryingQueueBatch} retryingQueueJobIds={retryingQueueJobIds}
-              clearAllFailed={() => setShowClearAllFailedModal(true)} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
+              clearAllFailed={() => setShowClearAllFailedModal(true)} expandedJobId={expandedJobId} expandedJobDetail={expandedJobDetail} toggleJobExpand={toggleJobExpand}
               getProviderName={getProviderName} getModelName={getModelName} runJob={runJob}
               setJobToDeleteId={setJobToDeleteId} setLightboxData={setLightboxData}
               onReuse={handleReuseWorkflow}
@@ -2636,7 +2658,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           )}
           {activeTab === 'completed' && !isLoadingCompleted && (
             <CompletedTab
-              completedJobs={completedJobs} expandedJobId={expandedJobId} toggleJobExpand={toggleJobExpand}
+              completedJobs={completedJobs} expandedJobId={expandedJobId} expandedJobDetail={expandedJobDetail} toggleJobExpand={toggleJobExpand}
               selectedCompletedIds={selectedCompletedIds} toggleCompletedSelection={toggleCompletedSelection}
               toggleSelectAllCompleted={toggleSelectAllCompleted} setShowDeleteSelectedModal={setShowDeleteCompletedSelectedModal}
               getProviderName={getProviderName} getModelName={getModelName}

@@ -677,6 +677,12 @@ export async function fetchProjectJobs(
   return handleResponse<import('./types').Job[]>(res, 'Failed to get project jobs');
 }
 
+/** One job in full — media, inputs, result and error — which job lists leave out. */
+export async function fetchProjectJob(projectId: string, jobId: string): Promise<import('./types').Job> {
+  const res = await apiFetch(`/api/projects/${projectId}/jobs/${encodeURIComponent(jobId)}`, { headers: getHeaders(false) });
+  return handleResponse<import('./types').Job>(res, 'Failed to get job');
+}
+
 export async function fetchProjectCompletedJobs(
   id: string,
   options: { page?: number; limit?: number; sort?: 'newest' | 'oldest' } = {},

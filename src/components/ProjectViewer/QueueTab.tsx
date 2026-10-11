@@ -20,6 +20,8 @@ interface QueueTabProps {
   deleteSelectedQueue: () => void;
   clearAllFailed: () => void;
   expandedJobId: string | null;
+  /** The opened row's details; rows themselves carry no media, inputs, result or error. */
+  expandedJobDetail: Job | null;
   toggleJobExpand: (id: string) => void;
   getProviderName: (id?: string) => string;
   getModelName: (providerId?: string, modelId?: string) => string;
@@ -40,6 +42,7 @@ export function QueueTab({
   deleteSelectedQueue,
   clearAllFailed,
   expandedJobId,
+  expandedJobDetail,
   toggleJobExpand,
   getProviderName,
   getModelName,
@@ -121,6 +124,7 @@ export function QueueTab({
               const scopeIds = queueJobs.map(j => j.id);
               return queueJobs.map(task => {
               const isExpanded = expandedJobId === task.id;
+              const detail = isExpanded && expandedJobDetail?.id === task.id ? expandedJobDetail : null;
               const isSelected = selectedQueueIds.has(task.id);
               const isRetryingThisJob = retryingQueueJobIds.has(task.id);
               return (
@@ -196,20 +200,20 @@ export function QueueTab({
                       </button>
                     </>
                   }
-                  expandedContent={
+                  expandedContent={detail ? (
                     <>
                       <div className="space-y-2">
                           <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600">{t('projectViewer.common.fullPrompt')}</label>
                           <div className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed bg-neutral-50/50 dark:bg-neutral-950/50 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 select-all whitespace-pre-wrap font-mono">
-                            {task.prompt}
+                            {detail.prompt}
                           </div>
                       </div>
-                      <ComfyJobInputs job={task} />
-                      {task.imageContexts && task.imageContexts.length > 0 && (
+                      <ComfyJobInputs job={detail} />
+                      {detail.imageContexts && detail.imageContexts.length > 0 && (
                         <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.1em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>
                             <div className="grid grid-cols-3 @md/pane:grid-cols-4 @2xl/pane:grid-cols-6 @4xl/pane:grid-cols-8 gap-3">
-                              {task.imageContexts.map((ctx, idx) => (
+                              {detail.imageContexts.map((ctx, idx) => (
                                 <div key={idx} className="group/ctx relative aspect-square rounded-xl overflow-hidden bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 shadow-sm transition-all hover:scale-110 hover:shadow-xl hover:z-10 hover:border-blue-500/50">
                                   <img 
                                     src={imageDisplayUrl(ctx)}
@@ -218,7 +222,7 @@ export function QueueTab({
                                     loading="lazy"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        setLightboxData({ images: (task.imageContexts || []).map(imageDisplayUrl), index: idx });
+                                        setLightboxData({ images: (detail.imageContexts || []).map(imageDisplayUrl), index: idx });
                                     }}
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover/ctx:opacity-100 transition-opacity flex items-end p-1.5 pointer-events-none">
@@ -229,36 +233,40 @@ export function QueueTab({
                             </div>
                         </div>
                       )}
-                      {task.videoContexts && task.videoContexts.length > 0 && (
+                      {detail.videoContexts && detail.videoContexts.length > 0 && (
                         <div className="space-y-3">
                           <label className="text-[9px] font-black uppercase tracking-[0.1em] text-violet-300/70 px-1">Reference Videos</label>
                           <div className="grid grid-cols-1 @2xl/pane:grid-cols-2 gap-3">
-                            {task.videoContexts.map((ctx, idx) => (
+                            {detail.videoContexts.map((ctx, idx) => (
                               <video key={idx} src={imageDisplayUrl(ctx)} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800 bg-black" />
                             ))}
                           </div>
                         </div>
                       )}
-                      {task.audioContexts && task.audioContexts.length > 0 && (
+                      {detail.audioContexts && detail.audioContexts.length > 0 && (
                         <div className="space-y-3">
                           <label className="text-[9px] font-black uppercase tracking-[0.1em] text-cyan-300/70 px-1">Reference Audio</label>
                           <div className="space-y-2">
-                            {task.audioContexts.map((ctx, idx) => (
+                            {detail.audioContexts.map((ctx, idx) => (
                               <audio key={idx} src={imageDisplayUrl(ctx)} controls className="w-full" />
                             ))}
                           </div>
                         </div>
                       )}
-                      {task.status === 'failed' && (
+                      {detail.status === 'failed' && (
                         <div className="space-y-2">
                              <label className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/70">{t('projectViewer.queue.errorDetails')}</label>
                              <div className="text-[10px] font-mono text-red-400 bg-red-950/20 p-3 rounded-lg border border-red-500/20 break-all leading-tight">
-                               {task.error || t('projectViewer.queue.unknownError')}
+                               {detail.error || t('projectViewer.queue.unknownError')}
                              </div>
                         </div>
                       )}
                     </>
-                  }
+                  ) : (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                    </div>
+                  )}
                 />
               );
             });
