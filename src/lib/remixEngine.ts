@@ -154,12 +154,6 @@ function getCombinationByIndex(choices: Choice[][], index: number): Choice[] {
   return choices.map((arr, k) => arr[positions[k]]);
 }
 
-export function countWorkflowCombinations(workflow: WorkflowItem[], libraries: Library[]): number {
-  const choices = buildWorkflowChoices(workflow, libraries);
-  if (choices.length === 0) return 0;
-  return choices.reduce((product, arr) => product * arr.length, 1);
-}
-
 export function generateJobs(workflow: WorkflowItem[], libraries: Library[], count: number, shuffle: boolean): Combination[] {
   const choices = buildWorkflowChoices(workflow, libraries);
 
@@ -186,8 +180,8 @@ export function generateJobs(workflow: WorkflowItem[], libraries: Library[], cou
 //
 // A project workflow only needs how many items each library step offers to
 // count its combinations; the items themselves are fetched for the positions
-// a batch of drafts actually uses. The functions above, which take whole
-// libraries, stay for callers that already hold them (the MCP draft tool).
+// a batch of drafts actually uses. generateJobs above, which takes whole
+// libraries, stays for the MCP draft tool, which already holds them.
 
 /**
  * A library as one workflow step draws from it. The same library under

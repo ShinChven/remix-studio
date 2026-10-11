@@ -51,6 +51,7 @@
       "archiveFailed": "Failed to change archive status. Please try again.",
       "disabledVisibilityFailed": "Failed to save the disabled-item view setting. Please try again.",
       "savedToLibrary": "Saved to library",
+      "loadJobDetailsFailed": "Failed to load job details",
       "saveToLibraryFailed": "Failed to save to library",
       "startJobsFailed": "Failed to start jobs. Please try again.",
       "startedJobsNotVisible": "Some submitted jobs are not visible in the queue yet.",

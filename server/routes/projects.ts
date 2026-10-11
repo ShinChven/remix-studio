@@ -600,7 +600,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const sortRaw = c.req.query('sort');
       const sort: 'newest' | 'oldest' = sortRaw === 'oldest' ? 'oldest' : 'newest';
       // Rows only, as above.
-      const result = await repository.getProjectCompletedJobs(user.userId, projectId, { page, limit, sort });
+      const result = await repository.getProjectCompletedJobs(user.userId, projectId, { page, limit, sort, summary: true });
       return c.json(result);
     } catch (e) {
       console.error('[GET /api/projects/:id/jobs/completed]', e);

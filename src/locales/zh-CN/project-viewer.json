@@ -51,6 +51,7 @@
       "archiveFailed": "更改归档状态失败，请重试。",
       "disabledVisibilityFailed": "无法保存已禁用项目的显示设置，请重试。",
       "savedToLibrary": "已保存到资料库",
+      "loadJobDetailsFailed": "加载任务详情失败",
       "saveToLibraryFailed": "保存到资料库失败",
       "startJobsFailed": "启动任务失败，请重试。",
       "startedJobsNotVisible": "部分已提交任务尚未出现在队列中。",

@@ -650,7 +650,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const lastLiveRefreshAtRef = useRef(0);
   const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
   const libraryChoiceInfosRef = useRef<Map<string, LibraryChoiceInfo>>(new Map());
-  const previewLibraryIdRef = useRef<string | null>(null);
+  // Which count request each source's count came from, so a slower, older
+  // response cannot overwrite a newer one.
+  const libraryCountSeqRef = useRef(0);
+  const libraryCountAppliedRef = useRef(new Map<string, number>());
+  const previewRequestRef = useRef(0);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
   const [isProjectLiveConnected, setIsProjectLiveConnected] = useState(false);
@@ -769,63 +773,93 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     return promise;
   }, []);
 
+  /** Keep the newest known count per source key; `seq` orders the requests they came from. */
+  const applyLibraryCounts = useCallback((infos: Map<string, LibraryChoiceInfo>, seq: number) => {
+    const next = new Map(libraryChoiceInfosRef.current);
+    infos.forEach((info, key) => {
+      if ((libraryCountAppliedRef.current.get(key) ?? -1) > seq) return;
+      libraryCountAppliedRef.current.set(key, seq);
+      next.set(key, info);
+    });
+    libraryChoiceInfosRef.current = next;
+    setLibraryChoiceInfos(next);
+  }, []);
+
   /** Count what the given library steps can pick from. No items are loaded. */
   const countLibraryChoices = useCallback(async (sources: LibraryChoiceSource[]): Promise<Map<string, LibraryChoiceInfo>> => {
     const infos = new Map<string, LibraryChoiceInfo>();
     if (sources.length === 0) return infos;
 
+    const seq = ++libraryCountSeqRef.current;
     const results = await fetchLibraryChoices(sources);
     results.forEach((result, index) => {
       infos.set(libraryChoiceKey(sources[index]), { type: result.type || 'text', count: result.count });
     });
-    const next = new Map(libraryChoiceInfosRef.current);
-    infos.forEach((info, key) => next.set(key, info));
-    libraryChoiceInfosRef.current = next;
-    setLibraryChoiceInfos(next);
+    applyLibraryCounts(infos, seq);
     return infos;
-  }, []);
+  }, [applyLibraryCounts]);
+
+  /** Recount every library step the workflow has now. */
+  const recountWorkflowLibraries = useCallback(() => (
+    countLibraryChoices(workflowLibrarySources(projectRef.current.workflow || [])).catch((error) => {
+      console.error('Failed to count workflow libraries:', error);
+      return new Map<string, LibraryChoiceInfo>();
+    })
+  ), [countLibraryChoices]);
 
   /**
    * The combinations for a batch of drafts: counted afresh, planned from the
-   * counts, and only the items the plan uses are fetched.
+   * counts, and only the items the plan uses are fetched. Each fetch reports
+   * its source's count from the same read as its items; when a library
+   * changed between counting and fetching, the positions no longer mean what
+   * the plan meant, so the batch is planned again from the new counts.
    */
   const composeWorkflowCombinations = useCallback(async (workflow: WorkflowItemType[], count: number, shuffle: boolean): Promise<Combination[]> => {
     const sources = workflowLibrarySources(workflow);
-    const plan = planWorkflowCombinations(workflow, await countLibraryChoices(sources), count, shuffle);
-    const items = new Map<string, Map<number, PickedLibraryItem>>();
-    const positions = planLibraryPositions(plan);
-    if (positions.size === 0) return combinationsFromPlan(plan, items);
-
     const sourceByKey = new Map(sources.map((source) => [libraryChoiceKey(source), source]));
-    const requests = Array.from(positions).flatMap(([key, indices]) => {
-      const chunks = [];
-      for (let start = 0; start < indices.length; start += LIBRARY_PICK_CHUNK_SIZE) {
-        chunks.push({ key, ...sourceByKey.get(key)!, indices: indices.slice(start, start + LIBRARY_PICK_CHUNK_SIZE) });
-      }
-      return chunks;
-    });
-    const results = await fetchLibraryChoices(requests.map(({ key, ...request }) => request));
-    results.forEach((result, index) => {
-      const { key, indices } = requests[index];
-      const picked = items.get(key) ?? new Map<number, PickedLibraryItem>();
-      items.set(key, picked);
-      result.items?.forEach((item, position) => {
-        if (item) picked.set(indices[position], item);
-      });
-    });
-    return combinationsFromPlan(plan, items);
-  }, [countLibraryChoices]);
+    let infos = await countLibraryChoices(sources);
 
-  // Count each library step once: on opening the project, and whenever a step
-  // comes to point at another library or tag filter.
+    for (let attempt = 0; ; attempt++) {
+      const plan = planWorkflowCombinations(workflow, infos, count, shuffle);
+      const items = new Map<string, Map<number, PickedLibraryItem>>();
+      const positions = planLibraryPositions(plan);
+      if (positions.size === 0) return combinationsFromPlan(plan, items);
+
+      const requests = Array.from(positions).flatMap(([key, indices]) => {
+        const chunks = [];
+        for (let start = 0; start < indices.length; start += LIBRARY_PICK_CHUNK_SIZE) {
+          chunks.push({ key, ...sourceByKey.get(key)!, indices: indices.slice(start, start + LIBRARY_PICK_CHUNK_SIZE) });
+        }
+        return chunks;
+      });
+      const seq = ++libraryCountSeqRef.current;
+      const results = await fetchLibraryChoices(requests.map(({ key, ...request }) => request));
+      const fetchedInfos = new Map<string, LibraryChoiceInfo>();
+      results.forEach((result, index) => {
+        const { key, indices } = requests[index];
+        fetchedInfos.set(key, { type: result.type || 'text', count: result.count });
+        const picked = items.get(key) ?? new Map<number, PickedLibraryItem>();
+        items.set(key, picked);
+        result.items?.forEach((item, position) => {
+          if (item) picked.set(indices[position], item);
+        });
+      });
+      applyLibraryCounts(fetchedInfos, seq);
+
+      const changed = Array.from(fetchedInfos).some(([key, info]) => infos.get(key)?.count !== info.count);
+      if (!changed) return combinationsFromPlan(plan, items);
+      if (attempt >= 2) throw new Error('Libraries kept changing while composing drafts');
+      infos = new Map([...infos, ...fetchedInfos]);
+    }
+  }, [countLibraryChoices, applyLibraryCounts]);
+
+  // Count the workflow's library steps on opening the project and whenever a
+  // step comes to point at another library or tag filter. All of them, each
+  // time: a count kept from earlier may be out of date, or may have failed.
   const workflowSourcesKey = workflowLibrarySources(localProject.workflow || []).map(libraryChoiceKey).join('\n');
   useEffect(() => {
-    const missing = workflowLibrarySources(projectRef.current.workflow || [])
-      .filter((source) => !libraryChoiceInfosRef.current.has(libraryChoiceKey(source)));
-    void countLibraryChoices(missing).catch((error) => {
-      console.error('Failed to count workflow libraries:', error);
-    });
-  }, [workflowSourcesKey, countLibraryChoices]);
+    void recountWorkflowLibraries();
+  }, [workflowSourcesKey, recountWorkflowLibraries]);
 
   useEffect(() => {
     void refreshWorkflowLibraries().catch(() => {
@@ -1013,13 +1047,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   // Libraries the workflow draws from may gain or lose items elsewhere, which
   // changes the combination count and the library pickers.
-  useLiveRefresh((event) => event.resource === 'library', (events) => {
-    const sources = workflowLibrarySources(projectRef.current.workflow || []);
-    const changed = events.some((event) => !event.id)
-      ? sources
-      : sources.filter((source) => events.some((event) => event.id === source.libraryId));
-    return Promise.allSettled([refreshWorkflowLibraries(), countLibraryChoices(changed)]);
-  });
+  // Counts are cheap, so every step is recounted: after a reconnect the hook
+  // passes no events, and past its cap it drops some.
+  useLiveRefresh((event) => event.resource === 'library', () => (
+    Promise.allSettled([refreshWorkflowLibraries(), recountWorkflowLibraries()])
+  ));
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
@@ -1373,6 +1405,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         size: item.size,
       });
       toast.success(t('projectViewer.toasts.savedToLibrary', { defaultValue: 'Saved to library' }));
+      // This tab's own changes do not come back as live events.
+      void recountWorkflowLibraries();
       setSavingLibraryItemId(null);
     } catch (error) {
       console.error('Failed to save workflow item to library:', error);
@@ -1384,10 +1418,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   // The workflow's libraries carry no items; a preview loads them when opened.
   const openLibraryPreview = async (library: Library, workflowItemId: string) => {
-    previewLibraryIdRef.current = library.id;
+    const request = ++previewRequestRef.current;
     try {
       const fullLibrary = await fetchLibrary(library.id);
-      if (previewLibraryIdRef.current !== library.id) return;
+      if (previewRequestRef.current !== request) return;
       setPreviewingLibrary(fullLibrary);
       setPreviewingWorkflowItemId(workflowItemId);
     } catch (error) {
@@ -1836,12 +1870,13 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
 
-  // Load the opened row's details, and again when its status moves on.
-  const expandedJobStatus = expandedJobId
-    ? (localJobs.find((job) => job.id === expandedJobId) ?? completedJobs.find((job) => job.id === expandedJobId))?.status
+  // Load the opened row's details, and again whenever the lists are refreshed
+  // (the row object is replaced then), so they follow the job.
+  const expandedJobRow = expandedJobId
+    ? (localJobs.find((job) => job.id === expandedJobId) ?? completedJobs.find((job) => job.id === expandedJobId))
     : undefined;
   useEffect(() => {
-    if (!expandedJobId || !expandedJobStatus) {
+    if (!expandedJobId || !expandedJobRow) {
       setExpandedJobDetail(null);
       return;
     }
@@ -1850,11 +1885,16 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       .then((job) => {
         if (!cancelled) setExpandedJobDetail(job);
       })
-      .catch((error) => console.error('Failed to load job details:', error));
+      .catch((error) => {
+        if (cancelled) return;
+        console.error('Failed to load job details:', error);
+        toast.error(t('projectViewer.toasts.loadJobDetailsFailed'));
+        setExpandedJobId((current) => (current === expandedJobId ? null : current));
+      });
     return () => {
       cancelled = true;
     };
-  }, [localProject.id, expandedJobId, expandedJobStatus]);
+  }, [localProject.id, expandedJobId, expandedJobRow]);
 
   const startDraftJobsAndOpenQueue = async (
     request: { mode: 'allDrafts' } | { mode: 'selected'; jobIds: string[] },

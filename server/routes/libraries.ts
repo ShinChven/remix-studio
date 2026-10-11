@@ -18,7 +18,6 @@ import {
   type QuickWatermarkSource,
 } from '../services/quick-watermark';
 import type { AlbumItem, LibraryItem, Library } from '../../src/types';
-import { filterItemsByTags } from '../../src/lib/remixEngine';
 
 type Variables = { user: JwtPayload };
 
@@ -145,7 +144,8 @@ async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
   return { ...lib, items: await signLibraryImages(lib.items, storage, lib.type) };
 }
 
-const MAX_CHOICE_SOURCES = 500;
+const MAX_CHOICE_SOURCES = 200;
+/** Item positions across all sources of one request. */
 const MAX_CHOICE_INDICES = 100_000;
 
 interface ChoiceSource {
@@ -158,16 +158,18 @@ interface ChoiceSource {
 function parseChoiceSources(value: unknown): ChoiceSource[] | null {
   if (!Array.isArray(value) || value.length > MAX_CHOICE_SOURCES) return null;
   const sources: ChoiceSource[] = [];
+  let indexCount = 0;
   for (const raw of value) {
     if (!raw || typeof raw.libraryId !== 'string' || !raw.libraryId) return null;
     const tags = raw.tags === undefined ? [] : raw.tags;
-    if (!Array.isArray(tags) || !tags.every((tag: unknown) => typeof tag === 'string')) return null;
+    if (!Array.isArray(tags) || tags.length > 100 || !tags.every((tag: unknown) => typeof tag === 'string')) return null;
     const indices = raw.indices;
     if (indices !== undefined && (
       !Array.isArray(indices)
-      || indices.length > MAX_CHOICE_INDICES
-      || !indices.every((index: unknown) => Number.isInteger(index) && (index as number) >= 0)
+      || !indices.every((index: unknown) => Number.isInteger(index) && (index as number) >= 0 && (index as number) <= 2_147_483_647)
     )) return null;
+    indexCount += indices?.length ?? 0;
+    if (indexCount > MAX_CHOICE_INDICES) return null;
     sources.push({ libraryId: raw.libraryId, tags, tagMatch: raw.tagMatch === 'and' ? 'and' : 'or', indices });
   }
   return sources;
@@ -240,43 +242,39 @@ export function createLibraryRouter(
       const sources = parseChoiceSources(body?.sources);
       if (!sources) return c.json({ error: 'Invalid sources' }, 400);
 
-      const loads = new Map<string, ReturnType<typeof repository.getLibraryChoiceRows>>();
-      const load = (libraryId: string) => {
-        let pending = loads.get(libraryId);
-        if (!pending) {
-          pending = repository.getLibraryChoiceRows(user.userId, libraryId);
-          loads.set(libraryId, pending);
+      // One source at a time: each is a single query, and a request carries
+      // few, so running them all at once would only crowd the database.
+      const results = [];
+      for (const source of sources) {
+        const choice = await repository.getLibraryChoice(user.userId, source.libraryId, {
+          tags: source.tags,
+          tagMatch: source.tagMatch,
+          indices: source.indices ?? [],
+        });
+        if (!choice) {
+          results.push({ libraryId: source.libraryId, type: null, count: 0, ...(source.indices ? { items: source.indices.map(() => null) } : {}) });
+          continue;
         }
-        return pending;
-      };
+        if (!source.indices) {
+          results.push({ libraryId: source.libraryId, type: choice.type, count: choice.count });
+          continue;
+        }
 
-      const results = await Promise.all(sources.map(async (source) => {
-        const loaded = await load(source.libraryId);
-        if (!loaded) return { libraryId: source.libraryId, type: null, count: 0 };
-
-        const eligible = filterItemsByTags(loaded.rows, source.tags, source.tagMatch);
-        if (!source.indices) return { libraryId: source.libraryId, type: loaded.type, count: eligible.length };
-
-        const pickedIds = source.indices.map((index) => eligible[index]?.id);
-        const found = await repository.getLibraryItemsByIds(
-          user.userId,
-          source.libraryId,
-          Array.from(new Set(pickedIds.filter((id): id is string => !!id))),
-        );
-        const isMedia = loaded.type !== 'text';
-        const byId = new Map(await Promise.all(found.map(async (item) => [item.id, {
-          id: item.id,
-          content: isMedia ? (await presignStoredUrl(item.content, storage)) || item.content : item.content,
-          tags: item.tags,
-          title: item.title,
-        }] as const)));
-        return {
-          libraryId: source.libraryId,
-          type: loaded.type,
-          count: eligible.length,
-          items: pickedIds.map((id) => (id && byId.get(id)) || null),
-        };
-      }));
+        const isMedia = choice.type !== 'text';
+        const items = [];
+        for (const index of source.indices) {
+          const item = choice.items.get(index);
+          items.push(item
+            ? {
+                id: item.id,
+                content: isMedia ? (await presignStoredUrl(item.content, storage)) || item.content : item.content,
+                tags: item.tags,
+                title: item.title,
+              }
+            : null);
+        }
+        results.push({ libraryId: source.libraryId, type: choice.type, count: choice.count, items });
+      }
 
       return c.json({ sources: results });
     } catch (e) {

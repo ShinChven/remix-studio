@@ -1,11 +1,12 @@
 import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem, Job } from '../../src/types';
 import type { AlbumItemSort } from '../../src/types';
+import type { LibraryChoice, LibraryChoiceQuery } from './library-repository';
 
 export interface IRepository {
   // === Library CRUD ===
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean, includeCover?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
-  getLibraryChoiceRows(userId: string, libraryId: string): Promise<{ type: LibraryType; rows: Array<{ id: string; tags: string[] }> } | null>;
+  getLibraryChoice(userId: string, libraryId: string, query: LibraryChoiceQuery): Promise<LibraryChoice | null>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }): Promise<void>;
   deleteLibrary(userId: string, libraryId: string): Promise<void>;
@@ -43,7 +44,7 @@ export interface IRepository {
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
-    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' },
+    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; summary?: boolean },
   ): Promise<{ items: import('../../src/types').Job[]; total: number; page: number; pages: number }>;
   getProjectAlbum(
     userId: string,

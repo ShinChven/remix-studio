@@ -51,6 +51,7 @@
       "archiveFailed": "Échec du changement de statut d'archive. Veuillez réessayer.",
       "disabledVisibilityFailed": "Échec de l'enregistrement du réglage d'affichage des éléments désactivés. Veuillez réessayer.",
       "savedToLibrary": "Enregistré dans la bibliothèque",
+      "loadJobDetailsFailed": "Impossible de charger les détails de la tâche",
       "saveToLibraryFailed": "Échec de l'enregistrement dans la bibliothèque",
       "startJobsFailed": "Impossible de démarrer les tâches. Réessayez.",
       "startedJobsNotVisible": "Certaines tâches envoyées ne sont pas encore visibles dans la file.",

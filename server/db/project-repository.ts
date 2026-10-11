@@ -523,7 +523,7 @@ export class ProjectRepository {
   async getProjectCompletedJobs(
     userId: string,
     projectId: string,
-    options: { page?: number; limit?: number; sort?: 'newest' | 'oldest' } = {},
+    options: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; summary?: boolean } = {},
   ): Promise<{ items: Job[]; total: number; page: number; pages: number }> {
     const page = options.page ?? 1;
     const limit = options.limit ?? 500;
@@ -537,8 +537,7 @@ export class ProjectRepository {
 
     const [total, jobs] = await Promise.all([
       this.prisma.job.count({ where }),
-      // Only the project page's Completed list reads this.
-      this.prisma.job.findMany({ where, skip, take: limit, orderBy, omit: JOB_SUMMARY_OMIT }),
+      this.prisma.job.findMany({ where, skip, take: limit, orderBy, omit: options.summary ? JOB_SUMMARY_OMIT : JOB_LIST_OMIT }),
     ]);
 
     return {

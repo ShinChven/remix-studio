@@ -1,20 +1,25 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { LibraryType } from '../../src/types';
 import { Library, LibraryItem } from '../../src/types';
 
-/** Matches content with something other than whitespace in it. */
-const NON_BLANK_PATTERN = '\\S';
+/**
+ * Matches content with something besides whitespace in it — the whitespace
+ * JavaScript's trim() removes, which the remix engine uses to skip blank items.
+ */
+const NON_BLANK_PATTERN = '[^\\s\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]';
 
-function parseTags(value: unknown): string[] {
-  let tags = value;
-  if (typeof value === 'string') {
-    try {
-      tags = JSON.parse(value);
-    } catch {
-      tags = undefined;
-    }
-  }
-  return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === 'string') : [];
+export interface LibraryChoiceQuery {
+  tags: string[];
+  tagMatch: 'and' | 'or';
+  /** Positions among the items the source offers; none to count only. */
+  indices: number[];
+}
+
+export interface LibraryChoice {
+  type: LibraryType;
+  count: number;
+  /** The items at the asked positions, by position. */
+  items: Map<number, LibraryItem>;
 }
 
 export class LibraryRepository {
@@ -68,29 +73,22 @@ export class LibraryRepository {
               },
               _count: { select: { items: true } },
             }
-          : includeCover
-            ? {
-                // Only the newest item, for the library's cover thumbnail.
-                items: {
-                  orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
-                  take: 1,
-                  select: { content: true, thumbnailUrl: true },
-                },
-                _count: { select: { items: true } },
-              }
-            : {
-                _count: { select: { items: true } },
-              },
+          : {
+              _count: { select: { items: true } },
+            },
       })
     ]);
+    const covers = includeCover && !includeItems
+      ? await this.getCoverKeys(libs.filter((lib) => lib.type === 'image' || lib.type === 'video').map((lib) => lib.id))
+      : new Map<string, { content: string; thumbnailUrl: string | null }>();
 
     const items = libs.map((lib) => ({
       id: lib.id,
       name: lib.name,
       description: (lib as any).description ?? undefined,
       type: lib.type as LibraryType,
-      items: includeItems && 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item as any)) : [],
-      ...(includeCover && !includeItems ? { coverUrl: this.coverKey(lib.type as LibraryType, (lib as any).items?.[0]) } : {}),
+      items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
+      ...(includeCover && !includeItems ? { coverUrl: this.coverKey(lib.type as LibraryType, covers.get(lib.id)) } : {}),
       itemCount: lib._count.items,
       createdAt: lib.createdAt instanceof Date ? lib.createdAt.getTime() : lib.createdAt,
       updatedAt: lib.updatedAt instanceof Date ? lib.updatedAt.getTime() : lib.updatedAt,
@@ -103,6 +101,26 @@ export class LibraryRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  /**
+   * Each library's newest item, for its cover, one row per library. (A nested
+   * `take: 1` include does not do this: it reads every item of every library
+   * and keeps the first in memory.)
+   */
+  private async getCoverKeys(libraryIds: string[]): Promise<Map<string, { content: string; thumbnailUrl: string | null }>> {
+    if (libraryIds.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<Array<{ libraryId: string; content: string; thumbnailUrl: string | null }>>`
+      SELECT library.id AS "libraryId", newest.content, newest."thumbnailUrl"
+      FROM unnest(${libraryIds}::text[]) AS library(id)
+      CROSS JOIN LATERAL (
+        SELECT content, "thumbnailUrl" FROM "LibraryItem"
+        WHERE "libraryId" = library.id
+        ORDER BY "createdAt" DESC, id ASC
+        LIMIT 1
+      ) AS newest
+    `;
+    return new Map(rows.map((row) => [row.libraryId, row]));
   }
 
   /** The stored key or URL a library's cover thumbnail is drawn from. */
@@ -186,23 +204,44 @@ export class LibraryRepository {
   }
 
   /**
-   * The items a workflow step can pick from in a library, without their
-   * content: the id and tags of each item that has content, newest first —
-   * the order the remix engine uses. Null when the library is not the user's.
+   * A library as one workflow step draws from it: how many items it offers —
+   * those with content, under the step's tag filter, matched the way
+   * filterItemsByTags does — and the items at the asked positions, newest
+   * first as the remix engine orders them. The count and the items come from
+   * one statement, so they agree. Null when the library is not the user's.
    */
-  async getLibraryChoiceRows(userId: string, libraryId: string): Promise<{ type: LibraryType; rows: Array<{ id: string; tags: string[] }> } | null> {
+  async getLibraryChoice(userId: string, libraryId: string, query: LibraryChoiceQuery): Promise<LibraryChoice | null> {
     const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId }, select: { type: true } });
     if (!lib) return null;
 
-    const rows = await this.prisma.$queryRaw<Array<{ id: string; tags: unknown }>>`
-      SELECT id, tags FROM "LibraryItem"
-      WHERE "libraryId" = ${libraryId} AND content ~ ${NON_BLANK_PATTERN}
-      ORDER BY "createdAt" DESC, id ASC
+    const tags = Array.from(new Set(query.tags.map((tag) => tag.toLowerCase())));
+    const matching = Prisma.sql`SELECT count(DISTINCT lower(tag.value)) FROM jsonb_array_elements_text("tags") AS tag(value) WHERE lower(tag.value) = ANY(${tags}::text[])`;
+    // CASE keeps jsonb_array_elements_text off tags that are not an array.
+    const tagFilter = tags.length === 0
+      ? Prisma.sql`TRUE`
+      : query.tagMatch === 'and'
+        ? Prisma.sql`CASE WHEN jsonb_typeof("tags") = 'array' THEN (${matching}) = ${tags.length} ELSE FALSE END`
+        : Prisma.sql`CASE WHEN jsonb_typeof("tags") = 'array' THEN (${matching}) > 0 ELSE FALSE END`;
+
+    const rows = await this.prisma.$queryRaw<Array<{ count: number; position: number | null; id: string | null; content: string | null; title: string | null; tags: unknown }>>`
+      WITH eligible AS (
+        SELECT id, (row_number() OVER (ORDER BY "createdAt" DESC, id ASC) - 1)::int AS position
+        FROM "LibraryItem"
+        WHERE "libraryId" = ${libraryId} AND content ~ ${NON_BLANK_PATTERN} AND ${tagFilter}
+      ),
+      total AS (SELECT count(*)::int AS count FROM eligible)
+      SELECT total.count, picked.position, item.id, item.content, item.title, item.tags
+      FROM total
+      LEFT JOIN eligible AS picked ON picked.position = ANY(${query.indices}::int[])
+      LEFT JOIN "LibraryItem" AS item ON item.id = picked.id
     `;
-    return {
-      type: lib.type as LibraryType,
-      rows: rows.map((row) => ({ id: row.id, tags: parseTags(row.tags) })),
-    };
+
+    const items = new Map<number, LibraryItem>();
+    for (const row of rows) {
+      if (row.position === null || row.id === null) continue;
+      items.set(row.position, this.mapItem({ id: row.id, content: row.content, title: row.title, tags: row.tags }));
+    }
+    return { type: lib.type as LibraryType, count: rows[0]?.count ?? 0, items };
   }
 
   async getLibraryItemsByIds(userId: string, libraryId: string, itemIds: string[]): Promise<LibraryItem[]> {

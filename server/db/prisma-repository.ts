@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { AppData, Library, LibraryItem, LibraryType, Project, ProjectStatus, AlbumItem, TrashItem, Job } from '../../src/types';
 import type { AlbumItemSort } from '../../src/types';
 import { IRepository } from './repository';
-import { LibraryRepository } from './library-repository';
+import { LibraryRepository, type LibraryChoiceQuery } from './library-repository';
 import { ProjectRepository } from './project-repository';
 import { DataRepository } from './data-repository';
 
@@ -23,7 +23,7 @@ export class PrismaRepository implements IRepository {
   // === Library CRUD ===
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean, includeCover?: boolean) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems, type, nameOnly, includeCover); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
-  getLibraryChoiceRows(userId: string, libraryId: string) { return this.libraries.getLibraryChoiceRows(userId, libraryId); }
+  getLibraryChoice(userId: string, libraryId: string, query: LibraryChoiceQuery) { return this.libraries.getLibraryChoice(userId, libraryId, query); }
   createLibrary(userId: string, library: Omit<Library, 'items'>) { return this.libraries.createLibrary(userId, library); }
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }) { return this.libraries.updateLibrary(userId, libraryId, updates); }
   deleteLibrary(userId: string, libraryId: string) { return this.libraries.deleteLibrary(userId, libraryId); }
@@ -73,7 +73,7 @@ export class PrismaRepository implements IRepository {
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
-    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest' },
+    options?: { page?: number; limit?: number; sort?: 'newest' | 'oldest'; summary?: boolean },
   ) {
     return this.projects.getProjectCompletedJobs(userId, projectId, options);
   }

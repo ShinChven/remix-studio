@@ -51,6 +51,7 @@
       "archiveFailed": "보관 상태를 변경하지 못했습니다. 다시 시도하세요.",
       "disabledVisibilityFailed": "비활성 항목 표시 설정을 저장하지 못했습니다. 다시 시도해 주세요.",
       "savedToLibrary": "라이브러리에 저장했습니다",
+      "loadJobDetailsFailed": "작업 세부 정보를 불러오지 못했습니다",
       "saveToLibraryFailed": "라이브러리에 저장하지 못했습니다",
       "startJobsFailed": "작업을 시작하지 못했습니다. 다시 시도해 주세요.",
       "startedJobsNotVisible": "제출된 일부 작업이 아직 대기열에 표시되지 않습니다.",
