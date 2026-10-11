@@ -56,6 +56,13 @@ export function normalizeAlbumTags(values: unknown): string[] {
   return tags;
 }
 
+/**
+ * Each job keeps a copy of the whole workflow it was made from, which job
+ * lists drop (mapJob only keeps it when asked). Leave it in the database too
+ * rather than read it for every row.
+ */
+const JOB_LIST_OMIT = { workflowSnapshot: true } as const;
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -229,6 +236,7 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      omit: options.includeWorkflowSnapshot ? undefined : JOB_LIST_OMIT,
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -240,6 +248,7 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where: { projectId, userId, id: { in: ids } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      omit: options.includeWorkflowSnapshot ? undefined : JOB_LIST_OMIT,
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -514,7 +523,7 @@ export class ProjectRepository {
 
     const [total, jobs] = await Promise.all([
       this.prisma.job.count({ where }),
-      this.prisma.job.findMany({ where, skip, take: limit, orderBy }),
+      this.prisma.job.findMany({ where, skip, take: limit, orderBy, omit: JOB_LIST_OMIT }),
     ]);
 
     return {

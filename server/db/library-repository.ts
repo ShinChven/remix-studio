@@ -2,6 +2,21 @@ import { PrismaClient } from '@prisma/client';
 import type { LibraryType } from '../../src/types';
 import { Library, LibraryItem } from '../../src/types';
 
+/** Matches content with something other than whitespace in it. */
+const NON_BLANK_PATTERN = '\\S';
+
+function parseTags(value: unknown): string[] {
+  let tags = value;
+  if (typeof value === 'string') {
+    try {
+      tags = JSON.parse(value);
+    } catch {
+      tags = undefined;
+    }
+  }
+  return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === 'string') : [];
+}
+
 export class LibraryRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -16,7 +31,7 @@ export class LibraryRepository {
     }
   }
 
-  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, type?: LibraryType, nameOnly: boolean = false): Promise<{ items: Library[], total: number, page: number, pages: number }> {
+  async getUserLibraries(userId: string, page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, type?: LibraryType, nameOnly: boolean = false, includeCover: boolean = false): Promise<{ items: Library[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -53,9 +68,19 @@ export class LibraryRepository {
               },
               _count: { select: { items: true } },
             }
-          : {
-              _count: { select: { items: true } },
-            },
+          : includeCover
+            ? {
+                // Only the newest item, for the library's cover thumbnail.
+                items: {
+                  orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+                  take: 1,
+                  select: { content: true, thumbnailUrl: true },
+                },
+                _count: { select: { items: true } },
+              }
+            : {
+                _count: { select: { items: true } },
+              },
       })
     ]);
 
@@ -64,7 +89,8 @@ export class LibraryRepository {
       name: lib.name,
       description: (lib as any).description ?? undefined,
       type: lib.type as LibraryType,
-      items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
+      items: includeItems && 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item as any)) : [],
+      ...(includeCover && !includeItems ? { coverUrl: this.coverKey(lib.type as LibraryType, (lib as any).items?.[0]) } : {}),
       itemCount: lib._count.items,
       createdAt: lib.createdAt instanceof Date ? lib.createdAt.getTime() : lib.createdAt,
       updatedAt: lib.updatedAt instanceof Date ? lib.updatedAt.getTime() : lib.updatedAt,
@@ -77,6 +103,14 @@ export class LibraryRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  /** The stored key or URL a library's cover thumbnail is drawn from. */
+  private coverKey(type: LibraryType, item?: { content: string; thumbnailUrl: string | null }): string | undefined {
+    if (!item) return undefined;
+    if (type === 'image') return item.thumbnailUrl || item.content || undefined;
+    if (type === 'video') return item.thumbnailUrl || undefined;
+    return undefined;
   }
 
   async getLibrary(userId: string, libraryId: string): Promise<Library | null> {
@@ -149,6 +183,26 @@ export class LibraryRepository {
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
     });
     return items.map((item) => this.mapItem(item));
+  }
+
+  /**
+   * The items a workflow step can pick from in a library, without their
+   * content: the id and tags of each item that has content, newest first —
+   * the order the remix engine uses. Null when the library is not the user's.
+   */
+  async getLibraryChoiceRows(userId: string, libraryId: string): Promise<{ type: LibraryType; rows: Array<{ id: string; tags: string[] }> } | null> {
+    const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId }, select: { type: true } });
+    if (!lib) return null;
+
+    const rows = await this.prisma.$queryRaw<Array<{ id: string; tags: unknown }>>`
+      SELECT id, tags FROM "LibraryItem"
+      WHERE "libraryId" = ${libraryId} AND content ~ ${NON_BLANK_PATTERN}
+      ORDER BY "createdAt" DESC, id ASC
+    `;
+    return {
+      type: lib.type as LibraryType,
+      rows: rows.map((row) => ({ id: row.id, tags: parseTags(row.tags) })),
+    };
   }
 
   async getLibraryItemsByIds(userId: string, libraryId: string, itemIds: string[]): Promise<LibraryItem[]> {

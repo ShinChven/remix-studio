@@ -69,6 +69,8 @@ export interface Library {
   type: LibraryType;
   items: LibraryItem[];
   itemCount?: number;
+  /** Cover thumbnail, sent by library listings that leave the items out. */
+  coverUrl?: string;
   createdAt?: number;
   updatedAt?: number;
   pinnedAt?: string | null;

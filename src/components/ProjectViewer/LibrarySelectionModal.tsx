@@ -127,12 +127,10 @@ export function LibrarySelectionModal({
                     className="group flex items-start gap-3 p-4 sm:gap-4 sm:p-5 border rounded-card text-left transition-all bg-neutral-50/40 dark:bg-neutral-950/40 border-neutral-200 dark:border-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-800 hover:border-emerald-500/30 hover:scale-[1.02] active:scale-100"
                   >
                     <div className="flex-shrink-0">
-                      {(lib.type === 'image' || lib.type === 'video') && lib.items[0] ? (
+                      {lib.coverUrl ? (
                         <div className="w-12 h-12 rounded-xl overflow-hidden border shadow-md border-neutral-200 dark:border-neutral-800">
                           <img 
-                            src={lib.type === 'image' 
-                              ? (lib.items[0].thumbnailUrl || lib.items[0].content)
-                              : (lib.items[0].thumbnailUrl || '')} 
+                            src={lib.coverUrl} 
                             alt={lib.name} 
                             className="w-full h-full object-cover" 
                           />
@@ -163,7 +161,7 @@ export function LibrarySelectionModal({
                            lib.type}
                         </span>
                         <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-                          {t('projectViewer.workflow.itemsCount', { count: lib.items.length })}
+                          {t('projectViewer.workflow.itemsCount', { count: lib.itemCount ?? 0 })}
                         </span>
                       </div>
                     </div>

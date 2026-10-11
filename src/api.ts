@@ -417,13 +417,14 @@ export async function loadData(): Promise<AppData> {
 
 // ========== Library CRUD ==========
 
-export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
+export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false, includeCover: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
   if (q) params.set('q', q);
   if (includeItems) params.set('includeItems', 'true');
   if (nameOnly) params.set('nameOnly', 'true');
+  if (includeCover) params.set('includeCover', 'true');
 
   const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
@@ -432,6 +433,35 @@ export async function fetchLibraries(page: number = 1, limit: number = 50, q?: s
 export async function fetchLibrary(id: string): Promise<Library> {
   const res = await apiFetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
   return handleResponse<Library>(res, 'Failed to get library');
+}
+
+export interface LibraryChoiceRequest {
+  libraryId: string;
+  tags: string[];
+  tagMatch: 'and' | 'or';
+  /** Positions among the items the source offers to fetch; leave out to count only. */
+  indices?: number[];
+}
+
+export interface LibraryChoiceResult {
+  libraryId: string;
+  /** Null when the library no longer exists. */
+  type: import('./types').LibraryType | null;
+  /** How many items the source offers under its tag filter. */
+  count: number;
+  /** The items at the requested positions, null where there is none. */
+  items?: Array<Pick<import('./types').LibraryItem, 'id' | 'content' | 'tags' | 'title'> | null>;
+}
+
+/** Count what workflow steps can pick from their libraries, and fetch only the items at the positions asked. */
+export async function fetchLibraryChoices(sources: LibraryChoiceRequest[]): Promise<LibraryChoiceResult[]> {
+  const res = await apiFetch('/api/libraries/choices', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ sources }),
+  });
+  const data = await handleResponse<{ sources: LibraryChoiceResult[] }>(res, 'Failed to read libraries');
+  return data.sources;
 }
 
 export async function createLibrary(library: { id: string; name: string; description?: string; type: string }): Promise<void> {

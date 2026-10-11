@@ -30,7 +30,7 @@ export function ProjectRoute() {
 
   const loadLibraries = async () => {
     try {
-      const res = await fetchLibraries(1, 100, undefined, true);
+      const res = await fetchLibraries(1, 100, undefined, false, false, true);
       setLibraries(res.items);
     } catch (e) {
       console.error(e);

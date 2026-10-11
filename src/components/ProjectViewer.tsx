@@ -24,10 +24,21 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, fetchLibraryChoices, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
+import {
+  Combination,
+  LibraryChoiceInfo,
+  LibraryChoiceSource,
+  PickedLibraryItem,
+  combinationsFromPlan,
+  countWorkflowCombinationsFromCounts,
+  libraryChoiceKey,
+  planLibraryPositions,
+  planWorkflowCombinations,
+  workflowLibrarySources,
+} from '../lib/remixEngine';
 import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
@@ -76,6 +87,8 @@ interface LightboxData {
 }
 
 const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
+/** Item positions per request entry when fetching the items a batch of drafts uses. */
+const LIBRARY_PICK_CHUNK_SIZE = 5_000;
 const MAX_JOB_FILENAME_LENGTH = 200;
 const TAB_DATA_STALE_MS = 30_000;
 const LIVE_REFRESH_DEBOUNCE_MS = 250;
@@ -120,13 +133,14 @@ function stripJobWorkflowSnapshots(jobs: Job[]): Job[] {
   return jobs.map(({ workflowSnapshot, ...job }) => job);
 }
 
+/** Every library without its items: names, types, counts and a cover are all the workflow shows. */
 async function fetchWorkflowLibraries(): Promise<Library[]> {
-  const firstPage = await fetchLibraries(1, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true);
+  const firstPage = await fetchLibraries(1, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, false, false, true);
   if (firstPage.pages <= 1) return firstPage.items;
 
   const rest = await Promise.all(
     Array.from({ length: firstPage.pages - 1 }, (_, index) =>
-      fetchLibraries(index + 2, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true)
+      fetchLibraries(index + 2, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, false, false, true)
     )
   );
 
@@ -301,6 +315,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [liveLibraries, setLiveLibraries] = useState<Library[]>(libraries);
   const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
   const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
+  // How many items each library step offers under its tag filter, by source key.
+  const [libraryChoiceInfos, setLibraryChoiceInfos] = useState<Map<string, LibraryChoiceInfo>>(() => new Map());
 
   const workflowPickerType: Exclude<WorkflowItemTypeKind, 'library'> = (() => {
     const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === selectingLibraryForItemId);
@@ -631,6 +647,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const liveRefreshQueuedRef = useRef(false);
   const lastLiveRefreshAtRef = useRef(0);
   const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
+  const libraryChoiceInfosRef = useRef<Map<string, LibraryChoiceInfo>>(new Map());
+  const previewLibraryIdRef = useRef<string | null>(null);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
   const [isProjectLiveConnected, setIsProjectLiveConnected] = useState(false);
@@ -749,15 +767,63 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     return promise;
   }, []);
 
-  const upsertLiveLibrary = useCallback((library: Library) => {
-    setLiveLibraries((current) => {
-      const existingIndex = current.findIndex((item) => item.id === library.id);
-      if (existingIndex === -1) return [library, ...current];
-      const next = [...current];
-      next[existingIndex] = library;
-      return next;
+  /** Count what the given library steps can pick from. No items are loaded. */
+  const countLibraryChoices = useCallback(async (sources: LibraryChoiceSource[]): Promise<Map<string, LibraryChoiceInfo>> => {
+    const infos = new Map<string, LibraryChoiceInfo>();
+    if (sources.length === 0) return infos;
+
+    const results = await fetchLibraryChoices(sources);
+    results.forEach((result, index) => {
+      infos.set(libraryChoiceKey(sources[index]), { type: result.type || 'text', count: result.count });
     });
+    const next = new Map(libraryChoiceInfosRef.current);
+    infos.forEach((info, key) => next.set(key, info));
+    libraryChoiceInfosRef.current = next;
+    setLibraryChoiceInfos(next);
+    return infos;
   }, []);
+
+  /**
+   * The combinations for a batch of drafts: counted afresh, planned from the
+   * counts, and only the items the plan uses are fetched.
+   */
+  const composeWorkflowCombinations = useCallback(async (workflow: WorkflowItemType[], count: number, shuffle: boolean): Promise<Combination[]> => {
+    const sources = workflowLibrarySources(workflow);
+    const plan = planWorkflowCombinations(workflow, await countLibraryChoices(sources), count, shuffle);
+    const items = new Map<string, Map<number, PickedLibraryItem>>();
+    const positions = planLibraryPositions(plan);
+    if (positions.size === 0) return combinationsFromPlan(plan, items);
+
+    const sourceByKey = new Map(sources.map((source) => [libraryChoiceKey(source), source]));
+    const requests = Array.from(positions).flatMap(([key, indices]) => {
+      const chunks = [];
+      for (let start = 0; start < indices.length; start += LIBRARY_PICK_CHUNK_SIZE) {
+        chunks.push({ key, ...sourceByKey.get(key)!, indices: indices.slice(start, start + LIBRARY_PICK_CHUNK_SIZE) });
+      }
+      return chunks;
+    });
+    const results = await fetchLibraryChoices(requests.map(({ key, ...request }) => request));
+    results.forEach((result, index) => {
+      const { key, indices } = requests[index];
+      const picked = items.get(key) ?? new Map<number, PickedLibraryItem>();
+      items.set(key, picked);
+      result.items?.forEach((item, position) => {
+        if (item) picked.set(indices[position], item);
+      });
+    });
+    return combinationsFromPlan(plan, items);
+  }, [countLibraryChoices]);
+
+  // Count each library step once: on opening the project, and whenever a step
+  // comes to point at another library or tag filter.
+  const workflowSourcesKey = workflowLibrarySources(localProject.workflow || []).map(libraryChoiceKey).join('\n');
+  useEffect(() => {
+    const missing = workflowLibrarySources(projectRef.current.workflow || [])
+      .filter((source) => !libraryChoiceInfosRef.current.has(libraryChoiceKey(source)));
+    void countLibraryChoices(missing).catch((error) => {
+      console.error('Failed to count workflow libraries:', error);
+    });
+  }, [workflowSourcesKey, countLibraryChoices]);
 
   useEffect(() => {
     void refreshWorkflowLibraries().catch(() => {
@@ -945,7 +1011,13 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   // Libraries the workflow draws from may gain or lose items elsewhere, which
   // changes the combination count and the library pickers.
-  useLiveRefresh((event) => event.resource === 'library', () => refreshWorkflowLibraries());
+  useLiveRefresh((event) => event.resource === 'library', (events) => {
+    const sources = workflowLibrarySources(projectRef.current.workflow || []);
+    const changed = events.some((event) => !event.id)
+      ? sources
+      : sources.filter((source) => events.some((event) => event.id === source.libraryId));
+    return Promise.allSettled([refreshWorkflowLibraries(), countLibraryChoices(changed)]);
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
@@ -1150,8 +1222,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, [selectedModelId, selectedModel]);
 
   const combinationsCount = React.useMemo(
-    () => countWorkflowCombinations(localProject.workflow || [], liveLibraries),
-    [localProject.workflow, liveLibraries]
+    () => countWorkflowCombinationsFromCounts(localProject.workflow || [], libraryChoiceInfos),
+    [localProject.workflow, libraryChoiceInfos]
   );
 
   /**
@@ -1308,14 +1380,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  // The workflow's libraries carry no items; a preview loads them when opened.
   const openLibraryPreview = async (library: Library, workflowItemId: string) => {
-    setPreviewingLibrary(library);
-    setPreviewingWorkflowItemId(workflowItemId);
-
+    previewLibraryIdRef.current = library.id;
     try {
-      const freshLibrary = await fetchLibrary(library.id);
-      upsertLiveLibrary(freshLibrary);
-      setPreviewingLibrary(freshLibrary);
+      const fullLibrary = await fetchLibrary(library.id);
+      if (previewLibraryIdRef.current !== library.id) return;
+      setPreviewingLibrary(fullLibrary);
+      setPreviewingWorkflowItemId(workflowItemId);
     } catch (error) {
       console.error('Failed to refresh library preview:', error);
       toast.error(t('projectViewer.toasts.refreshLibraryFailed', { defaultValue: 'Failed to refresh library' }));
@@ -1556,15 +1628,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setIsAddingDrafts(true);
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
     try {
-      let librariesForGeneration: Library[];
+      let combinations: Combination[];
       try {
-        librariesForGeneration = await refreshWorkflowLibraries();
+        combinations = await composeWorkflowCombinations(bindings, queueCount, !!localProject.shuffle);
       } catch {
         toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
         return;
       }
 
-      const combinations = generateJobs(bindings, librariesForGeneration, queueCount, !!localProject.shuffle);
       const selected: Combination[] = combinations.length > 0
         ? combinations
         : Array.from({ length: queueCount }, () => ({ prompt: '', filenameParts: [] }));
@@ -1626,9 +1697,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
 
     try {
-      let librariesForGeneration: Library[];
+      let selectedCombinations: Combination[];
       try {
-        librariesForGeneration = await refreshWorkflowLibraries();
+        selectedCombinations = await composeWorkflowCombinations(localProject.workflow || [], queueCount, !!localProject.shuffle);
       } catch (error) {
         toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
         return;
@@ -1636,7 +1707,6 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
-      const selectedCombinations = generateJobs(localProject.workflow || [], librariesForGeneration, queueCount, !!localProject.shuffle);
       if (selectedCombinations.length === 0) return;
 
       const newJobs: Job[] = [];
