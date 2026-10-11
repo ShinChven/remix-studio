@@ -3,8 +3,9 @@ import type { AlbumItemSort } from '../../src/types';
 
 export interface IRepository {
   // === Library CRUD ===
-  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
+  getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean, includeCover?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
+  getLibraryChoiceRows(userId: string, libraryId: string): Promise<{ library: Library; rows: Array<{ id: string; tags: string[] }> } | null>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }): Promise<void>;
   deleteLibrary(userId: string, libraryId: string): Promise<void>;

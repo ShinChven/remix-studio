@@ -242,7 +242,7 @@ export function WorkflowItem({
           <div className="w-full bg-white/40 dark:bg-black/40 border border-neutral-200/50 dark:border-white/5 rounded-xl p-4 text-xs flex items-center justify-between transition-ui hover:border-emerald-500/30 hover:bg-white/60 dark:hover:bg-neutral-900/60 shadow-inner backdrop-blur-md">
             <div className="flex items-center gap-3 min-w-0">
               {(() => {
-                const firstImage = library?.type === 'image' && library.items[0]?.content;
+                const firstImage = library?.type === 'image' && library.coverUrl;
                 return firstImage ? (
                   <div className="w-12 h-12 rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 flex-shrink-0 shadow-sm">
                     <img src={firstImage} alt="Thumbnail" className="w-full h-full object-cover" />
@@ -258,7 +258,7 @@ export function WorkflowItem({
                   {library?.name || t('projectViewer.workflow.unknownLibrary')}
                 </div>
                 <div className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold mt-1 flex items-center gap-2">
-                  {t('projectViewer.workflow.itemsCount', { count: library?.items.length || 0 })}
+                  {t('projectViewer.workflow.itemsCount', { count: library?.itemCount || 0 })}
                   {(item.selectedTags || []).length > 0 && (
                     <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 uppercase tracking-widest shadow-sm">
                       {t('projectViewer.workflow.filteredTags', { count: (item.selectedTags || []).length })}

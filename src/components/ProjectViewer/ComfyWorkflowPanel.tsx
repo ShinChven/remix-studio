@@ -152,7 +152,10 @@ function NumberField({ value, onCommit, disabled, placeholder, label }: {
 
 interface ComfyWorkflowPanelProps {
   localProject: Project;
+  /** The libraries the workflow uses, as summaries without items. */
   libraries: Library[];
+  /** Every library, without items, for the library picker. */
+  pickerLibraries: Library[];
   isExpanded: boolean;
   uploadingItemIds: Set<string>;
   isRefreshingLibraries: boolean;
@@ -182,6 +185,7 @@ interface ComfyWorkflowPanelProps {
 export function ComfyWorkflowPanel({
   localProject,
   libraries,
+  pickerLibraries,
   isExpanded,
   uploadingItemIds,
   isRefreshingLibraries,
@@ -527,11 +531,11 @@ export function ComfyWorkflowPanel({
     saveBinding(info, item);
   };
 
-  const pickerLibraries = useMemo(() => {
+  const pickableLibraries = useMemo(() => {
     if (!libraryPick) return [];
     const kind = libraryPick.info.mediaKind || 'text';
-    return libraries.filter((library) => (library.type || 'text') === kind);
-  }, [libraries, libraryPick]);
+    return pickerLibraries.filter((library) => (library.type || 'text') === kind);
+  }, [pickerLibraries, libraryPick]);
 
   const mappedCount = bindings.size;
 
@@ -642,7 +646,7 @@ export function ComfyWorkflowPanel({
 
     if (item.type === 'library') {
       const library = libraries.find((lib) => lib.id === item.value);
-      const firstImage = library?.type === 'image' ? library.items[0]?.thumbnailUrl || library.items[0]?.content : undefined;
+      const firstImage = library?.type === 'image' ? library.coverUrl : undefined;
       return (
         <div className="flex items-center gap-2">
           <button
@@ -656,7 +660,7 @@ export function ComfyWorkflowPanel({
             <div className="min-w-0">
               <div className="text-xs font-bold text-neutral-900 dark:text-white truncate">{library?.name || t('projectViewer.workflow.unknownLibrary')}</div>
               <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                {t('projectViewer.workflow.itemsCount', { count: library?.items.length || 0 })}
+                {t('projectViewer.workflow.itemsCount', { count: library?.itemCount || 0 })}
                 {(item.selectedTags || []).length > 0 && ` · ${t('projectViewer.workflow.filteredTags', { count: (item.selectedTags || []).length })}`}
               </div>
             </div>
@@ -1019,7 +1023,7 @@ export function ComfyWorkflowPanel({
         isOpen={libraryPick !== null}
         onClose={() => setLibraryPick(null)}
         onSelect={handleLibraryPicked}
-        libraries={pickerLibraries}
+        libraries={pickableLibraries}
         selectedLibraryIds={items.filter((item) => item.comfyTarget && item.type === 'library').map((item) => item.value)}
         isLoading={isRefreshingLibraries}
         error={libraryRefreshError}

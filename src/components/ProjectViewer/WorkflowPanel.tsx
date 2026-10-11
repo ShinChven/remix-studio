@@ -11,7 +11,10 @@ interface WorkflowPanelProps {
   isLoading?: boolean;
   project: Project;
   localProject: Project;
+  /** The libraries the workflow uses, as summaries without items. */
   libraries: Library[];
+  /** Every library, without items, for the library picker. */
+  pickerLibraries: Library[];
   providers: Provider[];
   mobileView: 'workflow' | 'jobs';
   workflowListRef: React.RefObject<HTMLDivElement | null>;
@@ -73,6 +76,7 @@ export function WorkflowPanel({
   project,
   localProject,
   libraries,
+  pickerLibraries,
   providers,
   mobileView,
   workflowListRef,
@@ -445,6 +449,7 @@ export function WorkflowPanel({
           <ComfyWorkflowPanel
             localProject={localProject}
             libraries={libraries}
+            pickerLibraries={pickerLibraries}
             isExpanded={isExpanded}
             uploadingItemIds={uploadingItemIds}
             isRefreshingLibraries={isRefreshingLibraries}

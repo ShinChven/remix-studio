@@ -24,10 +24,21 @@ import {
   serializeAudioProjectConfig,
   truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, fetchLibraryChoices, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
+import {
+  Combination,
+  LibraryChoiceInfo,
+  LibraryChoiceSource,
+  PickedLibraryItem,
+  combinationsFromPlan,
+  countWorkflowCombinationsFromCounts,
+  libraryChoiceKey,
+  planLibraryPositions,
+  planWorkflowCombinations,
+  workflowLibrarySources,
+} from '../lib/remixEngine';
 import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
@@ -52,7 +63,6 @@ import type { BoundContext } from './Assistant/AssistantComposer';
 
 interface Props {
   project: Project;
-  libraries: Library[];
   onUpdate: (project: Project) => void;
   onDelete: () => void;
 }
@@ -75,7 +85,7 @@ interface LightboxData {
   onIndexChange?: (index: number) => void;
 }
 
-const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
+const PICKER_LIBRARY_PAGE_SIZE = 500;
 const MAX_JOB_FILENAME_LENGTH = 200;
 const TAB_DATA_STALE_MS = 30_000;
 const LIVE_REFRESH_DEBOUNCE_MS = 250;
@@ -120,20 +130,28 @@ function stripJobWorkflowSnapshots(jobs: Job[]): Job[] {
   return jobs.map(({ workflowSnapshot, ...job }) => job);
 }
 
-async function fetchWorkflowLibraries(): Promise<Library[]> {
-  const firstPage = await fetchLibraries(1, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true);
+/** Item positions per request entry when fetching the items a batch of drafts uses. */
+const LIBRARY_PICK_CHUNK_SIZE = 5_000;
+
+/**
+ * Every library for the pickers, without items: a picker only shows names,
+ * types, counts and a cover, and loading every item of every library made it
+ * slower the more the user stored.
+ */
+async function fetchPickerLibraries(): Promise<Library[]> {
+  const firstPage = await fetchLibraries(1, PICKER_LIBRARY_PAGE_SIZE, undefined, false, false, true);
   if (firstPage.pages <= 1) return firstPage.items;
 
   const rest = await Promise.all(
     Array.from({ length: firstPage.pages - 1 }, (_, index) =>
-      fetchLibraries(index + 2, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true)
+      fetchLibraries(index + 2, PICKER_LIBRARY_PAGE_SIZE, undefined, false, false, true)
     )
   );
 
   return [firstPage, ...rest].flatMap((page) => page.items);
 }
 
-export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDelete }: Props) {
+export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -298,9 +316,16 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [isTogglingArchive, setIsTogglingArchive] = useState(false);
   const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
   const [promptLimitDialog, setPromptLimitDialog] = useState<PromptLimitDialogState | null>(null);
-  const [liveLibraries, setLiveLibraries] = useState<Library[]>(libraries);
-  const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
-  const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
+  // The libraries the workflow uses, as summaries without items, and how many
+  // items each library step offers under its tag filter. Items are only
+  // fetched when a library is previewed, and for the drafts a batch makes.
+  const [workflowLibraries, setWorkflowLibraries] = useState<Library[]>([]);
+  const [libraryChoiceInfos, setLibraryChoiceInfos] = useState<Map<string, LibraryChoiceInfo>>(() => new Map());
+  const [isLoadingPreviewLibrary, setIsLoadingPreviewLibrary] = useState(false);
+  // Every library, without items, for the library pickers.
+  const [pickerLibraries, setPickerLibraries] = useState<Library[]>([]);
+  const [isLoadingPickerLibraries, setIsLoadingPickerLibraries] = useState(false);
+  const [pickerLibrariesError, setPickerLibrariesError] = useState<string | null>(null);
 
   const workflowPickerType: Exclude<WorkflowItemTypeKind, 'library'> = (() => {
     const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === selectingLibraryForItemId);
@@ -630,7 +655,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const liveRefreshInFlightRef = useRef(false);
   const liveRefreshQueuedRef = useRef(false);
   const lastLiveRefreshAtRef = useRef(0);
-  const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
+  const libraryChoiceInfosRef = useRef<Map<string, LibraryChoiceInfo>>(new Map());
+  const previewLibraryIdRef = useRef<string | null>(null);
+  const pickerLibrariesPromiseRef = useRef<Promise<Library[]> | null>(null);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
   const [isProjectLiveConnected, setIsProjectLiveConnected] = useState(false);
@@ -721,49 +748,103 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     localAlbumRef.current = localAlbum;
   }, [localAlbum]);
 
-  useEffect(() => {
-    setLiveLibraries(libraries);
-  }, [libraries]);
+  /**
+   * Count what the given library sources offer, and refresh the summaries of
+   * their libraries. No items are loaded. Resolves to the counts, by source key.
+   */
+  const loadWorkflowLibraries = useCallback(async (sources: LibraryChoiceSource[]): Promise<Map<string, LibraryChoiceInfo>> => {
+    if (sources.length === 0) return new Map();
 
-  const refreshWorkflowLibraries = useCallback(async () => {
-    if (libraryRefreshPromiseRef.current) return libraryRefreshPromiseRef.current;
+    const results = await fetchLibraryChoices(sources);
+    const infos = new Map<string, LibraryChoiceInfo>();
+    const summaries = new Map<string, Library | null>();
+    results.forEach((result, index) => {
+      infos.set(libraryChoiceKey(sources[index]), { type: result.library?.type || 'text', count: result.count });
+      summaries.set(result.libraryId, result.library);
+    });
 
-    setIsRefreshingLibraries(true);
-    const promise = fetchWorkflowLibraries()
-      .then((freshLibraries) => {
-        setLiveLibraries(freshLibraries);
-        setLibraryRefreshError(null);
-        return freshLibraries;
+    const nextInfos = new Map(libraryChoiceInfosRef.current);
+    infos.forEach((info, key) => nextInfos.set(key, info));
+    libraryChoiceInfosRef.current = nextInfos;
+    setLibraryChoiceInfos(nextInfos);
+    setWorkflowLibraries((current) => [
+      ...current.filter((library) => !summaries.has(library.id)),
+      ...Array.from(summaries.values()).filter((library): library is Library => library !== null),
+    ]);
+    return infos;
+  }, []);
+
+  /**
+   * The combinations for a batch of drafts. The workflow's libraries are
+   * counted afresh, the combinations are planned from those counts, and only
+   * the items the plan uses are fetched.
+   */
+  const composeWorkflowCombinations = useCallback(async (workflow: WorkflowItemType[], count: number, shuffle: boolean): Promise<Combination[]> => {
+    const sources = workflowLibrarySources(workflow);
+    const infos = await loadWorkflowLibraries(sources);
+    const plan = planWorkflowCombinations(workflow, infos, count, shuffle);
+    const positions = planLibraryPositions(plan);
+    const items = new Map<string, Map<number, PickedLibraryItem>>();
+    if (positions.size === 0) return combinationsFromPlan(plan, items);
+
+    const sourceByKey = new Map(sources.map((source) => [libraryChoiceKey(source), source]));
+    const requests = Array.from(positions).flatMap(([key, indices]) => {
+      const chunks = [];
+      for (let start = 0; start < indices.length; start += LIBRARY_PICK_CHUNK_SIZE) {
+        chunks.push({ key, ...sourceByKey.get(key)!, indices: indices.slice(start, start + LIBRARY_PICK_CHUNK_SIZE) });
+      }
+      return chunks;
+    });
+    const results = await fetchLibraryChoices(requests.map(({ key, ...request }) => request));
+    results.forEach((result, index) => {
+      const { key, indices } = requests[index];
+      let picked = items.get(key);
+      if (!picked) {
+        picked = new Map();
+        items.set(key, picked);
+      }
+      result.items?.forEach((item, position) => {
+        if (item) picked!.set(indices[position], item);
+      });
+    });
+    return combinationsFromPlan(plan, items);
+  }, [loadWorkflowLibraries]);
+
+  const loadPickerLibraries = useCallback(() => {
+    if (pickerLibrariesPromiseRef.current) return pickerLibrariesPromiseRef.current;
+
+    setIsLoadingPickerLibraries(true);
+    const promise = fetchPickerLibraries()
+      .then((libraries) => {
+        setPickerLibraries(libraries);
+        setPickerLibrariesError(null);
+        return libraries;
       })
       .catch((error) => {
-        console.error('Failed to refresh workflow libraries:', error);
-        setLibraryRefreshError(error instanceof Error ? error.message : 'Failed to refresh libraries');
+        console.error('Failed to load libraries:', error);
+        setPickerLibrariesError(error instanceof Error ? error.message : 'Failed to refresh libraries');
         throw error;
       })
       .finally(() => {
-        setIsRefreshingLibraries(false);
-        libraryRefreshPromiseRef.current = null;
+        setIsLoadingPickerLibraries(false);
+        pickerLibrariesPromiseRef.current = null;
       });
 
-    libraryRefreshPromiseRef.current = promise;
+    pickerLibrariesPromiseRef.current = promise;
     return promise;
   }, []);
 
-  const upsertLiveLibrary = useCallback((library: Library) => {
-    setLiveLibraries((current) => {
-      const existingIndex = current.findIndex((item) => item.id === library.id);
-      if (existingIndex === -1) return [library, ...current];
-      const next = [...current];
-      next[existingIndex] = library;
-      return next;
-    });
-  }, []);
-
+  // Count the workflow's library steps, once per source: on opening the
+  // project, and whenever a step comes to point at another library or filter.
+  const workflowSourcesKey = workflowLibrarySources(localProject.workflow || []).map(libraryChoiceKey).join('\n');
   useEffect(() => {
-    void refreshWorkflowLibraries().catch(() => {
-      // Keep the route-provided libraries as a fallback if the refresh fails.
+    const missing = workflowLibrarySources(projectRef.current.workflow || [])
+      .filter((source) => !libraryChoiceInfosRef.current.has(libraryChoiceKey(source)));
+    if (missing.length === 0) return;
+    void loadWorkflowLibraries(missing).catch((error) => {
+      console.error('Failed to load workflow libraries:', error);
     });
-  }, [refreshWorkflowLibraries]);
+  }, [workflowSourcesKey, loadWorkflowLibraries]);
 
   useEffect(() => {
     if (rawTab) {
@@ -923,11 +1004,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setLocalProject({ ...freshProject, workflow });
     } catch (error) {
       console.error('Failed to refresh project settings:', error);
-      return;
     }
-    // The workflow may now point at libraries this view has not loaded.
-    void refreshWorkflowLibraries().catch(() => {});
-  }, [localProject.id, refreshWorkflowLibraries]);
+  }, [localProject.id]);
 
   useEffect(() => {
     refreshProjectDefinitionRef.current = () => {
@@ -945,7 +1023,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   // Libraries the workflow draws from may gain or lose items elsewhere, which
   // changes the combination count and the library pickers.
-  useLiveRefresh((event) => event.resource === 'library', () => refreshWorkflowLibraries());
+  useLiveRefresh((event) => event.resource === 'library', (events) => {
+    const sources = workflowLibrarySources(projectRef.current.workflow || []);
+    const changed = events.some((event) => !event.id)
+      ? sources
+      : sources.filter((source) => events.some((event) => event.id === source.libraryId));
+    return Promise.allSettled([
+      loadWorkflowLibraries(changed),
+      // The pickers' list is refetched each time one opens; keep it current
+      // once it has been loaded.
+      pickerLibraries.length > 0 ? loadPickerLibraries() : null,
+    ]);
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
@@ -1150,8 +1239,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, [selectedModelId, selectedModel]);
 
   const combinationsCount = React.useMemo(
-    () => countWorkflowCombinations(localProject.workflow || [], liveLibraries),
-    [localProject.workflow, liveLibraries]
+    () => countWorkflowCombinationsFromCounts(localProject.workflow || [], libraryChoiceInfos),
+    [localProject.workflow, libraryChoiceInfos]
   );
 
   /**
@@ -1198,7 +1287,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
     if (type === 'library') {
       setShowLibrarySelector(true);
-      void refreshWorkflowLibraries().catch(() => {
+      void loadPickerLibraries().catch(() => {
         toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
       });
       return;
@@ -1209,7 +1298,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const handleLibrarySelect = (libraryId: string) => {
-    const library = liveLibraries.find((item) => item.id === libraryId);
+    const library = pickerLibraries.find((item) => item.id === libraryId);
     if (!library) {
       setShowLibrarySelector(false);
       return;
@@ -1234,20 +1323,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const openWorkflowItemLibrarySelector = (workflowItemId: string) => {
     setSelectingLibraryForItemId(workflowItemId);
-    void refreshWorkflowLibraries().catch(() => {
-      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
-    });
   };
 
   const openWorkflowLibraryChangeSelector = (workflowItemId: string) => {
     setChangingLibraryItemId(workflowItemId);
-    void refreshWorkflowLibraries().catch(() => {
+    void loadPickerLibraries().catch(() => {
       toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
   };
 
   const handleWorkflowLibraryChange = (workflowItemId: string, libraryId: string) => {
-    const library = liveLibraries.find((item) => item.id === libraryId);
+    const library = pickerLibraries.find((item) => item.id === libraryId);
     const workflow = localProject.workflow || [];
     const targetItem = workflow.find((item) => item.id === workflowItemId);
 
@@ -1277,7 +1363,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const openSaveWorkflowItemToLibrary = (item: WorkflowItemType) => {
     setSavingLibraryItemId(item.id);
-    void refreshWorkflowLibraries().catch(() => {
+    void loadPickerLibraries().catch(() => {
       toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
   };
@@ -1308,18 +1394,29 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  /** Open a library's items: shown from its summary at once, its items loaded now. */
   const openLibraryPreview = async (library: Library, workflowItemId: string) => {
+    previewLibraryIdRef.current = library.id;
     setPreviewingLibrary(library);
     setPreviewingWorkflowItemId(workflowItemId);
+    setIsLoadingPreviewLibrary(true);
 
     try {
-      const freshLibrary = await fetchLibrary(library.id);
-      upsertLiveLibrary(freshLibrary);
-      setPreviewingLibrary(freshLibrary);
+      const fullLibrary = await fetchLibrary(library.id);
+      if (previewLibraryIdRef.current === library.id) setPreviewingLibrary(fullLibrary);
     } catch (error) {
-      console.error('Failed to refresh library preview:', error);
+      console.error('Failed to load library preview:', error);
       toast.error(t('projectViewer.toasts.refreshLibraryFailed', { defaultValue: 'Failed to refresh library' }));
+    } finally {
+      if (previewLibraryIdRef.current === library.id) setIsLoadingPreviewLibrary(false);
     }
+  };
+
+  const closeLibraryPreview = () => {
+    previewLibraryIdRef.current = null;
+    setPreviewingLibrary(null);
+    setPreviewingWorkflowItemId(null);
+    setIsLoadingPreviewLibrary(false);
   };
 
   const updateWorkflowItemTags = (id: string, selectedTags: string[]) => {
@@ -1556,15 +1653,14 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setIsAddingDrafts(true);
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
     try {
-      let librariesForGeneration: Library[];
+      let combinations: Combination[];
       try {
-        librariesForGeneration = await refreshWorkflowLibraries();
+        combinations = await composeWorkflowCombinations(bindings, queueCount, !!localProject.shuffle);
       } catch {
         toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
         return;
       }
 
-      const combinations = generateJobs(bindings, librariesForGeneration, queueCount, !!localProject.shuffle);
       const selected: Combination[] = combinations.length > 0
         ? combinations
         : Array.from({ length: queueCount }, () => ({ prompt: '', filenameParts: [] }));
@@ -1626,9 +1722,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
 
     try {
-      let librariesForGeneration: Library[];
+      let selectedCombinations: Combination[];
       try {
-        librariesForGeneration = await refreshWorkflowLibraries();
+        selectedCombinations = await composeWorkflowCombinations(localProject.workflow || [], queueCount, !!localProject.shuffle);
       } catch (error) {
         toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
         return;
@@ -1636,7 +1732,6 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
       await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
-      const selectedCombinations = generateJobs(localProject.workflow || [], librariesForGeneration, queueCount, !!localProject.shuffle);
       if (selectedCombinations.length === 0) return;
 
       const newJobs: Job[] = [];
@@ -2418,7 +2513,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         isLoading={isLoadingWorkflow}
         project={project}
         localProject={localProject}
-        libraries={liveLibraries}
+        libraries={workflowLibraries}
+        pickerLibraries={pickerLibraries}
         providers={providers}
         mobileView={mobileView}
         workflowListRef={workflowListRef}
@@ -2475,9 +2571,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         showDisabledItems={showDisabledItems}
         onToggleShowDisabledItems={handleToggleShowDisabledItems}
         onFilesDrop={handleFilesDrop}
-        isRefreshingLibraries={isRefreshingLibraries}
-        libraryRefreshError={libraryRefreshError}
-        onRefreshLibraries={refreshWorkflowLibraries}
+        isRefreshingLibraries={isLoadingPickerLibraries}
+        libraryRefreshError={pickerLibrariesError}
+        onRefreshLibraries={loadPickerLibraries}
       />
 
       {/*
@@ -2713,13 +2809,13 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           if (savingLibraryItemId) {
             const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === savingLibraryItemId);
             const type = item?.type === 'image' ? 'image' : 'text';
-            return liveLibraries.filter((library) => library.type === type);
+            return pickerLibraries.filter((library) => library.type === type);
           }
-          return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
+          return isAudioProject ? pickerLibraries.filter((library) => library.type === 'text') : pickerLibraries;
         })()}
         selectedLibraryIds={savingLibraryItemId ? [] : (localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
-        isLoading={isRefreshingLibraries || isSavingToLibrary}
-        error={libraryRefreshError}
+        isLoading={isLoadingPickerLibraries || isSavingToLibrary}
+        error={pickerLibrariesError}
         title={savingLibraryItemId ? t('projectViewer.saveToLibrarySelection.title', { defaultValue: 'Save to Library' }) : undefined}
         description={savingLibraryItemId ? t('projectViewer.saveToLibrarySelection.description', { defaultValue: 'Choose a library to save this item to' }) : undefined}
       />
@@ -2756,18 +2852,15 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           if (previewingWorkflowItemId) updateWorkflowItemTagMatchMode(previewingWorkflowItemId, mode);
         }}
         isSelectionMode={!!selectingLibraryForItemId}
+        isLoading={isLoadingPreviewLibrary}
         onSelectItem={(content) => {
           if (selectingLibraryForItemId) {
             updateWorkflowItem(selectingLibraryForItemId, content);
             setSelectingLibraryForItemId(null);
-            setPreviewingLibrary(null);
-            setPreviewingWorkflowItemId(null);
+            closeLibraryPreview();
           }
         }}
-        onClose={() => {
-          setPreviewingLibrary(null);
-          setPreviewingWorkflowItemId(null);
-        }}
+        onClose={closeLibraryPreview}
       />
       {lightboxData && (
         <ImageLightbox

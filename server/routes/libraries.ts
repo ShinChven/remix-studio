@@ -18,6 +18,7 @@ import {
   type QuickWatermarkSource,
 } from '../services/quick-watermark';
 import type { AlbumItem, LibraryItem, Library } from '../../src/types';
+import { filterItemsByTags } from '../../src/lib/remixEngine';
 
 type Variables = { user: JwtPayload };
 
@@ -144,6 +145,39 @@ async function signLibrary(lib: Library, storage: S3Storage): Promise<Library> {
   return { ...lib, items: await signLibraryImages(lib.items, storage, lib.type) };
 }
 
+const MAX_CHOICE_SOURCES = 500;
+const MAX_CHOICE_INDICES = 100_000;
+
+interface ChoiceSource {
+  libraryId: string;
+  tags: string[];
+  tagMatch: 'and' | 'or';
+  indices?: number[];
+}
+
+function parseChoiceSources(value: unknown): ChoiceSource[] | null {
+  if (!Array.isArray(value) || value.length > MAX_CHOICE_SOURCES) return null;
+  const sources: ChoiceSource[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw.libraryId !== 'string' || !raw.libraryId) return null;
+    const tags = raw.tags === undefined ? [] : raw.tags;
+    if (!Array.isArray(tags) || !tags.every((tag: unknown) => typeof tag === 'string')) return null;
+    const indices = raw.indices;
+    if (indices !== undefined && (
+      !Array.isArray(indices)
+      || indices.length > MAX_CHOICE_INDICES
+      || !indices.every((index: unknown) => Number.isInteger(index) && (index as number) >= 0)
+    )) return null;
+    sources.push({ libraryId: raw.libraryId, tags, tagMatch: raw.tagMatch === 'and' ? 'and' : 'or', indices });
+  }
+  return sources;
+}
+
+async function presignStoredUrl(value: string | undefined, storage: S3Storage): Promise<string | undefined> {
+  if (!value || value.startsWith('http') || value.startsWith('data:')) return value;
+  return storage.getPresignedUrl(value);
+}
+
 export function createLibraryRouter(
   repository: IRepository,
   storage: S3Storage,
@@ -169,11 +203,17 @@ export function createLibraryRouter(
       const q = c.req.query('q');
       const includeItems = c.req.query('includeItems') === 'true';
       const nameOnly = c.req.query('nameOnly') === 'true';
+      // A cover thumbnail per library instead of every item, for pickers.
+      const includeCover = c.req.query('includeCover') === 'true';
 
-      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems, undefined, nameOnly);
+      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems, undefined, nameOnly, includeCover);
 
       if (!includeItems) {
-        return c.json(result);
+        if (!includeCover) return c.json(result);
+        const withCovers = await Promise.all(result.items.map(async (lib) => (
+          { ...lib, coverUrl: await presignStoredUrl(lib.coverUrl, storage) }
+        )));
+        return c.json({ ...result, items: withCovers });
       }
 
       const signedItems = await Promise.all(result.items.map((lib) => signLibrary(lib, storage)));
@@ -184,6 +224,67 @@ export function createLibraryRouter(
     } catch (e) {
       console.error('[GET /api/libraries]', e);
       return c.json({ error: 'Failed to list libraries' }, 500);
+    }
+  });
+
+  /**
+   * What a project workflow needs from the libraries it draws from, without
+   * their items: each library's summary, how many items each step can pick
+   * from under its tag filter, and — only for the positions asked — those
+   * items. A workflow used to load every item of every library it drew from,
+   * so it got slower as its libraries grew.
+   */
+  router.post('/api/libraries/choices', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const body = await c.req.json().catch(() => null);
+      const sources = parseChoiceSources(body?.sources);
+      if (!sources) return c.json({ error: 'Invalid sources' }, 400);
+
+      const loads = new Map<string, Promise<{ library: Library; rows: Array<{ id: string; tags: string[] }> } | null>>();
+      const load = (libraryId: string) => {
+        let pending = loads.get(libraryId);
+        if (!pending) {
+          pending = repository.getLibraryChoiceRows(user.userId, libraryId).then(async (loaded) => (
+            loaded && { ...loaded, library: { ...loaded.library, coverUrl: await presignStoredUrl(loaded.library.coverUrl, storage) } }
+          ));
+          loads.set(libraryId, pending);
+        }
+        return pending;
+      };
+
+      const results = await Promise.all(sources.map(async (source) => {
+        const loaded = await load(source.libraryId);
+        if (!loaded) return { libraryId: source.libraryId, library: null, count: 0 };
+
+        const eligible = filterItemsByTags(loaded.rows, source.tags, source.tagMatch);
+        if (!source.indices) return { libraryId: source.libraryId, library: loaded.library, count: eligible.length };
+
+        const pickedIds = source.indices.map((index) => eligible[index]?.id);
+        const found = await repository.getLibraryItemsByIds(
+          user.userId,
+          source.libraryId,
+          Array.from(new Set(pickedIds.filter((id): id is string => !!id))),
+        );
+        const isMedia = loaded.library.type !== 'text';
+        const byId = new Map(await Promise.all(found.map(async (item) => [item.id, {
+          id: item.id,
+          content: isMedia ? (await presignStoredUrl(item.content, storage)) || item.content : item.content,
+          tags: item.tags,
+          title: item.title,
+        }] as const)));
+        return {
+          libraryId: source.libraryId,
+          library: loaded.library,
+          count: eligible.length,
+          items: pickedIds.map((id) => (id && byId.get(id)) || null),
+        };
+      }));
+
+      return c.json({ sources: results });
+    } catch (e) {
+      console.error('[POST /api/libraries/choices]', e);
+      return c.json({ error: 'Failed to read libraries' }, 500);
     }
   });
 
