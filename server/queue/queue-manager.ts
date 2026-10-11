@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
@@ -7,6 +8,7 @@ import { buildTextGenerator } from '../generators/build-text-generator';
 import { buildAudioGenerator } from '../generators/build-audio-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
 import {
+  CivitaiGenerationConfig,
   Job,
   ProviderType,
   ProjectType,
@@ -29,6 +31,7 @@ import { VideoProcessor } from './video-processor';
 import { AudioProcessor } from './audio-processor';
 import { DetachedPoller } from './detached-poller';
 import type { ComfyUIRunner } from './comfyui-runner';
+import { civitaiResourceLabel } from '../../src/lib/civitai';
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
@@ -209,9 +212,11 @@ export class QueueManager {
       const publicProvider = providerId ? providerById.get(providerId) : undefined;
       const providerType = (row.provider?.type || publicProvider?.type) as ProviderType | undefined;
       const modelConfigId = row.modelConfigId ?? undefined;
-      const modelName = modelConfigId && publicProvider
+      // A Civitai job's model is the checkpoint it carries, not a provider model.
+      const civitaiModel = (row.civitaiParams as CivitaiGenerationConfig | null)?.model;
+      const modelName = (modelConfigId && publicProvider
         ? publicProvider.models.find((model) => model.id === modelConfigId)?.name
-        : undefined;
+        : undefined) ?? (civitaiModel?.name ? civitaiResourceLabel(civitaiModel) : undefined);
 
       return {
         id: row.id,
@@ -1202,6 +1207,15 @@ export class QueueManager {
     // than letting the provider reject the request.
     const background = queued.background || job.background;
 
+    // Civitai jobs roll their seed here rather than leave it to Civitai, and
+    // keep it, so a result can be reproduced and a retry renders the same image.
+    let civitai = job.civitaiParams;
+    if (civitai && civitai.seed === undefined) {
+      civitai = { ...civitai, seed: randomInt(0, 2 ** 32) };
+      job.civitaiParams = civitai;
+      await this.updateJobStatus(queued.userId, queued.projectId, job.id, { civitaiParams: civitai });
+    }
+
     return {
       prompt: job.prompt,
       modelId: modelConfig?.modelId,
@@ -1213,7 +1227,8 @@ export class QueueManager {
       // a project that never asked for it should not get it by default.
       background: background ? resolveSupportedOption(background, options?.backgrounds) : undefined,
       refImagesBase64: refImages,
-      refImageUrls
+      refImageUrls,
+      civitai,
     };
   }
 

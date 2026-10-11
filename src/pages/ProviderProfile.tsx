@@ -25,6 +25,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   Alibabacloud: { icon: 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400', badge: 'bg-violet-100 dark:bg-violet-600/10 text-violet-800 dark:text-violet-400 border-violet-200 dark:border-violet-600/30' },
   Kimi:       { icon: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', badge: 'bg-indigo-100 dark:bg-indigo-600/10 text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-600/30' },
   MiniMax:    { icon: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', badge: 'bg-red-100 dark:bg-red-600/10 text-red-800 dark:text-red-400 border-red-200 dark:border-red-600/30' },
+  Civitai:    { icon: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', badge: 'bg-sky-100 dark:bg-sky-600/10 text-sky-800 dark:text-sky-400 border-sky-200 dark:border-sky-600/30' },
 };
 const DEFAULT_TYPE_COLORS = {
   icon: 'bg-neutral-100 dark:bg-neutral-500/10 text-neutral-700 dark:text-neutral-300',

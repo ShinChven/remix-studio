@@ -22,6 +22,7 @@ import { createVideoRouter } from './server/routes/videos';
 import { createAudioRouter } from './server/routes/audios';
 import { createProviderRouter } from './server/routes/providers';
 import { createComfyUIRouter } from './server/routes/comfyui';
+import { createCivitaiRouter } from './server/routes/civitai';
 import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
 import { createCampaignsRouter } from './server/routes/campaigns';
@@ -282,6 +283,7 @@ async function startServer() {
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createComfyUIRouter());
+  app.route('/', createCivitaiRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage, projectEvents));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));

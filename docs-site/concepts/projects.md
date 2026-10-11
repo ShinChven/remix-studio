@@ -13,6 +13,7 @@ Choose the type according to the output you want:
 | **Video** | Generated video | Duration, resolution, sound, format |
 | **Audio** | Speech or music, depending on model | Voice/speaker or music mode, output format |
 | **ComfyUI Workflow** | Images or video from your own ComfyUI | ComfyUI address, API-format workflow, input mappings, output format |
+| **Civitai** | Images from Civitai checkpoints and LoRAs | Civitai account, checkpoint, LoRAs and embeddings, negative prompt, size, sampler, steps, CFG, seed |
 
 Available controls come from the selected model profile. A project also stores a default provider/model, description, filename prefix, shuffle setting, and workflow.
 
@@ -38,6 +39,19 @@ A ComfyUI project runs a workflow on a ComfyUI instance you host — a local mac
 Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, whether they are remixed into one input or feed two different inputs, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
 
 Up to two jobs per project are queued or running in ComfyUI at a time — one generating, the next waiting — and a job stops counting once ComfyUI has finished it, so the next one starts while its result downloads and a slow link to the instance does not leave the GPU idle. A reference file ComfyUI already holds is not uploaded again. Each result is downloaded from ComfyUI and stored like any other generation; a download is only abandoned when no data arrives for a minute, and a job whose result cannot be fetched after three tries fails with the reason — retrying it downloads the finished result rather than generating it again. Choose **Image** (PNG, JPEG, WebP) or **Video** output — video files that are not mp4 are converted. A job's expanded view lists the values it sent, including the seed it rolled. When a prompt fails in ComfyUI, the job fails with ComfyUI's own error (for example the node that ran out of memory); when the instance restarted and forgot the prompt, retry the job after updating the address.
+
+## Civitai Projects
+
+A Civitai project generates images on [Civitai](https://civitai.com) with any checkpoint, LoRA or embedding from its catalog that Civitai can run. Generations are billed to your Civitai account in Buzz.
+
+1. **Account** — add your Civitai API key as a provider of type **Civitai** (create the key on Civitai under **Account settings → API Keys**). The project's settings panel links there when you have none, and picks the account for you when you have only one. The provider's **Parallel Tasks** setting caps how many generations run on Civitai at once.
+2. **Checkpoint** — paste a Civitai model link (`https://civitai.com/models/4201?modelVersionId=130072`) or the model's AIR (`urn:air:sd1:checkpoint:civitai:4201@130072`, shown on the model page). A link without `modelVersionId` takes the model's newest version. The card shows the name, version, base model and an example image, and links back to Civitai.
+3. **LoRAs & embeddings** — add LoRAs, LyCORIS, DoRAs and embeddings the same way. LoRA-like resources get a strength (−1 to 2 on the slider, −5 to 5 typed); embeddings use their trigger word. A resource's trigger words are listed under it — click one to copy it into your prompt.
+4. **Parameters** — negative prompt, size (presets follow the checkpoint: 512–768 px for SD 1.x and 2.x, about a megapixel for SDXL, Pony, Illustrious, Flux and newer; sides snap to multiples of 8), sampler, steps, CFG scale and clip skip. The seed is random for every job by default; switch to **Fixed** to reuse one. **Allow mature content** is off by default, in which case Civitai blocks mature results and the job fails with its reason.
+
+The workflow above the settings composes each job's prompt exactly as in an image project — text items and text libraries, combined and shuffled the same way. Every drafted job keeps a copy of the checkpoint, resources and parameters, so changing the settings later leaves drafted jobs alone, and a job records the seed it ran with; its expanded view lists all of it. **Reuse configuration** puts a job's settings back on the project, without its seed.
+
+Each job submits one text-to-image workflow to Civitai and is checked every 30 seconds until its image is ready, then the image is downloaded and stored like any other result. A failed generation fails the job with Civitai's reason; retrying a job whose image was generated but could not be stored downloads it again instead of paying for a new one.
 
 ## Project Management
 

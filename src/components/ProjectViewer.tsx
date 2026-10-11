@@ -29,6 +29,7 @@ import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-rea
 import { toast } from 'sonner';
 import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
+import { civitaiResourceLabel, parseCivitaiAir, resolveCivitaiParams } from '../lib/civitai';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { ConfirmModal } from './ConfirmModal';
@@ -593,6 +594,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       duration: configToReuse.duration || localProject.duration,
       resolution: configToReuse.resolution || localProject.resolution,
       sound: configToReuse.sound || localProject.sound,
+      // A Civitai job's settings go back onto the project. The seed it ran
+      // with stays on the job: reusing the recipe should vary, not repeat.
+      ...(isCivitaiProject && configToReuse.civitaiParams
+        ? { civitaiConfig: { ...configToReuse.civitaiParams, seed: undefined } }
+        : {}),
     };
 
     setLocalProject(updated);
@@ -1070,11 +1076,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
   const isAudioProject = localProject.type === 'audio';
   const isComfyProject = localProject.type === 'comfyui';
+  const isCivitaiProject = localProject.type === 'civitai';
   // ComfyUI projects render their results as the image or video project they
-  // produce; the output format picks which.
+  // produce; the output format picks which. Civitai projects produce images.
   const mediaProjectType = isComfyProject
     ? (localProject.format === 'mp4' ? 'video' : 'image')
-    : (localProject.type || 'image');
+    : isCivitaiProject
+      ? 'image'
+      : (localProject.type || 'image');
+  // Civitai jobs keep their checkpoint's AIR as the model id; its name comes
+  // from the project's settings or the jobs that ran with it.
+  const civitaiModelNames = React.useMemo(() => {
+    const names = new Map<string, string>();
+    if (!isCivitaiProject) return names;
+    for (const job of localJobs) {
+      const model = job.civitaiParams?.model;
+      if (model) names.set(model.air, civitaiResourceLabel(model));
+    }
+    const current = localProject.civitaiConfig?.model;
+    if (current) names.set(current.air, civitaiResourceLabel(current));
+    return names;
+  }, [isCivitaiProject, localJobs, localProject.civitaiConfig?.model]);
 
   const getProviderName = (id?: string) => {
     if (isComfyProject && !id) return 'ComfyUI';
@@ -1082,6 +1104,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
   const getModelName = (providerId?: string, modelId?: string) => {
     if (isComfyProject && !modelId) return t('projectViewer.comfy.workflowLabel');
+    if (isCivitaiProject && modelId && parseCivitaiAir(modelId)) return civitaiModelNames.get(modelId) || modelId;
     if (!modelId) return t('projectViewer.common.unknownModel');
     const providerModels = providerId
       ? providers.find(p => p.id === providerId)?.models
@@ -1187,6 +1210,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const addWorkflowItem = (type: WorkflowItemTypeKind, initialValue: string = '') => {
     // A ComfyUI project's items are bindings, made from its input list.
     if (isComfyProject) return;
+    // A Civitai project's workflow only composes the prompt.
+    if (isCivitaiProject && type !== 'text' && type !== 'library') return;
 
     if (isAudioProject && (type === 'video' || type === 'audio')) {
       return;
@@ -1214,7 +1239,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setShowLibrarySelector(false);
       return;
     }
-    if (isAudioProject && library.type !== 'text') {
+    if ((isAudioProject || isCivitaiProject) && library.type !== 'text') {
       setShowLibrarySelector(false);
       return;
     }
@@ -1256,7 +1281,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       return;
     }
 
-    if (isAudioProject && library.type !== 'text') {
+    if ((isAudioProject || isCivitaiProject) && library.type !== 'text') {
       setChangingLibraryItemId(null);
       return;
     }
@@ -1344,7 +1369,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   };
 
   const handleFilesDrop = (files: File[]) => {
-    if (isComfyProject) return;
+    if (isComfyProject || isCivitaiProject) return;
     const newItems: import('../types').WorkflowItem[] = [];
     const filesToUpload: { type: 'image' | 'video' | 'audio', file: File, id: string }[] = [];
 
@@ -1611,9 +1636,83 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  /**
+   * Civitai drafts: the workflow composes each prompt as in a regular image
+   * project, and every job takes a copy of the project's checkpoint, resources
+   * and parameters, so later changes to the settings leave drafted jobs alone.
+   */
+  const addCivitaiDraftsToQueue = async () => {
+    const providerId = localProject.providerId;
+    const params = resolveCivitaiParams(localProject.civitaiConfig);
+    if (!providerId || !params.model) return;
+    const emptyItems = (localProject.workflow || []).filter((item) => !item.value.trim());
+    if (emptyItems.length > 0) {
+      setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: emptyItems.length }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+
+    setIsAddingDrafts(true);
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
+    try {
+      let librariesForGeneration: Library[];
+      try {
+        librariesForGeneration = await refreshWorkflowLibraries();
+      } catch {
+        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+        return;
+      }
+
+      const combinations = generateJobs(localProject.workflow || [], librariesForGeneration, queueCount, !!localProject.shuffle);
+      if (combinations.length === 0) return;
+      const format = localProject.format && ['png', 'jpeg', 'webp'].includes(localProject.format) ? localProject.format : 'png';
+      const newJobs: Job[] = combinations.map((combo) => ({
+        id: crypto.randomUUID(),
+        prompt: combo.prompt,
+        status: 'draft',
+        providerId,
+        modelConfigId: params.model!.air,
+        aspectRatio: `${params.width}x${params.height}`,
+        format,
+        civitaiParams: params,
+        filename: buildJobFilename([localProject.prefix, ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
+        workflowSnapshot: localProject.workflow || [],
+      }));
+
+      const nextJobs = [...localJobs, ...newJobs];
+      setDraftsProgress({ current: newJobs.length, total: newJobs.length, stage: 'saving' });
+      await apiUpdateProject(localProject.id, {
+        jobs: nextJobs,
+        workflow: localProject.workflow,
+        providerId,
+        format,
+        shuffle: localProject.shuffle,
+        lastQueueCount: queueCount,
+      });
+
+      setLocalProject({ ...localProject, lastQueueCount: queueCount });
+      setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
+      setActiveTab('draft');
+      setIsWorkflowExpanded(false);
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setMobileView('jobs');
+      }
+    } catch (error) {
+      console.error('Failed to add drafts:', error);
+      toast.error(t('projectViewer.toasts.addDraftsFailed'));
+    } finally {
+      setIsAddingDrafts(false);
+      setDraftsProgress(null);
+    }
+  };
+
   const addDraftsToQueue = async () => {
     if (isComfyProject) {
       await addComfyDraftsToQueue();
+      return;
+    }
+    if (isCivitaiProject) {
+      await addCivitaiDraftsToQueue();
       return;
     }
     const emptyItems = (localProject.workflow || []).filter(item => !item.value.trim());
@@ -2715,7 +2814,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
             const type = item?.type === 'image' ? 'image' : 'text';
             return liveLibraries.filter((library) => library.type === type);
           }
-          return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
+          return isAudioProject || isCivitaiProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
         })()}
         selectedLibraryIds={savingLibraryItemId ? [] : (localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
         isLoading={isRefreshingLibraries || isSavingToLibrary}

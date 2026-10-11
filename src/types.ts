@@ -39,6 +39,55 @@ export interface ComfyJobInput extends ComfyInputTarget {
   value: string;
 }
 
+/**
+ * A Civitai resource — the checkpoint a Civitai project generates with, or a
+ * LoRA or embedding layered on it — addressed by its AIR
+ * (`urn:air:sdxl:checkpoint:civitai:101055@128078`). Everything besides the
+ * AIR is what Civitai reported when it was added, kept so the project can show
+ * it without asking again.
+ */
+export interface CivitaiResource {
+  air: string;
+  name?: string;
+  versionName?: string;
+  /** Civitai's model type: Checkpoint, LORA, LoCon, DoRA, TextualInversion… */
+  type?: string;
+  /** Civitai's base model name, e.g. `SDXL 1.0`, `Pony`, `Illustrious`. */
+  baseModel?: string;
+  trainedWords?: string[];
+  previewUrl?: string;
+  /** Additional resources only: how strongly the network applies. */
+  strength?: number;
+}
+
+/** The samplers Civitai's text-to-image step accepts. */
+export type CivitaiScheduler =
+  | 'eulerA' | 'euler' | 'lms' | 'heun' | 'dpM2' | 'dpM2A' | 'dpM2SA' | 'dpM2M' | 'dpmsde'
+  | 'dpmFast' | 'dpmAdaptive' | 'lmsKarras' | 'dpM2Karras' | 'dpM2AKarras' | 'dpM2SAKarras'
+  | 'dpM2MKarras' | 'dpmsdeKarras' | 'ddim' | 'plms' | 'uniPC' | 'lcm' | 'ddpm' | 'deis' | 'dpM3MSDE';
+
+/**
+ * What a Civitai project generates with. A project keeps it as its settings;
+ * each job carries a copy taken when it was drafted, with the defaults filled
+ * in and the seed it ran with, so it can be reproduced.
+ */
+export interface CivitaiGenerationConfig {
+  model?: CivitaiResource;
+  /** LoRAs, LyCORIS, DoRAs and embeddings applied on top of the checkpoint. */
+  resources?: CivitaiResource[];
+  negativePrompt?: string;
+  scheduler?: CivitaiScheduler;
+  steps?: number;
+  cfgScale?: number;
+  width?: number;
+  height?: number;
+  clipSkip?: number;
+  /** A fixed seed. Left unset, every job rolls its own. */
+  seed?: number;
+  /** Let Civitai return mature results instead of blocking them. */
+  allowMatureContent?: boolean;
+}
+
 /** A ComfyUI workflow in API format: node id -> node. */
 export type ComfyWorkflow = Record<string, ComfyWorkflowNode>;
 
@@ -74,7 +123,7 @@ export interface Library {
   pinnedAt?: string | null;
 }
 
-export type ProjectType = 'image' | 'text' | 'video' | 'audio' | 'comfyui';
+export type ProjectType = 'image' | 'text' | 'video' | 'audio' | 'comfyui' | 'civitai';
 export type ProjectStatus = 'active' | 'archived';
 
 export interface ModelConfig {
@@ -82,7 +131,7 @@ export interface ModelConfig {
   name: string; // Display name e.g. "nano banana 2.1"
   generatorId: ProviderType; // Which generator type to use
   modelId: string; // The actual API model string (e.g. 'gemini-nano-banana-2.1')
-  category: Exclude<ProjectType, 'comfyui'>; // 'image' | 'text' | 'video' | 'audio'
+  category: Exclude<ProjectType, 'comfyui' | 'civitai'>; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
   options: {
@@ -1957,6 +2006,9 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  // Civitai projects pick their checkpoint from Civitai's catalog rather than a
+  // fixed list, so the provider only holds the API token.
+  Civitai: [],
 };
 
 /**
@@ -2092,6 +2144,8 @@ export interface Job {
   workflowSnapshot?: WorkflowItem[];
   /** ComfyUI projects only: the input values this job submits. */
   comfyInputs?: ComfyJobInput[];
+  /** Civitai projects only: the model, resources and parameters this job runs with. */
+  civitaiParams?: CivitaiGenerationConfig;
 }
 
 /**
@@ -2101,7 +2155,7 @@ export interface Job {
  */
 export type JobConfiguration = Pick<
   Job,
-  'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'
+  'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound' | 'civitaiParams'
 > & {
   /**
    * True when no snapshot was stored and the workflow was rebuilt from the
@@ -2188,9 +2242,12 @@ export interface Project {
    * login password, or the API token it prints at startup. Stored as given.
    */
   comfyPassword?: string;
+  // Civitai projects: the checkpoint, resources and parameters drafted jobs
+  // run with. The API token lives on the Civitai provider (`providerId`).
+  civitaiConfig?: CivitaiGenerationConfig;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax' | 'Civitai';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

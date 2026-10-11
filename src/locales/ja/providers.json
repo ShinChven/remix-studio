@@ -63,7 +63,8 @@
       "saveFailed": "保存に失敗しました。"
     },
     "supportedModels": "サポートされているモデル",
-    "modelsSubtitle": "これらのモデルは、選択したプロバイダーによってネイティブにサポートされています。"
+    "modelsSubtitle": "これらのモデルは、選択したプロバイダーによってネイティブにサポートされています。",
+    "civitaiModelsNote": "Civitai プロジェクトはチェックポイントと LoRA を Civitai のカタログから直接選ぶため、ここには固定のモデル一覧はありません。Civitai の「アカウント設定 → API Keys」で API キーを作成し、左側に貼り付けてください。生成はそのアカウントの Buzz で支払われます。"
   },
   "providerProfile": {
     "errorLoad": "プロバイダーの読み込みに失敗しました。",

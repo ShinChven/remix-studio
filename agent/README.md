@@ -12,5 +12,6 @@ Suggested entry points:
 - `image-handling.md` for image upload, storage, and signing behavior
 - `storage-analytics.md` for quota and storage analysis behavior
 - `queue-architecture-design.md` and `runninghub-polling-strategy.md` for generation queue behavior
+- `civitai-projects.md` for the Civitai project type and its generation flow
 - `glassmorphism-design-spec.md` for visual and UI design standards
 - `media-sharing.md` for TV mode, WebDAV and the DLNA media server

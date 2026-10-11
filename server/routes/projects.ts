@@ -19,6 +19,7 @@ import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow } from '../../src/types';
 import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
+import { sanitizeCivitaiConfig } from '../../src/lib/civitai';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 import type { LiveEventPublisher } from '../live/user-live-hub';
 import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
@@ -79,7 +80,8 @@ function normalizeJobsForStorage(jobs: Job[], bucket: string): Job[] {
           value: input.kind === 'text' ? input.value : (stripToKey(input.value, bucket) || input.value),
         }))
       : job.comfyInputs;
-    return { ...job, imageContexts, videoContexts, audioContexts, workflowSnapshot, comfyInputs };
+    const civitaiParams = job.civitaiParams !== undefined ? sanitizeCivitaiConfig(job.civitaiParams) : undefined;
+    return { ...job, imageContexts, videoContexts, audioContexts, workflowSnapshot, comfyInputs, civitaiParams };
   });
 }
 
@@ -634,6 +636,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         duration: job.duration,
         resolution: job.resolution,
         sound: job.sound,
+        civitaiParams: job.civitaiParams,
       });
     } catch (e) {
       console.error('[GET /api/projects/:id/jobs/:jobId/configuration]', e);
@@ -678,6 +681,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         duration: job?.duration ?? item.duration,
         resolution: job?.resolution ?? item.resolution,
         sound: job?.sound,
+        civitaiParams: job?.civitaiParams,
       });
     } catch (e) {
       console.error('[GET /api/projects/:id/album/:itemId/configuration]', e);
@@ -773,7 +777,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (id.length > 128 || name.length > 256) return c.json({ error: 'Field too long' }, 400);
       if (description && description.length > 2000) return c.json({ error: 'Description too long' }, 400);
 
-      const projectType: 'image' | 'text' | 'video' | 'audio' | 'comfyui' =
+      const projectType: 'image' | 'text' | 'video' | 'audio' | 'comfyui' | 'civitai' =
         body.type === 'text'
           ? 'text'
           : body.type === 'video'
@@ -782,7 +786,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
               ? 'audio'
               : body.type === 'comfyui'
                 ? 'comfyui'
-                : 'image';
+                : body.type === 'civitai'
+                  ? 'civitai'
+                  : 'image';
       const comfyFields = readComfyFields(body);
       if (comfyFields.ok === false) return c.json({ error: comfyFields.error }, 400);
       const projectStatus: 'active' | 'archived' = body.status === 'archived' ? 'archived' : 'active';
@@ -814,6 +820,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         comfyUrl: comfyFields.comfyUrl ?? undefined,
         comfyWorkflow: comfyFields.comfyWorkflow ?? undefined,
         comfyPassword: comfyFields.comfyPassword ?? undefined,
+        civitaiConfig: sanitizeCivitaiConfig(body.civitaiConfig),
       };
 
       await repository.createProject(user.userId, project);
@@ -874,6 +881,8 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (comfyFields.comfyUrl !== undefined) (updates as any).comfyUrl = comfyFields.comfyUrl;
       if (comfyFields.comfyWorkflow !== undefined) (updates as any).comfyWorkflow = comfyFields.comfyWorkflow;
       if (comfyFields.comfyPassword !== undefined) (updates as any).comfyPassword = comfyFields.comfyPassword;
+      if (body?.civitaiConfig === null) updates.civitaiConfig = null as any;
+      else if (body?.civitaiConfig !== undefined) updates.civitaiConfig = sanitizeCivitaiConfig(body.civitaiConfig) ?? (null as any);
       
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {
@@ -1069,7 +1078,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     if (!item) throw new QuickWatermarkError('Album item not found', 404);
     // ComfyUI projects can hold images and videos side by side, so the item's
     // own format decides; older image items may carry no format at all.
-    const isImage = ['image', 'comfyui'].includes(project.type ?? 'image')
+    const isImage = ['image', 'comfyui', 'civitai'].includes(project.type ?? 'image')
       && (!item.format || ['png', 'jpeg', 'webp'].includes(item.format));
     if (!isImage) throw new QuickWatermarkError('Only images can be watermarked', 400);
     return {

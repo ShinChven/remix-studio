@@ -1,3 +1,5 @@
+import type { CivitaiGenerationConfig } from '../../src/types';
+
 export interface GenerateRequest {
   prompt: string;
   modelId?: string;       // The actual API model string
@@ -13,6 +15,8 @@ export interface GenerateRequest {
   steps?: number;
   guidance?: number;
   promptUpsampling?: boolean;
+  /** Civitai projects: the checkpoint, resources and parameters, seed included. */
+  civitai?: CivitaiGenerationConfig;
 }
 
 export type GenerateResult =

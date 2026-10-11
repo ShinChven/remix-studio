@@ -6,6 +6,7 @@ import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderT
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
 import { ComfySettingsPanel, ComfyWorkflowPanel } from './ComfyWorkflowPanel';
+import { CivitaiSettingsPanel } from './CivitaiSettingsPanel';
 
 interface WorkflowPanelProps {
   isLoading?: boolean;
@@ -161,6 +162,8 @@ export function WorkflowPanel({
   const menuButtonBaseClass =
     'w-full px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 border border-transparent';
   const isComfyProject = localProject.type === 'comfyui';
+  // Civitai projects build a text prompt; their generations take no reference media.
+  const isCivitaiProject = localProject.type === 'civitai';
   const saveProject = (next: Project) => {
     setLocalProject(next);
     onUpdate(next);
@@ -171,7 +174,7 @@ export function WorkflowPanel({
   const selectedCustomAliases = Array.isArray(selectedProviderRecord?.customModels) ? selectedProviderRecord.customModels : [];
   const selectedAllModels = [...selectedBaseModels, ...resolveCustomModels(selectedProviderType, selectedCustomAliases)];
   const selectedModel = selectedAllModels.find((m) => m.id === selectedModelId);
-  const supportsImageInput = localProject.type !== 'audio' || selectedModel?.options.supportsReferenceImages === true;
+  const supportsImageInput = !isCivitaiProject && (localProject.type !== 'audio' || selectedModel?.options.supportsReferenceImages === true);
   const workflowItems = localProject.workflow || [];
   const disabledItemsCount = workflowItems.filter((item) => item.disabled).length;
   // Keep each item's position in the unfiltered workflow: drag and drop reorders by
@@ -563,6 +566,23 @@ export function WorkflowPanel({
           )}
         </div>
 
+        {isCivitaiProject ? (
+          <CivitaiSettingsPanel
+            localProject={localProject}
+            providers={providers}
+            onSaveProject={saveProject}
+            isSettingsCollapsed={isSettingsCollapsed}
+            setIsSettingsCollapsed={setIsSettingsCollapsed}
+            queueCount={queueCount}
+            setQueueCount={setQueueCount}
+            combinationsCount={combinationsCount}
+            workflowError={workflowError}
+            uploadingItemIds={uploadingItemIds}
+            onAddDraftsToQueue={onAddDraftsToQueue}
+            isAddingDrafts={isAddingDrafts}
+            draftsProgress={draftsProgress}
+          />
+        ) : (
         <SettingsPanel
           localProject={localProject}
           setLocalProject={setLocalProject}
@@ -582,6 +602,7 @@ export function WorkflowPanel({
           isAddingDrafts={isAddingDrafts}
           draftsProgress={draftsProgress}
         />
+        )}
         </>
       )}
     </div>

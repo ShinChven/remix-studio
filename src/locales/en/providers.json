@@ -63,7 +63,8 @@
       "saveFailed": "Save failed."
     },
     "supportedModels": "Supported Models",
-    "modelsSubtitle": "These models are natively supported by the selected provider."
+    "modelsSubtitle": "These models are natively supported by the selected provider.",
+    "civitaiModelsNote": "Civitai projects pick their checkpoint and LoRAs from Civitai's own catalog, so there is no fixed model list here. Create an API key under Civitai → Account settings → API Keys and paste it on the left; generations are paid with that account's Buzz."
   },
   "providerProfile": {
     "errorLoad": "Failed to load provider.",
