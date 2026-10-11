@@ -71,16 +71,16 @@ export class LibraryRepository {
               items: {
                 orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
               },
-              _count: { select: { items: true } },
             }
-          : {
-              _count: { select: { items: true } },
-            },
+          : undefined,
       })
     ]);
-    const covers = includeCover && !includeItems
-      ? await this.getCoverKeys(libs.filter((lib) => lib.type === 'image' || lib.type === 'video').map((lib) => lib.id))
-      : new Map<string, { content: string; thumbnailUrl: string | null }>();
+    const [counts, covers] = await Promise.all([
+      this.getItemCounts(libs.map((lib) => lib.id)),
+      includeCover && !includeItems
+        ? this.getCoverKeys(libs.filter((lib) => lib.type === 'image' || lib.type === 'video').map((lib) => lib.id))
+        : new Map<string, { content: string; thumbnailUrl: string | null }>(),
+    ]);
 
     const items = libs.map((lib) => ({
       id: lib.id,
@@ -89,7 +89,7 @@ export class LibraryRepository {
       type: lib.type as LibraryType,
       items: 'items' in lib && Array.isArray(lib.items) ? lib.items.map((item) => this.mapItem(item)) : [],
       ...(includeCover && !includeItems ? { coverUrl: this.coverKey(lib.type as LibraryType, covers.get(lib.id)) } : {}),
-      itemCount: lib._count.items,
+      itemCount: counts.get(lib.id) ?? 0,
       createdAt: lib.createdAt instanceof Date ? lib.createdAt.getTime() : lib.createdAt,
       updatedAt: lib.updatedAt instanceof Date ? lib.updatedAt.getTime() : lib.updatedAt,
       pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
@@ -101,6 +101,22 @@ export class LibraryRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  /**
+   * How many items each of these libraries holds. (A `_count` include would
+   * group the whole item table, every user's libraries included, and then
+   * keep the rows for these.)
+   */
+  private async getItemCounts(libraryIds: string[]): Promise<Map<string, number>> {
+    if (libraryIds.length === 0) return new Map();
+    const rows = await this.prisma.$queryRaw<Array<{ libraryId: string; count: number }>>`
+      SELECT "libraryId", count(*)::int AS count
+      FROM "LibraryItem"
+      WHERE "libraryId" = ANY(${libraryIds}::text[])
+      GROUP BY "libraryId"
+    `;
+    return new Map(rows.map((row) => [row.libraryId, row.count]));
   }
 
   /**
