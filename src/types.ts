@@ -1,4 +1,4 @@
-export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio';
+export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio' | 'model';
 
 export interface WorkflowItem {
   id: string;
@@ -13,6 +13,21 @@ export interface WorkflowItem {
   tagMatchMode?: 'and' | 'or';
   /** ComfyUI projects only: the workflow input this item feeds. */
   comfyTarget?: ComfyBinding;
+  /** Civitai projects only: the part of the generation this item feeds. */
+  civitai?: CivitaiBinding;
+}
+
+/**
+ * What a workflow item feeds in a Civitai project. Text and library items feed
+ * the prompt, or with `slot: 'negative'` the negative prompt, joined in
+ * workflow order. A `model` item is a checkpoint or LoRA slot holding one or
+ * more `options`; like a library, each job takes one of them, so options
+ * multiply the combinations. Every enabled LoRA slot applies to a job.
+ */
+export interface CivitaiBinding {
+  slot: 'negative' | 'checkpoint' | 'lora';
+  /** Model items: the resources to choose between, LoRAs with their strength. */
+  options?: CivitaiResource[];
 }
 
 /** One input of a node in a ComfyUI API-format workflow. */
@@ -60,6 +75,17 @@ export interface CivitaiResource {
   strength?: number;
 }
 
+/** A model found by searching Civitai's catalog, before it is resolved to a resource. */
+export interface CivitaiSearchResult {
+  modelId: number;
+  versionId: number;
+  name: string;
+  versionName?: string;
+  type?: string;
+  baseModel?: string;
+  previewUrl?: string;
+}
+
 /** The samplers Civitai's text-to-image step accepts. */
 export type CivitaiScheduler =
   | 'eulerA' | 'euler' | 'lms' | 'heun' | 'dpM2' | 'dpM2A' | 'dpM2SA' | 'dpM2M' | 'dpmsde'
@@ -67,9 +93,11 @@ export type CivitaiScheduler =
   | 'dpM2MKarras' | 'dpmsdeKarras' | 'ddim' | 'plms' | 'uniPC' | 'lcm' | 'ddpm' | 'deis' | 'dpM3MSDE';
 
 /**
- * What a Civitai project generates with. A project keeps it as its settings;
- * each job carries a copy taken when it was drafted, with the defaults filled
- * in and the seed it ran with, so it can be reproduced.
+ * What a Civitai job generates with. A project keeps the sampling settings
+ * here; its checkpoint, LoRAs and negative prompt come from workflow items.
+ * Each job carries a full copy taken when it was drafted — the checkpoint and
+ * LoRAs its combination picked, the defaults filled in and the seed it ran
+ * with — so it can be reproduced.
  */
 export interface CivitaiGenerationConfig {
   model?: CivitaiResource;
@@ -86,6 +114,8 @@ export interface CivitaiGenerationConfig {
   seed?: number;
   /** Let Civitai return mature results instead of blocking them. */
   allowMatureContent?: boolean;
+  /** Image-to-image: how far the result may move away from the source image (0–1). */
+  denoise?: number;
 }
 
 /** A ComfyUI workflow in API format: node id -> node. */

@@ -1,5 +1,5 @@
 import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
-import { AlbumItem, AppData, CivitaiResource, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -796,6 +796,16 @@ export async function resolveCivitaiResource(providerId: string, value: string):
     body: JSON.stringify({ providerId, value }),
   });
   return handleResponse<CivitaiResource>(res, 'Failed to look up the Civitai model');
+}
+
+/** Search Civitai's catalog for checkpoints, or for LoRAs and embeddings. */
+export async function searchCivitaiModels(providerId: string, query: string, slot: 'checkpoint' | 'lora'): Promise<CivitaiSearchResult[]> {
+  const res = await apiFetch('/api/civitai/search', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ providerId, query, slot }),
+  });
+  return handleResponse<CivitaiSearchResult[]>(res, 'Failed to search Civitai');
 }
 
 export type StartProjectJobsRequest =

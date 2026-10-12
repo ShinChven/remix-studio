@@ -965,7 +965,11 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         console.warn(`[ProjectDelete] Failed to cleanup exports for project ${projectId}:`, e);
       }
 
-      // 3. Delete the project and any cascading relations in DB
+      // 3. Stop running remote tasks that can be stopped, then delete the
+      //    project and any cascading relations in DB
+      await queueManager.cancelRemoteTasks(user.userId, projectId).catch((e) => {
+        console.warn(`[ProjectDelete] Failed to cancel remote tasks for project ${projectId}:`, e);
+      });
       await repository.deleteProject(user.userId, projectId);
       projectEvents?.notifyProjectChanged({
         userId: user.userId,

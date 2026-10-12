@@ -8,8 +8,31 @@ type Variables = { user: JwtPayload };
 
 const MAX_INPUT_LENGTH = 2000;
 
+const CHECKPOINT_TYPES = ['Checkpoint'];
+const NETWORK_TYPES = ['LORA', 'LoCon', 'DoRA', 'TextualInversion'];
+
+function describeLookupError(e: any, fallback: string): string {
+  const cause = e?.cause?.code || e?.cause?.message;
+  if (e?.name === 'TimeoutError') return 'Civitai did not answer in time';
+  return cause ? `${e.message} (${cause})` : (e?.message || fallback);
+}
+
 export function createCivitaiRouter(providerRepo: ProviderRepository) {
   const router = new Hono<{ Variables: Variables }>();
+
+  /** A client with the token of one of the user's Civitai providers. */
+  const clientFor = async (userId: string, providerId: unknown): Promise<{ client: CivitaiClient } | { error: string; status: 400 | 404 }> => {
+    if (typeof providerId !== 'string' || !providerId) return { error: 'Choose a Civitai account first', status: 400 };
+    const provider = await providerRepo.getProvider(userId, providerId);
+    if (!provider || provider.type !== 'Civitai') return { error: 'Civitai provider not found', status: 404 };
+    const apiKey = await providerRepo.getDecryptedApiKey(userId, provider.id);
+    if (!apiKey) return { error: 'The Civitai provider has no API token', status: 400 };
+    try {
+      return { client: new CivitaiClient(apiKey, assertSafeProviderApiUrl('Civitai', provider.apiUrl)) };
+    } catch (e: any) {
+      return { error: e?.message || 'Invalid Civitai API URL', status: 400 };
+    }
+  };
 
   /**
    * POST /api/civitai/resolve
@@ -25,29 +48,39 @@ export function createCivitaiRouter(providerRepo: ProviderRepository) {
     const value = typeof body?.value === 'string' ? body.value.trim() : '';
     if (!value) return c.json({ error: 'value is required' }, 400);
     if (value.length > MAX_INPUT_LENGTH) return c.json({ error: 'value is too long' }, 400);
-    if (typeof body?.providerId !== 'string' || !body.providerId) {
-      return c.json({ error: 'Choose a Civitai account first' }, 400);
-    }
-
-    const provider = await providerRepo.getProvider(user.userId, body.providerId);
-    if (!provider || provider.type !== 'Civitai') {
-      return c.json({ error: 'Civitai provider not found' }, 404);
-    }
-    const apiKey = await providerRepo.getDecryptedApiKey(user.userId, provider.id);
-    if (!apiKey) return c.json({ error: 'The Civitai provider has no API token' }, 400);
-
+    const client = await clientFor(user.userId, body?.providerId);
+    if ('error' in client) return c.json({ error: client.error }, client.status);
     try {
-      const client = new CivitaiClient(apiKey, assertSafeProviderApiUrl('Civitai', provider.apiUrl));
-      return c.json(await client.resolveResource(value));
+      return c.json(await client.client.resolveResource(value));
     } catch (e: any) {
       if (e instanceof CivitaiApiError && e.status === 404) {
         return c.json({ error: 'Civitai has no model at that link or AIR' }, 404);
       }
-      const cause = e?.cause?.code || e?.cause?.message;
-      const message = e?.name === 'TimeoutError'
-        ? 'Civitai did not answer in time'
-        : cause ? `${e.message} (${cause})` : (e?.message || 'Looking up the model on Civitai failed');
-      return c.json({ error: message }, e instanceof CivitaiApiError ? 502 : 400);
+      return c.json({ error: describeLookupError(e, 'Looking up the model on Civitai failed') }, e instanceof CivitaiApiError ? 502 : 400);
+    }
+  });
+
+  /**
+   * POST /api/civitai/search
+   *
+   * Search Civitai's catalog by name for the models a slot takes: checkpoints,
+   * or LoRAs and embeddings. A result is resolved with /api/civitai/resolve
+   * once picked, which is what reports its AIR.
+   */
+  router.post('/api/civitai/search', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const body = await c.req.json().catch(() => ({}));
+    const query = typeof body?.query === 'string' ? body.query.trim() : '';
+    if (!query) return c.json({ error: 'query is required' }, 400);
+    if (query.length > 200) return c.json({ error: 'query is too long' }, 400);
+    const types = body?.slot === 'checkpoint' ? CHECKPOINT_TYPES : NETWORK_TYPES;
+
+    const client = await clientFor(user.userId, body?.providerId);
+    if ('error' in client) return c.json({ error: client.error }, client.status);
+    try {
+      return c.json(await client.client.searchModels(query, types));
+    } catch (e: any) {
+      return c.json({ error: describeLookupError(e, 'Searching Civitai failed') }, e instanceof CivitaiApiError ? 502 : 400);
     }
   });
 

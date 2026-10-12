@@ -46,4 +46,6 @@ export interface CheckStatusContext {
 export abstract class ImageGenerator {
   abstract generate(req: GenerateRequest): Promise<GenerateResult>;
   checkStatus?(taskId: string, context?: CheckStatusContext): Promise<CheckStatusResult>;
+  /** Stop a remote task whose job was deleted. Best effort: errors are the caller's to ignore. */
+  cancel?(taskId: string): Promise<void>;
 }

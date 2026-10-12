@@ -1,4 +1,4 @@
-import type { CivitaiGenerationConfig, CivitaiResource } from '../../src/types';
+import type { CivitaiGenerationConfig, CivitaiResource, CivitaiSearchResult } from '../../src/types';
 import {
   CIVITAI_WEB_URL,
   isCivitaiEmbedding,
@@ -34,6 +34,13 @@ export interface CivitaiImageBlob {
   available: boolean;
   url?: string | null;
   blockedReason?: string | null;
+}
+
+/** An image handed to Civitai for image-to-image, already uploaded and sized. */
+export interface CivitaiSourceImage {
+  url: string;
+  width: number;
+  height: number;
 }
 
 export interface CivitaiWorkflowStep {
@@ -110,17 +117,23 @@ function previewSized(url: string): string {
   return url.replace(/\/original=true\//, '/width=450/');
 }
 
+/** The first safe-for-work example image of a version, resized for a thumbnail. */
+function previewOf(version: any): string | undefined {
+  const image = Array.isArray(version?.images)
+    ? version.images.find((entry: any) => typeof entry?.url === 'string'
+      && (entry.type === undefined || entry.type === 'image')
+      && (typeof entry.nsfwLevel !== 'number' || entry.nsfwLevel <= 2))
+    : undefined;
+  return image ? previewSized(image.url) : undefined;
+}
+
 /** A model version as the REST API describes it, reduced to what a project keeps. */
 function resourceFromVersion(version: any, air?: string): CivitaiResource {
   const resolvedAir = air || (typeof version?.air === 'string' ? normalizeCivitaiAir(version.air) : null);
   if (!resolvedAir) throw new Error('Civitai did not report an AIR for this model version');
 
-  // Only a safe-for-work example goes on the project's settings card.
-  const preview = Array.isArray(version?.images)
-    ? version.images.find((image: any) => typeof image?.url === 'string'
-      && (image.type === undefined || image.type === 'image')
-      && (typeof image.nsfwLevel !== 'number' || image.nsfwLevel <= 2))
-    : undefined;
+  // Only a safe-for-work example goes on the project's cards.
+  const preview = previewOf(version);
 
   const resource: CivitaiResource = { air: resolvedAir };
   if (typeof version?.model?.name === 'string') resource.name = version.model.name;
@@ -131,7 +144,7 @@ function resourceFromVersion(version: any, air?: string): CivitaiResource {
     const words = version.trainedWords.filter((word: unknown) => typeof word === 'string' && word.trim());
     if (words.length > 0) resource.trainedWords = words;
   }
-  if (preview) resource.previewUrl = previewSized(preview.url);
+  if (preview) resource.previewUrl = preview;
   return resource;
 }
 
@@ -181,6 +194,28 @@ export class CivitaiClient {
     return this.request(`${this.orchestrationUrl}/v2/consumer/workflows/${encodeURIComponent(workflowId)}`);
   }
 
+  /**
+   * Delete a workflow. Civitai refunds it when the work has not started; one
+   * already running finishes and is charged.
+   */
+  async deleteWorkflow(workflowId: string): Promise<void> {
+    await this.request(`${this.orchestrationUrl}/v2/consumer/workflows/${encodeURIComponent(workflowId)}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Upload an image to Civitai's blob storage, the way Civitai's own site
+   * sends a source image: the raw bytes with their content type. The blob's
+   * URL is what a workflow step takes, so the image does not need to be
+   * publicly reachable where Remix Studio stores it.
+   */
+  async uploadBlob(bytes: Buffer, contentType: string): Promise<CivitaiImageBlob> {
+    return this.request(`${this.orchestrationUrl}/v2/consumer/blobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: new Uint8Array(bytes),
+    }, DOWNLOAD_TIMEOUT_MS);
+  }
+
   /** The orchestrator's record of a resource; it knows every AIR it can run. */
   async getResource(air: string): Promise<any> {
     return this.request(`${this.orchestrationUrl}/v2/resources/${encodeURIComponent(air)}`);
@@ -192,6 +227,28 @@ export class CivitaiClient {
 
   async getModel(modelId: number): Promise<any> {
     return this.request(`${this.webUrl}/api/v1/models/${modelId}`);
+  }
+
+  /** Search Civitai's catalog by name, newest version of each model first. */
+  async searchModels(query: string, types: string[]): Promise<CivitaiSearchResult[]> {
+    const params = new URLSearchParams({ query, limit: '12' });
+    for (const type of types) params.append('types', type);
+    const body = await this.request(`${this.webUrl}/api/v1/models?${params.toString()}`);
+    const results: CivitaiSearchResult[] = [];
+    for (const model of Array.isArray(body?.items) ? body.items : []) {
+      const version = Array.isArray(model?.modelVersions) ? model.modelVersions[0] : undefined;
+      if (typeof model?.id !== 'number' || typeof version?.id !== 'number') continue;
+      results.push({
+        modelId: model.id,
+        versionId: version.id,
+        name: typeof model.name === 'string' ? model.name : `#${model.id}`,
+        ...(typeof version.name === 'string' ? { versionName: version.name } : {}),
+        ...(typeof model.type === 'string' ? { type: model.type } : {}),
+        ...(typeof version.baseModel === 'string' ? { baseModel: version.baseModel } : {}),
+        ...(previewOf(version) ? { previewUrl: previewOf(version) } : {}),
+      });
+    }
+    return results;
   }
 
   /**
@@ -245,7 +302,7 @@ const OUTPUT_FORMATS: Record<string, string> = { jpeg: 'jpeg', jpg: 'jpeg', webp
  * The workflow one job submits: a single text-to-image step producing one
  * image with the job's checkpoint, resources and parameters.
  */
-export function buildCivitaiWorkflow(prompt: string, params: CivitaiGenerationConfig, format?: string): Record<string, unknown> {
+export function buildCivitaiWorkflow(prompt: string, params: CivitaiGenerationConfig, format?: string, source?: CivitaiSourceImage): Record<string, unknown> {
   if (!params.model?.air) throw new Error('Choose a Civitai checkpoint for this project first');
 
   const additionalNetworks: Record<string, { strength?: number; triggerWord?: string }> = {};
@@ -271,6 +328,15 @@ export function buildCivitaiWorkflow(prompt: string, params: CivitaiGenerationCo
   if (params.height !== undefined) input.height = params.height;
   if (params.clipSkip !== undefined) input.clipSkip = params.clipSkip;
   if (params.seed !== undefined) input.seed = params.seed;
+  if (source) {
+    // Image-to-image: the output takes the source's size, which the queue
+    // already fitted to the job's area and shape.
+    input.sourceImage = source.url;
+    // Spelled as Civitai's API spells it.
+    input.sourceImageDenoiseStrenght = params.denoise ?? 0.7;
+    input.width = source.width;
+    input.height = source.height;
+  }
 
   return {
     steps: [{ $type: 'textToImage', name: 'image', input }],

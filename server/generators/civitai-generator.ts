@@ -1,11 +1,14 @@
+import sharp from 'sharp';
 import { CheckStatusResult, GenerateRequest, GenerateResult, ImageGenerator } from './image-generator';
 import {
   CIVITAI_PENDING_STATUSES,
   CivitaiApiError,
   CivitaiClient,
+  CivitaiSourceImage,
   CivitaiWorkflow,
   buildCivitaiWorkflow,
 } from '../civitai/civitai-client';
+import type { CivitaiGenerationConfig } from '../../src/types';
 
 /**
  * Runs Civitai project jobs on Civitai's generation service. Each job submits
@@ -26,7 +29,10 @@ export class CivitaiGenerator extends ImageGenerator {
       return { ok: false, error: 'Choose a Civitai checkpoint for this project first' };
     }
     try {
-      const workflow = await this.client.submitWorkflow(buildCivitaiWorkflow(req.prompt, req.civitai, req.format));
+      const source = req.refImagesBase64?.[0]
+        ? await this.uploadSource(Buffer.from(req.refImagesBase64[0], 'base64'), req.civitai)
+        : undefined;
+      const workflow = await this.client.submitWorkflow(buildCivitaiWorkflow(req.prompt, req.civitai, req.format, source));
       if (!workflow.id) return { ok: false, error: 'Civitai did not return a workflow id' };
       if (workflow.status && !CIVITAI_PENDING_STATUSES.has(workflow.status) && workflow.status !== 'succeeded') {
         return { ok: false, error: describeFailure(workflow) };
@@ -35,6 +41,33 @@ export class CivitaiGenerator extends ImageGenerator {
     } catch (e: any) {
       return { ok: false, error: e?.message || 'Submitting the generation to Civitai failed' };
     }
+  }
+
+  /**
+   * Image-to-image: fit the source to the job's size — the queue has already
+   * shaped that size after the source — and upload it to Civitai. Phone
+   * pictures are turned upright first, as their EXIF orientation says.
+   */
+  private async uploadSource(bytes: Buffer, params: CivitaiGenerationConfig): Promise<CivitaiSourceImage> {
+    const width = params.width || 1024;
+    const height = params.height || 1024;
+    const png = await sharp(bytes).rotate().resize(width, height, { fit: 'cover' }).png().toBuffer();
+    let blob;
+    try {
+      blob = await this.client.uploadBlob(png, 'image/png');
+    } catch (e: any) {
+      throw new Error(`Uploading the source image to Civitai failed: ${e?.message || e}`);
+    }
+    if (blob.blockedReason) {
+      const hint = /mature|nsfw/i.test(blob.blockedReason) ? ' Turn on "Allow mature content" in the project settings to use it.' : '';
+      throw new Error(`Civitai blocked the source image: ${blob.blockedReason}.${hint}`);
+    }
+    if (!blob.url) throw new Error('Civitai did not return a URL for the uploaded source image');
+    return { url: blob.url, width, height };
+  }
+
+  async cancel(taskId: string): Promise<void> {
+    await this.client.deleteWorkflow(taskId);
   }
 
   /**

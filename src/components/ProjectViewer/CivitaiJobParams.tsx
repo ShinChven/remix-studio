@@ -36,6 +36,7 @@ export function CivitaiJobParams({ job }: { job: Job }) {
   if (params.steps !== undefined) rows.push({ label: t('projectViewer.civitai.steps'), value: params.steps });
   if (params.cfgScale !== undefined) rows.push({ label: t('projectViewer.civitai.cfgScale'), value: params.cfgScale });
   if (params.clipSkip !== undefined) rows.push({ label: t('projectViewer.civitai.clipSkip'), value: params.clipSkip });
+  if (job.imageContexts?.length && params.denoise !== undefined) rows.push({ label: t('projectViewer.civitai.denoise'), value: params.denoise });
   rows.push({
     label: t('projectViewer.civitai.seed'),
     value: params.seed !== undefined ? params.seed : <span className="italic text-neutral-500">{t('projectViewer.civitai.seedRolledOnRun')}</span>,

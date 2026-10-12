@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput, CivitaiGenerationConfig } from '../../src/types';
+import { civitaiModelItemValue, sanitizeCivitaiBinding } from '../../src/lib/civitai';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
@@ -1805,11 +1806,14 @@ export class ProjectRepository {
       if (!normalizedWorkflow.length) return;
 
       await tx.workflowItem.createMany({
-        data: normalizedWorkflow.map((item) => ({
+        data: normalizedWorkflow.map((item) => {
+          const civitai = sanitizeCivitaiBinding(item.civitai, item.type);
+          return {
           id: item.id,
           projectId,
           type: item.type,
-          value: item.value ?? null,
+          // A model item's value is its options' AIRs, kept in step with them.
+          value: item.type === 'model' ? civitaiModelItemValue(civitai?.options) : (item.value ?? null),
           order: item.order,
           thumbnailUrl: item.thumbnailUrl ?? null,
           optimizedUrl: item.optimizedUrl ?? null,
@@ -1818,7 +1822,9 @@ export class ProjectRepository {
           comfyTarget: item.comfyTarget
             ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input, ...(item.comfyTarget.remix ? { remix: true } : {}) }
             : Prisma.DbNull,
-        })),
+          civitai: civitai ? (civitai as any) : Prisma.DbNull,
+          };
+        }),
       });
     });
   }
@@ -1875,6 +1881,7 @@ export class ProjectRepository {
       selectedTags: (w.selectedTags as string[]) ?? undefined,
       disabled: w.disabled ?? false,
       comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyBinding) : undefined,
+      civitai: w.civitai && typeof w.civitai === 'object' ? (w.civitai as WorkflowItem['civitai']) : undefined,
     };
   }
 

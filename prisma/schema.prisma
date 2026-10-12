@@ -288,6 +288,7 @@ model WorkflowItem {
   selectedTags Json? // String[]
   disabled     Boolean @default(false)
   comfyTarget  Json? // ComfyInputTarget (ComfyUI projects)
+  civitai      Json? // CivitaiBinding (Civitai projects)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 

@@ -1,4 +1,4 @@
-import type { CivitaiGenerationConfig, CivitaiResource, CivitaiScheduler } from '../types';
+import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiScheduler, WorkflowItem } from '../types';
 
 /**
  * Helpers for Civitai projects, shared by the project viewer (to edit the
@@ -46,6 +46,7 @@ export const CIVITAI_DEFAULTS = {
   cfgScale: 7,
   clipSkip: 2,
   strength: 1,
+  denoise: 0.7,
 };
 
 export const CIVITAI_LIMITS = {
@@ -55,7 +56,10 @@ export const CIVITAI_LIMITS = {
   clipSkip: { min: 1, max: 12 },
   seed: { min: 0, max: 4_294_967_295 },
   strength: { min: -5, max: 5 },
+  denoise: { min: 0.05, max: 1 },
   resources: 20,
+  /** Options one checkpoint or LoRA slot may hold. */
+  options: 20,
   negativePrompt: 10_000,
 };
 
@@ -177,20 +181,32 @@ export function snapCivitaiSize(value: number): number {
   return clamp(Math.round(value / 8) * 8, CIVITAI_LIMITS.size);
 }
 
+/** What a job's combination picked from the workflow's Civitai items. */
+export interface CivitaiPicks {
+  model?: CivitaiResource;
+  resources?: CivitaiResource[];
+  negativePrompt?: string;
+}
+
 /**
- * The settings a job is drafted with: the project's own, with every parameter
- * it left unset filled in. The seed stays unset unless the project fixed one;
- * the server rolls it when the job runs.
+ * The settings a job is drafted with: the project's sampling settings with
+ * every parameter it left unset filled in, and the checkpoint, LoRAs and
+ * negative prompt its combination picked. The default size follows that
+ * job's checkpoint. The seed stays unset unless the project fixed one; the
+ * server rolls it when the job runs.
  */
-export function resolveCivitaiParams(config: CivitaiGenerationConfig | undefined): CivitaiGenerationConfig {
+export function resolveCivitaiParams(config: CivitaiGenerationConfig | undefined, picks?: CivitaiPicks): CivitaiGenerationConfig {
   const base = config || {};
-  const portrait = civitaiSizePresets(base.model).find((preset) => preset.key === 'portrait')!;
+  const model = picks ? picks.model : base.model;
+  const resources = picks ? picks.resources : base.resources;
+  const negativePrompt = picks ? picks.negativePrompt : base.negativePrompt;
+  const portrait = civitaiSizePresets(model).find((preset) => preset.key === 'portrait')!;
   return {
-    ...(base.model ? { model: base.model } : {}),
-    resources: (base.resources || []).map((resource) => (
+    ...(model ? { model } : {}),
+    resources: (resources || []).map((resource) => (
       isCivitaiEmbedding(resource) ? resource : { ...resource, strength: resource.strength ?? CIVITAI_DEFAULTS.strength }
     )),
-    negativePrompt: base.negativePrompt?.trim() || undefined,
+    negativePrompt: negativePrompt?.trim() || undefined,
     scheduler: base.scheduler || CIVITAI_DEFAULTS.scheduler,
     steps: base.steps ?? CIVITAI_DEFAULTS.steps,
     cfgScale: base.cfgScale ?? CIVITAI_DEFAULTS.cfgScale,
@@ -199,7 +215,24 @@ export function resolveCivitaiParams(config: CivitaiGenerationConfig | undefined
     clipSkip: base.clipSkip ?? CIVITAI_DEFAULTS.clipSkip,
     ...(base.seed !== undefined ? { seed: base.seed } : {}),
     allowMatureContent: !!base.allowMatureContent,
+    denoise: base.denoise ?? CIVITAI_DEFAULTS.denoise,
   };
+}
+
+/**
+ * Image-to-image output size: the source image's shape at the area the job's
+ * size asks for, so a landscape photo stays landscape and a 4000 px phone
+ * picture does not ask Civitai for a 4000 px render.
+ */
+export function civitaiImageToImageSize(source: { width: number; height: number }, target: { width: number; height: number }) {
+  const area = target.width * target.height;
+  const ratio = source.width / source.height;
+  let width = Math.sqrt(area * ratio);
+  let height = width / ratio;
+  const scale = Math.min(1, CIVITAI_LIMITS.size.max / Math.max(width, height));
+  width *= scale;
+  height *= scale;
+  return { width: snapCivitaiSize(width), height: snapCivitaiSize(height) };
 }
 
 function readString(value: unknown, maxLength: number): string | undefined {
@@ -291,8 +324,54 @@ export function sanitizeCivitaiConfig(raw: unknown): CivitaiGenerationConfig | u
   if (clipSkip !== undefined) config.clipSkip = clipSkip;
   if (seed !== undefined) config.seed = seed;
   if (value.allowMatureContent === true) config.allowMatureContent = true;
+  const denoise = readNumber(value.denoise, CIVITAI_LIMITS.denoise);
+  if (denoise !== undefined) config.denoise = Math.round(denoise * 100) / 100;
 
   return config;
+}
+
+function sameOption(a: CivitaiResource, b: CivitaiResource): boolean {
+  return a.air === b.air && (a.strength ?? 1) === (b.strength ?? 1);
+}
+
+/**
+ * Keep a workflow item's Civitai binding only when it fits the item: the
+ * negative slot on text and library items, checkpoint and LoRA slots on model
+ * items, whose options are sanitized and deduplicated (a LoRA may appear more
+ * than once at different strengths).
+ */
+export function sanitizeCivitaiBinding(raw: unknown, itemType: WorkflowItem['type']): CivitaiBinding | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const value = raw as Record<string, unknown>;
+  if (value.slot === 'negative') {
+    return itemType === 'text' || itemType === 'library' ? { slot: 'negative' } : undefined;
+  }
+  if ((value.slot !== 'checkpoint' && value.slot !== 'lora') || itemType !== 'model') return undefined;
+
+  const options: CivitaiResource[] = [];
+  for (const entry of Array.isArray(value.options) ? value.options : []) {
+    const resource = sanitizeResource(entry, value.slot === 'lora');
+    if (!resource || options.some((option) => value.slot === 'lora' ? sameOption(option, resource) : option.air === resource.air)) continue;
+    options.push(resource);
+    if (options.length >= CIVITAI_LIMITS.options) break;
+  }
+  return { slot: value.slot, options };
+}
+
+/** The value a model item stores: its options' AIRs, one per line. */
+export function civitaiModelItemValue(options: CivitaiResource[] | undefined): string {
+  return (options || []).map((option) => option.air).join('\n');
+}
+
+/** How an option is named in a job's filename and lists: name, plus strength for a LoRA. */
+export function civitaiOptionLabel(resource: CivitaiResource, slot: CivitaiBinding['slot']): string {
+  const name = resource.name || resource.air;
+  return slot === 'lora' && !isCivitaiEmbedding(resource) ? `${name} ${resource.strength ?? 1}` : name;
+}
+
+/** The workflow's checkpoint and LoRA items. */
+export function civitaiModelItems(workflow: WorkflowItem[], slot?: 'checkpoint' | 'lora'): WorkflowItem[] {
+  return workflow.filter((item) => item.type === 'model' && item.civitai && (!slot || item.civitai.slot === slot));
 }
 
 /**
