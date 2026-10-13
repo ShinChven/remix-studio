@@ -320,6 +320,7 @@ model AlbumItem {
   // Video-specific
   duration      Int? // seconds
   resolution    String? // '720p' | '1080p' | '4k'
+  civitaiParams Json? // CivitaiGenerationConfig (Civitai projects)
   createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -353,6 +354,7 @@ model TrashItem {
   thumbnailSize BigInt?
   duration      Int?
   resolution    String?
+  civitaiParams Json?
   createdAt     DateTime @default(now())
   deletedAt     DateTime @default(now())
 

@@ -79,7 +79,12 @@
     "identityTitle": "Identité",
     "identityDescription": "Paramètres de nommage et de fichiers de sortie.",
     "saveFailed": "Échec de l'enregistrement du projet",
-    "loadFailed": "Échec du chargement du projet"
+    "loadFailed": "Échec du chargement du projet",
+    "civitaiMakes": "Génère",
+    "civitaiImages": "Images",
+    "civitaiVideos": "Vidéos",
+    "civitaiImagesHint": "N'importe quel checkpoint et LoRA",
+    "civitaiVideosHint": "Wan ou Hunyuan, avec LoRA"
   },
   "projectOrphans": {
     "title": "Gestion des fichiers orphelins",

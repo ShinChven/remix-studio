@@ -17,9 +17,10 @@ import {
 import { checkStorageLimit } from '../utils/storage-check';
 import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
-import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow } from '../../src/types';
+import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow, CivitaiGenerationConfig } from '../../src/types';
 import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
-import { sanitizeCivitaiConfig } from '../../src/lib/civitai';
+import { civitaiWorkflowItemsFromParams, sanitizeCivitaiConfig } from '../../src/lib/civitai';
+import { projectMediaType } from '../../src/lib/project-media';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 import type { LiveEventPublisher } from '../live/user-live-hub';
 import { normalizePostWatermarkPayload, postWatermarkSettingSchema } from '../utils/watermark';
@@ -153,16 +154,21 @@ function reconstructWorkflowSnapshot(source: {
   imageContexts?: string[];
   videoContexts?: string[];
   audioContexts?: string[];
+  civitaiParams?: CivitaiGenerationConfig;
 }): WorkflowItem[] {
   const items: WorkflowItem[] = [];
   // Fresh ids: these become real workflow items on the project the moment the
   // user confirms, and must not collide with anything already stored.
-  const push = (type: WorkflowItem['type'], value: string) => {
-    items.push({ id: randomUUID(), type, value, order: items.length });
+  const push = (type: WorkflowItem['type'], value: string, civitai?: WorkflowItem['civitai']) => {
+    items.push({ id: randomUUID(), type, value, order: items.length, ...(civitai ? { civitai } : {}) });
   };
 
+  // A Civitai result also brings back its checkpoint, LoRAs and negative prompt.
+  const civitaiItems = civitaiWorkflowItemsFromParams(source.civitaiParams);
+  civitaiItems.filter((item) => item.type === 'model').forEach((item) => push(item.type, item.value, item.civitai));
   const prompt = source.prompt?.trim();
   if (prompt) push('text', prompt);
+  civitaiItems.filter((item) => item.type !== 'model').forEach((item) => push(item.type, item.value, item.civitai));
   source.imageContexts?.forEach((value) => value && push('image', value));
   source.videoContexts?.forEach((value) => value && push('video', value));
   source.audioContexts?.forEach((value) => value && push('audio', value));
@@ -667,7 +673,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const job = item.jobId ? await repository.getJob(user.userId, projectId, item.jobId) : null;
 
       const snapshot = job?.workflowSnapshot?.length ? job.workflowSnapshot : null;
-      const reconstructed = snapshot ? null : reconstructWorkflowSnapshot(item);
+      const reconstructed = snapshot ? null : reconstructWorkflowSnapshot({ ...item, civitaiParams: job?.civitaiParams ?? item.civitaiParams });
 
       return c.json({
         workflowSnapshot: await signWorkflowItems(snapshot ?? reconstructed ?? [], storage),
@@ -681,7 +687,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         duration: job?.duration ?? item.duration,
         resolution: job?.resolution ?? item.resolution,
         sound: job?.sound,
-        civitaiParams: job?.civitaiParams,
+        civitaiParams: job?.civitaiParams ?? item.civitaiParams,
       });
     } catch (e) {
       console.error('[GET /api/projects/:id/album/:itemId/configuration]', e);
@@ -883,7 +889,19 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       if (comfyFields.comfyPassword !== undefined) (updates as any).comfyPassword = comfyFields.comfyPassword;
       if (body?.civitaiConfig === null) updates.civitaiConfig = null as any;
       else if (body?.civitaiConfig !== undefined) updates.civitaiConfig = sanitizeCivitaiConfig(body.civitaiConfig) ?? (null as any);
-      
+      // A Civitai project's album shows as images or as videos, so what it
+      // makes stays fixed once it has jobs or results.
+      if (currentProject.type === 'civitai' && updates.civitaiConfig !== undefined
+        && (updates.civitaiConfig?.mediaType ?? 'image') !== (currentProject.civitaiConfig?.mediaType ?? 'image')) {
+        const [jobs, album] = await Promise.all([
+          repository.getProjectJobs(user.userId, projectId),
+          repository.getProjectAlbum(user.userId, projectId, { limit: 1 }),
+        ]);
+        if (jobs.length > 0 || album.total > 0 || (updates.jobs?.length ?? 0) > 0) {
+          return c.json({ error: 'This project already has jobs or results, so it can no longer switch between images and videos. Create a new Civitai project instead.' }, 409);
+        }
+      }
+
       // Storage check for new jobs (Drafts)
       if (updates.jobs) {
         const existingJobs = await repository.getProjectJobs(user.userId, projectId);
@@ -1271,14 +1289,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const project = await repository.getProject(user.userId, projectId);
       if (!project) return c.json({ error: 'Project not found' }, 404);
-      const targetLibraryType =
-        project.type === 'text'
-          ? 'text'
-          : project.type === 'video'
-            ? 'video'
-            : project.type === 'audio'
-              ? 'audio'
-              : 'image';
+      const targetLibraryType = projectMediaType(project);
 
       const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
       const albumItems = albumPage.items;

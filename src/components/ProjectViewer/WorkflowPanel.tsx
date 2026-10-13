@@ -8,7 +8,7 @@ import { SettingsPanel } from './SettingsPanel';
 import { ComfySettingsPanel, ComfyWorkflowPanel } from './ComfyWorkflowPanel';
 import { CivitaiSettingsPanel } from './CivitaiSettingsPanel';
 import { CivitaiModelItem } from './CivitaiModelItem';
-import { civitaiModelItems } from '../../lib/civitai';
+import { civitaiModelItems, civitaiVideoEngine, isCivitaiVideo } from '../../lib/civitai';
 
 interface WorkflowPanelProps {
   isLoading?: boolean;
@@ -17,6 +17,8 @@ interface WorkflowPanelProps {
   libraries: Library[];
   providers: Provider[];
   mobileView: 'workflow' | 'jobs';
+  /** Whether the project has jobs or results. */
+  hasHistory: boolean;
   workflowListRef: React.RefObject<HTMLDivElement | null>;
   draggedIndex: number | null;
   dragOverIndex: number | null;
@@ -78,6 +80,7 @@ export function WorkflowPanel({
   libraries,
   providers,
   mobileView,
+  hasHistory,
   workflowListRef,
   draggedIndex,
   dragOverIndex,
@@ -204,6 +207,10 @@ export function WorkflowPanel({
   };
 
   const hasCheckpointItem = civitaiModelItems(workflowItems, 'checkpoint').length > 0;
+  // A Civitai video engine brings its own model, and some take no LoRAs.
+  const isCivitaiVideoProject = isCivitaiProject && isCivitaiVideo(localProject.civitaiConfig);
+  const civitaiEngine = civitaiVideoEngine(localProject.civitaiConfig?.video?.engine);
+  const lorasUnsupported = isCivitaiVideoProject && civitaiEngine.loras === 0;
 
   const updateWorkflowItem = (next: WorkflowItemType) => {
     saveProject({ ...localProject, workflow: workflowItems.map((item) => (item.id === next.id ? next : item)) });
@@ -540,18 +547,19 @@ export function WorkflowPanel({
             <>
               {/* Model slots get a row of their own so their labels fit. */}
               <div className="basis-full h-0" aria-hidden="true" />
-              <button
+              {!isCivitaiVideoProject && <button
                 onClick={() => addCivitaiModelItem('checkpoint')}
                 disabled={hasCheckpointItem}
                 title={hasCheckpointItem ? t('projectViewer.civitai.oneCheckpointItem') : t('projectViewer.civitai.addCheckpointItem')}
                 className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-sky-600 dark:text-sky-400 transition-ui border border-sky-500/20 shadow-sm backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Hexagon className="w-3 h-3 shrink-0" /> <span className="truncate">{t('projectViewer.civitai.modelShort')}</span>
-              </button>
+              </button>}
               <button
                 onClick={() => addCivitaiModelItem('lora')}
-                title={t('projectViewer.civitai.addLoraItem')}
-                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-sky-600 dark:text-sky-400 transition-ui border border-sky-500/20 shadow-sm backdrop-blur-md"
+                disabled={lorasUnsupported}
+                title={lorasUnsupported ? t('projectViewer.civitai.video.noLorasHint', { engine: civitaiEngine.label }) : t('projectViewer.civitai.addLoraItem')}
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-sky-600 dark:text-sky-400 transition-ui border border-sky-500/20 shadow-sm backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Layers className="w-3 h-3 shrink-0" /> <span className="truncate">{t('projectViewer.civitai.loraShort')}</span>
               </button>
@@ -599,6 +607,7 @@ export function WorkflowPanel({
               item={item}
               index={index}
               providerId={isCivitaiProject ? localProject.providerId : undefined}
+              videoEngine={isCivitaiVideoProject ? civitaiEngine : undefined}
               draggedIndex={draggedIndex}
               dragOverIndex={dragOverIndex}
               onDragStart={onDragStart}
@@ -653,6 +662,7 @@ export function WorkflowPanel({
           <CivitaiSettingsPanel
             localProject={localProject}
             isWorkflowLoaded={!isLoading}
+            hasHistory={hasHistory}
             providers={providers}
             libraries={libraries}
             onSaveProject={saveProject}

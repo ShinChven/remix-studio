@@ -79,7 +79,12 @@
     "identityTitle": "ID",
     "identityDescription": "이름 및 파일 출력 설정.",
     "saveFailed": "프로젝트를 저장하지 못했습니다",
-    "loadFailed": "프로젝트를 불러오지 못했습니다"
+    "loadFailed": "프로젝트를 불러오지 못했습니다",
+    "civitaiMakes": "생성 대상",
+    "civitaiImages": "이미지",
+    "civitaiVideos": "동영상",
+    "civitaiImagesHint": "모든 체크포인트와 LoRA",
+    "civitaiVideosHint": "Wan 또는 Hunyuan, LoRA 지원"
   },
   "projectOrphans": {
     "title": "고립된 파일 관리",

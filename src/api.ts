@@ -799,11 +799,11 @@ export async function resolveCivitaiResource(providerId: string, value: string):
 }
 
 /** Search Civitai's catalog for checkpoints, or for LoRAs and embeddings. */
-export async function searchCivitaiModels(providerId: string, query: string, slot: 'checkpoint' | 'lora'): Promise<CivitaiSearchResult[]> {
+export async function searchCivitaiModels(providerId: string, query: string, slot: 'checkpoint' | 'lora', baseModels?: string[]): Promise<CivitaiSearchResult[]> {
   const res = await apiFetch('/api/civitai/search', {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ providerId, query, slot }),
+    body: JSON.stringify({ providerId, query, slot, ...(baseModels?.length ? { baseModels } : {}) }),
   });
   return handleResponse<CivitaiSearchResult[]>(res, 'Failed to search Civitai');
 }

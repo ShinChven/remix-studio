@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CopyPlus, Eye, EyeOff, GripVertical, Hexagon, Layers, Trash2 } from 'lucide-react';
+import { AlertTriangle, CopyPlus, Eye, EyeOff, GripVertical, Hexagon, Layers, Trash2 } from 'lucide-react';
 import type { CivitaiResource, WorkflowItem } from '../../types';
-import { CIVITAI_LIMITS, civitaiModelItemValue, isCivitaiEmbedding } from '../../lib/civitai';
+import { CIVITAI_LIMITS, type CivitaiVideoEngineSpec, civitaiModelItemValue, civitaiResourceFitsEngine, isCivitaiEmbedding } from '../../lib/civitai';
 import { NumberInput } from '../NumberInput';
 import { CivitaiResourceCard, CivitaiResourceLookup, civitaiNumberClass } from './CivitaiResourceParts';
 
@@ -14,6 +14,8 @@ interface CivitaiModelItemProps {
   index: number;
   /** The project's Civitai account, used to look models up. */
   providerId?: string;
+  /** Video projects: the engine the slot's LoRAs go to. */
+  videoEngine?: CivitaiVideoEngineSpec;
   draggedIndex: number | null;
   dragOverIndex: number | null;
   onDragStart: (e: React.DragEvent, index: number) => void;
@@ -36,6 +38,7 @@ export function CivitaiModelItem({
   item,
   index,
   providerId,
+  videoEngine,
   draggedIndex,
   dragOverIndex,
   onDragStart,
@@ -147,6 +150,14 @@ export function CivitaiModelItem({
       </div>
 
       <div className={`space-y-2 ${gridView ? 'lg:flex-1 lg:min-h-0 lg:overflow-y-auto custom-scrollbar' : ''}`}>
+        {videoEngine && (slot === 'checkpoint' || videoEngine.loras === 0) && (
+          <p className="flex gap-1.5 px-1 text-[10px] leading-4 text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+            <span>{slot === 'checkpoint'
+              ? t('projectViewer.civitai.video.checkpointUnused', { engine: videoEngine.label })
+              : t('projectViewer.civitai.video.noLorasHint', { engine: videoEngine.label })}</span>
+          </p>
+        )}
         {options.length === 0 && (
           <p className="px-1 text-[11px] leading-4 text-neutral-500">
             {slot === 'checkpoint' ? t('projectViewer.civitai.emptyCheckpoint') : t('projectViewer.civitai.emptyLora')}
@@ -169,6 +180,12 @@ export function CivitaiModelItem({
               </button>
             ) : undefined}
           >
+            {slot === 'lora' && videoEngine && videoEngine.loras > 0 && civitaiResourceFitsEngine(option, videoEngine) === false && (
+              <p className="flex gap-1.5 text-[10px] leading-4 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
+                <span>{t('projectViewer.civitai.video.loraMismatch', { baseModel: option.baseModel, engine: videoEngine.label })}</span>
+              </p>
+            )}
             {slot === 'lora' && !isCivitaiEmbedding(option) && (
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-black uppercase tracking-widest text-neutral-500 shrink-0">{t('projectViewer.civitai.strength')}</span>
@@ -200,6 +217,7 @@ export function CivitaiModelItem({
         <CivitaiResourceLookup
           providerId={providerId}
           slot={slot}
+          baseModels={slot === 'lora' && videoEngine?.loras ? videoEngine.baseModels : undefined}
           placeholder={slot === 'checkpoint' ? t('projectViewer.civitai.checkpointPlaceholder') : t('projectViewer.civitai.resourcePlaceholder')}
           accept={accept}
           onResolved={addOption}

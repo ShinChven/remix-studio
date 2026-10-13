@@ -13,6 +13,7 @@ import {
   WorkflowItemType as WorkflowItemTypeKind,
   Provider,
   AlbumItem,
+  CivitaiResource,
   AspectRatioCount,
   AlbumTagCount,
   AlbumTagMatch,
@@ -29,7 +30,8 @@ import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-rea
 import { toast } from 'sonner';
 import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
 import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
-import { civitaiModelItems, civitaiResourceLabel, parseCivitaiAir, resolveCivitaiParams } from '../lib/civitai';
+import { civitaiDraftFields, civitaiModelItems, civitaiResourceLabel, civitaiVideoEngine, civitaiVideoEngineLabel, isCivitaiVideo, parseCivitaiAir } from '../lib/civitai';
+import { projectMediaType } from '../lib/project-media';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { ConfirmModal } from './ConfirmModal';
@@ -598,7 +600,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       // with stays on the job: reusing the recipe should vary, not repeat.
       // Its checkpoint, LoRAs and negative prompt come back with the workflow.
       ...(isCivitaiProject && configToReuse.civitaiParams
-        ? { civitaiConfig: { ...configToReuse.civitaiParams, model: undefined, resources: undefined, negativePrompt: undefined, seed: undefined } }
+        ? { civitaiConfig: {
+            ...configToReuse.civitaiParams,
+            model: undefined, resources: undefined, negativePrompt: undefined, seed: undefined,
+            // The frame size follows the resolution and shape; it is not a setting.
+            ...(configToReuse.civitaiParams.video ? { video: { ...configToReuse.civitaiParams.video, width: undefined, height: undefined } } : {}),
+          } }
         : {}),
     };
 
@@ -1078,26 +1085,23 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const isAudioProject = localProject.type === 'audio';
   const isComfyProject = localProject.type === 'comfyui';
   const isCivitaiProject = localProject.type === 'civitai';
-  // ComfyUI projects render their results as the image or video project they
-  // produce; the output format picks which. Civitai projects produce images.
-  const mediaProjectType = isComfyProject
-    ? (localProject.format === 'mp4' ? 'video' : 'image')
-    : isCivitaiProject
-      ? 'image'
-      : (localProject.type || 'image');
-  // Civitai jobs keep their checkpoint's AIR as the model id; its name comes
-  // from the project's settings or the jobs that ran with it.
+  // ComfyUI and Civitai projects render their results as the image or video
+  // project they produce: ComfyUI's output format picks which, and a Civitai
+  // project's media type.
+  const mediaProjectType = isComfyProject || isCivitaiProject ? projectMediaType(localProject) : (localProject.type || 'image');
+  // Civitai images keep their checkpoint's AIR as the model id; its name comes
+  // from the workflow's checkpoints, the results and the jobs that ran with it,
+  // and the project's older single-checkpoint setting.
   const civitaiModelNames = React.useMemo(() => {
     const names = new Map<string, string>();
     if (!isCivitaiProject) return names;
-    for (const job of localJobs) {
-      const model = job.civitaiParams?.model;
-      if (model) names.set(model.air, civitaiResourceLabel(model));
-    }
-    const current = localProject.civitaiConfig?.model;
-    if (current) names.set(current.air, civitaiResourceLabel(current));
+    const add = (model?: CivitaiResource) => { if (model?.name && !names.has(model.air)) names.set(model.air, civitaiResourceLabel(model)); };
+    for (const item of civitaiModelItems(localProject.workflow || [], 'checkpoint')) item.civitai?.options?.forEach(add);
+    for (const item of localAlbum) add(item.civitaiParams?.model);
+    for (const job of localJobs) add(job.civitaiParams?.model);
+    add(localProject.civitaiConfig?.model);
     return names;
-  }, [isCivitaiProject, localJobs, localProject.civitaiConfig?.model]);
+  }, [isCivitaiProject, localProject.workflow, localAlbum, localJobs, localProject.civitaiConfig?.model]);
 
   const getProviderName = (id?: string) => {
     if (isComfyProject && !id) return 'ComfyUI';
@@ -1106,6 +1110,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const getModelName = (providerId?: string, modelId?: string) => {
     if (isComfyProject && !modelId) return t('projectViewer.comfy.workflowLabel');
     if (isCivitaiProject && modelId && parseCivitaiAir(modelId)) return civitaiModelNames.get(modelId) || modelId;
+    if (isCivitaiProject && civitaiVideoEngineLabel(modelId)) return civitaiVideoEngineLabel(modelId)!;
     if (!modelId) return t('projectViewer.common.unknownModel');
     const providerModels = providerId
       ? providers.find(p => p.id === providerId)?.models
@@ -1667,7 +1672,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       showError(t('projectViewer.errors.missingWorkflowInfo', { count: emptyItems.length }));
       return;
     }
-    if (!civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
+    // A video engine brings its own model; an image needs a checkpoint.
+    const video = isCivitaiVideo(localProject.civitaiConfig);
+    const engine = civitaiVideoEngine(localProject.civitaiConfig?.video?.engine);
+    if (!video && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
       showError(t('projectViewer.civitai.chooseCheckpointFirst'));
       return;
     }
@@ -1690,24 +1698,22 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         showError(t('projectViewer.civitai.promptRequired'));
         return;
       }
-      const format = localProject.format && ['png', 'jpeg', 'webp'].includes(localProject.format) ? localProject.format : 'png';
-      const newJobs: Job[] = combinations.map((combo) => {
-        const params = resolveCivitaiParams(localProject.civitaiConfig, combo.civitai || {});
-        const sourceImage = combo.imageContexts?.[0];
-        return {
-          id: crypto.randomUUID(),
-          prompt: combo.prompt,
-          imageContexts: sourceImage ? [sourceImage] : undefined,
-          status: 'draft',
-          providerId,
-          modelConfigId: params.model!.air,
-          aspectRatio: `${params.width}x${params.height}`,
-          format,
-          civitaiParams: params,
-          filename: buildJobFilename([localProject.prefix, ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
-          workflowSnapshot: workflow,
-        };
-      });
+      if (video && !engine.imageToVideo && combinations.some((combo) => combo.imageContexts?.length)) {
+        showError(t('projectViewer.civitai.video.textOnlyHint', { engine: engine.label }));
+        return;
+      }
+      const format = video
+        ? 'mp4'
+        : localProject.format && ['png', 'jpeg', 'webp'].includes(localProject.format) ? localProject.format : 'png';
+      const newJobs: Job[] = combinations.map((combo) => ({
+        id: crypto.randomUUID(),
+        prompt: combo.prompt,
+        status: 'draft',
+        providerId,
+        ...civitaiDraftFields(localProject.civitaiConfig, combo, format),
+        filename: buildJobFilename([localProject.prefix, ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
+        workflowSnapshot: workflow,
+      }));
 
       const nextJobs = [...localJobs, ...newJobs];
       setDraftsProgress({ current: newJobs.length, total: newJobs.length, stage: 'saving' });
@@ -2545,6 +2551,12 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
       <WorkflowPanel
         isLoading={isLoadingWorkflow}
+        // Whether a Civitai project is past the point of switching between
+        // images and videos; counted as yes until the project's first load
+        // (jobs, album preview and totals) is in. The album page itself only
+        // loads with its tab, and a filtered album total can read 0, so the
+        // unfiltered preview counts too.
+        hasHistory={isLoadingJobs || localJobs.length > 0 || completedTotal > 0 || albumTotal > 0 || albumPreviewItems.length > 0}
         project={project}
         localProject={localProject}
         libraries={liveLibraries}

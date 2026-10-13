@@ -4,16 +4,24 @@ import {
   CIVITAI_PENDING_STATUSES,
   CivitaiApiError,
   CivitaiClient,
+  CivitaiImageBlob,
   CivitaiSourceImage,
+  CivitaiVideoFrames,
   CivitaiWorkflow,
+  buildCivitaiVideoWorkflow,
   buildCivitaiWorkflow,
 } from '../civitai/civitai-client';
 import type { CivitaiGenerationConfig } from '../../src/types';
+import { civitaiVideoEngine, isCivitaiVideo, resolveCivitaiVideoSettings } from '../../src/lib/civitai';
+
+/** Longest side a video frame is uploaded at when the engine sizes the video itself. */
+const MAX_FRAME_SIDE = 2048;
 
 /**
  * Runs Civitai project jobs on Civitai's generation service. Each job submits
- * a one-step workflow and hands its id to the detached poller, which keeps the
- * provider's concurrency slot until the image is downloaded or the workflow
+ * a workflow — one text-to-image step for an image, the engine's video steps
+ * for a video — and hands its id to the detached poller, which keeps the
+ * provider's concurrency slot until the result is downloaded or the workflow
  * fails.
  */
 export class CivitaiGenerator extends ImageGenerator {
@@ -25,14 +33,22 @@ export class CivitaiGenerator extends ImageGenerator {
   }
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
-    if (!req.civitai?.model?.air) {
+    if (!req.civitai) return { ok: false, error: 'This job has no Civitai settings' };
+    const video = isCivitaiVideo(req.civitai);
+    if (!video && !req.civitai.model?.air) {
       return { ok: false, error: 'Choose a Civitai checkpoint for this project first' };
     }
     try {
-      const source = req.refImagesBase64?.[0]
-        ? await this.uploadSource(Buffer.from(req.refImagesBase64[0], 'base64'), req.civitai)
-        : undefined;
-      const workflow = await this.client.submitWorkflow(buildCivitaiWorkflow(req.prompt, req.civitai, req.format, source));
+      let body: Record<string, unknown>;
+      if (video) {
+        body = buildCivitaiVideoWorkflow(req.prompt, req.civitai, await this.uploadFrames(req.refImagesBase64 || [], req.civitai));
+      } else {
+        const source = req.refImagesBase64?.[0]
+          ? await this.uploadSource(Buffer.from(req.refImagesBase64[0], 'base64'), req.civitai)
+          : undefined;
+        body = buildCivitaiWorkflow(req.prompt, req.civitai, req.format, source);
+      }
+      const workflow = await this.client.submitWorkflow(body);
       if (!workflow.id) return { ok: false, error: 'Civitai did not return a workflow id' };
       if (workflow.status && !CIVITAI_PENDING_STATUSES.has(workflow.status) && workflow.status !== 'succeeded') {
         return { ok: false, error: describeFailure(workflow) };
@@ -52,18 +68,52 @@ export class CivitaiGenerator extends ImageGenerator {
     const width = params.width || 1024;
     const height = params.height || 1024;
     const png = await sharp(bytes).rotate().resize(width, height, { fit: 'cover' }).png().toBuffer();
+    return { url: await this.uploadImage(png, 'source image'), width, height };
+  }
+
+  /**
+   * Image-to-video: upload the first image as the start frame and, for
+   * engines that take one, the second as the end frame. An engine that renders
+   * at a set frame size gets the frames cut to it — the queue picked that size
+   * after the start frame's shape — and one that sizes the video itself gets
+   * them upright and at most 2048 px.
+   */
+  private async uploadFrames(images: string[], params: CivitaiGenerationConfig): Promise<CivitaiVideoFrames> {
+    if (images.length === 0) return {};
+    const engine = civitaiVideoEngine(params.video?.engine);
+    if (!engine.imageToVideo) {
+      throw new Error(`${engine.label} only makes videos from text. Remove the image items from the workflow or pick another engine.`);
+    }
+    const settings = resolveCivitaiVideoSettings(params.video);
+    const prepare = (bytes: Buffer) => {
+      const image = sharp(bytes).rotate();
+      return (engine.frameSize && settings.width && settings.height
+        ? image.resize(settings.width, settings.height, { fit: 'cover' })
+        : image.resize(MAX_FRAME_SIDE, MAX_FRAME_SIDE, { fit: 'inside', withoutEnlargement: true })
+      ).png().toBuffer();
+    };
+    const frames: CivitaiVideoFrames = {
+      start: await this.uploadImage(await prepare(Buffer.from(images[0], 'base64')), 'start frame'),
+    };
+    if (engine.endFrame && images[1]) {
+      frames.end = await this.uploadImage(await prepare(Buffer.from(images[1], 'base64')), 'end frame');
+    }
+    return frames;
+  }
+
+  private async uploadImage(png: Buffer, what: string): Promise<string> {
     let blob;
     try {
       blob = await this.client.uploadBlob(png, 'image/png');
     } catch (e: any) {
-      throw new Error(`Uploading the source image to Civitai failed: ${e?.message || e}`);
+      throw new Error(`Uploading the ${what} to Civitai failed: ${e?.message || e}`);
     }
     if (blob.blockedReason) {
       const hint = /mature|nsfw/i.test(blob.blockedReason) ? ' Turn on "Allow mature content" in the project settings to use it.' : '';
-      throw new Error(`Civitai blocked the source image: ${blob.blockedReason}.${hint}`);
+      throw new Error(`Civitai blocked the ${what}: ${blob.blockedReason}.${hint}`);
     }
-    if (!blob.url) throw new Error('Civitai did not return a URL for the uploaded source image');
-    return { url: blob.url, width, height };
+    if (!blob.url) throw new Error(`Civitai did not return a URL for the uploaded ${what}`);
+    return blob.url;
   }
 
   async cancel(taskId: string): Promise<void> {
@@ -93,37 +143,48 @@ export class CivitaiGenerator extends ImageGenerator {
     if (!status || CIVITAI_PENDING_STATUSES.has(status)) return { status: 'processing' };
     if (status !== 'succeeded') return { status: 'failed', error: describeFailure(workflow) };
 
-    const images = (workflow.steps || []).flatMap((step) => step.output?.images || []);
-    const image = images.find((blob) => blob.available && blob.url);
-    if (!image) {
-      const blocked = images.find((blob) => blob.blockedReason);
-      if (blocked) return { status: 'failed', error: describeBlocked(blocked.blockedReason!) };
-      // The workflow is done but its image is still being stored; the
+    const steps = workflow.steps || [];
+    const isVideo = steps.some((step) => step.$type === 'videoGen' || step.$type === 'videoInterpolation');
+    // A video workflow's last step holds the finished video (Wan 2.2's first
+    // step holds the 12 fps render its interpolation step doubles).
+    const blobs: CivitaiImageBlob[] = isVideo
+      ? [...steps].reverse().flatMap((step) => [step.output?.video, ...(step.output?.additionalVideos || [])].filter((blob): blob is CivitaiImageBlob => !!blob))
+      : steps.flatMap((step) => step.output?.images || []);
+    const what = isVideo ? 'video' : 'image';
+    const result = blobs.find((blob) => blob.available && blob.url);
+    if (!result) {
+      const blocked = blobs.find((blob) => blob.blockedReason);
+      if (blocked) return { status: 'failed', error: describeBlocked(blocked.blockedReason!, what) };
+      // The workflow is done but its result is still being stored; the
       // poller's stuck timeout ends a wait that never resolves.
-      if (images.length > 0) return { status: 'processing' };
-      return { status: 'failed', error: 'Civitai finished the generation without returning an image' };
+      if (blobs.length > 0) return { status: 'processing' };
+      return { status: 'failed', error: `Civitai finished the generation without returning ${isVideo ? 'a video' : 'an image'}` };
     }
 
     try {
-      return { status: 'completed', imageBytes: await this.client.download(image.url!) };
+      const { bytes, contentType } = await this.client.download(result.url!, what);
+      return isVideo
+        ? { status: 'completed', videoBytes: bytes, mimeType: contentType?.startsWith('video/') ? contentType : 'video/mp4' }
+        : { status: 'completed', imageBytes: bytes };
     } catch (e: any) {
       // Blob URLs are signed and expire; the next poll fetches a fresh one.
-      console.warn(`[CivitaiGenerator] Downloading the image of workflow ${taskId} failed, retrying on the next poll: ${e?.message}`);
+      console.warn(`[CivitaiGenerator] Downloading the ${what} of workflow ${taskId} failed, retrying on the next poll: ${e?.message}`);
       return { status: 'processing' };
     }
   }
 }
 
-function describeBlocked(reason: string): string {
+function describeBlocked(reason: string, what: string): string {
   const hint = /mature|nsfw/i.test(reason)
     ? ' Turn on "Allow mature content" in the project settings to receive it.'
     : '';
-  return `Civitai blocked the image: ${reason}.${hint}`;
+  return `Civitai blocked the ${what}: ${reason}.${hint}`;
 }
 
 function describeFailure(workflow: CivitaiWorkflow): string {
   const errors = (workflow.steps || []).flatMap((step) => step.output?.errors || []).filter(Boolean);
-  if (errors.length > 0) return `Civitai could not generate the image: ${errors.join('; ')}`;
+  const what = (workflow.steps || []).some((step) => step.$type === 'videoGen') ? 'video' : 'image';
+  if (errors.length > 0) return `Civitai could not generate the ${what}: ${errors.join('; ')}`;
   switch (workflow.status) {
     case 'expired':
       return 'The generation expired on Civitai before a worker picked it up. Retry the job to run it again.';

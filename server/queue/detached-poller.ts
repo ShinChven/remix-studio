@@ -283,7 +283,23 @@ export class DetachedPoller {
       const res = await generator.checkStatus(job.taskId!, { modelId: modelConfig?.modelId, apiUrl: modelConfig?.apiUrl });
       console.log(`[DetachedPoller] Job ${job.id} Status: ${res.status}`);
 
-      if (res.status === 'completed' && res.imageBytes) {
+      if (res.status === 'completed' && res.videoBytes) {
+        // A generator that makes both (Civitai) returned a video.
+        console.log(`[DetachedPoller] Job ${job.id} detached poll completed with a video. Dispatched to VideoProcessor.`);
+        await this.videoProcessor.processCompletedVideo({
+          userId,
+          projectId,
+          job,
+          videoBytes: res.videoBytes,
+          mimeType: res.mimeType,
+          aspectRatio: job.aspectRatio,
+          resolution: job.resolution,
+          duration: job.duration,
+          modelConfigId: job.modelConfigId,
+          providerId: job.providerId,
+        });
+        this.finalize(job.providerId, job.id);
+      } else if (res.status === 'completed' && res.imageBytes) {
         console.log(`[DetachedPoller] Job ${job.id} detached poll completed successfully. Dispatched to ImageProcessor.`);
         await this.imageProcessor.processCompletedImage({
           userId,
@@ -356,6 +372,7 @@ export class DetachedPoller {
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
       size: item.size != null ? Number(item.size) : undefined,
+      civitaiParams: item.civitaiParams && typeof item.civitaiParams === 'object' ? item.civitaiParams : undefined,
     };
   }
 }

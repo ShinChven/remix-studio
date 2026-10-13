@@ -26,6 +26,7 @@ import type { AlbumItemSort } from '../types';
 import { cn } from '../lib/utils';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './ProjectViewer/PaginationBar';
 import { getLastMediaPickerSource, setLastMediaPickerSource } from '../lib/media-picker-memory';
+import { projectMediaType } from '../lib/project-media';
 
 export type PickerSourceKind = 'library' | 'album';
 export type UniversalPickerSort = AlbumItemSort;
@@ -332,13 +333,14 @@ export function UniversalMediaPicker({
 
   const albumSources = useMemo<PickerSource[]>(() => (
     projects
-      .filter((project) => fixedSourceId === project.id || (enabledTypeSet.has((project.type || 'image') as LibraryType) && ((project as any).albumCount ?? project.album?.length ?? 0) > 0))
+      // ComfyUI and Civitai projects list under the media they make.
+      .filter((project) => fixedSourceId === project.id || (enabledTypeSet.has(projectMediaType(project) as LibraryType) && ((project as any).albumCount ?? project.album?.length ?? 0) > 0))
       .map((project) => ({
         id: project.id,
         kind: 'album' as const,
         name: project.name,
         description: project.description,
-        type: (project.type || 'image') as LibraryType,
+        type: projectMediaType(project) as LibraryType,
         itemCount: (project as any).albumCount ?? project.album?.length ?? 0,
         createdAt: project.createdAt,
       }))

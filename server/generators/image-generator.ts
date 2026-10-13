@@ -35,6 +35,9 @@ export interface CheckStatusResult {
   // Further images the same task produced, each saved as its own album item
   // next to `imageBytes` (e.g. the PNG layers of a layer decomposition).
   additionalImages?: Buffer[];
+  // A video result, for generators that make video as well as images (Civitai).
+  videoBytes?: Buffer;
+  mimeType?: string;
 }
 
 /** The job's model, for generators whose result shape depends on it. */

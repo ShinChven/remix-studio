@@ -1,19 +1,43 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Job } from '../../types';
-import { civitaiModelPageUrl, civitaiResourceLabel, civitaiSchedulerLabel, isCivitaiEmbedding } from '../../lib/civitai';
+import type { CivitaiGenerationConfig, Job } from '../../types';
+import {
+  civitaiModelPageUrl,
+  civitaiResourceLabel,
+  civitaiSchedulerLabel,
+  civitaiVideoEngine,
+  isCivitaiEmbedding,
+  isCivitaiVideo,
+} from '../../lib/civitai';
 
 /**
  * The checkpoint, resources and parameters a Civitai job runs with — including
  * the seed it was given — so a result can be traced back and reproduced.
  */
 export function CivitaiJobParams({ job }: { job: Job }) {
+  return <CivitaiParamsTable params={job.civitaiParams} sourceCount={job.imageContexts?.length ?? 0} />;
+}
+
+/**
+ * The same table for any saved settings, a job's or an album result's.
+ * `sourceCount` is how many images the generation started from.
+ */
+export function CivitaiParamsTable({ params, sourceCount }: { params?: CivitaiGenerationConfig; sourceCount: number }) {
   const { t } = useTranslation();
-  const params = job.civitaiParams;
   if (!params) return null;
 
   const rows: Array<{ label: string; value: React.ReactNode }> = [];
-  if (params.model) {
+  const video = isCivitaiVideo(params);
+  if (video) {
+    const engine = civitaiVideoEngine(params.video?.engine);
+    rows.push({ label: t('projectViewer.civitai.video.engine'), value: engine.label });
+    if (sourceCount > 0 && engine.imageToVideo) {
+      rows.push({
+        label: t('projectViewer.civitai.video.mode'),
+        value: sourceCount > 1 && engine.endFrame ? t('projectViewer.civitai.video.firstLastFrame') : t('projectViewer.civitai.video.imageToVideo'),
+      });
+    }
+  } else if (params.model) {
     const href = civitaiModelPageUrl(params.model.air);
     rows.push({
       label: t('projectViewer.civitai.checkpoint'),
@@ -31,12 +55,25 @@ export function CivitaiJobParams({ job }: { job: Job }) {
     });
   }
   if (params.negativePrompt) rows.push({ label: t('projectViewer.civitai.negativePrompt'), value: params.negativePrompt });
-  if (params.width && params.height) rows.push({ label: t('projectViewer.civitai.size'), value: `${params.width} × ${params.height}` });
-  if (params.scheduler) rows.push({ label: t('projectViewer.civitai.sampler'), value: civitaiSchedulerLabel(params.scheduler) });
-  if (params.steps !== undefined) rows.push({ label: t('projectViewer.civitai.steps'), value: params.steps });
-  if (params.cfgScale !== undefined) rows.push({ label: t('projectViewer.civitai.cfgScale'), value: params.cfgScale });
-  if (params.clipSkip !== undefined) rows.push({ label: t('projectViewer.civitai.clipSkip'), value: params.clipSkip });
-  if (job.imageContexts?.length && params.denoise !== undefined) rows.push({ label: t('projectViewer.civitai.denoise'), value: params.denoise });
+  if (video) {
+    const settings = params.video || {};
+    if (settings.width && settings.height) rows.push({ label: t('projectViewer.civitai.size'), value: `${settings.width} × ${settings.height}` });
+    if (settings.resolution) rows.push({ label: t('projectViewer.civitai.video.resolution'), value: [settings.resolution, settings.aspectRatio].filter(Boolean).join(' · ') });
+    if (settings.duration !== undefined) rows.push({ label: t('projectViewer.civitai.video.duration'), value: t('projectViewer.civitai.video.seconds', { count: settings.duration }) });
+    if (settings.cfgScale !== undefined) rows.push({ label: t('projectViewer.civitai.cfgScale'), value: settings.cfgScale });
+    if (settings.steps !== undefined) rows.push({ label: t('projectViewer.civitai.steps'), value: settings.steps });
+    if (settings.shift !== undefined) rows.push({ label: t('projectViewer.civitai.video.shift'), value: settings.shift });
+    if (settings.interpolator && settings.interpolator !== 'none') rows.push({ label: t('projectViewer.civitai.video.interpolator'), value: settings.interpolator.toUpperCase() });
+    if (settings.promptExpansion) rows.push({ label: t('projectViewer.civitai.video.promptExpansion'), value: t('projectViewer.civitai.video.on') });
+    if (settings.usePrime) rows.push({ label: t('projectViewer.civitai.video.usePrime'), value: t('projectViewer.civitai.video.on') });
+  } else {
+    if (params.width && params.height) rows.push({ label: t('projectViewer.civitai.size'), value: `${params.width} × ${params.height}` });
+    if (params.scheduler) rows.push({ label: t('projectViewer.civitai.sampler'), value: civitaiSchedulerLabel(params.scheduler) });
+    if (params.steps !== undefined) rows.push({ label: t('projectViewer.civitai.steps'), value: params.steps });
+    if (params.cfgScale !== undefined) rows.push({ label: t('projectViewer.civitai.cfgScale'), value: params.cfgScale });
+    if (params.clipSkip !== undefined) rows.push({ label: t('projectViewer.civitai.clipSkip'), value: params.clipSkip });
+    if (sourceCount > 0 && params.denoise !== undefined) rows.push({ label: t('projectViewer.civitai.denoise'), value: params.denoise });
+  }
   rows.push({
     label: t('projectViewer.civitai.seed'),
     value: params.seed !== undefined ? params.seed : <span className="italic text-neutral-500">{t('projectViewer.civitai.seedRolledOnRun')}</span>,

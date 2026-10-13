@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput, CivitaiGenerationConfig } from '../../src/types';
-import { civitaiModelItemValue, sanitizeCivitaiBinding } from '../../src/lib/civitai';
+import { civitaiModelItemValue, sanitizeCivitaiBinding, sanitizeCivitaiConfig } from '../../src/lib/civitai';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
@@ -166,6 +166,10 @@ export class ProjectRepository {
       modelConfigId: p.modelConfigId ?? undefined,
       prefix: p.prefix ?? undefined,
       background: (p as any).background ?? undefined,
+      // Only what lists need: whether a Civitai project makes images or videos.
+      ...(p.type === 'civitai' && (p.civitaiConfig as CivitaiGenerationConfig | null)?.mediaType
+        ? { civitaiConfig: { mediaType: (p.civitaiConfig as CivitaiGenerationConfig).mediaType } }
+        : {}),
     }));
 
     return {
@@ -686,6 +690,7 @@ export class ProjectRepository {
       format: item.format ?? null,
       duration: item.duration ?? null,
       resolution: item.resolution ?? null,
+      civitaiParams: (sanitizeCivitaiConfig(item.civitaiParams) as Prisma.InputJsonValue | undefined) ?? Prisma.DbNull,
       size: item.size != null ? BigInt(item.size) : null,
       optimizedSize: (item as any).optimizedSize != null ? BigInt((item as any).optimizedSize) : null,
       thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
@@ -958,6 +963,9 @@ export class ProjectRepository {
         size: item.size ?? null,
         optimizedSize: item.optimizedSize ?? null,
         thumbnailSize: item.thumbnailSize ?? null,
+        duration: item.duration ?? null,
+        resolution: item.resolution ?? null,
+        civitaiParams: (item.civitaiParams as Prisma.InputJsonValue | null) ?? Prisma.DbNull,
         createdAt: item.createdAt,
         deletedAt: new Date(),
       } as any,
@@ -1001,6 +1009,9 @@ export class ProjectRepository {
         size: trashItem.size ?? null,
         optimizedSize: trashItem.optimizedSize ?? null,
         thumbnailSize: trashItem.thumbnailSize ?? null,
+        duration: trashItem.duration ?? null,
+        resolution: trashItem.resolution ?? null,
+        civitaiParams: (trashItem.civitaiParams as Prisma.InputJsonValue | null) ?? Prisma.DbNull,
         createdAt: trashItem.createdAt,
       } as any,
     });
@@ -1551,6 +1562,7 @@ export class ProjectRepository {
       format: t.format as any ?? undefined,
       duration: t.duration ?? undefined,
       resolution: t.resolution ?? undefined,
+      civitaiParams: t.civitaiParams && typeof t.civitaiParams === 'object' ? (t.civitaiParams as CivitaiGenerationConfig) : undefined,
       size: t.size != null ? Number(t.size) : undefined,
       optimizedSize: t.optimizedSize != null ? Number(t.optimizedSize) : undefined,
       thumbnailSize: t.thumbnailSize != null ? Number(t.thumbnailSize) : undefined,
@@ -1905,6 +1917,7 @@ export class ProjectRepository {
       format: a.format as AlbumItem['format'] ?? undefined,
       duration: a.duration ?? undefined,
       resolution: a.resolution ?? undefined,
+      civitaiParams: a.civitaiParams && typeof a.civitaiParams === 'object' ? (a.civitaiParams as CivitaiGenerationConfig) : undefined,
       size: a.size != null ? Number(a.size) : undefined,
       optimizedSize: a.optimizedSize != null ? Number(a.optimizedSize) : undefined,
       thumbnailSize: a.thumbnailSize != null ? Number(a.thumbnailSize) : undefined,

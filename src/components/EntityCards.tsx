@@ -23,6 +23,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { Library, Project, ProjectType } from '../types';
+import { projectMediaType } from '../lib/project-media';
 
 function getLibraryTypeMeta(type: Library['type'] | undefined) {
   switch (type) {
@@ -200,7 +201,7 @@ export function ProjectCard({ project, isToggling = false, isExporting = false, 
   // Use thumbnail/optimized image if available. Only use imageUrl directly for image projects.
   const albumImage = lastAlbumItem?.thumbnailUrl || 
                      lastAlbumItem?.optimizedUrl || 
-                     (project.type === 'image' || project.type === 'civitai' ? lastAlbumItem?.imageUrl : null);
+                     (projectMediaType(project) === 'image' ? lastAlbumItem?.imageUrl : null);
 
   const bgImage = albumImage || projectThumbnail(project.id, project.type, resolvedTheme);
 
@@ -239,7 +240,7 @@ export function ProjectCard({ project, isToggling = false, isExporting = false, 
         
         {/* Kicker */}
         <div className="text-[11px] font-medium uppercase tracking-wider text-white/60 mb-1 flex items-center gap-2">
-          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : project.type === 'comfyui' ? 'COMFYUI' : project.type === 'civitai' ? 'CIVITAI' : 'TEXT'}
+          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : project.type === 'comfyui' ? 'COMFYUI' : project.type === 'civitai' ? (projectMediaType(project) === 'video' ? 'CIVITAI · VIDEO' : 'CIVITAI') : 'TEXT'}
         </div>
 
         {/* Title */}

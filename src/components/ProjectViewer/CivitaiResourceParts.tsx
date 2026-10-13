@@ -39,9 +39,11 @@ function ResourceThumb({ url, size = 'w-11 h-11' }: { url?: string; size?: strin
  * to search the catalog and pick a result. The resource is handed back once it
  * is the kind the caller takes.
  */
-export function CivitaiResourceLookup({ providerId, slot, placeholder, accept, onResolved }: {
+export function CivitaiResourceLookup({ providerId, slot, baseModels, placeholder, accept, onResolved }: {
   providerId?: string;
   slot: 'checkpoint' | 'lora';
+  /** Only search for models made for these base models. */
+  baseModels?: string[];
   placeholder: string;
   /** An error message when the resource does not belong here, otherwise null. */
   accept: (resource: CivitaiResource) => string | null;
@@ -81,7 +83,7 @@ export function CivitaiResourceLookup({ providerId, slot, placeholder, accept, o
     setIsBusy(true);
     setError(null);
     try {
-      const found = await searchCivitaiModels(providerId, query, slot);
+      const found = await searchCivitaiModels(providerId, query, slot, baseModels);
       if (id !== searchId.current) return;
       setResults(found);
       if (found.length === 0) setError(t('projectViewer.civitai.noSearchResults'));

@@ -100,6 +100,10 @@ export type CivitaiScheduler =
  * with — so it can be reproduced.
  */
 export interface CivitaiGenerationConfig {
+  /** What the project makes. Unset means images; it is fixed once a project has jobs or results. */
+  mediaType?: CivitaiMediaType;
+  /** Video projects: the engine and its settings. Image settings below stay as they were. */
+  video?: CivitaiVideoSettings;
   model?: CivitaiResource;
   /** LoRAs, LyCORIS, DoRAs and embeddings applied on top of the checkpoint. */
   resources?: CivitaiResource[];
@@ -116,6 +120,34 @@ export interface CivitaiGenerationConfig {
   allowMatureContent?: boolean;
   /** Image-to-image: how far the result may move away from the source image (0–1). */
   denoise?: number;
+}
+
+export type CivitaiMediaType = 'image' | 'video';
+
+/** The video models Civitai runs, by the version Civitai's own generator names them. */
+export type CivitaiVideoEngine = 'wan-2.1' | 'wan-2.2' | 'wan-2.2-5b' | 'wan-2.5' | 'wan-2.7' | 'wan-3.0' | 'hunyuan';
+
+/**
+ * A Civitai video project's settings. Which ones apply depends on the engine
+ * (see `CIVITAI_VIDEO_ENGINES`); the rest are kept but not sent. On a job,
+ * `width`/`height` are the frame size for engines that take one.
+ */
+export interface CivitaiVideoSettings {
+  engine?: CivitaiVideoEngine;
+  resolution?: string;
+  aspectRatio?: string;
+  /** Seconds. */
+  duration?: number;
+  cfgScale?: number;
+  steps?: number;
+  shift?: number;
+  interpolator?: 'none' | 'film' | 'rife';
+  /** Let the engine rewrite the prompt before generating. */
+  promptExpansion?: boolean;
+  /** Wan 3.0: the faster, pricier "prime" tier. */
+  usePrime?: boolean;
+  width?: number;
+  height?: number;
 }
 
 /** A ComfyUI workflow in API format: node id -> node. */
@@ -2220,6 +2252,8 @@ export interface AlbumItem {
   // Video-specific
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p'
+  /** Civitai projects: what the result was generated with, kept with it so it outlives its job. */
+  civitaiParams?: CivitaiGenerationConfig;
 }
 
 export interface TrashItem extends AlbumItem {

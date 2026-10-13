@@ -75,7 +75,7 @@ URL validation rejects unsafe endpoint forms, including attempts to direct provi
 
 The repository includes generation adapters and bundled profiles across Google AI, Vertex AI, OpenAI, Grok, Claude, Alibaba Cloud, Kimi, MiniMax, RunningHub, BytePlus, Kling AI, Black Forest Labs, and Replicate. Supported modalities differ by family and model; consult [Model Profiles](/concepts/models) rather than assuming every family supports text, image, video, and audio.
 
-A **Civitai** provider holds a Civitai API key and has no bundled models: it is used by [Civitai projects](/concepts/projects#civitai-projects), which choose their checkpoint and LoRAs from Civitai's catalog.
+A **Civitai** provider holds a Civitai API key and has no bundled models: it is used by [Civitai projects](/concepts/projects#civitai-projects), which choose their checkpoint and LoRAs from Civitai's catalog, or for video, one of Civitai's video engines.
 
 ## Credential Encryption
 
