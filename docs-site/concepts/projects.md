@@ -42,7 +42,9 @@ Up to two jobs per project are queued or running in ComfyUI at a time — one ge
 
 ## Civitai Projects
 
-A Civitai project generates images on [Civitai](https://civitai.com) with any checkpoint, LoRA or embedding from its catalog that Civitai can run. Generations are billed to your Civitai account in Buzz. Everything that varies — the checkpoint, the LoRAs, the prompt, the negative prompt and the source image — is a workflow item, so it combines and shuffles like any other workflow step.
+A Civitai project generates images on [Civitai](https://civitai.com) with any checkpoint, LoRA or embedding from its catalog that Civitai can run, or videos with Civitai's video engines (see [Civitai video](#civitai-video) below). Generations are billed to your Civitai account in Buzz. Everything that varies — the checkpoint, the LoRAs, the prompt, the negative prompt and the source image — is a workflow item, so it combines and shuffles like any other workflow step.
+
+**Images or videos.** Choose **Images** or **Videos** when you create the project. You can change it in the project's settings until the project has jobs or results; after that it is fixed, so the album holds only one kind. To make the other kind, create another Civitai project.
 
 **Account.** Add your Civitai API key as a provider of type **Civitai** (create the key on Civitai under **Account settings → API Keys**). The project's settings panel links there when you have none, and picks the account for you when you have only one. The provider's **Parallel Tasks** setting caps how many generations run on Civitai at once.
 
@@ -60,6 +62,27 @@ Options multiply like libraries do: a checkpoint item with 2 checkpoints, a LoRA
 **Image to image.** With a source image, the result keeps the image's shape at the area the size asks for — a 1200×600 photo with a 512×768 size renders at 888×440 — and the job records that size. The image is uploaded to Civitai's own storage before the generation is submitted, so it works even when your storage is not reachable from the internet.
 
 **Jobs.** Every drafted job keeps a copy of the checkpoint and LoRAs its combination picked, its negative prompt and the sampling settings, so later changes leave drafted jobs alone, and it records the seed it ran with; its expanded view lists all of it. **Reuse configuration** puts a job's workflow and settings back on the project, without its seed. Each job submits one text-to-image workflow to Civitai and is checked every 5 seconds until its image is ready; the image is then downloaded and stored like any other result. A failed generation fails the job with Civitai's reason, and retrying a job whose image was generated but could not be stored downloads it again instead of paying for a new one. Deleting a project cancels its running Civitai generations (Civitai refunds work that has not started).
+
+**Album.** Each result keeps a record of what it was made with — checkpoint or video engine, LoRAs and strengths, negative prompt, seed and settings — so it outlives the job. Click a result's prompt in the album to see it. **Reuse workflow** on a result whose job has been deleted still brings back its checkpoint, LoRAs and negative prompt as workflow items. Civitai results can be attached to posts and copied to libraries like any image or video project's.
+
+### Civitai video
+
+A video project uses one of the engines Civitai's own generator offers. The engine brings its own model, so a video project has no checkpoint item.
+
+| Engine | Resolutions | Length | LoRAs | Negative prompt | From images |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wan 2.2** (default) | 480p, 720p | 3 or 5 s | up to 2 | yes | start frame |
+| **Wan 2.1** | 480p, 720p | 3 or 5 s | up to 9 | no | start frame |
+| **Wan 2.2 5B** | 580p, 720p | set by the engine | up to 2 | yes | start frame |
+| **Wan 2.5** | 480p, 720p, 1080p | 5 or 10 s | no | yes | start frame |
+| **Wan 2.7** | 720p, 1080p | 2–15 s | no | yes | start and end frame |
+| **Wan 3.0** | 480p, 720p, 1080p | 2–30 s | no | yes | start and end frame |
+| **Hunyuan** | 480p | 3 or 5 s | up to 9 | no | text only |
+
+- **Settings** show only what the chosen engine takes: resolution, aspect ratio, length, and, depending on the engine, CFG, steps, shift, frame interpolation (Wan 2.2 5B), prompt expansion (Wan 2.7 and 3.0) and **Prime**, Wan 3.0's faster, pricier tier. The seed and **Allow mature content** work as for images.
+- **LoRAs** must be made for the engine's model (for example *Wan Video 2.2 T2V-A14B* or *I2V-A14B* for Wan 2.2). Searching from a LoRA item only finds those, and a LoRA made for another model shows a warning. Past the engine's limit, the first LoRAs are used; engines without LoRAs leave LoRA items out.
+- **Images** start the video: the first image is its first frame and, with Wan 2.7 and 3.0, a second image is its last. The video takes the engine's aspect ratio closest to the start frame. Hunyuan only makes videos from text.
+- **Results** are stored as mp4 files with a poster frame and play in the album like any video project's. Wan 2.2 renders at 12 fps and Civitai doubles that to 24 fps with frame interpolation, as its own generator does.
 
 ## Project Management
 

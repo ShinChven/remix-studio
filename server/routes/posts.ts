@@ -33,6 +33,7 @@ import {
   serializePostWatermarkSetting,
   type PostWatermarkConfig,
 } from '../utils/watermark';
+import { VISUAL_PROJECT_TYPES } from '../../src/lib/project-media';
 
 const CAMPAIGN_MEDIA_UPLOAD_LIMIT_BYTES = 500 * 1024 * 1024;
 const POST_AI_CONTEXT_IMAGE_MAX_DIMENSION = 1024;
@@ -767,7 +768,8 @@ export function createPostsRouter(
           userId,
           project: {
             userId,
-            type: { in: ['image', 'video'] },
+            // ComfyUI and Civitai projects make images or videos too.
+            type: { in: [...VISUAL_PROJECT_TYPES] },
           },
         },
         include: {
@@ -780,7 +782,7 @@ export function createPostsRouter(
       for (const item of items) {
         resolved.set(`album:${projectId}:${item.id}`, {
           source: { kind: 'album', projectId, itemId: item.id },
-          mediaType: item.project.type === 'video' ? 'video' : 'image',
+          mediaType: item.project.type === 'video' || item.format === 'mp4' ? 'video' : 'image',
           rawValue: item.imageUrl,
           thumbnailValue: item.thumbnailUrl,
           optimizedValue: item.optimizedUrl,

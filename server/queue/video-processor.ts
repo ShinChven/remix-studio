@@ -117,6 +117,7 @@ export class VideoProcessor {
         optimizedSize: optBuffer.length,
         thumbnailSize: thumbBuffer.length,
         createdAt: Date.now(),
+        ...(job.civitaiParams ? { civitaiParams: job.civitaiParams } : {}),
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
 

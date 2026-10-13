@@ -1,4 +1,13 @@
-import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiScheduler, WorkflowItem } from '../types';
+import type {
+  CivitaiBinding,
+  CivitaiGenerationConfig,
+  CivitaiResource,
+  CivitaiScheduler,
+  CivitaiVideoEngine,
+  CivitaiVideoSettings,
+  Job,
+  WorkflowItem,
+} from '../types';
 
 /**
  * Helpers for Civitai projects, shared by the project viewer (to edit the
@@ -65,6 +74,162 @@ export const CIVITAI_LIMITS = {
 
 export function civitaiSchedulerLabel(value: string | undefined): string {
   return CIVITAI_SCHEDULERS.find((s) => s.value === value)?.label || value || '';
+}
+
+type Range = { min: number; max: number };
+
+/**
+ * A Civitai video engine as Civitai's own generator offers it: which inputs it
+ * takes and the choices for each. Mirrors the Wan and Hunyuan forms and
+ * handlers in Civitai's source (`wan.graph.ts`, `wan.handler.ts`,
+ * `hunyuan.graph.ts`, `hunyuan.handler.ts`).
+ */
+export interface CivitaiVideoEngineSpec {
+  value: CivitaiVideoEngine;
+  label: string;
+  /** How many LoRAs a job may layer on it; 0 for engines that take none. */
+  loras: number;
+  /** Civitai base models whose LoRAs are made for it. */
+  baseModels: string[];
+  negativePrompt: boolean;
+  textToVideo: boolean;
+  /** Starts from the workflow's first image. */
+  imageToVideo: boolean;
+  /** Also takes the second image as the last frame. */
+  endFrame: boolean;
+  resolutions: string[];
+  /** Text-to-video shapes; image-to-video takes the closest one to the image, or the image's own. */
+  aspectRatios: string[];
+  /** Sent as a frame size in pixels rather than as a resolution and ratio. */
+  frameSize: boolean;
+  /** Fixed lengths to choose from, or a range; neither means the engine picks. */
+  durations?: number[];
+  durationRange?: Range;
+  cfg?: Range & { step: number; default: number };
+  steps?: Range & { default: number };
+  shift?: Range & { default: number };
+  interpolator?: boolean;
+  promptExpansion?: boolean;
+  usePrime?: boolean;
+  defaults: { resolution: string; aspectRatio: string; duration?: number };
+}
+
+const WAN_CFG = { min: 1, max: 10, step: 0.5, default: 3.5 };
+const WAN_SHIFT = { min: 1, max: 20, default: 8 };
+/** Civitai's per-job resource cap for its top membership tier. */
+const VIDEO_MAX_LORAS = 9;
+
+export const CIVITAI_VIDEO_ENGINES: CivitaiVideoEngineSpec[] = [
+  {
+    value: 'wan-2.2', label: 'Wan 2.2', loras: 2,
+    baseModels: ['Wan Video 2.2 T2V-A14B', 'Wan Video 2.2 I2V-A14B'],
+    negativePrompt: true, textToVideo: true, imageToVideo: true, endFrame: false,
+    resolutions: ['480p', '720p'], aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '5:4', '4:5'], frameSize: true,
+    durations: [3, 5], cfg: WAN_CFG, shift: WAN_SHIFT,
+    defaults: { resolution: '480p', aspectRatio: '1:1', duration: 5 },
+  },
+  {
+    value: 'wan-2.1', label: 'Wan 2.1', loras: VIDEO_MAX_LORAS,
+    baseModels: ['Wan Video 14B t2v', 'Wan Video 14B i2v 480p', 'Wan Video 14B i2v 720p'],
+    negativePrompt: false, textToVideo: true, imageToVideo: true, endFrame: false,
+    resolutions: ['480p', '720p'], aspectRatios: ['16:9', '3:2', '1:1', '2:3', '9:16'], frameSize: true,
+    durations: [3, 5], cfg: WAN_CFG,
+    defaults: { resolution: '480p', aspectRatio: '1:1', duration: 5 },
+  },
+  {
+    value: 'wan-2.2-5b', label: 'Wan 2.2 5B', loras: 2,
+    baseModels: ['Wan Video 2.2 TI2V-5B'],
+    negativePrompt: true, textToVideo: true, imageToVideo: true, endFrame: false,
+    resolutions: ['580p', '720p'], aspectRatios: ['16:9', '1:1', '9:16'], frameSize: false,
+    cfg: WAN_CFG, steps: { min: 20, max: 60, default: 40 }, shift: WAN_SHIFT, interpolator: true,
+    defaults: { resolution: '580p', aspectRatio: '1:1' },
+  },
+  {
+    value: 'wan-2.5', label: 'Wan 2.5', loras: 0, baseModels: [],
+    negativePrompt: true, textToVideo: true, imageToVideo: true, endFrame: false,
+    resolutions: ['480p', '720p', '1080p'], aspectRatios: ['16:9', '1:1', '9:16'], frameSize: false,
+    durations: [5, 10], cfg: WAN_CFG,
+    defaults: { resolution: '480p', aspectRatio: '1:1', duration: 5 },
+  },
+  {
+    value: 'wan-2.7', label: 'Wan 2.7', loras: 0, baseModels: [],
+    negativePrompt: true, textToVideo: true, imageToVideo: true, endFrame: true,
+    resolutions: ['720p', '1080p'], aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16'], frameSize: false,
+    durationRange: { min: 2, max: 15 }, promptExpansion: true,
+    defaults: { resolution: '720p', aspectRatio: '16:9', duration: 5 },
+  },
+  {
+    value: 'wan-3.0', label: 'Wan 3.0', loras: 0, baseModels: [],
+    negativePrompt: true, textToVideo: true, imageToVideo: true, endFrame: true,
+    resolutions: ['480p', '720p', '1080p'], aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16'], frameSize: false,
+    durationRange: { min: 2, max: 30 }, promptExpansion: true, usePrime: true,
+    defaults: { resolution: '720p', aspectRatio: '16:9', duration: 5 },
+  },
+  {
+    value: 'hunyuan', label: 'Hunyuan', loras: VIDEO_MAX_LORAS,
+    baseModels: ['Hunyuan Video'],
+    negativePrompt: false, textToVideo: true, imageToVideo: false, endFrame: false,
+    resolutions: ['480p'], aspectRatios: ['16:9', '3:2', '1:1', '2:3', '9:16'], frameSize: true,
+    durations: [3, 5], cfg: { min: 1, max: 10, step: 0.5, default: 6 }, steps: { min: 10, max: 30, default: 20 },
+    defaults: { resolution: '480p', aspectRatio: '1:1', duration: 5 },
+  },
+];
+
+export const CIVITAI_DEFAULT_VIDEO_ENGINE: CivitaiVideoEngine = 'wan-2.2';
+
+export function civitaiVideoEngine(value: string | undefined): CivitaiVideoEngineSpec {
+  return CIVITAI_VIDEO_ENGINES.find((engine) => engine.value === value)
+    || CIVITAI_VIDEO_ENGINES.find((engine) => engine.value === CIVITAI_DEFAULT_VIDEO_ENGINE)!;
+}
+
+/** A video engine's name, or undefined when the value is not one. */
+export function civitaiVideoEngineLabel(value: string | undefined): string | undefined {
+  return CIVITAI_VIDEO_ENGINES.find((engine) => engine.value === value)?.label;
+}
+
+/** Frame sizes per resolution tier and ratio, as Civitai's generator sizes them. */
+const VIDEO_FRAME_SIZES: Record<string, Record<string, { width: number; height: number }>> = {
+  '480p': {
+    '16:9': { width: 848, height: 480 }, '3:2': { width: 720, height: 480 }, '5:4': { width: 608, height: 480 },
+    '4:3': { width: 640, height: 480 }, '1:1': { width: 480, height: 480 }, '3:4': { width: 480, height: 640 },
+    '4:5': { width: 384, height: 480 }, '2:3': { width: 480, height: 720 }, '9:16': { width: 480, height: 848 },
+  },
+  '720p': {
+    '16:9': { width: 1280, height: 720 }, '3:2': { width: 1080, height: 720 }, '5:4': { width: 912, height: 720 },
+    '4:3': { width: 960, height: 720 }, '1:1': { width: 720, height: 720 }, '3:4': { width: 720, height: 960 },
+    '4:5': { width: 576, height: 720 }, '2:3': { width: 720, height: 1080 }, '9:16': { width: 720, height: 1280 },
+  },
+};
+
+/** The frame size an engine that takes one renders a resolution and ratio at. */
+export function civitaiVideoFrameSize(resolution: string, aspectRatio: string): { width: number; height: number } | undefined {
+  return VIDEO_FRAME_SIZES[resolution]?.[aspectRatio];
+}
+
+function ratioValue(aspectRatio: string): number {
+  const [w, h] = aspectRatio.split(':').map(Number);
+  return w && h ? w / h : 1;
+}
+
+/** Of the given ratios, the one closest to an image's shape. */
+export function closestCivitaiAspectRatio(source: { width: number; height: number }, ratios: string[]): string {
+  const target = Math.log(source.width / source.height);
+  let best = ratios[0];
+  for (const ratio of ratios) {
+    if (Math.abs(Math.log(ratioValue(ratio)) - target) < Math.abs(Math.log(ratioValue(best)) - target)) best = ratio;
+  }
+  return best;
+}
+
+/** Whether a LoRA was made for a video engine, when its base model is known. */
+export function civitaiResourceFitsEngine(resource: CivitaiResource, engine: CivitaiVideoEngineSpec): boolean | undefined {
+  if (!resource.baseModel) return undefined;
+  return engine.baseModels.some((base) => base.toLowerCase() === resource.baseModel!.toLowerCase());
+}
+
+/** Whether a config makes videos. */
+export function isCivitaiVideo(config: CivitaiGenerationConfig | undefined): boolean {
+  return config?.mediaType === 'video';
 }
 
 export interface CivitaiAir {
@@ -197,6 +362,7 @@ export interface CivitaiPicks {
  */
 export function resolveCivitaiParams(config: CivitaiGenerationConfig | undefined, picks?: CivitaiPicks): CivitaiGenerationConfig {
   const base = config || {};
+  if (isCivitaiVideo(base)) return resolveCivitaiVideoParams(base, picks);
   const model = picks ? picks.model : base.model;
   const resources = picks ? picks.resources : base.resources;
   const negativePrompt = picks ? picks.negativePrompt : base.negativePrompt;
@@ -218,6 +384,61 @@ export function resolveCivitaiParams(config: CivitaiGenerationConfig | undefined
     denoise: base.denoise ?? CIVITAI_DEFAULTS.denoise,
   };
 }
+
+/**
+ * A video engine's settings with every unset or no-longer-offered choice
+ * replaced by the engine's default, and for engines that take one, the frame
+ * size those choices come to.
+ */
+export function resolveCivitaiVideoSettings(video: CivitaiVideoSettings | undefined): CivitaiVideoSettings {
+  const engine = civitaiVideoEngine(video?.engine);
+  const value = video || {};
+  const resolution = value.resolution && engine.resolutions.includes(value.resolution) ? value.resolution : engine.defaults.resolution;
+  const aspectRatio = value.aspectRatio && engine.aspectRatios.includes(value.aspectRatio) ? value.aspectRatio : engine.defaults.aspectRatio;
+  const settings: CivitaiVideoSettings = { engine: engine.value, resolution, aspectRatio };
+  if (engine.durations) {
+    settings.duration = value.duration !== undefined && engine.durations.includes(value.duration) ? value.duration : engine.defaults.duration;
+  } else if (engine.durationRange) {
+    settings.duration = value.duration !== undefined ? clamp(Math.round(value.duration), engine.durationRange) : engine.defaults.duration;
+  }
+  if (engine.cfg) settings.cfgScale = value.cfgScale !== undefined ? clamp(value.cfgScale, engine.cfg) : engine.cfg.default;
+  if (engine.steps) settings.steps = value.steps !== undefined ? clamp(Math.round(value.steps), engine.steps) : engine.steps.default;
+  if (engine.shift) settings.shift = value.shift !== undefined ? clamp(value.shift, engine.shift) : engine.shift.default;
+  if (engine.interpolator) settings.interpolator = value.interpolator || 'none';
+  if (engine.promptExpansion) settings.promptExpansion = !!value.promptExpansion;
+  if (engine.usePrime) settings.usePrime = !!value.usePrime;
+  if (engine.frameSize) Object.assign(settings, civitaiVideoFrameSize(resolution, aspectRatio));
+  return settings;
+}
+
+/**
+ * A video job's settings: the engine's, the LoRAs and negative prompt its
+ * combination picked when the engine takes them, and the shared seed and
+ * mature-content choice. LoRAs past the engine's limit are left out, as are
+ * embeddings, which only image checkpoints use.
+ */
+function resolveCivitaiVideoParams(base: CivitaiGenerationConfig, picks?: CivitaiPicks): CivitaiGenerationConfig {
+  const engine = civitaiVideoEngine(base.video?.engine);
+  const resources = (picks ? picks.resources : base.resources) || [];
+  const negativePrompt = picks ? picks.negativePrompt : base.negativePrompt;
+  const loras = engine.loras > 0
+    ? resources.filter((resource) => !isCivitaiEmbedding(resource)).slice(0, engine.loras)
+    : [];
+  return {
+    mediaType: 'video',
+    video: resolveCivitaiVideoSettings(base.video),
+    resources: loras.map((resource) => ({ ...resource, strength: resource.strength ?? CIVITAI_DEFAULTS.strength })),
+    ...(engine.negativePrompt && negativePrompt?.trim() ? { negativePrompt: negativePrompt.trim() } : {}),
+    ...(base.seed !== undefined ? { seed: Math.min(base.seed, CIVITAI_MAX_ROLLED_SEED) } : {}),
+    allowMatureContent: !!base.allowMatureContent,
+  };
+}
+
+/**
+ * The largest seed a job rolls for itself. Some Civitai engines read the seed
+ * as a signed 32-bit number, so Civitai's own generator stays below 2^31.
+ */
+export const CIVITAI_MAX_ROLLED_SEED = 2 ** 31 - 1;
 
 /**
  * Image-to-image output size: the source image's shape at the area the job's
@@ -288,6 +509,10 @@ export function sanitizeCivitaiConfig(raw: unknown): CivitaiGenerationConfig | u
   const value = raw as Record<string, unknown>;
   const config: CivitaiGenerationConfig = {};
 
+  if (value.mediaType === 'video' || value.mediaType === 'image') config.mediaType = value.mediaType;
+  const video = sanitizeVideoSettings(value.video);
+  if (video) config.video = video;
+
   const model = sanitizeResource(value.model, false);
   if (model) config.model = model;
 
@@ -328,6 +553,39 @@ export function sanitizeCivitaiConfig(raw: unknown): CivitaiGenerationConfig | u
   if (denoise !== undefined) config.denoise = Math.round(denoise * 100) / 100;
 
   return config;
+}
+
+/**
+ * Keep a video settings object's well-formed parts. A choice the engine does
+ * not offer is dropped, so the engine's default takes its place.
+ */
+function sanitizeVideoSettings(raw: unknown): CivitaiVideoSettings | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const value = raw as Record<string, unknown>;
+  const known = CIVITAI_VIDEO_ENGINES.find((engine) => engine.value === value.engine);
+  const engine = known || civitaiVideoEngine(undefined);
+  const settings: CivitaiVideoSettings = {};
+  if (known) settings.engine = known.value;
+  if (typeof value.resolution === 'string' && engine.resolutions.includes(value.resolution)) settings.resolution = value.resolution;
+  if (typeof value.aspectRatio === 'string' && engine.aspectRatios.includes(value.aspectRatio)) settings.aspectRatio = value.aspectRatio;
+  const duration = readNumber(value.duration, { min: 1, max: 60 }, true);
+  if (duration !== undefined) settings.duration = duration;
+  const cfgScale = readNumber(value.cfgScale, { min: 1, max: 30 });
+  if (cfgScale !== undefined) settings.cfgScale = Math.round(cfgScale * 10) / 10;
+  const steps = readNumber(value.steps, CIVITAI_LIMITS.steps, true);
+  if (steps !== undefined) settings.steps = steps;
+  const shift = readNumber(value.shift, { min: 1, max: 20 });
+  if (shift !== undefined) settings.shift = Math.round(shift * 10) / 10;
+  if (value.interpolator === 'none' || value.interpolator === 'film' || value.interpolator === 'rife') settings.interpolator = value.interpolator;
+  if (typeof value.promptExpansion === 'boolean') settings.promptExpansion = value.promptExpansion;
+  if (typeof value.usePrime === 'boolean') settings.usePrime = value.usePrime;
+  const width = readNumber(value.width, CIVITAI_LIMITS.size, true);
+  const height = readNumber(value.height, CIVITAI_LIMITS.size, true);
+  if (width !== undefined && height !== undefined) {
+    settings.width = width;
+    settings.height = height;
+  }
+  return Object.keys(settings).length > 0 ? settings : undefined;
 }
 
 function sameOption(a: CivitaiResource, b: CivitaiResource): boolean {
@@ -381,10 +639,80 @@ export function civitaiModelItems(workflow: WorkflowItem[], slot?: 'checkpoint' 
 export function summarizeCivitaiParams(params: CivitaiGenerationConfig | undefined): string[] {
   if (!params) return [];
   const parts: string[] = [];
+  if (isCivitaiVideo(params)) {
+    const video = params.video || {};
+    if (video.width && video.height) parts.push(`${video.width}×${video.height}`);
+    else if (video.resolution) parts.push([video.resolution, video.aspectRatio].filter(Boolean).join(' '));
+    if (video.duration !== undefined) parts.push(`${video.duration}s`);
+    if (video.cfgScale !== undefined) parts.push(`CFG=${video.cfgScale}`);
+    if (params.seed !== undefined) parts.push(`#${params.seed}`);
+    return parts;
+  }
   if (params.width && params.height) parts.push(`${params.width}×${params.height}`);
   if (params.steps !== undefined) parts.push(`S=${params.steps}`);
   if (params.cfgScale !== undefined) parts.push(`CFG=${params.cfgScale}`);
   if (params.scheduler) parts.push(civitaiSchedulerLabel(params.scheduler));
   if (params.seed !== undefined) parts.push(`#${params.seed}`);
   return parts;
+}
+
+/**
+ * The id a Civitai job and its result keep as their model: the checkpoint's
+ * AIR for an image, the engine for a video.
+ */
+export function civitaiJobModelId(params: CivitaiGenerationConfig | undefined): string | undefined {
+  if (!params) return undefined;
+  return isCivitaiVideo(params) ? civitaiVideoEngine(params.video?.engine).value : params.model?.air;
+}
+
+/** What a job ran with, for a list: its checkpoint, or its video engine. */
+export function civitaiParamsModelLabel(params: CivitaiGenerationConfig | undefined): string | undefined {
+  if (!params) return undefined;
+  if (isCivitaiVideo(params)) return civitaiVideoEngine(params.video?.engine).label;
+  return params.model ? civitaiResourceLabel(params.model) : undefined;
+}
+
+/**
+ * Workflow items that bring back what a result was generated with — its
+ * checkpoint, each LoRA in a slot of its own so all of them apply, and the
+ * negative prompt — for reusing a result whose job is gone.
+ */
+export function civitaiWorkflowItemsFromParams(params: CivitaiGenerationConfig | undefined): Array<Pick<WorkflowItem, 'type' | 'value' | 'civitai'>> {
+  if (!params) return [];
+  const items: Array<Pick<WorkflowItem, 'type' | 'value' | 'civitai'>> = [];
+  if (params.model && !isCivitaiVideo(params)) {
+    items.push({ type: 'model', value: civitaiModelItemValue([params.model]), civitai: { slot: 'checkpoint', options: [params.model] } });
+  }
+  for (const resource of params.resources || []) {
+    items.push({ type: 'model', value: civitaiModelItemValue([resource]), civitai: { slot: 'lora', options: [resource] } });
+  }
+  if (params.negativePrompt) {
+    items.push({ type: 'text', value: params.negativePrompt, civitai: { slot: 'negative' } });
+  }
+  return items;
+}
+
+/**
+ * A Civitai draft's settings from one workflow combination, the same from the
+ * project viewer and from MCP: the resolved parameters, the source images (an
+ * image starts from the first; a video from the first, and ends on the second
+ * with an engine that takes a last frame), and the job fields lists show.
+ */
+export function civitaiDraftFields(
+  config: CivitaiGenerationConfig | undefined,
+  combo: { imageContexts?: string[]; civitai?: CivitaiPicks },
+  imageFormat?: string,
+): Pick<Job, 'imageContexts' | 'modelConfigId' | 'aspectRatio' | 'resolution' | 'duration' | 'format' | 'civitaiParams'> {
+  const params = resolveCivitaiParams(config, combo.civitai || {});
+  const video = isCivitaiVideo(params);
+  const engine = civitaiVideoEngine(params.video?.engine);
+  const sources = (combo.imageContexts || []).slice(0, video && engine.endFrame ? 2 : 1);
+  return {
+    imageContexts: sources.length > 0 ? sources : undefined,
+    modelConfigId: civitaiJobModelId(params),
+    aspectRatio: video ? params.video?.aspectRatio : `${params.width}x${params.height}`,
+    ...(video ? { resolution: params.video?.resolution, duration: params.video?.duration } : {}),
+    format: video ? 'mp4' : imageFormat === 'jpeg' || imageFormat === 'webp' ? imageFormat : 'png',
+    civitaiParams: params,
+  };
 }

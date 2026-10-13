@@ -1,21 +1,26 @@
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertCircle, ChevronDown, Dices, Layers, Loader2, Plus, Shuffle } from 'lucide-react';
-import type { CivitaiGenerationConfig, Library, Project, Provider, WorkflowItem } from '../../types';
+import { AlertCircle, ChevronDown, Dices, Film, Image as ImageIcon, Layers, Loader2, Lock, Plus, Shuffle } from 'lucide-react';
+import type { CivitaiGenerationConfig, CivitaiMediaType, Library, Project, Provider, WorkflowItem } from '../../types';
 import {
   CIVITAI_DEFAULTS,
   CIVITAI_LIMITS,
+  CIVITAI_MAX_ROLLED_SEED,
   CIVITAI_SCHEDULERS,
   civitaiModelItems,
   civitaiModelItemValue,
   civitaiResourceLabel,
   civitaiSchedulerLabel,
   civitaiSizePresets,
+  civitaiVideoEngine,
+  isCivitaiVideo,
+  resolveCivitaiVideoSettings,
   snapCivitaiSize,
 } from '../../lib/civitai';
 import { NumberInput } from '../NumberInput';
 import { civitaiChipBaseClass, civitaiChipClass, civitaiFieldClass, civitaiNumberClass } from './CivitaiResourceParts';
+import { CivitaiToggleRow, CivitaiVideoSettings } from './CivitaiVideoSettings';
 
 const sectionLabelClass = 'text-[9px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-500 block px-1';
 
@@ -33,6 +38,51 @@ function NumberRow({ label, value, onChange, min, max, step, integer }: {
       <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">{label}</span>
       <NumberInput value={value} onValueChange={onChange} min={min} max={max} step={step} integer={integer} className={`${civitaiNumberClass} !w-24 !py-1.5`} />
     </label>
+  );
+}
+
+/** Random per job, or one fixed seed every job uses. */
+function SeedRow({ seed, onChange, roll, max }: {
+  seed: number | undefined;
+  onChange: (seed: number | undefined) => void;
+  roll: () => number;
+  max: number;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">{t('projectViewer.civitai.seed')}</span>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          className={civitaiChipClass(seed === undefined)}
+          onClick={() => onChange(undefined)}
+          title={t('projectViewer.civitai.randomSeedHint')}
+        >
+          {t('projectViewer.civitai.randomSeed')}
+        </button>
+        {seed !== undefined ? (
+          <NumberInput
+            value={seed}
+            onValueChange={onChange}
+            min={CIVITAI_LIMITS.seed.min}
+            max={max}
+            integer
+            aria-label={t('projectViewer.civitai.seed')}
+            className={`${civitaiNumberClass} !w-28 !py-1`}
+          />
+        ) : (
+          <button
+            type="button"
+            className={`flex items-center gap-1 ${civitaiChipClass(false)}`}
+            onClick={() => onChange(roll())}
+            title={t('projectViewer.civitai.fixSeedHint')}
+          >
+            <Dices className="w-3 h-3" /> {t('projectViewer.civitai.fixedSeed')}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -71,6 +121,8 @@ interface CivitaiSettingsPanelProps {
    * replace the real workflow with an empty one.
    */
   isWorkflowLoaded: boolean;
+  /** Whether the project has jobs or results, which fixes whether it makes images or videos. */
+  hasHistory: boolean;
   providers: Provider[];
   libraries: Library[];
   onSaveProject: (project: Project) => void;
@@ -88,13 +140,15 @@ interface CivitaiSettingsPanelProps {
 
 /**
  * The settings of a Civitai project: which Civitai account pays for the
- * generations, and the sampling parameters every job shares. The checkpoint,
- * LoRAs, prompt, negative prompt and source image are workflow items, so they
- * combine and shuffle like any other workflow step.
+ * generations, whether it makes images or videos, and the parameters every
+ * job shares — an image project's sampling, a video project's engine and its
+ * choices. The checkpoint, LoRAs, prompt, negative prompt and source images
+ * are workflow items, so they combine and shuffle like any other workflow step.
  */
 export function CivitaiSettingsPanel({
   localProject,
   isWorkflowLoaded,
+  hasHistory,
   providers,
   libraries,
   onSaveProject,
@@ -118,9 +172,14 @@ export function CivitaiSettingsPanel({
   const checkpoints = checkpointItems.flatMap((item) => item.civitai?.options || []);
   const loraCount = civitaiModelItems(workflow, 'lora').filter((item) => !item.disabled && item.civitai?.options?.length).length;
   const imageItems = workflow.filter((item) => !item.disabled && item.type === 'image');
-  const hasSourceImage = imageItems.length > 0 || workflow.some((item) => (
+  const imageLibraryCount = workflow.filter((item) => (
     !item.disabled && item.type === 'library' && libraries.find((library) => library.id === item.value)?.type === 'image'
-  ));
+  )).length;
+  const hasSourceImage = imageItems.length > 0 || imageLibraryCount > 0;
+  const isVideo = isCivitaiVideo(config);
+  const engine = civitaiVideoEngine(config.video?.engine);
+  const videoSettings = resolveCivitaiVideoSettings(config.video);
+  const hasNegative = workflow.some((item) => !item.disabled && item.civitai?.slot === 'negative');
   // Defaults follow the first checkpoint; each job's own checkpoint decides its default size.
   const presets = civitaiSizePresets(checkpoints[0]);
   const portrait = presets.find((preset) => preset.key === 'portrait')!;
@@ -143,7 +202,7 @@ export function CivitaiSettingsPanel({
     settledRef.current = true;
     const migrated = migrateLegacyConfig(localProject);
     const hasCheckpoint = checkpoints.length > 0 || !!localProject.civitaiConfig?.model;
-    if (!localProject.providerId || !hasCheckpoint) setIsSettingsCollapsed(false);
+    if (!localProject.providerId || (!hasCheckpoint && !isCivitaiVideo(localProject.civitaiConfig))) setIsSettingsCollapsed(false);
     if (migrated) onSaveProject(migrated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWorkflowLoaded]);
@@ -160,19 +219,35 @@ export function CivitaiSettingsPanel({
     onSaveProject({ ...localProject, civitaiConfig: { ...config, ...patch } });
   };
 
-  const isReady = Boolean(account && checkpoints.length > 0);
+  // A video engine brings its own model; an image needs a checkpoint, and an
+  // engine that only takes text cannot start from the workflow's images.
+  const textOnlyWithImages = isVideo && hasSourceImage && !engine.imageToVideo;
+  const isReady = Boolean(account && (isVideo ? !textOnlyWithImages : checkpoints.length > 0));
   const notice = workflowError
     ? { tone: 'error' as const, text: workflowError }
     : !account
       ? { tone: 'warn' as const, text: t('projectViewer.civitai.chooseAccountFirst') }
-      : checkpoints.length === 0
-        ? { tone: 'warn' as const, text: t('projectViewer.civitai.chooseCheckpointFirst') }
-        : null;
-  const checkpointSummary = checkpoints.length === 0
-    ? t('projectViewer.civitai.noCheckpoint')
-    : checkpoints.length === 1
-      ? civitaiResourceLabel(checkpoints[0])
-      : t('projectViewer.civitai.checkpointsCount', { count: checkpoints.length });
+      : textOnlyWithImages
+        ? { tone: 'warn' as const, text: t('projectViewer.civitai.video.textOnlyHint', { engine: engine.label }) }
+        : !isVideo && checkpoints.length === 0
+          ? { tone: 'warn' as const, text: t('projectViewer.civitai.chooseCheckpointFirst') }
+          : null;
+  const checkpointSummary = isVideo
+    ? engine.label
+    : checkpoints.length === 0
+      ? t('projectViewer.civitai.noCheckpoint')
+      : checkpoints.length === 1
+        ? civitaiResourceLabel(checkpoints[0])
+        : t('projectViewer.civitai.checkpointsCount', { count: checkpoints.length });
+  const setMediaType = (mediaType: CivitaiMediaType) => {
+    if (hasHistory || mediaType === (config.mediaType || 'image')) return;
+    onSaveProject({
+      ...localProject,
+      civitaiConfig: { ...config, mediaType },
+      format: mediaType === 'video' ? 'mp4' : 'png',
+    });
+  };
+  const randomSeed = () => Math.floor(Math.random() * CIVITAI_MAX_ROLLED_SEED);
 
   return (
     <div className="shrink overflow-hidden flex flex-col p-4 border-t border-neutral-200/50 dark:border-white/5 bg-white/60 dark:bg-black/60 backdrop-blur-2xl shadow-[0_-12px_48px_rgba(0,0,0,0.2)] min-h-0">
@@ -192,11 +267,21 @@ export function CivitaiSettingsPanel({
           </div>
         </div>
         <div className="w-full flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-200/50 dark:border-neutral-800/50">
-          <span className={civitaiChipBaseClass}>{width}×{height}</span>
-          <span className={civitaiChipBaseClass}>S={steps}</span>
-          <span className={civitaiChipBaseClass}>CFG={cfgScale}</span>
-          <span className={civitaiChipBaseClass}>{civitaiSchedulerLabel(scheduler)}</span>
-          {hasSourceImage && <span className={civitaiChipBaseClass}>D={denoise}</span>}
+          {isVideo ? (
+            <>
+              <span className={`${civitaiChipBaseClass} flex items-center gap-1`}><Film className="w-2.5 h-2.5" />{videoSettings.resolution} {hasSourceImage && engine.imageToVideo ? '' : videoSettings.aspectRatio}</span>
+              {videoSettings.duration !== undefined && <span className={civitaiChipBaseClass}>{videoSettings.duration}s</span>}
+              {videoSettings.cfgScale !== undefined && <span className={civitaiChipBaseClass}>CFG={videoSettings.cfgScale}</span>}
+            </>
+          ) : (
+            <>
+              <span className={civitaiChipBaseClass}>{width}×{height}</span>
+              <span className={civitaiChipBaseClass}>S={steps}</span>
+              <span className={civitaiChipBaseClass}>CFG={cfgScale}</span>
+              <span className={civitaiChipBaseClass}>{civitaiSchedulerLabel(scheduler)}</span>
+              {hasSourceImage && <span className={civitaiChipBaseClass}>D={denoise}</span>}
+            </>
+          )}
           {loraCount > 0 && (
             <span className="text-[9px] font-bold text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/30 uppercase tracking-widest flex items-center gap-1">
               <Layers className="w-2.5 h-2.5" /> +{loraCount}
@@ -236,8 +321,48 @@ export function CivitaiSettingsPanel({
                 ))}
               </select>
             )}
-            <p className="px-1 text-[10px] leading-4 text-neutral-500">{t('projectViewer.civitai.workflowHint')}</p>
+            <p className="px-1 text-[10px] leading-4 text-neutral-500">{t(isVideo ? 'projectViewer.civitai.video.workflowHint' : 'projectViewer.civitai.workflowHint')}</p>
           </div>
+
+          <div className="space-y-1.5">
+            <span className={sectionLabelClass}>{t('projectViewer.civitai.makes')}</span>
+            <div className="flex gap-1.5">
+              {(['image', 'video'] as const).map((mediaType) => {
+                const active = (config.mediaType || 'image') === mediaType;
+                const Icon = mediaType === 'video' ? Film : ImageIcon;
+                return (
+                  <button
+                    key={mediaType}
+                    type="button"
+                    className={`flex items-center gap-1.5 ${civitaiChipClass(active)} ${hasHistory && !active ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    onClick={() => setMediaType(mediaType)}
+                    disabled={hasHistory && !active}
+                    aria-pressed={active}
+                  >
+                    <Icon className="w-3 h-3" /> {t(mediaType === 'video' ? 'projectViewer.civitai.videos' : 'projectViewer.civitai.images')}
+                  </button>
+                );
+              })}
+            </div>
+            {hasHistory && (
+              <p className="flex gap-1.5 px-1 text-[10px] leading-4 text-neutral-500">
+                <Lock className="w-3 h-3 mt-0.5 shrink-0" />
+                <span>{t('projectViewer.civitai.mediaTypeLocked')}</span>
+              </p>
+            )}
+          </div>
+
+          {isVideo && (
+            <CivitaiVideoSettings
+              video={config.video}
+              onChange={(video) => updateConfig({ video })}
+              imageCount={imageItems.length + imageLibraryCount}
+              loraCount={loraCount}
+              hasNegative={hasNegative}
+            />
+          )}
+
+          {!isVideo && (<>
 
           <div className="space-y-2">
             <span className={sectionLabelClass}>{t('projectViewer.civitai.size')}</span>
@@ -297,38 +422,7 @@ export function CivitaiSettingsPanel({
             <NumberRow label={t('projectViewer.civitai.steps')} value={steps} onChange={(value) => updateConfig({ steps: value })} {...CIVITAI_LIMITS.steps} integer />
             <NumberRow label={t('projectViewer.civitai.cfgScale')} value={cfgScale} onChange={(value) => updateConfig({ cfgScale: value })} {...CIVITAI_LIMITS.cfgScale} step={0.5} />
             <NumberRow label={t('projectViewer.civitai.clipSkip')} value={clipSkip} onChange={(value) => updateConfig({ clipSkip: value })} {...CIVITAI_LIMITS.clipSkip} integer />
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">{t('projectViewer.civitai.seed')}</span>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  className={civitaiChipClass(config.seed === undefined)}
-                  onClick={() => updateConfig({ seed: undefined })}
-                  title={t('projectViewer.civitai.randomSeedHint')}
-                >
-                  {t('projectViewer.civitai.randomSeed')}
-                </button>
-                {config.seed !== undefined ? (
-                  <NumberInput
-                    value={config.seed}
-                    onValueChange={(seed) => updateConfig({ seed })}
-                    {...CIVITAI_LIMITS.seed}
-                    integer
-                    aria-label={t('projectViewer.civitai.seed')}
-                    className={`${civitaiNumberClass} !w-28 !py-1`}
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    className={`flex items-center gap-1 ${civitaiChipClass(false)}`}
-                    onClick={() => updateConfig({ seed: Math.floor(Math.random() * 2 ** 32) })}
-                    title={t('projectViewer.civitai.fixSeedHint')}
-                  >
-                    <Dices className="w-3 h-3" /> {t('projectViewer.civitai.fixedSeed')}
-                  </button>
-                )}
-              </div>
-            </div>
+            <SeedRow seed={config.seed} onChange={(seed) => updateConfig({ seed })} roll={randomSeed} max={CIVITAI_LIMITS.seed.max} />
           </div>
 
           <div className="space-y-2">
@@ -361,32 +455,29 @@ export function CivitaiSettingsPanel({
             </p>
           </div>
 
+          </>)}
+
           <div className="space-y-2.5">
             <span className={sectionLabelClass}>{t('projectViewer.civitai.output')}</span>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">{t('projectViewer.civitai.format')}</span>
-              <div className="flex gap-1.5">
-                {(['png', 'jpeg', 'webp'] as const).map((option) => (
-                  <button key={option} type="button" className={civitaiChipClass(format === option)} onClick={() => onSaveProject({ ...localProject, format: option })}>
-                    {option}
-                  </button>
-                ))}
+            {!isVideo && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">{t('projectViewer.civitai.format')}</span>
+                <div className="flex gap-1.5">
+                  {(['png', 'jpeg', 'webp'] as const).map((option) => (
+                    <button key={option} type="button" className={civitaiChipClass(format === option)} onClick={() => onSaveProject({ ...localProject, format: option })}>
+                      {option}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => updateConfig({ allowMatureContent: !config.allowMatureContent || undefined })}
-              aria-pressed={!!config.allowMatureContent}
-              className="w-full flex items-center justify-between gap-3 text-left"
-            >
-              <span>
-                <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">{t('projectViewer.civitai.allowMature')}</span>
-                <span className="block text-[10px] leading-4 text-neutral-500">{t('projectViewer.civitai.allowMatureHint')}</span>
-              </span>
-              <span className={`shrink-0 w-8 h-4 rounded-full relative transition-all duration-300 ${config.allowMatureContent ? 'bg-sky-500' : 'bg-neutral-200 dark:bg-neutral-800'}`}>
-                <span className={`absolute top-1 w-2 h-2 rounded-full bg-white transition-all duration-300 ${config.allowMatureContent ? 'left-5' : 'left-1'}`} />
-              </span>
-            </button>
+            )}
+            {isVideo && <SeedRow seed={config.seed} onChange={(seed) => updateConfig({ seed })} roll={randomSeed} max={CIVITAI_MAX_ROLLED_SEED} />}
+            <CivitaiToggleRow
+              label={t('projectViewer.civitai.allowMature')}
+              hint={t('projectViewer.civitai.allowMatureHint')}
+              checked={!!config.allowMatureContent}
+              onChange={(allow) => updateConfig({ allowMatureContent: allow || undefined })}
+            />
           </div>
         </div>
       </div>

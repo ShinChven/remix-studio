@@ -32,7 +32,15 @@ import { VideoProcessor } from './video-processor';
 import { AudioProcessor } from './audio-processor';
 import { DetachedPoller } from './detached-poller';
 import type { ComfyUIRunner } from './comfyui-runner';
-import { civitaiImageToImageSize, civitaiResourceLabel } from '../../src/lib/civitai';
+import {
+  CIVITAI_MAX_ROLLED_SEED,
+  civitaiImageToImageSize,
+  civitaiParamsModelLabel,
+  civitaiVideoEngine,
+  closestCivitaiAspectRatio,
+  isCivitaiVideo,
+  resolveCivitaiVideoSettings,
+} from '../../src/lib/civitai';
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
@@ -213,11 +221,14 @@ export class QueueManager {
       const publicProvider = providerId ? providerById.get(providerId) : undefined;
       const providerType = (row.provider?.type || publicProvider?.type) as ProviderType | undefined;
       const modelConfigId = row.modelConfigId ?? undefined;
-      // A Civitai job's model is the checkpoint it carries, not a provider model.
-      const civitaiModel = (row.civitaiParams as CivitaiGenerationConfig | null)?.model;
+      // A Civitai job's model is the checkpoint or video engine it carries, not a provider model.
+      const civitaiParams = row.civitaiParams as CivitaiGenerationConfig | null;
+      const civitaiModelName = civitaiParams && (isCivitaiVideo(civitaiParams) || civitaiParams.model?.name)
+        ? civitaiParamsModelLabel(civitaiParams)
+        : undefined;
       const modelName = (modelConfigId && publicProvider
         ? publicProvider.models.find((model) => model.id === modelConfigId)?.name
-        : undefined) ?? (civitaiModel?.name ? civitaiResourceLabel(civitaiModel) : undefined);
+        : undefined) ?? civitaiModelName;
 
       return {
         id: row.id,
@@ -1268,14 +1279,30 @@ export class QueueManager {
     let params = job.civitaiParams!;
     const updates: { aspectRatio?: string } = {};
     if (params.seed === undefined) {
-      params = { ...params, seed: randomInt(0, 2 ** 32) };
+      params = { ...params, seed: randomInt(0, CIVITAI_MAX_ROLLED_SEED) };
     }
-    if (sourceBase64) {
-      const meta = await sharp(Buffer.from(sourceBase64, 'base64')).metadata().catch(() => undefined);
+    const sourceSize = async () => {
+      const meta = await sharp(Buffer.from(sourceBase64!, 'base64')).metadata().catch(() => undefined);
       const turned = (meta?.orientation ?? 1) >= 5;
-      const source = meta?.width && meta?.height
+      return meta?.width && meta?.height
         ? { width: turned ? meta.height : meta.width, height: turned ? meta.width : meta.height }
         : undefined;
+    };
+    if (isCivitaiVideo(params)) {
+      // Image-to-video takes the engine's shape closest to the start frame,
+      // as Civitai's generator does; the frame is cut to it on upload.
+      const engine = civitaiVideoEngine(params.video?.engine);
+      const source = sourceBase64 && engine.imageToVideo ? await sourceSize() : undefined;
+      if (source) {
+        const aspectRatio = closestCivitaiAspectRatio(source, engine.aspectRatios);
+        if (aspectRatio !== params.video?.aspectRatio) {
+          params = { ...params, video: resolveCivitaiVideoSettings({ ...params.video, aspectRatio }) };
+          updates.aspectRatio = aspectRatio;
+          job.aspectRatio = aspectRatio;
+        }
+      }
+    } else if (sourceBase64) {
+      const source = await sourceSize();
       const target = { width: params.width || 1024, height: params.height || 1024 };
       // Already shaped after the source on an earlier run: leave it, rather
       // than let rounding move it by a few pixels on every retry.
@@ -1397,6 +1424,7 @@ export class QueueManager {
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
       size: item.size != null ? Number(item.size) : undefined,
+      civitaiParams: item.civitaiParams && typeof item.civitaiParams === 'object' ? item.civitaiParams : undefined,
     };
   }
 }

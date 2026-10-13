@@ -29,12 +29,16 @@ import {
 import { createCampaignMediaService, StorageLimitError } from '../services/campaign-media';
 import { generateJobs } from '../../src/lib/remixEngine';
 import {
+  CIVITAI_DEFAULT_VIDEO_ENGINE,
   CIVITAI_SCHEDULERS,
+  CIVITAI_VIDEO_ENGINES,
+  civitaiDraftFields,
   civitaiModelItems,
   civitaiResourceLabel,
+  civitaiVideoEngine,
   isCivitaiEmbedding,
+  isCivitaiVideo,
   normalizeCivitaiAir,
-  resolveCivitaiParams,
   sanitizeCivitaiConfig,
 } from '../../src/lib/civitai';
 import { CivitaiClient } from '../civitai/civitai-client';
@@ -46,7 +50,8 @@ import {
   resolveSupportedAspectRatio,
   resolveSupportedOption,
 } from '../../src/types';
-import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, Job, Library, ModelConfig, Project, WorkflowItem } from '../../src/types';
+import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiVideoEngine, CivitaiVideoSettings, Job, Library, ModelConfig, Project, WorkflowItem } from '../../src/types';
+import { VISUAL_PROJECT_TYPES } from '../../src/lib/project-media';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
 const PROVIDER_TYPE_VALUES = Object.keys(PROVIDER_MODELS_MAP) as [
@@ -66,6 +71,18 @@ const WORKFLOW_ITEM_TYPES = [
 ] as const;
 const CIVITAI_ONLY_ITEM_TYPES = new Set(['negative_text', 'negative_text_library', 'checkpoint', 'lora']);
 const CIVITAI_SCHEDULER_VALUES = CIVITAI_SCHEDULERS.map((s) => s.value) as [string, ...string[]];
+const CIVITAI_VIDEO_ENGINE_VALUES = CIVITAI_VIDEO_ENGINES.map((engine) => engine.value) as [CivitaiVideoEngine, ...CivitaiVideoEngine[]];
+const CIVITAI_VIDEO_ENGINE_SUMMARY = CIVITAI_VIDEO_ENGINES.map((engine) => {
+  const lengths = engine.durations ? `${engine.durations.join('/')}s` : engine.durationRange ? `${engine.durationRange.min}–${engine.durationRange.max}s` : 'fixed length';
+  const parts = [
+    engine.resolutions.join('/'),
+    lengths,
+    engine.loras ? `up to ${engine.loras} LoRAs` : 'no LoRAs',
+    engine.negativePrompt ? 'negative prompt' : 'no negative prompt',
+    engine.imageToVideo ? (engine.endFrame ? 'first image = start frame, second = end frame' : 'first image = start frame') : 'text only',
+  ];
+  return `"${engine.value}" (${engine.label}): ${parts.join(', ')}.`;
+}).join(' ');
 const CIVITAI_MODELS_SCHEMA = z.array(z.object({
   ref: z.string().min(1).describe('A Civitai model page link (https://civitai.com/models/<id>?modelVersionId=<v>) or AIR (urn:air:…). get_project returns the AIR here.'),
   strength: z.number().min(-5).max(5).optional().describe('LoRA strength (default 1). Ignored for checkpoints and embeddings.'),
@@ -77,10 +94,23 @@ const CIVITAI_SETTINGS_SCHEMA = z.object({
   width: z.number().int().min(64).max(2048).optional().describe('Image width; snapped to a multiple of 8. With a source image, the output keeps the source shape at this area.'),
   height: z.number().int().min(64).max(2048).optional(),
   clipSkip: z.number().int().min(1).max(12).optional(),
-  seed: z.number().int().min(0).max(4294967295).nullable().optional().describe('A fixed seed for every job; null or omitted rolls one per job.'),
+  seed: z.number().int().min(0).max(4294967295).nullable().optional().describe('A fixed seed for every job; null or omitted rolls one per job. Video projects use at most 2147483647.'),
   denoise: z.number().min(0.05).max(1).optional().describe('Image-to-image strength: how far the result may move from the source image (default 0.7).'),
   allowMatureContent: z.boolean().optional().describe('Let Civitai return mature results instead of blocking them.'),
-}).optional().describe('Civitai projects: sampling settings shared by every job. The checkpoint, LoRAs, prompt, negative prompt and source image are workflow items.');
+  mediaType: z.enum(['image', 'video']).optional().describe('What the project makes (default "image"). Fixed once the project has jobs or results. A video project needs no checkpoint item: its engine brings the model.'),
+  video: z.object({
+    engine: z.enum(CIVITAI_VIDEO_ENGINE_VALUES).optional().describe(`Video engine (default "${CIVITAI_DEFAULT_VIDEO_ENGINE}"). ${CIVITAI_VIDEO_ENGINE_SUMMARY}`),
+    resolution: z.string().optional().describe('One of the engine\'s resolutions, e.g. "480p", "720p".'),
+    aspectRatio: z.string().optional().describe('Text-to-video shape, e.g. "16:9", "1:1", "9:16". Image-to-video takes the shape closest to the start frame.'),
+    duration: z.number().int().optional().describe('Seconds: one of the engine\'s lengths, or within its range.'),
+    cfgScale: z.number().optional(),
+    steps: z.number().int().optional().describe('Wan 2.2 5B and Hunyuan only.'),
+    shift: z.number().optional().describe('Wan 2.2 and 2.2 5B only (1–20, default 8).'),
+    interpolator: z.enum(['none', 'film', 'rife']).optional().describe('Wan 2.2 5B only: frame interpolation.'),
+    promptExpansion: z.boolean().optional().describe('Wan 2.7 and 3.0: let the engine rewrite the prompt.'),
+    usePrime: z.boolean().optional().describe('Wan 3.0: faster, pricier tier.'),
+  }).optional().describe('Video projects: the engine and its settings; omitted fields keep their value (or the engine default).'),
+}).optional().describe('Civitai projects: settings shared by every job — an image project\'s sampling, a video project\'s engine. The checkpoint, LoRAs, prompt, negative prompt and source images are workflow items.');
 
 type CivitaiSettingsInput = {
   sampler?: string;
@@ -92,6 +122,8 @@ type CivitaiSettingsInput = {
   seed?: number | null;
   denoise?: number;
   allowMatureContent?: boolean;
+  mediaType?: 'image' | 'video';
+  video?: CivitaiVideoSettings;
 };
 
 function civitaiConfigToSettings(config: CivitaiGenerationConfig | undefined): CivitaiSettingsInput {
@@ -357,7 +389,7 @@ async function assertPostMediaSourceAllowed(
         userId,
         project: {
           userId,
-          type: { in: ['image', 'video'] },
+          type: { in: [...VISUAL_PROJECT_TYPES] },
         },
         OR: [
           { imageUrl: source },
@@ -1430,8 +1462,12 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
           optimizedKey: item.optimizedUrl ?? null,
           format: item.format ?? null,
           aspectRatio: item.aspectRatio ?? null,
+          ...(item.duration != null ? { duration: item.duration } : {}),
+          ...(item.resolution ? { resolution: item.resolution } : {}),
           size: item.size ?? null,
           sizeFormatted: item.size ? formatSize(item.size) : null,
+          // What a Civitai result was generated with: checkpoint or video engine, LoRAs, negative prompt, seed and settings.
+          ...(item.civitaiParams ? { civitaiParams: item.civitaiParams } : {}),
           createdAt: item.createdAt,
         };
       });
@@ -2359,11 +2395,11 @@ Workflow item types:
 - "video": video context slot. Leave "value" empty, set "value" to item.storageKey from get_library_items to pin a specific video file, or set "uploadId" to pin an uploaded file.
 - "video_from_library" / "video_library": reference a video library. Requires "libraryId".
 
-Civitai projects (type "civitai") generate on Civitai with any checkpoint and LoRA from its catalog. Set providerId to a Civitai provider (list_available_models → civitaiAccounts), leave modelConfigId out, and put sampling settings in civitaiSettings. Their workflow also takes:
-- "checkpoint": exactly one; "models" lists one or more checkpoints (Civitai link or AIR), one per job.
-- "lora": any number; each lists one or more LoRAs or embeddings in "models" (with "strength"), one per job; every enabled LoRA item applies.
+Civitai projects (type "civitai") generate on Civitai with any checkpoint and LoRA from its catalog. Set providerId to a Civitai provider (list_available_models → civitaiAccounts), leave modelConfigId out, and put settings in civitaiSettings. They make images, or videos with civitaiSettings.mediaType "video" (fixed once the project has jobs or results). Their workflow also takes:
+- "checkpoint": images only; exactly one; "models" lists one or more checkpoints (Civitai link or AIR), one per job. A video's engine (civitaiSettings.video.engine) brings its own model.
+- "lora": any number; each lists one or more LoRAs (or, for images, embeddings) in "models" (with "strength"), one per job; every enabled LoRA item applies. Video engines take LoRAs made for them, up to their limit.
 - "negative_text" / "negative_text_library": text or a text library that goes to the negative prompt instead of the prompt.
-- "image" / "image_library": the source image for image-to-image (the first image is used).
+- "image" / "image_library": images: the source for image-to-image (the first image is used). Videos: the start frame (first image) and, with Wan 2.7 and 3.0, the end frame (second image).
 
 Recommended workflow:
 1. Call list_available_models → pick one usableModels entry (copy providerId + modelConfigId verbatim).
@@ -2605,7 +2641,8 @@ Recommended workflow:
         modelConfigId: modelConfigId || undefined,
         aspectRatio: aspectRatio || undefined,
         quality: quality || undefined,
-        format: format || undefined,
+        // A Civitai video project's results are mp4s.
+        format: (type === 'civitai' && civitaiSettings?.mediaType === 'video' ? 'mp4' : format || undefined) as Project['format'],
         shuffle: shuffle ?? undefined,
         prefix: prefix?.trim() || undefined,
         systemPrompt: systemPrompt || undefined,
@@ -2761,7 +2798,20 @@ Important workflow behavior:
           }
         }
         if (civitaiSettings !== undefined) {
-          updates.civitaiConfig = sanitizeCivitaiConfig({ ...(existingProject.civitaiConfig || {}), ...civitaiSettingsToConfig(civitaiSettings) }) ?? null;
+          const existing = existingProject.civitaiConfig || {};
+          const patch = civitaiSettingsToConfig(civitaiSettings) as CivitaiGenerationConfig;
+          const next = sanitizeCivitaiConfig({ ...existing, ...patch, ...(patch.video ? { video: { ...existing.video, ...patch.video } } : {}) }) ?? null;
+          if ((next?.mediaType ?? 'image') !== (existing.mediaType ?? 'image')) {
+            const [jobs, album] = await Promise.all([
+              repository.getProjectJobs(userId, projectId),
+              repository.getProjectAlbum(userId, projectId, { limit: 1 }),
+            ]);
+            if (jobs.length > 0 || album.total > 0) {
+              return { text: JSON.stringify({ error: 'This Civitai project already has jobs or results, so it can no longer switch between images and videos. Create a new Civitai project instead.' }), isError: true };
+            }
+            updates.format = next?.mediaType === 'video' ? 'mp4' : 'png';
+          }
+          updates.civitaiConfig = next;
         }
       } else if (civitaiSettings !== undefined) {
         return { text: JSON.stringify({ error: 'civitaiSettings only applies to Civitai projects.' }), isError: true };
@@ -3250,7 +3300,10 @@ Returns the project's "url" — share it so the user can review the drafts befor
       }
 
       const workflow = await repository.getProjectWorkflow(userId, projectId);
-      if (isCivitai && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
+      // A video engine brings its own model; an image needs a checkpoint.
+      const civitaiVideo = isCivitai && isCivitaiVideo(project.civitaiConfig);
+      const civitaiEngine = civitaiVideoEngine(project.civitaiConfig?.video?.engine);
+      if (isCivitai && !civitaiVideo && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
         return {
           text: JSON.stringify({
             error: `Civitai project "${project.name}" has no enabled checkpoint. Add a "checkpoint" workflow item with update_project before drafting jobs.`,
@@ -3313,6 +3366,12 @@ Returns the project's "url" — share it so the user can review the drafts befor
           isError: true,
         };
       }
+      if (civitaiVideo && !civitaiEngine.imageToVideo && combinations.some((combo) => combo.imageContexts?.length)) {
+        return {
+          text: JSON.stringify({ error: `${civitaiEngine.label} only makes videos from text. Disable the image items or pick another engine (civitaiSettings.video.engine) with update_project.` }),
+          isError: true,
+        };
+      }
 
       const storageError = await assertStorageHeadroom(userId, combinations.length);
       if (storageError) return storageError;
@@ -3324,23 +3383,15 @@ Returns the project's "url" — share it so the user can review the drafts befor
 
       // A Civitai job takes its checkpoint, LoRAs and negative prompt from its
       // combination and keeps a copy of everything it runs with.
-      const drafts: Job[] = isCivitai ? combinations.map((combo) => {
-        const params = resolveCivitaiParams(project.civitaiConfig, combo.civitai || {});
-        const sourceImage = combo.imageContexts?.[0];
-        return {
-          id: crypto.randomUUID(),
-          prompt: combo.prompt,
-          imageContexts: sourceImage ? [sourceImage] : undefined,
-          status: 'draft' as const,
-          providerId: project.providerId,
-          modelConfigId: params.model!.air,
-          aspectRatio: `${params.width}x${params.height}`,
-          format: civitaiFormat,
-          civitaiParams: params,
-          filename: buildJobFilename([project.prefix ?? '', ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
-          workflowSnapshot: workflow,
-        };
-      }) : combinations.map((combo) => ({
+      const drafts: Job[] = isCivitai ? combinations.map((combo) => ({
+        id: crypto.randomUUID(),
+        prompt: combo.prompt,
+        status: 'draft' as const,
+        providerId: project.providerId,
+        ...civitaiDraftFields(project.civitaiConfig, combo, civitaiFormat),
+        filename: buildJobFilename([project.prefix ?? '', ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
+        workflowSnapshot: workflow,
+      })) : combinations.map((combo) => ({
         id: crypto.randomUUID(),
         prompt: combo.prompt,
         imageContexts: combo.imageContexts,

@@ -96,6 +96,7 @@ export class ImageProcessor {
         optimizedSize: image.optimizedSize,
         thumbnailSize: image.thumbnailSize,
         createdAt: createdAt + i,
+        ...(job.civitaiParams ? { civitaiParams: job.civitaiParams } : {}),
       }));
       for (const albumItem of albumItems) {
         await this.projectRepo.addAlbumItem(userId, projectId, albumItem);

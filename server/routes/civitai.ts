@@ -74,11 +74,15 @@ export function createCivitaiRouter(providerRepo: ProviderRepository) {
     if (!query) return c.json({ error: 'query is required' }, 400);
     if (query.length > 200) return c.json({ error: 'query is too long' }, 400);
     const types = body?.slot === 'checkpoint' ? CHECKPOINT_TYPES : NETWORK_TYPES;
+    // A video project looks for LoRAs made for its engine.
+    const baseModels = Array.isArray(body?.baseModels)
+      ? body.baseModels.filter((value: unknown): value is string => typeof value === 'string' && !!value.trim() && value.length <= 100).slice(0, 10)
+      : [];
 
     const client = await clientFor(user.userId, body?.providerId);
     if ('error' in client) return c.json({ error: client.error }, client.status);
     try {
-      return c.json(await client.client.searchModels(query, types));
+      return c.json(await client.client.searchModels(query, types, baseModels));
     } catch (e: any) {
       return c.json({ error: describeLookupError(e, 'Searching Civitai failed') }, e instanceof CivitaiApiError ? 502 : 400);
     }

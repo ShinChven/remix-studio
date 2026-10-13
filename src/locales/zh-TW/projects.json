@@ -79,7 +79,12 @@
     "identityTitle": "身分",
     "identityDescription": "命名與輸出檔案設定。",
     "saveFailed": "保存專案失敗",
-    "loadFailed": "載入專案失敗"
+    "loadFailed": "載入專案失敗",
+    "civitaiMakes": "生成",
+    "civitaiImages": "圖像",
+    "civitaiVideos": "影片",
+    "civitaiImagesHint": "任意底模與 LoRA",
+    "civitaiVideosHint": "Wan 或 Hunyuan，支援 LoRA"
   },
   "projectOrphans": {
     "title": "孤立檔案管理",

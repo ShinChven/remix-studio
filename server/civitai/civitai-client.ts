@@ -1,10 +1,12 @@
 import type { CivitaiGenerationConfig, CivitaiResource, CivitaiSearchResult } from '../../src/types';
 import {
   CIVITAI_WEB_URL,
+  civitaiVideoEngine,
   isCivitaiEmbedding,
   normalizeCivitaiAir,
   parseCivitaiAir,
   parseCivitaiModelUrl,
+  resolveCivitaiVideoSettings,
 } from '../../src/lib/civitai';
 
 /**
@@ -43,11 +45,23 @@ export interface CivitaiSourceImage {
   height: number;
 }
 
+/** The frames a video starts (and for some engines ends) on, already uploaded. */
+export interface CivitaiVideoFrames {
+  start?: string;
+  end?: string;
+}
+
 export interface CivitaiWorkflowStep {
   $type: string;
   name?: string;
   status?: CivitaiWorkflowStatus;
-  output?: { images?: CivitaiImageBlob[]; errors?: string[] | null } | null;
+  output?: {
+    images?: CivitaiImageBlob[];
+    /** Video steps: the video, and any further ones a batching engine made. */
+    video?: CivitaiImageBlob | null;
+    additionalVideos?: CivitaiImageBlob[] | null;
+    errors?: string[] | null;
+  } | null;
 }
 
 export interface CivitaiWorkflow {
@@ -230,9 +244,10 @@ export class CivitaiClient {
   }
 
   /** Search Civitai's catalog by name, newest version of each model first. */
-  async searchModels(query: string, types: string[]): Promise<CivitaiSearchResult[]> {
+  async searchModels(query: string, types: string[], baseModels: string[] = []): Promise<CivitaiSearchResult[]> {
     const params = new URLSearchParams({ query, limit: '12' });
     for (const type of types) params.append('types', type);
+    for (const baseModel of baseModels) params.append('baseModels', baseModel);
     const body = await this.request(`${this.webUrl}/api/v1/models?${params.toString()}`);
     const results: CivitaiSearchResult[] = [];
     for (const model of Array.isArray(body?.items) ? body.items : []) {
@@ -288,11 +303,11 @@ export class CivitaiClient {
     return resourceFromVersion(await this.getModelVersion(versionId));
   }
 
-  /** Fetch a finished image. Blob URLs are signed, so no token goes with them. */
-  async download(url: string): Promise<Buffer> {
+  /** Fetch a finished image or video. Blob URLs are signed, so no token goes with them. */
+  async download(url: string, what = 'image'): Promise<{ bytes: Buffer; contentType?: string }> {
     const res = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
-    if (!res.ok) throw new CivitaiApiError(`Downloading the image from Civitai failed (HTTP ${res.status})`, res.status);
-    return Buffer.from(await res.arrayBuffer());
+    if (!res.ok) throw new CivitaiApiError(`Downloading the ${what} from Civitai failed (HTTP ${res.status})`, res.status);
+    return { bytes: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') || undefined };
   }
 }
 
@@ -346,3 +361,120 @@ export function buildCivitaiWorkflow(prompt: string, params: CivitaiGenerationCo
 }
 
 export const CIVITAI_PENDING_STATUSES: ReadonlySet<string> = new Set(['unassigned', 'preparing', 'scheduled', 'processing']);
+
+/**
+ * The workflow one video job submits, built the way Civitai's own generator
+ * builds it for each engine (`wan.handler.ts`, `hunyuan.handler.ts` in
+ * Civitai's source): one `videoGen` step — and for Wan 2.2, which renders at
+ * 12 fps, a `videoInterpolation` step doubling it to 24 fps. A start frame
+ * makes it image-to-video; an end frame is used by engines that take one.
+ */
+export function buildCivitaiVideoWorkflow(prompt: string, params: CivitaiGenerationConfig, frames: CivitaiVideoFrames = {}): Record<string, unknown> {
+  const engine = civitaiVideoEngine(params.video?.engine);
+  const video = resolveCivitaiVideoSettings(params.video);
+  const start = engine.imageToVideo ? frames.start : undefined;
+  const end = start && engine.endFrame ? frames.end : undefined;
+  const loras = engine.loras > 0
+    ? (params.resources || []).filter((resource) => !isCivitaiEmbedding(resource)).map((resource) => ({ air: resource.air, strength: resource.strength ?? 1 }))
+    : [];
+  const negativePrompt = engine.negativePrompt ? params.negativePrompt : undefined;
+  const operation = start ? 'image-to-video' : 'text-to-video';
+  // What every Wan version but 2.7 and 3.0 shares.
+  const wanBase = {
+    engine: 'wan',
+    prompt,
+    cfgScale: video.cfgScale,
+    duration: video.duration,
+    quantity: 1,
+    seed: params.seed,
+    loras: loras.length > 0 ? loras : undefined,
+    frameRate: 24,
+  };
+
+  const steps: Array<Record<string, unknown>> = [];
+  switch (engine.value) {
+    case 'wan-2.1':
+      steps.push(videoGen({
+        ...wanBase, version: 'v2.1', provider: 'civitai',
+        width: video.width, height: video.height,
+        images: start ? [start] : undefined,
+      }));
+      break;
+    case 'wan-2.2':
+      steps.push({
+        ...videoGen({
+          ...wanBase, version: 'v2.2', provider: 'comfy', frameRate: 12,
+          width: video.width, height: video.height,
+          steps: 20, negativePrompt, shift: video.shift,
+          images: start ? [start] : undefined,
+        }),
+        metadata: { suppressOutput: true },
+      });
+      steps.push({
+        $type: 'videoInterpolation',
+        input: { video: { $ref: '$0', path: 'output.video.url' }, interpolationFactor: 2, model: 'VFIMamba' },
+      });
+      break;
+    case 'wan-2.2-5b':
+      steps.push(videoGen({
+        ...wanBase, duration: undefined, version: 'v2.2-5b', provider: 'fal', operation,
+        negativePrompt, resolution: video.resolution, aspectRatio: video.aspectRatio,
+        enablePromptExpansion: false, shift: video.shift, numInferenceSteps: video.steps,
+        interpolatorModel: video.interpolator,
+        images: start ? [start] : undefined,
+      }));
+      break;
+    case 'wan-2.5':
+      steps.push(videoGen({
+        ...wanBase, loras: undefined, version: 'v2.5', provider: 'fal', operation,
+        negativePrompt, resolution: video.resolution, aspectRatio: video.aspectRatio,
+        enablePromptExpansion: false,
+        images: start ? [start] : undefined,
+      }));
+      break;
+    case 'wan-2.7':
+      // Takes no cfgScale, steps, frame rate or LoRAs.
+      steps.push(videoGen({
+        engine: 'wan', version: 'v2.7', provider: 'fal', operation,
+        prompt,
+        negativePrompt, duration: video.duration, resolution: video.resolution, seed: params.seed,
+        enablePromptExpansion: video.promptExpansion,
+        ...(start ? { startImage: start, endImage: end } : { aspectRatio: video.aspectRatio }),
+      }));
+      break;
+    case 'wan-3.0':
+      // Unlike the other Wan versions, takes no provider.
+      steps.push(videoGen({
+        engine: 'wan', version: 'v3.0', operation,
+        prompt,
+        negativePrompt, duration: video.duration, resolution: video.resolution, seed: params.seed,
+        enablePromptExpansion: video.promptExpansion, usePrime: video.usePrime,
+        ...(start ? { startImage: start, endImage: end } : { aspectRatio: video.aspectRatio }),
+      }));
+      break;
+    case 'hunyuan':
+      steps.push(videoGen({
+        engine: 'hunyuan', prompt,
+        width: video.width, height: video.height,
+        cfgScale: video.cfgScale, steps: video.steps, duration: video.duration,
+        quantity: 1, seed: params.seed,
+        loras: loras.length > 0 ? loras : undefined,
+      }));
+      break;
+  }
+
+  return {
+    steps,
+    allowMatureContent: !!params.allowMatureContent,
+    tags: ['remix-studio'],
+  };
+}
+
+/** A `videoGen` step with the input's unset fields left out. */
+function videoGen(input: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined && value !== null && value !== '') clean[key] = value;
+  }
+  return { $type: 'videoGen', input: clean };
+}
