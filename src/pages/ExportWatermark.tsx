@@ -126,7 +126,7 @@ export function ExportWatermark() {
     const size = exportVersion === 'optimized' ? item.optimizedSize || item.size : item.size;
     return total + (size || 0);
   }, 0);
-  const canExport = Boolean(id && packageName.trim() && selectedItems.length > 0 && !isSubmitting && project?.type === 'image');
+  const canExport = Boolean(id && packageName.trim() && selectedItems.length > 0 && !isSubmitting && (project?.type === 'image' || project?.type === 'civitai'));
 
   const handleStartExport = async () => {
     if (!id || !canExport) return;
@@ -156,7 +156,7 @@ export function ExportWatermark() {
     );
   }
 
-  if (project?.type !== 'image') {
+  if (project?.type !== 'image' && project?.type !== 'civitai') {
     return (
       <div className="relative flex h-full flex-col overflow-y-auto p-4 md:p-8">
         <PageHeader

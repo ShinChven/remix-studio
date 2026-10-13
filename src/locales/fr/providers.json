@@ -63,7 +63,8 @@
       "saveFailed": "Échec de l'enregistrement."
     },
     "supportedModels": "Modèles Pris en Charge",
-    "modelsSubtitle": "Ces modèles sont nativement pris en charge par le fournisseur sélectionné."
+    "modelsSubtitle": "Ces modèles sont nativement pris en charge par le fournisseur sélectionné.",
+    "civitaiModelsNote": "Les projets Civitai choisissent leur checkpoint et leurs LoRA dans le catalogue de Civitai : il n'y a donc pas de liste de modèles fixe ici. Créez une clé API dans Civitai → Paramètres du compte → API Keys et collez-la à gauche ; les générations sont payées avec les Buzz de ce compte."
   },
   "providerProfile": {
     "errorLoad": "Échec du chargement du fournisseur.",

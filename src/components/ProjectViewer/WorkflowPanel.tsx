@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Archive, ArchiveRestore, Copy, Eraser, Eye, EyeOff, HardDrive, Hash, ImageIcon, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
+import { Archive, ArchiveRestore, Copy, Eraser, Eye, EyeOff, HardDrive, Hash, Hexagon, ImageIcon, Layers, Library as LibraryIcon, Loader2, Maximize2, Minimize2, MoreVertical, Settings, Stars, Trash2, Type, Video as VideoIcon, Volume2, X } from 'lucide-react';
 import { Library, Project, Provider, WorkflowItem as WorkflowItemType, ProviderType, PROVIDER_MODELS_MAP, resolveCustomModels } from '../../types';
 import { WorkflowItem } from './WorkflowItem';
 import { SettingsPanel } from './SettingsPanel';
 import { ComfySettingsPanel, ComfyWorkflowPanel } from './ComfyWorkflowPanel';
+import { CivitaiSettingsPanel } from './CivitaiSettingsPanel';
+import { CivitaiModelItem } from './CivitaiModelItem';
+import { civitaiModelItems } from '../../lib/civitai';
 
 interface WorkflowPanelProps {
   isLoading?: boolean;
@@ -161,6 +164,10 @@ export function WorkflowPanel({
   const menuButtonBaseClass =
     'w-full px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 border border-transparent';
   const isComfyProject = localProject.type === 'comfyui';
+  // Civitai projects: images are the source for image-to-image; checkpoints
+  // and LoRAs are model items; text and text libraries feed the prompt or the
+  // negative prompt.
+  const isCivitaiProject = localProject.type === 'civitai';
   const saveProject = (next: Project) => {
     setLocalProject(next);
     onUpdate(next);
@@ -194,6 +201,46 @@ export function WorkflowPanel({
     const index = Math.min(Math.floor(Math.log(bytes) / Math.log(unit)), units.length - 1);
     const value = bytes / Math.pow(unit, index);
     return `${parseFloat(value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2))} ${units[index]}`;
+  };
+
+  const hasCheckpointItem = civitaiModelItems(workflowItems, 'checkpoint').length > 0;
+
+  const updateWorkflowItem = (next: WorkflowItemType) => {
+    saveProject({ ...localProject, workflow: workflowItems.map((item) => (item.id === next.id ? next : item)) });
+  };
+
+  /** A checkpoint or LoRA slot; options are added on its card. One checkpoint slot holds every checkpoint. */
+  const addCivitaiModelItem = (slot: 'checkpoint' | 'lora') => {
+    if (slot === 'checkpoint' && hasCheckpointItem) return;
+    const item: WorkflowItemType = { id: crypto.randomUUID(), type: 'model', value: '', order: workflowItems.length, civitai: { slot, options: [] } };
+    saveProject({ ...localProject, workflow: [...workflowItems, item] });
+    requestAnimationFrame(() => {
+      const list = workflowListRef.current;
+      if (list) list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
+    });
+  };
+
+  /** Text and text libraries feed the prompt, or the negative prompt once switched. */
+  const renderPromptSwitch = (item: WorkflowItemType) => {
+    if (!isCivitaiProject) return undefined;
+    const isTextLibrary = item.type === 'library' && libraries.find((library) => library.id === item.value)?.type === 'text';
+    if (item.type !== 'text' && !isTextLibrary) return undefined;
+    const negative = item.civitai?.slot === 'negative';
+    return (
+      <button
+        type="button"
+        onClick={() => updateWorkflowItem({ ...item, civitai: negative ? undefined : { slot: 'negative' } })}
+        title={t('projectViewer.civitai.promptSwitchHint')}
+        aria-pressed={negative}
+        className={`rounded-md border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] transition-colors ${
+          negative
+            ? 'border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300'
+            : 'border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-300'
+        }`}
+      >
+        {negative ? t('projectViewer.civitai.negativeShort') : t('projectViewer.civitai.promptShort')}
+      </button>
+    );
   };
 
   const closeMenuAndRun = (action: () => void) => {
@@ -477,7 +524,7 @@ export function WorkflowPanel({
         </>
       ) : (
         <>
-        <div className="h-[57px] p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl">
+        <div className={`${isCivitaiProject ? 'flex-wrap' : 'h-[57px]'} p-3 border-b border-neutral-200/50 dark:border-white/5 flex gap-2 bg-white/30 dark:bg-black/20 items-center backdrop-blur-xl`}>
           <button onClick={() => onAddWorkflowItem('text')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
             <Type className="w-3 h-3" /> {t('projectViewer.common.text')}
           </button>
@@ -489,6 +536,27 @@ export function WorkflowPanel({
           <button onClick={() => onAddWorkflowItem('library')} className="flex-1 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-ui border border-neutral-200/50 dark:border-white/5 shadow-sm backdrop-blur-md">
             <LibraryIcon className="w-3 h-3" /> {t('projectViewer.common.libraryShort')}
           </button>
+          {isCivitaiProject && (
+            <>
+              {/* Model slots get a row of their own so their labels fit. */}
+              <div className="basis-full h-0" aria-hidden="true" />
+              <button
+                onClick={() => addCivitaiModelItem('checkpoint')}
+                disabled={hasCheckpointItem}
+                title={hasCheckpointItem ? t('projectViewer.civitai.oneCheckpointItem') : t('projectViewer.civitai.addCheckpointItem')}
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-sky-600 dark:text-sky-400 transition-ui border border-sky-500/20 shadow-sm backdrop-blur-md disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Hexagon className="w-3 h-3 shrink-0" /> <span className="truncate">{t('projectViewer.civitai.modelShort')}</span>
+              </button>
+              <button
+                onClick={() => addCivitaiModelItem('lora')}
+                title={t('projectViewer.civitai.addLoraItem')}
+                className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-white dark:bg-neutral-900 hover:bg-white/60 dark:hover:bg-neutral-800/60 text-[10px] font-black uppercase tracking-widest py-1.5 rounded-xl text-sky-600 dark:text-sky-400 transition-ui border border-sky-500/20 shadow-sm backdrop-blur-md"
+              >
+                <Layers className="w-3 h-3 shrink-0" /> <span className="truncate">{t('projectViewer.civitai.loraShort')}</span>
+              </button>
+            </>
+          )}
           {localProject.type === 'video' && (
             <>
               {(() => {
@@ -525,7 +593,24 @@ export function WorkflowPanel({
               </div>
             </div>
           )}
-          {!isLoading && visibleWorkflowItems.map(({ item, index }) => (
+          {!isLoading && visibleWorkflowItems.map(({ item, index }) => item.type === 'model' ? (
+            <CivitaiModelItem
+              key={item.id}
+              item={item}
+              index={index}
+              providerId={isCivitaiProject ? localProject.providerId : undefined}
+              draggedIndex={draggedIndex}
+              dragOverIndex={dragOverIndex}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onDragEnd={onDragEnd}
+              onRemove={onRemoveItem}
+              onToggleDisable={onToggleDisable}
+              onChange={updateWorkflowItem}
+              gridView={isExpanded}
+            />
+          ) : (
             <WorkflowItem
               key={item.id}
               item={item}
@@ -552,6 +637,7 @@ export function WorkflowPanel({
               onSaveToLibrary={onSaveToLibrary}
               onToggleDisable={onToggleDisable}
               gridView={isExpanded}
+              headerExtra={renderPromptSwitch(item)}
             />
           ))}
           {!isLoading && visibleWorkflowItems.length === 0 && (
@@ -563,6 +649,25 @@ export function WorkflowPanel({
           )}
         </div>
 
+        {isCivitaiProject ? (
+          <CivitaiSettingsPanel
+            localProject={localProject}
+            isWorkflowLoaded={!isLoading}
+            providers={providers}
+            libraries={libraries}
+            onSaveProject={saveProject}
+            isSettingsCollapsed={isSettingsCollapsed}
+            setIsSettingsCollapsed={setIsSettingsCollapsed}
+            queueCount={queueCount}
+            setQueueCount={setQueueCount}
+            combinationsCount={combinationsCount}
+            workflowError={workflowError}
+            uploadingItemIds={uploadingItemIds}
+            onAddDraftsToQueue={onAddDraftsToQueue}
+            isAddingDrafts={isAddingDrafts}
+            draftsProgress={draftsProgress}
+          />
+        ) : (
         <SettingsPanel
           localProject={localProject}
           setLocalProject={setLocalProject}
@@ -582,6 +687,7 @@ export function WorkflowPanel({
           isAddingDrafts={isAddingDrafts}
           draftsProgress={draftsProgress}
         />
+        )}
         </>
       )}
     </div>

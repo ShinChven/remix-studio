@@ -2,9 +2,10 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { X, Sparkles, Box, Settings, Layers, Type, ImageIcon, Library as LibraryIcon, Video as VideoIcon, Volume2, Bot, ExternalLink } from 'lucide-react';
+import { X, Sparkles, Box, Settings, Layers, Type, ImageIcon, Library as LibraryIcon, Video as VideoIcon, Volume2, Bot, ExternalLink, Hexagon } from 'lucide-react';
 import { Project, Library } from '../../types';
 import { imageDisplayUrl } from '../../api';
+import { civitaiOptionLabel } from '../../lib/civitai';
 
 interface ProjectPreviewModalProps {
   project: Project;
@@ -149,7 +150,9 @@ export function ProjectPreviewModal({
                           {item.type === 'video' && <VideoIcon className="w-3.5 h-3.5" />}
                           {item.type === 'audio' && <Volume2 className="w-3.5 h-3.5" />}
                           {item.type === 'library' && <LibraryIcon className="w-3.5 h-3.5" />}
-                          {item.type}
+                          {item.type === 'model' && <Hexagon className="w-3.5 h-3.5" />}
+                          {item.type === 'model' ? (item.civitai?.slot === 'checkpoint' ? 'checkpoint' : 'lora') : item.type}
+                          {item.civitai?.slot === 'negative' && <span className="text-rose-500">· negative</span>}
                         </div>
                       </div>
                       {item.disabled && (
@@ -163,6 +166,14 @@ export function ProjectPreviewModal({
                        <p className="text-xs text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-wrap line-clamp-3 italic">
                          "{item.value || 'No content'}"
                        </p>
+                    )}
+
+                    {item.type === 'model' && (
+                       <ul className="text-xs text-neutral-700 dark:text-neutral-300 space-y-0.5">
+                         {(item.civitai?.options || []).map((option, i) => (
+                           <li key={i} className="truncate">{civitaiOptionLabel(option, item.civitai!.slot)}</li>
+                         ))}
+                       </ul>
                     )}
 
                     {item.type === 'library' && (

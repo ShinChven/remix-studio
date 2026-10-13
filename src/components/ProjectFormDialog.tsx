@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AudioLines, FileText, Hash, ImageIcon, Layers, Loader2, Play, Save, Terminal, Type, Video, Workflow, X } from 'lucide-react';
+import { AudioLines, FileText, Hash, Hexagon, ImageIcon, Layers, Loader2, Play, Save, Terminal, Type, Video, Workflow, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { createProject, fetchProject, fetchProjectWorkflow, updateProject } from '../api';
 import type { Project, ProjectType, WorkflowItem } from '../types';
@@ -12,10 +12,11 @@ const typeOptions: Array<{ type: ProjectType; icon: typeof ImageIcon }> = [
   { type: 'video', icon: Video },
   { type: 'audio', icon: AudioLines },
   { type: 'comfyui', icon: Workflow },
+  { type: 'civitai', icon: Hexagon },
 ];
 
 function getTypeClasses(type: ProjectType, selected: boolean) {
-  const color = type === 'text' ? 'blue' : type === 'video' ? 'purple' : type === 'audio' ? 'cyan' : type === 'comfyui' ? 'orange' : 'green';
+  const color = type === 'text' ? 'blue' : type === 'video' ? 'purple' : type === 'audio' ? 'cyan' : type === 'comfyui' ? 'orange' : type === 'civitai' ? 'sky' : 'green';
   if (!selected) {
     return 'border-neutral-200/70 dark:border-white/10 bg-white dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-white/20 hover:bg-white dark:hover:bg-neutral-900';
   }
@@ -23,6 +24,7 @@ function getTypeClasses(type: ProjectType, selected: boolean) {
   if (color === 'purple') return 'border-purple-500/60 bg-purple-500/10 text-purple-600 dark:text-purple-300 shadow-purple-500/10';
   if (color === 'cyan') return 'border-cyan-500/60 bg-cyan-500/10 text-cyan-600 dark:text-cyan-300 shadow-cyan-500/10';
   if (color === 'orange') return 'border-orange-500/60 bg-orange-500/10 text-orange-600 dark:text-orange-300 shadow-orange-500/10';
+  if (color === 'sky') return 'border-sky-500/60 bg-sky-500/10 text-sky-600 dark:text-sky-300 shadow-sky-500/10';
   return 'border-green-500/60 bg-green-500/10 text-green-600 dark:text-green-300 shadow-green-500/10';
 }
 
@@ -174,6 +176,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
             comfyUrl: sourceProject.comfyUrl,
             comfyWorkflow: sourceProject.comfyWorkflow,
             comfyPassword: sourceProject.comfyPassword,
+            civitaiConfig: sourceProject.civitaiConfig,
           }),
         });
       } else {
@@ -251,7 +254,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
                           key={option.type}
                           type="button"
                           onClick={() => setProjectType(option.type)}
-                          className={`flex min-h-20 flex-col items-start justify-between gap-3 rounded-lg border p-3.5 text-left shadow-sm transition-all sm:min-h-24 sm:p-4 ${option.type === 'comfyui' ? 'col-span-2' : ''} ${getTypeClasses(option.type, selected)}`}
+                          className={`flex min-h-20 flex-col items-start justify-between gap-3 rounded-lg border p-3.5 text-left shadow-sm transition-all sm:min-h-24 sm:p-4 ${getTypeClasses(option.type, selected)}`}
                         >
                           <Icon className="h-5 w-5" />
                           <span className="text-xs font-black uppercase tracking-wider sm:text-sm">

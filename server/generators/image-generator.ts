@@ -1,3 +1,5 @@
+import type { CivitaiGenerationConfig } from '../../src/types';
+
 export interface GenerateRequest {
   prompt: string;
   modelId?: string;       // The actual API model string
@@ -13,6 +15,8 @@ export interface GenerateRequest {
   steps?: number;
   guidance?: number;
   promptUpsampling?: boolean;
+  /** Civitai projects: the checkpoint, resources and parameters, seed included. */
+  civitai?: CivitaiGenerationConfig;
 }
 
 export type GenerateResult =
@@ -42,4 +46,6 @@ export interface CheckStatusContext {
 export abstract class ImageGenerator {
   abstract generate(req: GenerateRequest): Promise<GenerateResult>;
   checkStatus?(taskId: string, context?: CheckStatusContext): Promise<CheckStatusResult>;
+  /** Stop a remote task whose job was deleted. Best effort: errors are the caller's to ignore. */
+  cancel?(taskId: string): Promise<void>;
 }

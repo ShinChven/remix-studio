@@ -1,5 +1,6 @@
-import { ComfyInputTarget, ComfyJobInput, Library, WorkflowItem } from '../types';
+import { CivitaiResource, ComfyInputTarget, ComfyJobInput, Library, WorkflowItem } from '../types';
 import { isSameComfyTarget } from './comfyWorkflow';
+import { CivitaiPicks, civitaiOptionLabel } from './civitai';
 
 export interface Combination {
   prompt: string;
@@ -9,9 +10,21 @@ export interface Combination {
   filenameParts: string[];
   /** ComfyUI projects: the value each bound workflow input takes. */
   comfyInputs?: ComfyJobInput[];
+  /** Civitai projects: the checkpoint, LoRAs and negative prompt this combination picked. */
+  civitai?: CivitaiPicks;
 }
 
-type Choice = { type: 'text' | 'image' | 'video' | 'audio', value: string, tags?: string[], title?: string, target?: ComfyInputTarget };
+type Choice = {
+  type: 'text' | 'image' | 'video' | 'audio' | 'model',
+  value: string,
+  tags?: string[],
+  title?: string,
+  target?: ComfyInputTarget,
+  /** Civitai projects: text that goes to the negative prompt. */
+  negative?: boolean,
+  /** Civitai projects: the checkpoint or LoRA a model item contributes. */
+  model?: { slot: 'checkpoint' | 'lora', resource: CivitaiResource },
+};
 
 /**
  * A ComfyUI binding stands for its input even when empty — clearing a prompt
@@ -22,7 +35,7 @@ function hasTextValue(item: WorkflowItem): boolean {
 }
 
 function toComfyInput(choice: Choice): ComfyJobInput | null {
-  return choice.target ? { ...choice.target, kind: choice.type, value: choice.value } : null;
+  return choice.target && choice.type !== 'model' ? { ...choice.target, kind: choice.type, value: choice.value } : null;
 }
 
 /**
@@ -69,8 +82,22 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
     if (item.disabled) continue;
 
     const target = item.comfyTarget ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input } : undefined;
-    if (item.type === 'text') {
-      if (hasTextValue(item)) allChoices.push([{ type: 'text', value: item.value.trim(), target }]);
+    const negative = item.civitai?.slot === 'negative' || undefined;
+    if (item.type === 'model') {
+      // A checkpoint or LoRA slot varies like a library: one option per job.
+      // Only a slot with several options names its pick in the filename.
+      const slot = item.civitai?.slot;
+      const options = item.civitai?.options || [];
+      if ((slot === 'checkpoint' || slot === 'lora') && options.length > 0) {
+        allChoices.push(options.map((resource) => ({
+          type: 'model',
+          value: resource.air,
+          title: options.length > 1 ? civitaiOptionLabel(resource, slot) : undefined,
+          model: { slot, resource },
+        })));
+      }
+    } else if (item.type === 'text') {
+      if (hasTextValue(item)) allChoices.push([{ type: 'text', value: item.value.trim(), target, negative }]);
     } else if (item.type === 'image') {
       if (item.value) allChoices.push([{ type: 'image', value: item.value, target }]);
     } else if (item.type === 'video') {
@@ -90,6 +117,7 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
             tags: i.tags,
             title: i.title,
             target,
+            negative,
           })));
         }
       }
@@ -106,9 +134,20 @@ function choicesToCombination(combo: Choice[]): Combination {
   const audios: string[] = [];
   const stepParts: string[] = [];
   const comfyInputs: ComfyJobInput[] = [];
+  const negatives: string[] = [];
+  let checkpoint: CivitaiResource | undefined;
+  const loras: CivitaiResource[] = [];
 
   for (const c of combo) {
-    if (c.type === 'text') texts.push(c.value);
+    if (c.type === 'text' && c.negative) negatives.push(c.value);
+    else if (c.type === 'text') texts.push(c.value);
+    if (c.model?.slot === 'checkpoint') checkpoint ??= c.model.resource;
+    if (c.model?.slot === 'lora') {
+      // The same LoRA picked by two slots applies once, at the later strength.
+      const existing = loras.findIndex((lora) => lora.air === c.model!.resource.air);
+      if (existing >= 0) loras.splice(existing, 1);
+      loras.push(c.model.resource);
+    }
     if (c.type === 'image') images.push(c.value);
     if (c.type === 'video') videos.push(c.value);
     if (c.type === 'audio') audios.push(c.value);
@@ -127,6 +166,9 @@ function choicesToCombination(combo: Choice[]): Combination {
     audioContexts: audios.length > 0 ? audios : undefined,
     filenameParts: stepParts,
     comfyInputs: comfyInputs.length > 0 ? mergeComfyTextInputs(comfyInputs) : undefined,
+    civitai: checkpoint || loras.length > 0 || negatives.length > 0
+      ? { model: checkpoint, resources: loras, negativePrompt: negatives.join('\n\n') || undefined }
+      : undefined,
   };
 }
 

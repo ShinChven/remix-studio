@@ -10,6 +10,7 @@ import { BytePlusGenerator } from './byteplus-generator';
 import { ReplicateGenerator } from './replicate-generator';
 import { BlackForestLabsGenerator } from './black-forest-labs-generator';
 import { MiniMaxGenerator } from './minimax-generator';
+import { CivitaiGenerator } from './civitai-generator';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 
 /**
@@ -46,6 +47,8 @@ export function buildGenerator(
       return new BlackForestLabsGenerator(apiKey, safeApiUrl);
     case 'MiniMax':
       return new MiniMaxGenerator(apiKey, safeApiUrl);
+    case 'Civitai':
+      return new CivitaiGenerator(apiKey, safeApiUrl);
     case 'Claude':
       throw new Error(`Provider type 'Claude' does not support image generation`);
     case 'Alibabacloud':

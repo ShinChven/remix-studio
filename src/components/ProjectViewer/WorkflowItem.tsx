@@ -29,6 +29,8 @@ interface WorkflowItemProps {
   libraries: Library[];
   onToggleDisable?: (id: string) => void;
   gridView?: boolean;
+  /** Shown after the item's type label, e.g. a Civitai project's prompt/negative switch. */
+  headerExtra?: React.ReactNode;
 }
 
 export function WorkflowItem({
@@ -55,7 +57,8 @@ export function WorkflowItem({
   onSaveToLibrary,
   libraries,
   onToggleDisable,
-  gridView = false
+  gridView = false,
+  headerExtra,
 }: WorkflowItemProps) {
   const { t } = useTranslation();
   const isLibrary = item.type === 'library';
@@ -97,6 +100,7 @@ export function WorkflowItem({
               </span>
             )}
           </span>
+          {headerExtra}
         </div>
         <div className="flex items-center gap-1">
           {item.type === 'text' && (

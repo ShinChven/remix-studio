@@ -57,6 +57,7 @@
     "typeVideo": "Video",
     "typeAudio": "Audio",
     "typeComfyui": "ComfyUI Workflow",
+    "typeCivitai": "Civitai",
     "nameLabel": "Project Name",
     "namePlaceholderText": "e.g. Product Description Generator...",
     "namePlaceholderImage": "e.g. Cyberpunk Character Series...",

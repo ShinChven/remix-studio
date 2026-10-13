@@ -57,6 +57,7 @@
     "typeVideo": "動画",
     "typeAudio": "音声",
     "typeComfyui": "ComfyUI ワークフロー",
+    "typeCivitai": "Civitai",
     "nameLabel": "プロジェクト名",
     "namePlaceholderText": "例: 製品説明ジェネレーター...",
     "namePlaceholderImage": "例: サイバーパンクキャラクターシリーズ...",

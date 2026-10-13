@@ -6,6 +6,7 @@ import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
 import { ComfyJobInputs } from './ComfyJobInputs';
+import { CivitaiJobParams } from './CivitaiJobParams';
 import { InfoChip } from './InfoChip';
 import { EmptyState } from './EmptyState';
 import { PaginationBar } from './PaginationBar';
@@ -140,6 +141,7 @@ export function CompletedTab({
                         </div>
                       </div>
                       <ComfyJobInputs job={job} />
+                      <CivitaiJobParams job={job} />
 
                       {(projectType === 'text' || projectType === 'audio') && job.resultText && (
                         <div className="space-y-2">

@@ -61,7 +61,7 @@ export async function startProjectAlbumExport(
 
   const project = await repository.getProject(userId, projectId);
   if (!project) throw new ProjectExportError(`Project "${projectId}" not found`, 404);
-  if (watermarkSettings?.enabled && project.type !== 'image') {
+  if (watermarkSettings?.enabled && project.type !== 'image' && project.type !== 'civitai') {
     throw new ProjectExportError('Watermark export is only available for image projects', 400);
   }
 

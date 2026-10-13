@@ -96,6 +96,7 @@ export function ProjectRoute() {
         ...(updatedProject.comfyUrl !== project.comfyUrl ? { comfyUrl: updatedProject.comfyUrl ?? '' } : {}),
         ...(updatedProject.comfyWorkflow !== project.comfyWorkflow ? { comfyWorkflow: updatedProject.comfyWorkflow ?? null as any } : {}),
         ...(updatedProject.comfyPassword !== project.comfyPassword ? { comfyPassword: updatedProject.comfyPassword ?? '' } : {}),
+        civitaiConfig: updatedProject.civitaiConfig,
       });
       setProject(updatedProject);
     } catch (e) {

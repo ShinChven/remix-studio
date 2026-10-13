@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput } from '../../src/types';
+import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput, CivitaiGenerationConfig } from '../../src/types';
+import { civitaiModelItemValue, sanitizeCivitaiBinding } from '../../src/lib/civitai';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
@@ -207,6 +208,7 @@ export class ProjectRepository {
       comfyUrl: (p as any).comfyUrl ?? undefined,
       comfyWorkflow: (p as any).comfyWorkflow ?? undefined,
       comfyPassword: (p as any).comfyPassword ?? undefined,
+      civitaiConfig: (p as any).civitaiConfig ?? undefined,
       jobs: [],
       workflow: [],
       album: [],
@@ -333,6 +335,7 @@ export class ProjectRepository {
         providerId: job.providerId ?? null,
         workflowSnapshot: job.workflowSnapshot ?? null,
         comfyInputs: job.comfyInputs ?? null,
+        civitaiParams: job.civitaiParams ?? null,
         createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
       })) as any,
     });
@@ -562,6 +565,7 @@ export class ProjectRepository {
         comfyUrl: project.comfyUrl ?? null,
         comfyWorkflow: project.comfyWorkflow ?? undefined,
         comfyPassword: project.comfyPassword ?? null,
+        civitaiConfig: project.civitaiConfig ?? undefined,
       } as any,
     });
 
@@ -595,6 +599,7 @@ export class ProjectRepository {
     if (updates.comfyUrl !== undefined) data.comfyUrl = updates.comfyUrl ?? null;
     if (updates.comfyWorkflow !== undefined) data.comfyWorkflow = updates.comfyWorkflow ?? Prisma.DbNull;
     if (updates.comfyPassword !== undefined) data.comfyPassword = updates.comfyPassword ?? null;
+    if (updates.civitaiConfig !== undefined) data.civitaiConfig = updates.civitaiConfig ?? Prisma.DbNull;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data: data as any });
@@ -631,6 +636,7 @@ export class ProjectRepository {
     if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
     if (updates.sound !== undefined) data.sound = updates.sound ?? null;
     if (updates.comfyInputs !== undefined) data.comfyInputs = updates.comfyInputs ?? Prisma.DbNull;
+    if (updates.civitaiParams !== undefined) data.civitaiParams = updates.civitaiParams ?? Prisma.DbNull;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
@@ -1639,6 +1645,11 @@ export class ProjectRepository {
         if (job.comfyInputs !== undefined) {
           updateData.comfyInputs = job.comfyInputs;
         }
+        // Once a Civitai job has run, its params carry the seed the server
+        // rolled; a client copy taken before that must not drop it.
+        if (job.civitaiParams !== undefined && dbStatus === 'draft') {
+          updateData.civitaiParams = job.civitaiParams;
+        }
 
         // On retry, clear the prior error so the UI doesn't keep showing it.
         if (dbStatus === 'failed' && nextStatus === 'pending') {
@@ -1688,6 +1699,7 @@ export class ProjectRepository {
           providerId: job.providerId ?? null,
           workflowSnapshot: job.workflowSnapshot ?? null,
           comfyInputs: job.comfyInputs ?? null,
+          civitaiParams: job.civitaiParams ?? null,
         };
         await this.prisma.job.create({ data: createData as any });
       }
@@ -1794,11 +1806,14 @@ export class ProjectRepository {
       if (!normalizedWorkflow.length) return;
 
       await tx.workflowItem.createMany({
-        data: normalizedWorkflow.map((item) => ({
+        data: normalizedWorkflow.map((item) => {
+          const civitai = sanitizeCivitaiBinding(item.civitai, item.type);
+          return {
           id: item.id,
           projectId,
           type: item.type,
-          value: item.value ?? null,
+          // A model item's value is its options' AIRs, kept in step with them.
+          value: item.type === 'model' ? civitaiModelItemValue(civitai?.options) : (item.value ?? null),
           order: item.order,
           thumbnailUrl: item.thumbnailUrl ?? null,
           optimizedUrl: item.optimizedUrl ?? null,
@@ -1807,7 +1822,9 @@ export class ProjectRepository {
           comfyTarget: item.comfyTarget
             ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input, ...(item.comfyTarget.remix ? { remix: true } : {}) }
             : Prisma.DbNull,
-        })),
+          civitai: civitai ? (civitai as any) : Prisma.DbNull,
+          };
+        }),
       });
     });
   }
@@ -1847,6 +1864,9 @@ export class ProjectRepository {
     if (Array.isArray(j.comfyInputs)) {
       job.comfyInputs = j.comfyInputs as ComfyJobInput[];
     }
+    if (j.civitaiParams && typeof j.civitaiParams === 'object') {
+      job.civitaiParams = j.civitaiParams as CivitaiGenerationConfig;
+    }
     return job;
   }
 
@@ -1861,6 +1881,7 @@ export class ProjectRepository {
       selectedTags: (w.selectedTags as string[]) ?? undefined,
       disabled: w.disabled ?? false,
       comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyBinding) : undefined,
+      civitai: w.civitai && typeof w.civitai === 'object' ? (w.civitai as WorkflowItem['civitai']) : undefined,
     };
   }
 

@@ -1,5 +1,5 @@
 import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
-import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -783,6 +783,29 @@ export async function testComfyConnection(url: string, password?: string): Promi
     body: JSON.stringify({ url, password }),
   });
   return handleResponse<ComfyConnectionResult>(res, 'Failed to test the ComfyUI connection');
+}
+
+/**
+ * Look up a Civitai model by its page link or AIR, with the token of one of the
+ * user's Civitai providers.
+ */
+export async function resolveCivitaiResource(providerId: string, value: string): Promise<CivitaiResource> {
+  const res = await apiFetch('/api/civitai/resolve', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ providerId, value }),
+  });
+  return handleResponse<CivitaiResource>(res, 'Failed to look up the Civitai model');
+}
+
+/** Search Civitai's catalog for checkpoints, or for LoRAs and embeddings. */
+export async function searchCivitaiModels(providerId: string, query: string, slot: 'checkpoint' | 'lora'): Promise<CivitaiSearchResult[]> {
+  const res = await apiFetch('/api/civitai/search', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ providerId, query, slot }),
+  });
+  return handleResponse<CivitaiSearchResult[]>(res, 'Failed to search Civitai');
 }
 
 export type StartProjectJobsRequest =

@@ -29,13 +29,24 @@ import {
 import { createCampaignMediaService, StorageLimitError } from '../services/campaign-media';
 import { generateJobs } from '../../src/lib/remixEngine';
 import {
+  CIVITAI_SCHEDULERS,
+  civitaiModelItems,
+  civitaiResourceLabel,
+  isCivitaiEmbedding,
+  normalizeCivitaiAir,
+  resolveCivitaiParams,
+  sanitizeCivitaiConfig,
+} from '../../src/lib/civitai';
+import { CivitaiClient } from '../civitai/civitai-client';
+import { assertSafeProviderApiUrl } from '../utils/url-safety';
+import {
   DEFAULT_AUDIO_PROJECT_CONFIG,
   parseAudioProjectConfig,
   PROVIDER_MODELS_MAP,
   resolveSupportedAspectRatio,
   resolveSupportedOption,
 } from '../../src/types';
-import type { Job, Library, ModelConfig, Project } from '../../src/types';
+import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, Job, Library, ModelConfig, Project, WorkflowItem } from '../../src/types';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
 const PROVIDER_TYPE_VALUES = Object.keys(PROVIDER_MODELS_MAP) as [
@@ -49,7 +60,49 @@ const WORKFLOW_ITEM_TYPES = [
   'image', 'image_from_library', 'image_library',
   'audio', 'audio_from_library', 'audio_library',
   'video', 'video_from_library', 'video_library',
+  // Civitai projects only
+  'negative_text', 'negative_text_library',
+  'checkpoint', 'lora',
 ] as const;
+const CIVITAI_ONLY_ITEM_TYPES = new Set(['negative_text', 'negative_text_library', 'checkpoint', 'lora']);
+const CIVITAI_SCHEDULER_VALUES = CIVITAI_SCHEDULERS.map((s) => s.value) as [string, ...string[]];
+const CIVITAI_MODELS_SCHEMA = z.array(z.object({
+  ref: z.string().min(1).describe('A Civitai model page link (https://civitai.com/models/<id>?modelVersionId=<v>) or AIR (urn:air:…). get_project returns the AIR here.'),
+  strength: z.number().min(-5).max(5).optional().describe('LoRA strength (default 1). Ignored for checkpoints and embeddings.'),
+})).max(20).optional().describe('For "checkpoint" and "lora" items (Civitai projects): the options this slot chooses between. Each job uses one, so several options multiply the combinations like a library does — e.g. two checkpoints, or one LoRA listed twice at different strengths.');
+const CIVITAI_SETTINGS_SCHEMA = z.object({
+  sampler: z.enum(CIVITAI_SCHEDULER_VALUES).optional().describe('Sampler, e.g. "eulerA", "dpM2MKarras"'),
+  steps: z.number().int().min(1).max(100).optional(),
+  cfgScale: z.number().min(1).max(30).optional(),
+  width: z.number().int().min(64).max(2048).optional().describe('Image width; snapped to a multiple of 8. With a source image, the output keeps the source shape at this area.'),
+  height: z.number().int().min(64).max(2048).optional(),
+  clipSkip: z.number().int().min(1).max(12).optional(),
+  seed: z.number().int().min(0).max(4294967295).nullable().optional().describe('A fixed seed for every job; null or omitted rolls one per job.'),
+  denoise: z.number().min(0.05).max(1).optional().describe('Image-to-image strength: how far the result may move from the source image (default 0.7).'),
+  allowMatureContent: z.boolean().optional().describe('Let Civitai return mature results instead of blocking them.'),
+}).optional().describe('Civitai projects: sampling settings shared by every job. The checkpoint, LoRAs, prompt, negative prompt and source image are workflow items.');
+
+type CivitaiSettingsInput = {
+  sampler?: string;
+  steps?: number;
+  cfgScale?: number;
+  width?: number;
+  height?: number;
+  clipSkip?: number;
+  seed?: number | null;
+  denoise?: number;
+  allowMatureContent?: boolean;
+};
+
+function civitaiConfigToSettings(config: CivitaiGenerationConfig | undefined): CivitaiSettingsInput {
+  const { scheduler, seed, model, resources, negativePrompt, ...rest } = config || {};
+  return { ...rest, ...(scheduler ? { sampler: scheduler } : {}), seed: seed ?? null };
+}
+
+function civitaiSettingsToConfig(settings: CivitaiSettingsInput): Record<string, unknown> {
+  const { sampler, seed, ...rest } = settings;
+  return { ...rest, ...(sampler !== undefined ? { scheduler: sampler } : {}), ...(seed !== undefined ? { seed: seed ?? undefined } : {}) };
+}
 const SOCIAL_ACCOUNT_STATUS_VALUES = ['active', 'disconnected', 'expired'] as const;
 const CAMPAIGN_STATUS_VALUES = ['active', 'completed', 'archived'] as const;
 const MCP_POST_STATUS_VALUES = ['draft', 'scheduled'] as const;
@@ -581,11 +634,28 @@ function toToolWorkflowItem(item: {
   disabled?: boolean;
   thumbnailUrl?: string;
   optimizedUrl?: string;
+  civitai?: CivitaiBinding;
 }) {
+  if (item.type === 'model') {
+    const slot = item.civitai?.slot === 'checkpoint' ? 'checkpoint' : 'lora';
+    return {
+      id: item.id,
+      itemType: slot,
+      models: (item.civitai?.options || []).map((option) => ({
+        ref: option.air,
+        name: civitaiResourceLabel(option),
+        ...(option.type ? { type: option.type } : {}),
+        ...(slot === 'lora' && !isCivitaiEmbedding(option) ? { strength: option.strength ?? 1 } : {}),
+        ...(option.trainedWords?.length ? { triggerWords: option.trainedWords } : {}),
+      })),
+      disabled: item.disabled ?? false,
+    };
+  }
   const isLibrary = item.type === 'library';
+  const negative = item.civitai?.slot === 'negative';
   return {
     id: item.id,
-    itemType: isLibrary ? 'library' : item.type,
+    itemType: isLibrary ? (negative ? 'negative_text_library' : 'library') : (negative ? 'negative_text' : item.type),
     value: isLibrary ? undefined : item.value ?? '',
     libraryId: isLibrary ? item.value ?? '' : undefined,
     selectedTags: item.selectedTags,
@@ -700,6 +770,84 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
    * keys must name files the user already owns. Everything is validated before
    * the first copy, so a rejected call leaves storage untouched.
    */
+  /**
+   * Civitai projects: turn the "models" of checkpoint and LoRA items into
+   * resources, looked up on Civitai with the project's account. An AIR the
+   * project already holds keeps what was looked up before, so carrying items
+   * forward through update_project does not look every model up again.
+   */
+  async function resolveCivitaiItems(
+    userId: string,
+    projectType: string | undefined,
+    providerId: string | undefined,
+    items: Array<{ itemType: string; models?: Array<{ ref: string; strength?: number }> }>,
+    existing: WorkflowItem[],
+  ): Promise<{ options: Map<number, CivitaiResource[]> } | { error: ToolResult }> {
+    const options = new Map<number, CivitaiResource[]>();
+    const civitaiItems = items.map((item, index) => ({ item, index })).filter(({ item }) => CIVITAI_ONLY_ITEM_TYPES.has(item.itemType));
+    if (civitaiItems.length === 0) return { options };
+    if (projectType !== 'civitai') {
+      return { error: errorResult(`workflowItems[${civitaiItems[0].index}] has itemType "${civitaiItems[0].item.itemType}", which only Civitai projects take.`) };
+    }
+    if (items.filter((item) => item.itemType === 'checkpoint').length > 1) {
+      return { error: errorResult('A Civitai project has one "checkpoint" item. List several checkpoints in its "models" to vary them.') };
+    }
+    const modelItems = civitaiItems.filter(({ item }) => item.itemType === 'checkpoint' || item.itemType === 'lora');
+    if (modelItems.length === 0) return { options };
+    for (const { item, index } of modelItems) {
+      if (!item.models?.length) return { error: errorResult(`workflowItems[${index}] ("${item.itemType}") needs at least one entry in "models".`) };
+    }
+
+    if (!providerId) return { error: errorResult('Checkpoint and LoRA items are looked up with the project\'s Civitai account. Set providerId to a Civitai provider (list_available_models → civitaiAccounts).') };
+    const provider = await providerRepository.getProvider(userId, providerId);
+    if (!provider || provider.type !== 'Civitai') return { error: errorResult(`providerId "${providerId}" is not a Civitai provider.`) };
+    const apiKey = await providerRepository.getDecryptedApiKey(userId, provider.id);
+    if (!apiKey) return { error: errorResult('The Civitai provider has no API key.') };
+    const client = new CivitaiClient(apiKey, assertSafeProviderApiUrl('Civitai', provider.apiUrl));
+
+    const known = new Map<string, CivitaiResource>();
+    for (const item of existing) for (const option of item.civitai?.options || []) known.set(option.air, option);
+
+    for (const { item, index } of modelItems) {
+      const slot = item.itemType as 'checkpoint' | 'lora';
+      const resolved: CivitaiResource[] = [];
+      for (const model of item.models!) {
+        const air = normalizeCivitaiAir(model.ref);
+        let resource = air ? known.get(air) : undefined;
+        if (!resource) {
+          try {
+            resource = await client.resolveResource(model.ref);
+          } catch (e: any) {
+            return { error: errorResult(`workflowItems[${index}]: could not look up "${model.ref}" on Civitai: ${e?.message || e}`) };
+          }
+          known.set(resource.air, resource);
+        }
+        const isCheckpoint = !resource.type || resource.type === 'Checkpoint';
+        if (slot === 'checkpoint' && !isCheckpoint) return { error: errorResult(`workflowItems[${index}]: "${model.ref}" is a ${resource.type}, not a checkpoint. Put it in a "lora" item.`) };
+        if (slot === 'lora' && resource.type === 'Checkpoint') return { error: errorResult(`workflowItems[${index}]: "${model.ref}" is a checkpoint. Put it in the "checkpoint" item.`) };
+        const { strength: _ignored, ...base } = resource;
+        resolved.push(slot === 'lora' && !isCivitaiEmbedding(base) ? { ...base, strength: model.strength ?? 1 } : base);
+      }
+      options.set(index, resolved);
+    }
+    return { options };
+  }
+
+  /** The stored form of a workflow item type that only Civitai projects take. */
+  function civitaiWorkflowItem(itemType: string, libraryId: string | undefined, value: string | undefined, options: CivitaiResource[] | undefined) {
+    switch (itemType) {
+      case 'negative_text':
+        return { type: 'text' as const, value: value || '', civitai: { slot: 'negative' as const } };
+      case 'negative_text_library':
+        return { type: 'library' as const, value: libraryId || '', civitai: { slot: 'negative' as const } };
+      case 'checkpoint':
+      case 'lora':
+        return { type: 'model' as const, value: '', civitai: { slot: itemType, options: options || [] } };
+      default:
+        return null;
+    }
+  }
+
   async function resolveWorkflowMedia(
     userId: string,
     projectId: string,
@@ -1996,7 +2144,10 @@ Staged files are kept for 24 hours and count toward the storage quota until then
             modelConfigId: modelConfigIdFilter ?? null,
             includeUnusable,
           },
-          note: 'Pass providerId and modelConfigId from a usableModels entry directly to create_project_with_workflow.',
+          civitaiAccounts: savedProviders
+            .filter((provider) => provider.type === 'Civitai')
+            .map((provider) => ({ providerId: provider.id, name: provider.name })),
+          note: 'Pass providerId and modelConfigId from a usableModels entry directly to create_project_with_workflow. For a Civitai project (type "civitai") pass a civitaiAccounts providerId and no modelConfigId; its checkpoint and LoRAs are workflow items.',
         }, null, 2),
       };
     },
@@ -2172,6 +2323,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         duration: project.duration ?? null,
         resolution: project.resolution ?? null,
         sound: project.sound ?? null,
+        ...(project.type === 'civitai' ? { civitaiSettings: civitaiConfigToSettings(project.civitaiConfig) } : {}),
         workflowItemCount: workflowItems.length,
         workflowItems,
         workflowUpdateWarning:
@@ -2207,6 +2359,12 @@ Workflow item types:
 - "video": video context slot. Leave "value" empty, set "value" to item.storageKey from get_library_items to pin a specific video file, or set "uploadId" to pin an uploaded file.
 - "video_from_library" / "video_library": reference a video library. Requires "libraryId".
 
+Civitai projects (type "civitai") generate on Civitai with any checkpoint and LoRA from its catalog. Set providerId to a Civitai provider (list_available_models → civitaiAccounts), leave modelConfigId out, and put sampling settings in civitaiSettings. Their workflow also takes:
+- "checkpoint": exactly one; "models" lists one or more checkpoints (Civitai link or AIR), one per job.
+- "lora": any number; each lists one or more LoRAs or embeddings in "models" (with "strength"), one per job; every enabled LoRA item applies.
+- "negative_text" / "negative_text_library": text or a text library that goes to the negative prompt instead of the prompt.
+- "image" / "image_library": the source image for image-to-image (the first image is used).
+
 Recommended workflow:
 1. Call list_available_models → pick one usableModels entry (copy providerId + modelConfigId verbatim).
 2. Call list_libraries → discover libraries.
@@ -2215,7 +2373,7 @@ Recommended workflow:
     inputSchema: {
       name: z.string().min(1).max(256).describe('Project display name'),
       description: z.string().max(2000).optional().describe('Optional project description explaining what it does, generates, or how it should be used'),
-      type: z.enum(['image', 'text', 'video', 'audio']).describe('Project generation type'),
+      type: z.enum(['image', 'text', 'video', 'audio', 'civitai']).describe('Project generation type'),
       providerId: z.string().optional().describe('Saved provider ID (from list_available_models usableModels[].providerId)'),
       modelConfigId: z.string().optional().describe('Model config ID (from list_available_models usableModels[].modelConfigId)'),
       aspectRatio: z.string().optional().describe('Aspect ratio (e.g. "16:9", "1:1") — available options depend on the selected model'),
@@ -2229,9 +2387,11 @@ Recommended workflow:
       duration: z.number().int().optional().describe('Video duration in seconds'),
       resolution: z.string().optional().describe('Video resolution (e.g. "720p", "1080p")'),
       sound: z.enum(['on', 'off']).optional().describe('Sound for video generation'),
+      civitaiSettings: CIVITAI_SETTINGS_SCHEMA,
       workflowItems: z.array(z.object({
         itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": leave empty for a blank slot, or set to item.storageKey from get_library_items to pin a specific file.'),
+        models: CIVITAI_MODELS_SCHEMA,
         uploadId: z.string().min(1).optional().describe('For "image"/"audio"/"video": a ready upload from create_upload to pin. The server copies it into the project; leave value empty.'),
         libraryId: z.string().optional().describe('Library ID (required for "library", *_from_library, and *_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter applied when picking items from the library'),
@@ -2242,11 +2402,12 @@ Recommended workflow:
     handler: async (userId, input) => {
       const {
         name, description, type, providerId, modelConfigId, aspectRatio, quality, format, shuffle, prefix,
-        systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
+        systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems, civitaiSettings,
       } = input as {
         name: string;
         description?: string;
-        type: 'image' | 'text' | 'video' | 'audio';
+        type: 'image' | 'text' | 'video' | 'audio' | 'civitai';
+        civitaiSettings?: CivitaiSettingsInput;
         providerId?: string;
         modelConfigId?: string;
         aspectRatio?: string;
@@ -2266,8 +2427,13 @@ Recommended workflow:
           uploadId?: string;
           libraryId?: string;
           selectedTags?: string[];
+          models?: { ref: string; strength?: number }[];
         }[];
       };
+
+      if (type === 'civitai' && modelConfigId) {
+        return { text: JSON.stringify({ error: 'Civitai projects take no modelConfigId: their checkpoint and LoRAs are "checkpoint" and "lora" workflow items.' }), isError: true };
+      }
 
       // ─── Validate provider/model pairing ───
       let providerRecord: Awaited<ReturnType<ProviderRepository['getPublicProvider']>> | null = null;
@@ -2307,6 +2473,17 @@ Recommended workflow:
         };
       }
 
+      if (providerRecord && (type === 'civitai') !== (providerRecord.type === 'Civitai')) {
+        return {
+          text: JSON.stringify({
+            error: type === 'civitai'
+              ? `Civitai projects need a Civitai provider; "${providerRecord.name}" is "${providerRecord.type}".`
+              : `A Civitai provider only serves Civitai projects (type "civitai").`,
+          }),
+          isError: true,
+        };
+      }
+
       if (modelMeta && modelMeta.category !== type) {
         return {
           text: JSON.stringify({
@@ -2340,9 +2517,15 @@ Recommended workflow:
       const projectId = crypto.randomUUID();
       const media = await resolveWorkflowMedia(userId, projectId, workflowItems);
       if ('error' in media) return media.error;
+      const civitai = await resolveCivitaiItems(userId, type, providerId, workflowItems, []);
+      if ('error' in civitai) return civitai.error;
 
       // ─── Normalize workflow ───
       const workflow = workflowItems.map((item, idx) => {
+        const civitaiItem = civitaiWorkflowItem(item.itemType, item.libraryId, item.value, civitai.options.get(idx));
+        if (civitaiItem) {
+          return { id: crypto.randomUUID(), ...civitaiItem, order: idx, selectedTags: item.selectedTags };
+        }
         let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
         let internalValue: string;
 
@@ -2384,6 +2567,11 @@ Recommended workflow:
             internalType = 'library';
             internalValue = item.libraryId || '';
             break;
+          case 'negative_text':
+          case 'negative_text_library':
+          case 'checkpoint':
+          case 'lora':
+            throw new Error(`${item.itemType} is stored by civitaiWorkflowItem`);
           default: {
             const exhaustive: never = item.itemType;
             throw new Error(`Unknown workflow itemType: ${exhaustive as string}`);
@@ -2426,6 +2614,7 @@ Recommended workflow:
         duration: duration ?? undefined,
         resolution: resolution || undefined,
         sound: sound || undefined,
+        civitaiConfig: type === 'civitai' && civitaiSettings ? sanitizeCivitaiConfig(civitaiSettingsToConfig(civitaiSettings)) : undefined,
       };
 
       await repository.createProject(userId, project);
@@ -2460,7 +2649,7 @@ Important workflow behavior:
       name: z.string().min(1).max(256).optional().describe('New project display name'),
       description: z.string().max(2000).optional().describe('New project description. Pass an empty string to clear it.'),
       status: z.enum(['active', 'archived']).optional().describe('Update project status'),
-      type: z.enum(['image', 'text', 'video', 'audio']).optional().describe('Update project generation type'),
+      type: z.enum(['image', 'text', 'video', 'audio', 'civitai']).optional().describe('Update project generation type'),
       providerId: z.string().optional().describe('Update saved provider ID'),
       modelConfigId: z.string().optional().describe('Update model config ID'),
       aspectRatio: z.string().optional().describe('Update aspect ratio'),
@@ -2474,9 +2663,11 @@ Important workflow behavior:
       duration: z.number().int().optional().describe('Update video duration'),
       resolution: z.string().optional().describe('Update video resolution'),
       sound: z.enum(['on', 'off']).optional().describe('Update video sound setting'),
+      civitaiSettings: CIVITAI_SETTINGS_SCHEMA.describe('Civitai projects: sampling settings to change; omitted fields keep their value.'),
       workflowItems: z.array(z.object({
-        itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
+        itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type (Civitai projects also take "checkpoint", "lora", "negative_text" and "negative_text_library")'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": file storage key to pin a file.'),
+        models: CIVITAI_MODELS_SCHEMA,
         uploadId: z.string().min(1).optional().describe('For "image"/"audio"/"video": a ready upload from create_upload to pin. The server copies it into the project and fills value, thumbnailUrl and optimizedUrl; leave those empty.'),
         libraryId: z.string().optional().describe('Library ID (required for "library" and *_from_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter for library items'),
@@ -2491,13 +2682,14 @@ Important workflow behavior:
     handler: async (userId, input) => {
       const {
         projectId, name, description, status, type, providerId, modelConfigId, aspectRatio, quality, format,
-        shuffle, prefix, systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
+        shuffle, prefix, systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems, civitaiSettings,
       } = input as {
         projectId: string;
         name?: string;
         description?: string;
         status?: 'active' | 'archived';
-        type?: 'image' | 'text' | 'video' | 'audio';
+        type?: 'image' | 'text' | 'video' | 'audio' | 'civitai';
+        civitaiSettings?: CivitaiSettingsInput;
         providerId?: string;
         modelConfigId?: string;
         aspectRatio?: string;
@@ -2521,6 +2713,7 @@ Important workflow behavior:
           disabled?: boolean;
           thumbnailUrl?: string;
           optimizedUrl?: string;
+          models?: { ref: string; strength?: number }[];
         }[];
       };
 
@@ -2556,7 +2749,25 @@ Important workflow behavior:
       const effectiveModelConfigId = modelConfigId ?? existingProject.modelConfigId;
       const effectiveType = type ?? existingProject.type;
 
-      if (providerId || modelConfigId || type) {
+      if (effectiveType === 'civitai') {
+        // A Civitai project's models are workflow items; only the account is checked.
+        if (modelConfigId) {
+          return { text: JSON.stringify({ error: 'Civitai projects take no modelConfigId: their checkpoint and LoRAs are "checkpoint" and "lora" workflow items.' }), isError: true };
+        }
+        if (providerId) {
+          const providerRecord = await providerRepository.getPublicProvider(userId, providerId);
+          if (!providerRecord || providerRecord.type !== 'Civitai') {
+            return { text: JSON.stringify({ error: `providerId "${providerId}" is not a Civitai provider.` }), isError: true };
+          }
+        }
+        if (civitaiSettings !== undefined) {
+          updates.civitaiConfig = sanitizeCivitaiConfig({ ...(existingProject.civitaiConfig || {}), ...civitaiSettingsToConfig(civitaiSettings) }) ?? null;
+        }
+      } else if (civitaiSettings !== undefined) {
+        return { text: JSON.stringify({ error: 'civitaiSettings only applies to Civitai projects.' }), isError: true };
+      }
+
+      if (effectiveType !== 'civitai' && (providerId || modelConfigId || type)) {
         let providerRecord = null;
         if (effectiveProviderId) {
           providerRecord = await providerRepository.getPublicProvider(userId, effectiveProviderId);
@@ -2649,8 +2860,15 @@ Important workflow behavior:
 
         const media = await resolveWorkflowMedia(userId, projectId, workflowItems);
         if ('error' in media) return media.error;
+        const existingWorkflow = await repository.getProjectWorkflow(userId, projectId);
+        const civitai = await resolveCivitaiItems(userId, effectiveType, effectiveProviderId, workflowItems, existingWorkflow);
+        if ('error' in civitai) return civitai.error;
 
         updates.workflow = workflowItems.map((item, idx) => {
+          const civitaiItem = civitaiWorkflowItem(item.itemType, item.libraryId, item.value, civitai.options.get(idx));
+          if (civitaiItem) {
+            return { id: item.id || crypto.randomUUID(), ...civitaiItem, order: idx, selectedTags: item.selectedTags, disabled: item.disabled };
+          }
           let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
           let internalValue: string;
 
@@ -2992,7 +3210,7 @@ Returns "url" — the project page when scoped to a project, otherwise the queue
 
 Each draft gets one prompt combination built from the project's enabled workflow items: static text is used as-is and every library reference contributes one of its items. With shuffle on, each draft picks randomly; with shuffle off, drafts walk the combinations in order and wrap around once they are exhausted.
 
-The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.
+The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. A Civitai project instead takes each draft's checkpoint, LoRAs and negative prompt from its combination of "checkpoint", "lora" and negative items, and its sampling settings from civitaiSettings. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.
 
 Returns the project's "url" — share it so the user can review the drafts before starting them.`,
     inputSchema: {
@@ -3013,7 +3231,16 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
-      if (!project.providerId || !project.modelConfigId) {
+      const isCivitai = project.type === 'civitai';
+      if (isCivitai && !project.providerId) {
+        return {
+          text: JSON.stringify({
+            error: `Civitai project "${project.name}" has no Civitai account. Set providerId to a Civitai provider (list_available_models → civitaiAccounts) with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+      if (!isCivitai && (!project.providerId || !project.modelConfigId)) {
         return {
           text: JSON.stringify({
             error: `Project "${project.name}" has no provider/model configured. Pick a pair with list_available_models and set it with update_project before drafting jobs.`,
@@ -3023,6 +3250,14 @@ Returns the project's "url" — share it so the user can review the drafts befor
       }
 
       const workflow = await repository.getProjectWorkflow(userId, projectId);
+      if (isCivitai && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
+        return {
+          text: JSON.stringify({
+            error: `Civitai project "${project.name}" has no enabled checkpoint. Add a "checkpoint" workflow item with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
       const enabledItems = workflow.filter((item) => !item.disabled);
       if (enabledItems.length === 0) {
         return {
@@ -3072,14 +3307,40 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
+      if (isCivitai && combinations.some((combo) => !combo.prompt.trim())) {
+        return {
+          text: JSON.stringify({ error: `Civitai project "${project.name}" builds an empty prompt: every text item feeds the negative prompt. Add prompt text before drafting jobs.` }),
+          isError: true,
+        };
+      }
+
       const storageError = await assertStorageHeadroom(userId, combinations.length);
       if (storageError) return storageError;
 
-      const provider = await providerRepository.getPublicProvider(userId, project.providerId);
+      const provider = await providerRepository.getPublicProvider(userId, project.providerId!);
       const model = provider?.models.find((m) => m.id === project.modelConfigId);
       const settings = buildJobSettings(project, model);
+      const civitaiFormat = project.format && ['png', 'jpeg', 'webp'].includes(project.format) ? project.format : 'png';
 
-      const drafts: Job[] = combinations.map((combo) => ({
+      // A Civitai job takes its checkpoint, LoRAs and negative prompt from its
+      // combination and keeps a copy of everything it runs with.
+      const drafts: Job[] = isCivitai ? combinations.map((combo) => {
+        const params = resolveCivitaiParams(project.civitaiConfig, combo.civitai || {});
+        const sourceImage = combo.imageContexts?.[0];
+        return {
+          id: crypto.randomUUID(),
+          prompt: combo.prompt,
+          imageContexts: sourceImage ? [sourceImage] : undefined,
+          status: 'draft' as const,
+          providerId: project.providerId,
+          modelConfigId: params.model!.air,
+          aspectRatio: `${params.width}x${params.height}`,
+          format: civitaiFormat,
+          civitaiParams: params,
+          filename: buildJobFilename([project.prefix ?? '', ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
+          workflowSnapshot: workflow,
+        };
+      }) : combinations.map((combo) => ({
         id: crypto.randomUUID(),
         prompt: combo.prompt,
         imageContexts: combo.imageContexts,

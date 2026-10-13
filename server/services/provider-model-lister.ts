@@ -59,7 +59,8 @@ export async function listProviderModels(
     case 'BytePlus':
     case 'Replicate':
     case 'BlackForestLabs':
-    case 'MiniMax': {
+    case 'MiniMax':
+    case 'Civitai': {
       // These providers have no model listing API — return our static supported models
       const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP[type] || []).map(c => ({
         id: c.modelId,

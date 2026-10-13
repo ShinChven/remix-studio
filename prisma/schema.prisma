@@ -196,7 +196,7 @@ model Project {
   userId            String
   name              String
   description       String?  @db.Text
-  type              String   @default("image") // "image", "text", "video", "audio", or "comfyui"
+  type              String   @default("image") // "image", "text", "video", "audio", "comfyui" or "civitai"
   status            String   @default("active") // "active" or "archived"
   providerId        String?
   aspectRatio       String?
@@ -220,6 +220,8 @@ model Project {
   comfyUrl          String?
   comfyWorkflow     Json?
   comfyPassword     String?
+  // Civitai projects: checkpoint, resources and parameters (CivitaiGenerationConfig)
+  civitaiConfig     Json?
   createdAt         DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -263,6 +265,7 @@ model Job {
   sound            String? // 'on' | 'off'
   workflowSnapshot Json? // WorkflowItem[]
   comfyInputs      Json? // ComfyJobInput[] (ComfyUI projects)
+  civitaiParams    Json? // CivitaiGenerationConfig (Civitai projects)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
 
@@ -285,6 +288,7 @@ model WorkflowItem {
   selectedTags Json? // String[]
   disabled     Boolean @default(false)
   comfyTarget  Json? // ComfyInputTarget (ComfyUI projects)
+  civitai      Json? // CivitaiBinding (Civitai projects)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
