@@ -1767,6 +1767,8 @@ export interface AssistantActiveTurn {
   /** Sequence number of the last frame the turn has emitted so far. */
   lastSeq: number;
   lastEvent: AssistantStatusEvent | null;
+  /** The user pressed Stop and the turn is winding down. */
+  stopping: boolean;
 }
 
 export interface AssistantToolMetadata {
@@ -1786,7 +1788,8 @@ export interface AssistantStatusEvent {
 export type AssistantTurnResult =
   | { kind: 'final'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] }
   | { kind: 'awaiting_confirmation'; message: AssistantMessage; confirmation: AssistantPendingConfirmation; statusEvents: AssistantStatusEvent[] }
-  | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] };
+  | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] }
+  | { kind: 'stopped'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] };
 
 export async function fetchAssistantConversations(cursor?: string, limit?: number): Promise<{ conversations: AssistantConversation[] }> {
   const params = new URLSearchParams();
@@ -1964,6 +1967,19 @@ export async function streamAssistantTurn(
     { headers: getHeaders(false), signal },
   );
   return handleAssistantTurnStream(res, onStatusEvent, since);
+}
+
+/**
+ * Ask the conversation's running turn to stop. The turn's own stream carries
+ * on to a `stopped` result, so keep following it. `stopping` is false when
+ * nothing was running.
+ */
+export async function cancelAssistantTurn(conversationId: string): Promise<{ stopping: boolean }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/turn/cancel`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse<{ stopping: boolean }>(res, 'Failed to stop the assistant');
 }
 
 export async function fetchAssistantProviders(): Promise<{ providers: Provider[] }> {

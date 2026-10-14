@@ -17,6 +17,7 @@ import {
   editAssistantMessage,
   confirmAssistantTool,
   streamAssistantTurn,
+  cancelAssistantTurn,
   AssistantTurnBusyError,
   AssistantTurnDisconnectedError,
   fetchAssistantProviders,
@@ -381,6 +382,8 @@ export function AssistantPage() {
   const [editingMessageContent, setEditingMessageContent] = useState('');
 
   const [isReconnecting, setIsReconnecting] = useState(false);
+  // Stop was pressed; the turn's stream is still open until the loop winds down.
+  const [isStopping, setIsStopping] = useState(false);
 
   const justCreatedIdRef = useRef<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -433,6 +436,8 @@ export function AssistantPage() {
   const handleTurnStatusEvent = useCallback((event: AssistantStatusEvent, seq: number) => {
     turnSeqRef.current = seq;
     setIsReconnecting(false);
+    // Another tab (or this one, before a reload) may have pressed Stop.
+    if (event.type === 'stop_requested') setIsStopping(true);
     if (event.type === 'provider_thinking' && typeof event.title === 'string') {
       setCurrentThinkingTitle(event.title);
       setCurrentToolTitle('');
@@ -516,6 +521,7 @@ export function AssistantPage() {
   const releaseTurnIndicator = useCallback(() => {
     if (streamingConversationRef.current) return;
     setIsSending(false);
+    setIsStopping(false);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
   }, []);
@@ -580,6 +586,7 @@ export function AssistantPage() {
     if (streamingConversationRef.current === conversationId) return;
     turnSeqRef.current = 0;
     setIsSending(true);
+    setIsStopping(activeTurn?.stopping === true);
     setPendingConfirmation(null);
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
@@ -1027,6 +1034,23 @@ export function AssistantPage() {
       if (currentConversationId) refreshResources(currentConversationId);
     } finally {
       releaseTurnIndicator();
+    }
+  };
+
+  // ─── Stop the running turn ───
+  // Only asks the server to stop. The stream that is following the turn stays
+  // open and settles the transcript when the turn reports `stopped`.
+  const handleStop = async () => {
+    const conversationId = streamingConversationRef.current ?? activeConversationId;
+    if (!conversationId || isStopping) return;
+    setIsStopping(true);
+    try {
+      const { stopping } = await cancelAssistantTurn(conversationId);
+      // Nothing was running: the turn ended (or has yet to start) on its own.
+      if (!stopping) setIsStopping(false);
+    } catch (e: any) {
+      setIsStopping(false);
+      toast.error(e?.message || t('assistant.stopFailed', 'Could not stop the assistant.'));
     }
   };
 
@@ -1700,6 +1724,8 @@ export function AssistantPage() {
                     <span className="font-medium bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 animate-text-gradient bg-[size:200%_auto]">
                       {isReconnecting
                         ? t('assistant.reconnecting', 'Reconnecting to the assistant...')
+                        : isStopping
+                        ? t('assistant.stopping', 'Stopping...')
                         : currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
                     </span>
                   </div>
@@ -1745,7 +1771,9 @@ export function AssistantPage() {
                 contextUsageTokens={contextUsageTokens}
                 providers={providers}
                 isSending={isSending}
+                isStopping={isStopping}
                 onSend={handleSend}
+                onStop={handleStop}
               />
             </div>
           </div>

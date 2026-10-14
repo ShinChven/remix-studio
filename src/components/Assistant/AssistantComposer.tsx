@@ -60,6 +60,8 @@ export interface AssistantComposerProps {
   setSelectedModelId: (id: string) => void;
   providers: Provider[];
   isSending: boolean;
+  /** Stop was pressed and the turn is winding down. */
+  isStopping?: boolean;
   onSend: (text: string, boundContexts: BoundContext[], attachedImages: AttachedImage[]) => void;
   onStop?: () => void;
   placeholder?: string;
@@ -208,6 +210,7 @@ export function AssistantComposer({
   setSelectedModelId,
   providers,
   isSending,
+  isStopping = false,
   onSend,
   onStop,
   placeholder,
@@ -1109,8 +1112,9 @@ export function AssistantComposer({
               <button
                 type="button"
                 onClick={onStop}
-                className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95"
-                title={t('assistant.stop')}
+                disabled={!onStop || isStopping}
+                className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                title={isStopping ? t('assistant.stopping', 'Stopping...') : t('assistant.stop')}
               >
                 <Square className="h-4 w-4 fill-current" />
               </button>

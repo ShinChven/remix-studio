@@ -19,6 +19,13 @@ function turnResultToJson(result: TurnResult, statusEvents: AssistantStatusEvent
       statusEvents,
     };
   }
+  if (result.kind === 'stopped') {
+    return {
+      kind: 'stopped' as const,
+      message: result.stoppedMessage,
+      statusEvents,
+    };
+  }
   if (result.kind === 'awaiting_confirmation') {
     return {
       kind: 'awaiting_confirmation' as const,
@@ -110,7 +117,10 @@ export function createAssistantRouter(
       kind: TurnKind;
       logLabel: string;
       fallbackError: string;
-      run: (onStatusEvent: (event: AssistantStatusEvent) => void) => Promise<TurnResult>;
+      run: (
+        onStatusEvent: (event: AssistantStatusEvent) => void,
+        abortSignal: AbortSignal,
+      ) => Promise<TurnResult>;
     },
   ) {
     // Ownership is checked before the turn is registered: the hub's slot is
@@ -124,9 +134,9 @@ export function createAssistantRouter(
         userId: input.userId,
         conversationId: input.conversationId,
         kind: input.kind,
-        execute: async (emit) => {
+        execute: async (emit, signal) => {
           try {
-            const result = await input.run(emit);
+            const result = await input.run(emit, signal);
             return { type: 'result', ...turnResultToJson(result, []) };
           } catch (e: any) {
             console.error(input.logLabel, e);
@@ -301,10 +311,11 @@ export function createAssistantRouter(
       kind: 'message',
       logLabel: '[POST /api/assistant/conversations/:id/messages]',
       fallbackError: 'Failed to process message',
-      run: (onStatusEvent) => runner.sendUserMessage({
+      run: (onStatusEvent, abortSignal) => runner.sendUserMessage({
         userId: user.userId,
         conversationId,
         content,
+        abortSignal,
         onStatusEvent,
       }),
     });
@@ -325,12 +336,13 @@ export function createAssistantRouter(
       kind: 'edit',
       logLabel: '[POST /api/assistant/conversations/:id/messages/:messageId/edit]',
       fallbackError: 'Failed to process message edit',
-      run: async (onStatusEvent) => {
+      run: async (onStatusEvent, abortSignal) => {
         await repo.deleteMessagesFrom(conversationId, messageId);
         return runner.sendUserMessage({
           userId: user.userId,
           conversationId,
           content,
+          abortSignal,
           onStatusEvent,
         });
       },
@@ -358,11 +370,12 @@ export function createAssistantRouter(
       kind: 'confirm',
       logLabel: '[POST /api/assistant/conversations/:id/confirm]',
       fallbackError: 'Failed to process confirmation',
-      run: (onStatusEvent) => runner.resumeAfterConfirmation({
+      run: (onStatusEvent, abortSignal) => runner.resumeAfterConfirmation({
         userId: user.userId,
         conversationId,
         confirmationId,
         decision,
+        abortSignal,
         onStatusEvent,
       }),
     });
@@ -378,6 +391,18 @@ export function createAssistantRouter(
     const conversation = await repo.getConversation(user.userId, conversationId);
     if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
     return streamTurnFrames(c, conversationId, parseSince(c.req.query('since')));
+  });
+
+  // ─── Stop the running turn ───
+  // The loop winds down at its next safe point and the turn's stream ends with
+  // a `stopped` result, so the client keeps following that stream rather than
+  // waiting on this response. `stopping: false` means nothing was running.
+  router.post('/api/assistant/conversations/:id/turn/cancel', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const conversationId = c.req.param('id');
+    const conversation = await repo.getConversation(user.userId, conversationId);
+    if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+    return c.json({ stopping: turnHub.cancel(conversationId) });
   });
 
   // ─── Transcribe recorded audio to text (Gemini Flash Lite) ───

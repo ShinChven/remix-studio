@@ -406,6 +406,8 @@
     "reconnecting": "アシスタントに再接続しています...",
     "turnBusy": "アシスタントはこのチャットでまだ作業中です。何も送信されませんでした。",
     "reconnectFailed": "アシスタントとの接続が失われました。チャットを再読み込みします。",
+    "stopping": "停止しています...",
+    "stopFailed": "アシスタントを停止できませんでした。",
     "attachImage": "画像を添付",
     "dropImagesHere": "ここに画像をドロップ",
     "maxImagesReached": "1メッセージにつき最大5枚まで",

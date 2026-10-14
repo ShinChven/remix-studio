@@ -406,6 +406,8 @@
     "reconnecting": "Reconnexion à l'assistant...",
     "turnBusy": "L'assistant travaille encore dans cette conversation — rien n'a été envoyé.",
     "reconnectFailed": "Connexion à l'assistant perdue — rechargement de la conversation.",
+    "stopping": "Arrêt en cours...",
+    "stopFailed": "Impossible d'arrêter l'assistant.",
     "attachImage": "Joindre une image",
     "dropImagesHere": "Déposez les images ici",
     "maxImagesReached": "Maximum 5 images par message",
