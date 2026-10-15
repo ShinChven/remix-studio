@@ -1328,6 +1328,11 @@ export async function startAlbumExport(
   return handleResponse<{ taskId: string }>(res, 'Failed to start export');
 }
 
+/**
+ * Copy album items into a library of the matching type. With `move` the items
+ * then leave the album for the recycle bin; a move takes an explicit
+ * `itemIds` list only.
+ */
 export async function copyAlbumToLibrary(
   projectId: string,
   params: {
@@ -1336,14 +1341,43 @@ export async function copyAlbumToLibrary(
     version?: 'raw' | 'optimized';
     destinationLibraryId?: string;
     newLibraryName?: string;
+    move?: boolean;
   }
-): Promise<{ libraryId: string }> {
+): Promise<{ libraryId: string; libraryName: string; copiedItems: number; movedItems: number }> {
   const res = await apiFetch(`/api/projects/${projectId}/album/copy-to-library`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(params),
   });
-  return handleResponse<{ libraryId: string }>(res, 'Failed to copy to library');
+  return handleResponse<{ libraryId: string; libraryName: string; copiedItems: number; movedItems: number }>(
+    res,
+    'Failed to copy to library',
+  );
+}
+
+/**
+ * Copy album items into another project of the same type, with the jobs and
+ * files behind them, under new ids. Pass `destinationProjectId` for an
+ * existing project or `newProjectName` to create one.
+ */
+export async function copyAlbumItemsToProject(
+  projectId: string,
+  params: {
+    itemIds?: string[];
+    allAlbumItems?: boolean;
+    destinationProjectId?: string;
+    newProjectName?: string;
+  }
+): Promise<{ projectId: string; projectName: string; createdProject: boolean; copiedItems: number; copiedJobs: number }> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/copy-to-project`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(params),
+  });
+  return handleResponse<{ projectId: string; projectName: string; createdProject: boolean; copiedItems: number; copiedJobs: number }>(
+    res,
+    'Failed to copy album items',
+  );
 }
 
 /**
@@ -1362,6 +1396,7 @@ export async function moveAlbumItemsToProject(
   }
 ): Promise<{
   projectId: string;
+  projectName: string;
   createdProject: boolean;
   movedItems: number;
   movedJobs: number;
@@ -1374,6 +1409,7 @@ export async function moveAlbumItemsToProject(
   });
   return handleResponse<{
     projectId: string;
+    projectName: string;
     createdProject: boolean;
     movedItems: number;
     movedJobs: number;

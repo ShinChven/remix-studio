@@ -9,9 +9,9 @@ import { AlbumPromptModal } from './AlbumPromptModal';
 import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
-import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { AlbumActionsMenu, AlbumSearch, type AlbumAction } from './AlbumToolbarControls';
-import { AlbumMoveToProjectDialog } from './AlbumMoveToProjectDialog';
+import { AlbumTransferDialog, type AlbumTransferAction } from './AlbumTransferDialog';
+import type { ProjectMediaType } from '../../lib/project-media';
 import { SelectionToolbar } from './SelectionToolbar';
 import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
 import { TagModal } from '../TagModal';
@@ -38,7 +38,12 @@ interface AlbumTabProps {
   /** Id of the item whose configuration is currently being loaded. */
   reusingAlbumItemId?: string | null;
   onExportStarted: () => void;
+  /** Items copied or moved out of the album have left it; take them off the page. */
+  onAlbumItemsMoved?: (items: AlbumItem[]) => void;
+  /** What the album holds: image, video, text or audio. */
   projectType?: ProjectType;
+  /** The project's own type, which a destination project has to share. */
+  sourceProjectType?: ProjectType;
   page: number;
   pageSize: number | 'all';
   total: number;
@@ -351,7 +356,9 @@ export function AlbumTab({
   onReuseWorkflow,
   reusingAlbumItemId,
   onExportStarted,
+  onAlbumItemsMoved,
   projectType = 'image',
+  sourceProjectType,
   page,
   pageSize,
   total,
@@ -385,17 +392,17 @@ export function AlbumTab({
   const isTextProject = projectType === 'text';
   const isVideoProject = projectType === 'video';
   const isAudioProject = projectType === 'audio';
+  const mediaType: ProjectMediaType = isTextProject ? 'text' : isVideoProject ? 'video' : isAudioProject ? 'audio' : 'image';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [showCompareDialog, setShowCompareDialog] = useState(false);
   const [pendingExportItemIds, setPendingExportItemIds] = useState<string[] | undefined>();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [transferAction, setTransferAction] = useState<AlbumTransferAction | null>(null);
   const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
-  const [moveItems, setMoveItems] = useState<AlbumItem[] | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [tagItem, setTagItem] = useState<AlbumItem | null>(null);
@@ -587,9 +594,7 @@ export function AlbumTab({
       minute: '2-digit',
     });
   };
-  const selectedTextItems = displayItems.filter((item) => selectedAlbumIds.has(item.id));
-  const copyItemIds = bulkItemIds;
-  const copyUseAllScope = useAllAlbumScope;
+  const selectedItems = displayItems.filter((item) => selectedAlbumIds.has(item.id));
 
   const openExportDialog = (isAll: boolean) => {
     setPendingExportItemIds(isAll && useAllAlbumScope ? undefined : bulkItemIds);
@@ -629,11 +634,6 @@ export function AlbumTab({
     navigate(`/project/${projectId}/export-watermark?${params.toString()}`, { state });
   };
 
-  const openMoveToProject = () => {
-    if (selectedDisplayItemIds.length === 0) return;
-    setMoveItems(displayItems.filter((item) => selectedAlbumIds.has(item.id)));
-  };
-
   const albumActions: AlbumAction[] = [
     {
       label: hasVisibleSelection ? t('projectViewer.album.exportSelected') : useAllAlbumScope ? t('projectViewer.album.exportAll') : t('projectViewer.album.exportPage'),
@@ -646,20 +646,21 @@ export function AlbumTab({
       onClick: () => setShowBatchTagModal(true),
     },
     {
-      label: hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : useAllAlbumScope ? t('projectViewer.album.copyAllToLibrary') : t('projectViewer.album.copyPageToLibrary'),
+      label: hasVisibleSelection ? t('projectViewer.transfer.copyTo') : useAllAlbumScope ? t('projectViewer.transfer.copyAllTo') : t('projectViewer.transfer.copyPageTo'),
       icon: <Copy className="w-4 h-4 shrink-0" />,
-      onClick: () => setShowCopyDialog(true),
+      onClick: () => setTransferAction('copy'),
     },
+    ...(hasVisibleSelection ? [{
+      label: t('projectViewer.transfer.moveTo'),
+      icon: <FolderInput className="w-4 h-4 shrink-0" />,
+      onClick: () => setTransferAction('move'),
+    }] : []),
     ...(isTextProject && selectedDisplayItemIds.length > 1 ? [{
       label: t('projectViewer.album.compareSelected'),
       icon: <Layers className="w-4 h-4 shrink-0" />,
       onClick: () => setShowCompareDialog(true),
     }] : []),
     ...(hasVisibleSelection ? [{
-      label: t('projectViewer.moveToProject.moveSelected'),
-      icon: <FolderInput className="w-4 h-4 shrink-0" />,
-      onClick: openMoveToProject,
-    }, {
       label: t('projectViewer.common.deleteSelected'),
       icon: <Trash2 className="w-4 h-4 shrink-0" />,
       destructive: true,
@@ -1286,7 +1287,7 @@ export function AlbumTab({
           </div>
         </div>
       )}
-      {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
+      {showCompareDialog && <TextAlbumCompareDialog items={selectedItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
       <TextAlbumDetailDialog items={displayItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
       <ExportPackageDialog
         isOpen={isExportDialogOpen}
@@ -1296,17 +1297,25 @@ export function AlbumTab({
         onSubmit={handleExport}
         onWatermark={!isTextProject && !isVideoProject && !isAudioProject ? handleWatermarkExport : undefined}
       />
-      <CopyToLibraryDialog
-        isOpen={showCopyDialog}
-        projectId={projectId}
-        projectName={projectName}
-        projectType={projectType}
-        itemIds={copyItemIds}
-        useAllAlbumScope={copyUseAllScope}
-        allAlbumItemCount={total}
-        onClose={() => setShowCopyDialog(false)}
-        onSuccess={() => {}}
-      />
+      {transferAction && (
+        <AlbumTransferDialog
+          projectId={projectId}
+          projectName={projectName}
+          mediaType={mediaType}
+          projectType={sourceProjectType || projectType}
+          initialAction={transferAction}
+          items={hasVisibleSelection ? selectedItems : displayItems}
+          useAllAlbumScope={!hasVisibleSelection && useAllAlbumScope}
+          itemCount={hasVisibleSelection ? selectedItems.length : useAllAlbumScope ? total : displayItems.length}
+          totalSize={!hasVisibleSelection && useAllAlbumScope ? totalSize : undefined}
+          canMove={hasVisibleSelection}
+          onClose={() => setTransferAction(null)}
+          onDone={(_action, movedItems) => {
+            setTransferAction(null);
+            if (movedItems.length > 0) onAlbumItemsMoved?.(movedItems);
+          }}
+        />
+      )}
       <TagModal
         isOpen={tagItem !== null}
         initialTags={tagItem?.tags || []}
@@ -1323,19 +1332,6 @@ export function AlbumTab({
         onClose={() => setShowBatchTagModal(false)}
         onApply={applyBatchTags}
       />
-      {moveItems && moveItems.length > 0 && (
-        <AlbumMoveToProjectDialog
-          projectId={projectId}
-          projectName={projectName}
-          projectType={projectType}
-          items={moveItems}
-          onClose={() => setMoveItems(null)}
-          onMoved={(destinationProjectId) => {
-            setMoveItems(null);
-            navigate(`/project/${destinationProjectId}?tab=album`);
-          }}
-        />
-      )}
     </section>
   );
 }
