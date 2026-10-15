@@ -117,7 +117,7 @@ The final tab is named for the project modality. It contains durable `AlbumItem`
 - Text projects show generated text and its prompt/context; multiple text results can be compared.
 - Audio projects provide audio result controls.
 
-The collection supports selection, page-size choices, filename changes, tagging, export, copy-to-library, move-to-project, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+The collection supports selection, page-size choices, filename changes, tagging, export, copying and moving to a library or another project, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
 
 ## Tagging Album Items
 
@@ -137,30 +137,27 @@ Tags follow the item: they survive a move to the recycle bin and a restore, they
 
 Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item — so a stray space or a difference in capitalisation cannot split one tag into two entries in the filter list.
 
-## Moving Results to Another Project
+## Copying and Moving Results
 
-Select album items and choose **Move to Project** to hand them to a different project of the same type. Unlike copying to a library, this is a move: the items leave the album they came from.
+**Copy to…** and **Move to…** in the album's **Actions** menu open the same dialog. Switch between **Copy** and **Move** at the top, then pick where the items go:
 
-The action opens a confirmation page rather than a dialog, so what is about to happen is visible in full on any screen size. It lists the selected items, their combined size, and what travels with them:
+- **Library** — a library of the album's media type: an existing one from the searchable list, or a new one named on the spot. For images and videos, choose **Optimized** (smaller derived asset when available) or **Raw** (original generated/uploaded asset).
+- **Project** — another project of the same type: an existing one, searchable by name with its album count beside it, or a new one, which inherits this project's type and generation settings since the results were produced under them.
 
-- The album items and their generated files, thumbnails and optimized versions.
-- The job record behind each item, so the Done history follows the result.
-- The reusable workflow snapshot on that job and the reference media it points at, so **Reuse workflow** keeps working in the destination project.
+The dialog previews the items and says what the chosen combination does to the album:
 
-Pick the destination on the same page — an existing project of the same type, searchable by name, or a new project created on the spot. A new project inherits this project's type and generation settings, since the results were produced under them.
+| | Library | Project |
+|---|---|---|
+| **Copy** | Library items are created from the results, with their own copy of each file and their tags. The album is unchanged. | The results are copied with the completed job behind each one and its workflow snapshot, so the Done history and **Reuse workflow** work in the destination. The album is unchanged. |
+| **Move** | The results are copied into the library, then go to the recycle bin, where they can be restored until it is emptied. | The results leave this project with their files, the job record behind each one and its workflow snapshot. |
 
-Files are copied into the destination project's storage folder before the records move, and a name already taken there is given a numbered variant so nothing is overwritten. A file the source project still points at — a reference shared with a workflow step or with a job that stayed behind — is left in place, so both sides keep working. A job that is still running does not move; its album item does, and the job stays with the project its worker is writing into.
+With nothing selected, **Copy all to…** (or **Copy this page to…** while a filter or search is active) copies without a selection; a move always needs one.
 
-## Copying Results to a Library
+When it finishes you stay on the album, and moved items leave the page at once. The confirmation names the destination and links to it; the link opens in a new tab.
 
-Copy selected results or the entire collection into a compatible library. You may create a library from the dialog or append to an existing library of the project output type.
+A remembered destination is proposed the next time: the kind of destination per action, and the library or project per media type. Only a completed copy or move is recorded, so browsing the list and backing out does not change the next proposal.
 
-For generated media, choose:
-
-- **Optimized** — smaller derived asset when available.
-- **Raw** — original generated/uploaded asset.
-
-Copying creates library items; it does not move or delete the album results.
+Files are copied into the destination's storage folder, and a name already taken there is given a numbered variant so nothing is overwritten. A copy into a project gets its own files and new record ids, so either project can later be cleaned up without affecting the other; a reference to a library file stays a reference. A move into a project deletes a source file only once nothing left in the source project points at it — a reference shared with a workflow step or with a job that stayed behind is left in place, so both sides keep working. A job that is still running does not move; its album item does, and the job stays with the project its worker is writing into. Only completed jobs are copied.
 
 ## Watermarking a Single Image
 

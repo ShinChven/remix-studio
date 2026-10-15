@@ -2304,6 +2304,58 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     });
   };
 
+  /**
+   * Take items that have already left the album — deleted, or moved somewhere
+   * else — off the cached page, its counts and the selection, without waiting
+   * on a refetch (and a fresh round of signed image URLs).
+   */
+  const removeAlbumItemsLocally = (items: AlbumItem[]) => {
+    const itemIds = items.map(i => i.id);
+    const query = liveQueryRef.current;
+    const itemIdsSet = new Set(itemIds);
+
+    ++albumFetchTokenRef.current;
+    setLocalAlbum((current) => current.filter((item) => !itemIdsSet.has(item.id)));
+    setAlbumPreviewItems((current) => current.filter((item) => !itemIdsSet.has(item.id)));
+
+    const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
+    const pageSize = query.albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : query.albumPageSize;
+    const nextAlbumPages = Math.max(1, Math.ceil(nextAlbumTotal / pageSize));
+    setAlbumTotal(nextAlbumTotal);
+    setAlbumPages(nextAlbumPages);
+
+    const removedSize = items.reduce((total, item) => total + Number(item.size || 0), 0);
+    setAlbumTotalSize((current) => Math.max(0, current - removedSize));
+
+    const removedAspectRatios = items.reduce<Record<string, number>>((counts, item) => {
+      const ratio = item.aspectRatio?.trim();
+      if (ratio) counts[ratio] = (counts[ratio] || 0) + 1;
+      return counts;
+    }, {});
+    if (Object.keys(removedAspectRatios).length > 0) {
+      setAlbumAspectRatioCounts((current) => current
+        .map(({ ratio, count }) => ({
+          ratio,
+          count: Math.max(0, count - (removedAspectRatios[ratio] || 0)),
+        }))
+        .filter(({ count }) => count > 0));
+    }
+
+    albumLoadedKeyRef.current = query.albumQueryKey;
+    albumFetchedAtRef.current = Date.now();
+
+    setSelectedAlbumIds(prev => {
+      const next = new Set(prev);
+      itemIdsSet.forEach(id => next.delete(id));
+      return next;
+    });
+
+    if (query.albumPage > nextAlbumPages) {
+      albumLoadedKeyRef.current = null;
+      updateAlbumParams({ page: nextAlbumPages });
+    }
+  };
+
   const deleteAlbumItems = async (items: AlbumItem[]) => {
     if (items.length === 0) return;
 
@@ -2311,53 +2363,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     try {
       const itemIds = items.map(i => i.id);
       if (itemIds.length === 1) await moveToTrash(localProject.id, itemIds[0]); else await moveToTrashBatch(localProject.id, itemIds);
-
-      const query = liveQueryRef.current;
-      const itemIdsSet = new Set(itemIds);
-
-      // The delete endpoint has already committed the mutation. Update the
-      // cached page immediately instead of blocking the UI on a full page
-      // refetch (and a fresh round of signed image URLs).
-      ++albumFetchTokenRef.current;
-      setLocalAlbum((current) => current.filter((item) => !itemIdsSet.has(item.id)));
-      setAlbumPreviewItems((current) => current.filter((item) => !itemIdsSet.has(item.id)));
-
-      const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
-      const pageSize = query.albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : query.albumPageSize;
-      const nextAlbumPages = Math.max(1, Math.ceil(nextAlbumTotal / pageSize));
-      setAlbumTotal(nextAlbumTotal);
-      setAlbumPages(nextAlbumPages);
-
-      const removedSize = items.reduce((total, item) => total + Number(item.size || 0), 0);
-      setAlbumTotalSize((current) => Math.max(0, current - removedSize));
-
-      const removedAspectRatios = items.reduce<Record<string, number>>((counts, item) => {
-        const ratio = item.aspectRatio?.trim();
-        if (ratio) counts[ratio] = (counts[ratio] || 0) + 1;
-        return counts;
-      }, {});
-      if (Object.keys(removedAspectRatios).length > 0) {
-        setAlbumAspectRatioCounts((current) => current
-          .map(({ ratio, count }) => ({
-            ratio,
-            count: Math.max(0, count - (removedAspectRatios[ratio] || 0)),
-          }))
-          .filter(({ count }) => count > 0));
-      }
-
-      albumLoadedKeyRef.current = query.albumQueryKey;
-      albumFetchedAtRef.current = Date.now();
-
-      setSelectedAlbumIds(prev => {
-        const next = new Set(prev);
-        itemIdsSet.forEach(id => next.delete(id));
-        return next;
-      });
-
-      if (query.albumPage > nextAlbumPages) {
-        albumLoadedKeyRef.current = null;
-        updateAlbumParams({ page: nextAlbumPages });
-      }
+      removeAlbumItemsLocally(items);
     } catch (e: any) {
       console.error('Failed to move items to trash:', e);
       toast.error(`Failed to move items to trash: ${e.message}`);
@@ -2365,6 +2371,17 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     } finally {
       isDeletingAlbumItemsRef.current = false;
     }
+  };
+
+  /**
+   * Items moved to a library or another project have left this album. They
+   * come off the page at once; the refresh behind it then brings the counts,
+   * the next page's items and the completed jobs that left with them in line.
+   */
+  const handleAlbumItemsMoved = (items: AlbumItem[]) => {
+    if (items.length === 0) return;
+    removeAlbumItemsLocally(items);
+    scheduleProjectLiveRefresh(0);
   };
 
   const updateLightboxAfterAlbumDelete = (deletedItems: AlbumItem[]) => {
@@ -2749,7 +2766,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
               onReuseWorkflow={handleReuseAlbumWorkflow}
               reusingAlbumItemId={reuseConfigSourceId}
               onExportStarted={() => navigate('/exports')}
+              onAlbumItemsMoved={handleAlbumItemsMoved}
               projectType={mediaProjectType}
+              sourceProjectType={localProject.type || 'image'}
               page={albumPage}
               pageSize={albumPageSize}
               total={albumTotal}

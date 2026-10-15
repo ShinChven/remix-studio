@@ -30,6 +30,52 @@ function normalizeAspectRatio(value: string | null | undefined): string {
   return `${width / divisor}:${height / divisor}`;
 }
 
+/**
+ * Rewrites the storage keys on album and job rows through an old-key → new-key
+ * map, for rows that follow their files into another project folder.
+ *
+ * The map is keyed by bare storage keys, but a row can hold a full presigned
+ * URL for the same object — `presignIfKey` exists because that happens.
+ * Normalising first means such a row is rewritten like any other instead of
+ * keeping a URL that points back at the source folder.
+ */
+function createStorageKeyRemapper(keyMap: Record<string, string>, bucket?: string) {
+  const lookup = (value: string): string | undefined => {
+    const direct = keyMap[value];
+    if (direct) return direct;
+    if (!bucket) return undefined;
+    const key = stripToKey(value, bucket);
+    return key ? keyMap[key] : undefined;
+  };
+  const remapKey = (value: unknown): string | null => {
+    if (typeof value !== 'string' || !value) return (value as string) ?? null;
+    return lookup(value) ?? value;
+  };
+  const remapKeyList = (values: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
+    if (!Array.isArray(values)) return Prisma.DbNull;
+    return values.map((value) => (typeof value === 'string' ? (lookup(value) ?? value) : value)) as Prisma.InputJsonValue;
+  };
+  const remapSnapshot = (snapshot: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
+    if (!Array.isArray(snapshot)) return Prisma.DbNull;
+    return snapshot.map((entry) => {
+      if (!entry || typeof entry !== 'object') return entry;
+      const item = entry as Record<string, unknown>;
+      return {
+        ...item,
+        value: remapKey(item.value),
+        thumbnailUrl: remapKey(item.thumbnailUrl),
+        optimizedUrl: remapKey(item.optimizedUrl),
+      };
+    }) as Prisma.InputJsonValue;
+  };
+  return { remapKey, remapKeyList, remapSnapshot };
+}
+
+/** A JSON column read back from one row, in the shape a create on another row takes. */
+function copyJsonColumn(value: Prisma.JsonValue | null): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  return value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
+}
+
 /** An album item carries at most this many tags, each at most this long. */
 export const ALBUM_TAG_MAX_COUNT = 30;
 export const ALBUM_TAG_MAX_LENGTH = 64;
@@ -842,40 +888,7 @@ export class ProjectRepository {
     const jobIds = Array.from(new Set((options.jobIds ?? []).map((id) => id.trim()).filter(Boolean)));
     if (itemIds.length === 0) return { movedItems: 0, movedJobs: 0 };
 
-    const keyMap = options.keyMap ?? {};
-    const bucket = options.bucket;
-    // The map is keyed by bare storage keys, but a row can hold a full
-    // presigned URL for the same object — `presignIfKey` exists because that
-    // happens. Normalising first means such a row is rewritten like any other
-    // instead of keeping a URL whose file the caller is about to delete.
-    const lookup = (value: string): string | undefined => {
-      const direct = keyMap[value];
-      if (direct) return direct;
-      if (!bucket) return undefined;
-      const key = stripToKey(value, bucket);
-      return key ? keyMap[key] : undefined;
-    };
-    const remapKey = (value: unknown): string | null => {
-      if (typeof value !== 'string' || !value) return (value as string) ?? null;
-      return lookup(value) ?? value;
-    };
-    const remapKeyList = (values: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
-      if (!Array.isArray(values)) return Prisma.DbNull;
-      return values.map((value) => (typeof value === 'string' ? (lookup(value) ?? value) : value)) as Prisma.InputJsonValue;
-    };
-    const remapSnapshot = (snapshot: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
-      if (!Array.isArray(snapshot)) return Prisma.DbNull;
-      return snapshot.map((entry) => {
-        if (!entry || typeof entry !== 'object') return entry;
-        const item = entry as Record<string, unknown>;
-        return {
-          ...item,
-          value: remapKey(item.value),
-          thumbnailUrl: remapKey(item.thumbnailUrl),
-          optimizedUrl: remapKey(item.optimizedUrl),
-        };
-      }) as Prisma.InputJsonValue;
-    };
+    const { remapKey, remapKeyList, remapSnapshot } = createStorageKeyRemapper(options.keyMap ?? {}, options.bucket);
 
     return this.prisma.$transaction(async (tx) => {
       let movedJobs = 0;
@@ -923,6 +936,86 @@ export class ProjectRepository {
 
       return { movedItems, movedJobs };
     });
+  }
+
+  /**
+   * Copy album items — and the completed jobs that produced them — into
+   * another project of the same user, leaving the source untouched.
+   *
+   * Every copy gets a new id, and an item's `jobId` follows its job to the
+   * copy, so "Reuse workflow" works from the destination on its own. The
+   * caller has already copied the storage objects and hands over the
+   * old-key → new-key map; keys missing from it stay as they were, which is
+   * how a reference to a library file stays shared. An item whose job is not
+   * among the copied ones is copied without one: a job id from another
+   * project would only ever resolve to nothing there.
+   */
+  async copyAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
+  ): Promise<{ copiedItems: number; copiedJobs: number }> {
+    await this.assertOwnedProject(userId, sourceProjectId);
+    await this.assertOwnedProject(userId, destinationProjectId);
+
+    const itemIds = Array.from(new Set(options.itemIds.map((id) => id.trim()).filter(Boolean)));
+    const jobIds = Array.from(new Set((options.jobIds ?? []).map((id) => id.trim()).filter(Boolean)));
+    if (itemIds.length === 0) return { copiedItems: 0, copiedJobs: 0 };
+
+    const { remapKey, remapKeyList, remapSnapshot } = createStorageKeyRemapper(options.keyMap ?? {}, options.bucket);
+
+    const [jobs, items] = await Promise.all([
+      jobIds.length > 0
+        ? this.prisma.job.findMany({ where: { id: { in: jobIds }, projectId: sourceProjectId, userId, status: 'completed' } })
+        : Promise.resolve([]),
+      this.prisma.albumItem.findMany({ where: { id: { in: itemIds }, projectId: sourceProjectId, userId } }),
+    ]);
+
+    const jobIdMap = new Map(jobs.map((job) => [job.id, crypto.randomUUID()]));
+
+    const jobRows: Prisma.JobCreateManyInput[] = jobs.map(({ id, updatedAt, ...job }) => ({
+      ...job,
+      id: jobIdMap.get(id)!,
+      projectId: destinationProjectId,
+      // The provider's task belongs to the original run; a late callback for
+      // it should find that job, not this copy.
+      taskId: null,
+      imageUrl: remapKey(job.imageUrl),
+      thumbnailUrl: remapKey(job.thumbnailUrl),
+      optimizedUrl: remapKey(job.optimizedUrl),
+      imageContexts: remapKeyList(job.imageContexts),
+      videoContexts: remapKeyList(job.videoContexts),
+      audioContexts: remapKeyList(job.audioContexts),
+      workflowSnapshot: remapSnapshot(job.workflowSnapshot),
+      comfyInputs: copyJsonColumn(job.comfyInputs),
+      civitaiParams: copyJsonColumn(job.civitaiParams),
+    }));
+
+    const itemRows: Prisma.AlbumItemCreateManyInput[] = items.map(({ id, ...item }) => ({
+      ...item,
+      id: crypto.randomUUID(),
+      projectId: destinationProjectId,
+      jobId: item.jobId ? (jobIdMap.get(item.jobId) ?? null) : null,
+      imageUrl: remapKey(item.imageUrl),
+      thumbnailUrl: remapKey(item.thumbnailUrl),
+      optimizedUrl: remapKey(item.optimizedUrl),
+      imageContexts: remapKeyList(item.imageContexts),
+      videoContexts: remapKeyList(item.videoContexts),
+      audioContexts: remapKeyList(item.audioContexts),
+      tags: copyJsonColumn(item.tags),
+      civitaiParams: copyJsonColumn(item.civitaiParams),
+    }));
+
+    // Two bulk inserts in one transaction: copying a whole album is one
+    // request, and a row-at-a-time loop would outrun the interactive
+    // transaction timeout long before it finished.
+    const [copiedJobs, copiedItems] = await this.prisma.$transaction([
+      this.prisma.job.createMany({ data: jobRows }),
+      this.prisma.albumItem.createMany({ data: itemRows }),
+    ]);
+
+    return { copiedItems: copiedItems.count, copiedJobs: copiedJobs.count };
   }
 
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {

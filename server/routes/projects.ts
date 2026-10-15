@@ -416,6 +416,91 @@ async function planAlbumStorageMoves(
   return keyMap;
 }
 
+/**
+ * Every storage key inside `sourcePrefix` that album items, or the jobs behind
+ * them, point at: results, thumbnails, context media, and the media inside a
+ * job's workflow snapshot. A key outside the folder — a library file, a remote
+ * URL — is a shared reference rather than something the items own, so it is
+ * left out.
+ */
+function collectAlbumStorageKeys(items: AlbumItem[], jobs: Job[], sourcePrefix: string, bucket: string): string[] {
+  const keys = new Set<string>();
+  const collectKey = (value?: string) => {
+    const key = stripToKey(value, bucket);
+    if (key && key.startsWith(sourcePrefix)) keys.add(key);
+  };
+  const collectKeys = (values?: string[]) => (values || []).forEach(collectKey);
+
+  for (const item of items) {
+    collectKey(item.imageUrl);
+    collectKey(item.thumbnailUrl);
+    collectKey(item.optimizedUrl);
+    collectKeys(item.imageContexts);
+    collectKeys(item.videoContexts);
+    collectKeys(item.audioContexts);
+  }
+  for (const job of jobs) {
+    collectKey(job.imageUrl);
+    collectKey(job.thumbnailUrl);
+    collectKey(job.optimizedUrl);
+    collectKeys(job.imageContexts);
+    collectKeys(job.videoContexts);
+    collectKeys(job.audioContexts);
+    for (const step of job.workflowSnapshot || []) {
+      if (step.type !== 'image' && step.type !== 'video' && step.type !== 'audio') continue;
+      collectKey(step.value);
+      collectKey(step.thumbnailUrl);
+      collectKey(step.optimizedUrl);
+    }
+  }
+  return Array.from(keys);
+}
+
+/**
+ * Copy every object in a storage plan, and return how many sources were gone.
+ *
+ * A row can reference a file that is no longer in the bucket — a reference
+ * image replaced in the workflow, a step deleted, a result cleaned up by the
+ * orphan tool — and copying one of those throws. Only that specific error is
+ * tolerated, and the key then drops out of the map so the row keeps the key it
+ * had. Anything else (refused, throttled, a broken connection) still fails the
+ * request, because silently skipping it would lose a live file.
+ */
+async function copyPlannedStorageObjects(keyMap: Record<string, string>, storage: S3Storage, logTag: string): Promise<number> {
+  const missing = await mapWithConcurrency(
+    Object.entries(keyMap),
+    STORAGE_CONCURRENCY,
+    async ([sourceKey, destinationKey]) => {
+      try {
+        await storage.copy(sourceKey, destinationKey);
+        return null;
+      } catch (e) {
+        if (!isMissingObjectError(e)) throw e;
+        return sourceKey;
+      }
+    },
+  );
+  let missingFiles = 0;
+  for (const sourceKey of missing) {
+    if (!sourceKey) continue;
+    delete keyMap[sourceKey];
+    missingFiles += 1;
+  }
+  if (missingFiles > 0) {
+    console.warn(`[${logTag}] ${missingFiles} referenced file(s) are missing from storage and were left behind`);
+  }
+  return missingFiles;
+}
+
+/** The destination an album copy or move request names, read from its body. */
+function readAlbumDestination(body: any) {
+  return {
+    destinationProjectId: typeof body?.destinationProjectId === 'string' ? body.destinationProjectId.trim() : '',
+    newProjectName: typeof body?.newProjectName === 'string' ? body.newProjectName.trim() : '',
+    newProjectId: typeof body?.newProjectId === 'string' ? body.newProjectId.trim() : '',
+  };
+}
+
 export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher, liveEvents?: LiveEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -1265,7 +1350,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
   /**
    * POST /api/projects/:id/album/copy-to-library
    *
-   * Copy selected album items to a matching library.
+   * Copy selected album items to a matching library. With `move: true` the
+   * items then leave the album for the recycle bin, which keeps their files
+   * until it is emptied — the library has its own copies by then. A move needs
+   * an explicit `itemIds` list; it is never applied to a whole album.
    */
   router.post('/api/projects/:id/album/copy-to-library', authMiddleware, async (c) => {
     try {
@@ -1279,9 +1367,13 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const version: 'raw' | 'optimized' = body.version || 'optimized';
       const destinationLibraryId: string | undefined = body.destinationLibraryId;
       const newLibraryName: string | undefined = body.newLibraryName;
+      const move = body.move === true;
 
       if (!allAlbumItems && !itemIds.length) {
         return c.json({ error: 'No items selected' }, 400);
+      }
+      if (move && (allAlbumItems || !itemIds.length)) {
+        return c.json({ error: 'Moving to a library needs an itemIds list' }, 400);
       }
       if (!destinationLibraryId && !newLibraryName) {
         return c.json({ error: 'destinationLibraryId or newLibraryName is required' }, 400);
@@ -1293,9 +1385,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
 
       const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
       const albumItems = albumPage.items;
+      const wanted = new Set(itemIds);
       const itemsToCopy = allAlbumItems
         ? albumItems
-        : albumItems.filter((item) => itemIds.includes(item.id));
+        : albumItems.filter((item) => wanted.has(item.id));
       if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
 
       const bucket = storage.getBucketName();
@@ -1332,6 +1425,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       }
 
       let libraryId = destinationLibraryId;
+      let libraryName = newLibraryName || '';
 
       if (!libraryId) {
         libraryId = randomUUID();
@@ -1349,6 +1443,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         if (lib.type !== targetLibraryType) {
           return c.json({ error: `Destination must be a ${targetLibraryType} library` }, 400);
         }
+        libraryName = lib.name;
       }
 
       const safeLibraryId = libraryId.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -1431,12 +1526,118 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         id: libraryId,
       });
 
-      return c.json({ success: true, libraryId });
+      // The library copies exist as of here, so a failure to take one item out
+      // of the album is counted rather than thrown: reporting the whole move as
+      // failed would invite a retry that copies everything a second time.
+      let movedItems = 0;
+      if (move) {
+        for (const item of itemsToCopy) {
+          try {
+            await repository.moveToTrash(user.userId, projectId, item.id);
+            movedItems += 1;
+          } catch (trashError) {
+            console.warn(`[album move to library] Failed to move ${item.id} to the recycle bin:`, trashError);
+          }
+        }
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId,
+          reason: 'album.moved',
+        });
+      }
+
+      return c.json({
+        success: true,
+        libraryId,
+        libraryName,
+        copiedItems: newItems.length,
+        movedItems,
+      });
     } catch (e) {
       console.error('[POST /api/projects/:id/album/copy-to-library]', e);
       return c.json({ error: 'Failed to copy to library' }, 500);
     }
   });
+
+  /**
+   * The project album items are copied or moved into: an existing project of
+   * the same type, or a new one created here. A new project starts from the
+   * source project's settings — the items were generated under them, and a
+   * copy or a move is no reason to re-pick a model.
+   */
+  async function resolveAlbumDestinationProject(
+    userId: string,
+    sourceProject: Project,
+    destination: ReturnType<typeof readAlbumDestination>,
+  ): Promise<{ project: Project; created: boolean } | { error: string; status: 400 | 404 }> {
+    const sourceType = sourceProject.type || 'image';
+
+    if (destination.destinationProjectId) {
+      if (destination.destinationProjectId === sourceProject.id) {
+        return { error: 'Destination must be a different project', status: 400 };
+      }
+      const existing = await repository.getProject(userId, destination.destinationProjectId);
+      if (!existing) return { error: 'Destination project not found', status: 404 };
+      if ((existing.type || 'image') !== sourceType) {
+        return { error: `Destination must be a ${sourceType} project`, status: 400 };
+      }
+      return { project: existing, created: false };
+    }
+
+    let targetProjectId = (destination.newProjectId || destination.newProjectName).replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 128)
+      || `project-${Date.now()}`;
+    if (targetProjectId === sourceProject.id || await repository.getProject(userId, targetProjectId)) {
+      targetProjectId = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
+    }
+    const newProject: Project = {
+      id: targetProjectId,
+      name: destination.newProjectName,
+      description: sourceProject.description,
+      type: sourceType,
+      status: 'active',
+      createdAt: Date.now(),
+      workflow: [],
+      jobs: [],
+      album: [],
+      providerId: sourceProject.providerId,
+      modelConfigId: sourceProject.modelConfigId,
+      aspectRatio: sourceProject.aspectRatio,
+      quality: sourceProject.quality,
+      background: sourceProject.background,
+      format: sourceProject.format,
+      shuffle: sourceProject.shuffle,
+      prefix: sourceProject.prefix,
+      systemPrompt: sourceProject.systemPrompt,
+      temperature: sourceProject.temperature,
+      maxTokens: sourceProject.maxTokens,
+      duration: sourceProject.duration,
+      resolution: sourceProject.resolution,
+      sound: sourceProject.sound,
+    };
+    try {
+      await repository.createProject(userId, newProject);
+    } catch {
+      // Project ids are unique across accounts, so a name-derived id can
+      // collide with a project this user cannot see.
+      newProject.id = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
+      await repository.createProject(userId, newProject);
+    }
+    return { project: newProject, created: true };
+  }
+
+  /**
+   * Take back a destination project a failed copy or move created, so it does
+   * not leave an empty project in the list. Only while it is still empty — if
+   * anything did land there, the project is the record of it.
+   */
+  async function discardCreatedProjectIfEmpty(userId: string, projectId: string, logTag: string) {
+    try {
+      const album = await repository.getProjectAlbum(userId, projectId, { limit: 1 });
+      if (album.total === 0) await repository.deleteProject(userId, projectId);
+    } catch (cleanupError) {
+      console.warn(`[${logTag}] Failed to clean up project ${projectId}:`, cleanupError);
+    }
+  }
 
   /**
    * POST /api/projects/:id/album/move-to-project
@@ -1467,23 +1668,21 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           .filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
           .map((id: string) => id.trim()),
       ));
-      const destinationProjectId = typeof body?.destinationProjectId === 'string' ? body.destinationProjectId.trim() : '';
-      const newProjectName = typeof body?.newProjectName === 'string' ? body.newProjectName.trim() : '';
-      const requestedNewProjectId = typeof body?.newProjectId === 'string' ? body.newProjectId.trim() : '';
+      const destination = readAlbumDestination(body);
 
       if (itemIds.length === 0) return c.json({ error: 'No items selected' }, 400);
-      if (!destinationProjectId && !newProjectName) {
+      if (!destination.destinationProjectId && !destination.newProjectName) {
         return c.json({ error: 'destinationProjectId or newProjectName is required' }, 400);
       }
-      if (newProjectName.length > 256) return c.json({ error: 'Field too long' }, 400);
+      if (destination.newProjectName.length > 256) return c.json({ error: 'Field too long' }, 400);
 
       const sourceProject = await repository.getProject(user.userId, projectId);
       if (!sourceProject) return c.json({ error: 'Project not found' }, 404);
-      const sourceType = sourceProject.type || 'image';
 
       const bucket = storage.getBucketName();
       const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
-      const itemsToMove = albumPage.items.filter((item) => itemIds.includes(item.id));
+      const wanted = new Set(itemIds);
+      const itemsToMove = albumPage.items.filter((item) => wanted.has(item.id));
       if (itemsToMove.length === 0) return c.json({ error: 'No matching items found' }, 400);
 
       // The jobs behind the moved items travel with them; one still running
@@ -1496,132 +1695,27 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         : [];
       const movableJobIds = new Set(jobsToMove.map((job) => job.id));
 
-      let targetProjectId = destinationProjectId;
-      let createdProject = false;
-
-      if (targetProjectId) {
-        if (targetProjectId === projectId) {
-          return c.json({ error: 'Destination must be a different project' }, 400);
-        }
-        const destination = await repository.getProject(user.userId, targetProjectId);
-        if (!destination) return c.json({ error: 'Destination project not found' }, 404);
-        if ((destination.type || 'image') !== sourceType) {
-          return c.json({ error: `Destination must be a ${sourceType} project` }, 400);
-        }
-      } else {
-        targetProjectId = (requestedNewProjectId || newProjectName).replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 128)
-          || `project-${Date.now()}`;
-        if (targetProjectId === projectId || await repository.getProject(user.userId, targetProjectId)) {
-          targetProjectId = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
-        }
-        // The items were generated under this project's settings, so the new
-        // project starts from them — a move is not a reason to re-pick a model.
-        const newProject: Project = {
-          id: targetProjectId,
-          name: newProjectName,
-          description: sourceProject.description,
-          type: sourceType,
-          status: 'active',
-          createdAt: Date.now(),
-          workflow: [],
-          jobs: [],
-          album: [],
-          providerId: sourceProject.providerId,
-          modelConfigId: sourceProject.modelConfigId,
-          aspectRatio: sourceProject.aspectRatio,
-          quality: sourceProject.quality,
-          background: sourceProject.background,
-          format: sourceProject.format,
-          shuffle: sourceProject.shuffle,
-          prefix: sourceProject.prefix,
-          systemPrompt: sourceProject.systemPrompt,
-          temperature: sourceProject.temperature,
-          maxTokens: sourceProject.maxTokens,
-          duration: sourceProject.duration,
-          resolution: sourceProject.resolution,
-          sound: sourceProject.sound,
-        };
-        try {
-          await repository.createProject(user.userId, newProject);
-        } catch {
-          // Project ids are unique across accounts, so a name-derived id can
-          // collide with a project this user cannot see.
-          newProject.id = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
-          targetProjectId = newProject.id;
-          await repository.createProject(user.userId, newProject);
-        }
-        createdProject = true;
-        createdProjectId = targetProjectId;
-      }
+      const resolved = await resolveAlbumDestinationProject(user.userId, sourceProject, destination);
+      if ('error' in resolved) return c.json({ error: resolved.error }, resolved.status);
+      const targetProjectId = resolved.project.id;
+      const createdProject = resolved.created;
+      if (createdProject) createdProjectId = targetProjectId;
 
       const safeSourceId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const safeTargetId = targetProjectId.replace(/[^a-zA-Z0-9-_]/g, '_');
       const sourcePrefix = `${user.userId}/${safeSourceId}/`;
       const destinationPrefix = `${user.userId}/${safeTargetId}/`;
 
-      const movingKeys = new Set<string>();
-      const collectKey = (value?: string) => {
-        const key = stripToKey(value, bucket);
-        if (key && key.startsWith(sourcePrefix)) movingKeys.add(key);
-      };
-      const collectKeys = (values?: string[]) => (values || []).forEach(collectKey);
-
-      for (const item of itemsToMove) {
-        collectKey(item.imageUrl);
-        collectKey(item.thumbnailUrl);
-        collectKey(item.optimizedUrl);
-        collectKeys(item.imageContexts);
-        collectKeys(item.videoContexts);
-        collectKeys(item.audioContexts);
-      }
-      for (const job of jobsToMove) {
-        collectKey(job.imageUrl);
-        collectKey(job.thumbnailUrl);
-        collectKey(job.optimizedUrl);
-        collectKeys(job.imageContexts);
-        collectKeys(job.videoContexts);
-        collectKeys(job.audioContexts);
-        for (const step of job.workflowSnapshot || []) {
-          if (step.type !== 'image' && step.type !== 'video' && step.type !== 'audio') continue;
-          collectKey(step.value);
-          collectKey(step.thumbnailUrl);
-          collectKey(step.optimizedUrl);
-        }
-      }
+      const movingKeys = collectAlbumStorageKeys(itemsToMove, jobsToMove, sourcePrefix, bucket);
 
       // Two project ids can sanitize to the same folder name, in which case
       // the files are already where they need to be and nothing is copied.
       const keyMap = sourcePrefix === destinationPrefix
         ? {}
-        : await planAlbumStorageMoves(Array.from(movingKeys), sourcePrefix, destinationPrefix, storage);
-
-      // A row can reference a file that is no longer in the bucket — a reference
-      // image replaced in the workflow, a step deleted, a result cleaned up by
-      // the orphan tool — and copying one of those throws. Only that specific
-      // error is tolerated, and the key then drops out of the map so the row
-      // keeps the key it had and the sweep below leaves the source alone.
-      // Anything else (refused, throttled, a broken connection) still fails the
-      // request, because silently skipping it would strand a live file.
-      const missing = await mapWithConcurrency(
-        Object.entries(keyMap),
-        STORAGE_CONCURRENCY,
-        async ([sourceKey, destinationKey]) => {
-          try {
-            await storage.copy(sourceKey, destinationKey);
-            return null;
-          } catch (e) {
-            if (!isMissingObjectError(e)) throw e;
-            return sourceKey;
-          }
-        },
-      );
-      const missingFiles = missing.filter((key): key is string => key !== null).length;
-      for (const sourceKey of missing) {
-        if (sourceKey) delete keyMap[sourceKey];
-      }
-      if (missingFiles > 0) {
-        console.warn(`[album move] ${missingFiles} referenced file(s) are missing from storage and were left behind`);
-      }
+        : await planAlbumStorageMoves(movingKeys, sourcePrefix, destinationPrefix, storage);
+      // A missing source drops out of the map, so the row keeps the key it had
+      // and the sweep below leaves that source alone.
+      const missingFiles = await copyPlannedStorageObjects(keyMap, storage, 'album move');
 
       const { movedItems, movedJobs } = await repository.moveAlbumItemsToProject(
         user.userId,
@@ -1728,6 +1822,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       return c.json({
         success: true,
         projectId: targetProjectId,
+        projectName: resolved.project.name,
         createdProject,
         movedItems,
         movedJobs,
@@ -1737,22 +1832,154 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       });
     } catch (e) {
       console.error('[POST /api/projects/:id/album/move-to-project]', e);
-
-      // Roll back a destination project this request created, so a failed move
-      // does not leave an empty project in the list. Only when it is still
-      // empty — if anything did land there, the project is the record of it.
-      if (createdProjectId) {
-        try {
-          const album = await repository.getProjectAlbum(user.userId, createdProjectId, { limit: 1 });
-          if (album.total === 0) await repository.deleteProject(user.userId, createdProjectId);
-        } catch (cleanupError) {
-          console.warn(`[album move] Failed to clean up project ${createdProjectId}:`, cleanupError);
-        }
-      }
+      if (createdProjectId) await discardCreatedProjectIfEmpty(user.userId, createdProjectId, 'album move');
 
       // The reason stays in the server log: an exception here carries bucket
       // names, object keys and table names, which do not belong in a toast.
       return c.json({ error: 'Failed to move album items' }, 500);
+    }
+  });
+
+  /**
+   * POST /api/projects/:id/album/copy-to-project
+   *
+   * Copy album items into another project of the same type. A copy takes what
+   * a move takes — the completed job behind each item, with the workflow
+   * snapshot that makes it reusable, and every file either references from
+   * inside this project's folder — but under new ids and new storage keys, so
+   * the two projects never share a row or a file and either side can be
+   * deleted on its own. The source is left as it was.
+   *
+   * Scope is either an explicit `itemIds` list or `allAlbumItems: true`.
+   */
+  router.post('/api/projects/:id/album/copy-to-project', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    let createdProjectId: string | null = null;
+    // Destination objects written so far, removed again if the rows that would
+    // reference them never land.
+    let copiedKeys: string[] = [];
+    try {
+      const projectId = c.req.param('id');
+      if (!projectId) return c.json({ error: 'Project id is required' }, 400);
+
+      const body = await c.req.json().catch(() => ({}));
+      const allAlbumItems = body?.allAlbumItems === true;
+      const itemIds: string[] = Array.from(new Set(
+        (Array.isArray(body?.itemIds) ? body.itemIds : [])
+          .filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+          .map((id: string) => id.trim()),
+      ));
+      const destination = readAlbumDestination(body);
+
+      if (!allAlbumItems && itemIds.length === 0) return c.json({ error: 'No items selected' }, 400);
+      if (!destination.destinationProjectId && !destination.newProjectName) {
+        return c.json({ error: 'destinationProjectId or newProjectName is required' }, 400);
+      }
+      if (destination.newProjectName.length > 256) return c.json({ error: 'Field too long' }, 400);
+
+      const sourceProject = await repository.getProject(user.userId, projectId);
+      if (!sourceProject) return c.json({ error: 'Project not found' }, 404);
+
+      const bucket = storage.getBucketName();
+      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
+      const wanted = new Set(itemIds);
+      const itemsToCopy = allAlbumItems ? albumPage.items : albumPage.items.filter((item) => wanted.has(item.id));
+      if (itemsToCopy.length === 0) return c.json({ error: 'No matching items found' }, 400);
+
+      // Only a finished job is copied. One still queued or running would be
+      // picked up again from the destination and generate a second time.
+      const jobIds = Array.from(new Set(itemsToCopy.map((item) => item.jobId).filter((id): id is string => Boolean(id))));
+      const jobsToCopy = jobIds.length
+        ? (await repository.getProjectJobsByIds(user.userId, projectId, jobIds, { includeWorkflowSnapshot: true }))
+          .filter((job) => job.status === 'completed')
+        : [];
+
+      // Checked before anything is created: the files of every copied item
+      // count against the quota again.
+      const requiredSize = itemsToCopy.reduce(
+        (sum, item) => sum + (Number(item.size) || 0) + (Number(item.optimizedSize) || 0) + (Number(item.thumbnailSize) || 0),
+        0,
+      );
+      if (requiredSize > 0) {
+        const { allowed, currentUsage, limit } = await checkStorageLimit(
+          user.userId,
+          requiredSize,
+          userRepository,
+          storage,
+          exportStorage,
+          repository,
+        );
+        if (!allowed) {
+          return c.json({
+            error: `Storage limit exceeded. Cannot copy to project. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(requiredSize / (1024 * 1024)).toFixed(1)}MB.`,
+          }, 403);
+        }
+      }
+
+      const resolved = await resolveAlbumDestinationProject(user.userId, sourceProject, destination);
+      if ('error' in resolved) return c.json({ error: resolved.error }, resolved.status);
+      const targetProjectId = resolved.project.id;
+      if (resolved.created) createdProjectId = targetProjectId;
+
+      const safeSourceId = projectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const safeTargetId = targetProjectId.replace(/[^a-zA-Z0-9-_]/g, '_');
+      const sourcePrefix = `${user.userId}/${safeSourceId}/`;
+      const destinationPrefix = `${user.userId}/${safeTargetId}/`;
+
+      // Planned even when both ids sanitize to the same folder: the planner
+      // then finds every name taken by its own source and picks a fresh one,
+      // which keeps the copies from sharing files with the originals.
+      const keyMap = await planAlbumStorageMoves(
+        collectAlbumStorageKeys(itemsToCopy, jobsToCopy, sourcePrefix, bucket),
+        sourcePrefix,
+        destinationPrefix,
+        storage,
+      );
+      copiedKeys = Object.values(keyMap);
+      const missingFiles = await copyPlannedStorageObjects(keyMap, storage, 'album copy');
+
+      const { copiedItems, copiedJobs } = await repository.copyAlbumItemsToProject(
+        user.userId,
+        projectId,
+        targetProjectId,
+        { itemIds: itemsToCopy.map((item) => item.id), jobIds: jobsToCopy.map((job) => job.id), keyMap, bucket },
+      );
+      createdProjectId = null;
+      copiedKeys = [];
+
+      try {
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId: targetProjectId,
+          reason: resolved.created ? 'project.created' : 'album.changed',
+        });
+      } catch (notifyError) {
+        console.warn('[album copy] Failed to publish copy event:', notifyError);
+      }
+
+      return c.json({
+        success: true,
+        projectId: targetProjectId,
+        projectName: resolved.project.name,
+        createdProject: resolved.created,
+        copiedItems,
+        copiedJobs,
+        copiedFiles: Object.keys(keyMap).length,
+        missingFiles,
+      });
+    } catch (e) {
+      console.error('[POST /api/projects/:id/album/copy-to-project]', e);
+      if (copiedKeys.length > 0) {
+        await mapWithConcurrency(copiedKeys, STORAGE_CONCURRENCY, async (key) => {
+          try {
+            await storage.delete(key);
+          } catch (cleanupError) {
+            console.warn(`[album copy] Failed to remove copied file ${key}:`, cleanupError);
+          }
+        });
+      }
+      if (createdProjectId) await discardCreatedProjectIfEmpty(user.userId, createdProjectId, 'album copy');
+      return c.json({ error: 'Failed to copy album items' }, 500);
     }
   });
 
