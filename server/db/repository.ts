@@ -5,6 +5,9 @@ export interface IRepository {
   // === Library CRUD ===
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
+  getLibraryCoverItems(userId: string, libraryIds: string[]): Promise<Map<string, LibraryItem>>;
+  getLibraryItemRefs(userId: string, libraryIds: string[]): Promise<import('./library-repository').LibraryItemRefs[]>;
+  getLibraryItemContents(userId: string, itemIds: string[]): Promise<Map<string, { content: string; title?: string }>>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }): Promise<void>;
   deleteLibrary(userId: string, libraryId: string): Promise<void>;

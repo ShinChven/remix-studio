@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   createDefaultAudioProjectConfig,
-  DEFAULT_AUDIO_PROJECT_CONFIG,
   Project,
   Job,
   JobConfiguration,
@@ -17,20 +16,17 @@ import {
   AspectRatioCount,
   AlbumTagCount,
   AlbumTagMatch,
-  estimatePromptLength,
   formatPromptLimit,
-  isPromptOverLimit,
   parseAudioProjectConfig,
   resolveAudioGenerationKind,
   serializeAudioProjectConfig,
-  truncatePromptToLimit,
 } from '../types';
-import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, createLibraryItem } from '../api';
+import { saveImage, saveVideo, saveAudio, fetchProviders, fetchProject, fetchProjectWorkflow, fetchProjectJobs, fetchProjectCompletedJobs, fetchProjectAlbum, fetchProjectJobConfiguration, fetchProjectAlbumItemConfiguration, updateProject as apiUpdateProject, startProjectJobs as apiStartProjectJobs, imageDisplayUrl as apiImageDisplayUrl, moveToTrash, moveToTrashBatch, renameAlbumItem as apiRenameAlbumItem, updateAlbumItemTags as apiUpdateAlbumItemTags, batchUpdateAlbumTags as apiBatchUpdateAlbumTags, fetchAlbumTagCounts, fetchLibraries, fetchLibrary, fetchLibraryMatchCounts, type LibraryTagFilter, clearFailedQueueJobs, deleteProjectJobs as apiDeleteProjectJobs, generateProjectDrafts, type DraftProblem, createLibraryItem } from '../api';
 import { CheckCircle2, List, Grid, ChevronLeft, Plus, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Combination, countWorkflowCombinations, generateJobs } from '../lib/remixEngine';
-import { groupComfyBindings, isComfyRemix, summarizeComfyPrompt } from '../lib/comfyWorkflow';
-import { civitaiDraftFields, civitaiModelItems, civitaiResourceLabel, civitaiVideoEngine, civitaiVideoEngineLabel, isCivitaiVideo, parseCivitaiAir } from '../lib/civitai';
+import { countWorkflowCombinations } from '../lib/remixEngine';
+import { groupComfyBindings, isComfyRemix } from '../lib/comfyWorkflow';
+import { civitaiModelItems, civitaiResourceLabel, civitaiVideoEngineLabel, isCivitaiVideo, parseCivitaiAir } from '../lib/civitai';
 import { projectMediaType } from '../lib/project-media';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
@@ -55,7 +51,6 @@ import type { BoundContext } from './Assistant/AssistantComposer';
 
 interface Props {
   project: Project;
-  libraries: Library[];
   onUpdate: (project: Project) => void;
   onDelete: () => void;
 }
@@ -78,8 +73,7 @@ interface LightboxData {
   onIndexChange?: (index: number) => void;
 }
 
-const WORKFLOW_LIBRARY_PAGE_SIZE = 500;
-const MAX_JOB_FILENAME_LENGTH = 200;
+const LIBRARY_SUMMARY_PAGE_SIZE = 500;
 const TAB_DATA_STALE_MS = 30_000;
 const LIVE_REFRESH_DEBOUNCE_MS = 250;
 const LIVE_REFRESH_MIN_INTERVAL_MS = 1_000;
@@ -106,37 +100,42 @@ const PROJECT_DEFINITION_EVENT_REASONS = new Set([
   'workflow.updated',
 ]);
 
-function buildJobFilename(filenameParts: string[], suffixId: string): string {
-  const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
-  const readableName = filenameParts
-    .filter(Boolean)
-    .join('_')
-    .replace(/[^a-zA-Z0-9-_]/g, '_');
-  const separator = readableName ? '_' : '';
-  const maxReadableLength = Math.max(0, MAX_JOB_FILENAME_LENGTH - separator.length - safeSuffixId.length);
-  const truncatedReadableName = readableName.substring(0, maxReadableLength);
-
-  return `${truncatedReadableName}${separator}${safeSuffixId}`;
-}
-
-function stripJobWorkflowSnapshots(jobs: Job[]): Job[] {
-  return jobs.map(({ workflowSnapshot, ...job }) => job);
-}
-
-async function fetchWorkflowLibraries(): Promise<Library[]> {
-  const firstPage = await fetchLibraries(1, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true);
+/** Every library without its items: what the library pickers list. */
+async function fetchLibrarySummaries(): Promise<Library[]> {
+  const firstPage = await fetchLibraries(1, LIBRARY_SUMMARY_PAGE_SIZE, undefined, false, false, true);
   if (firstPage.pages <= 1) return firstPage.items;
 
   const rest = await Promise.all(
     Array.from({ length: firstPage.pages - 1 }, (_, index) =>
-      fetchLibraries(index + 2, WORKFLOW_LIBRARY_PAGE_SIZE, undefined, true)
+      fetchLibraries(index + 2, LIBRARY_SUMMARY_PAGE_SIZE, undefined, false, false, true)
     )
   );
 
   return [firstPage, ...rest].flatMap((page) => page.items);
 }
 
-export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDelete }: Props) {
+type KeyedLibraryFilter = LibraryTagFilter & { key: string };
+
+/** Identifies a library step's tag filter, so steps filtering alike share one count. */
+function libraryFilterKey(item: Pick<WorkflowItemType, 'value' | 'selectedTags' | 'tagMatchMode'>): string {
+  const tags = Array.from(new Set((item.selectedTags || []).map((tag) => tag.toLowerCase()))).sort();
+  return [item.value, tags.length > 0 ? item.tagMatchMode || 'or' : '', ...tags].join('\u0000');
+}
+
+/** The distinct tag filters of a workflow's library steps. */
+function workflowLibraryFilters(workflow: WorkflowItemType[]): KeyedLibraryFilter[] {
+  const filters = new Map<string, KeyedLibraryFilter>();
+  for (const item of workflow) {
+    if (item.type !== 'library' || !item.value) continue;
+    const key = libraryFilterKey(item);
+    if (!filters.has(key)) {
+      filters.set(key, { key, libraryId: item.value, tags: item.selectedTags || [], tagMatchMode: item.tagMatchMode || 'or' });
+    }
+  }
+  return Array.from(filters.values());
+}
+
+export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -301,7 +300,24 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const [isTogglingArchive, setIsTogglingArchive] = useState(false);
   const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
   const [promptLimitDialog, setPromptLimitDialog] = useState<PromptLimitDialogState | null>(null);
-  const [liveLibraries, setLiveLibraries] = useState<Library[]>(libraries);
+  // Libraries are held as summaries, without their items: the pickers' list
+  // loads when a picker opens, and the workflow's own libraries come with how
+  // many items each step's tag filter keeps. Items load only for the library
+  // detail dialog.
+  const [librarySummaries, setLibrarySummaries] = useState<Library[]>([]);
+  const [workflowLibrarySummaries, setWorkflowLibrarySummaries] = useState<Library[]>([]);
+  const [libraryMatchCounts, setLibraryMatchCounts] = useState<Map<string, number>>(new Map());
+  const [isLoadingPreviewLibrary, setIsLoadingPreviewLibrary] = useState(false);
+  const liveLibraries = React.useMemo(() => {
+    const workflowOnes = new Map(workflowLibrarySummaries.map((library) => [library.id, library]));
+    const merged = librarySummaries.map((summary) => {
+      const library = workflowOnes.get(summary.id);
+      if (!library) return summary;
+      workflowOnes.delete(summary.id);
+      return library;
+    });
+    return [...merged, ...workflowOnes.values()];
+  }, [librarySummaries, workflowLibrarySummaries]);
   const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
   const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
 
@@ -645,6 +661,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   const liveRefreshQueuedRef = useRef(false);
   const lastLiveRefreshAtRef = useRef(0);
   const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
+  const requestedLibraryFilterKeysRef = useRef(new Set<string>());
+  const libraryPreviewRequestRef = useRef(0);
   const skipProjectSyncRef = useRef(false);
   const workflowListRef = useRef<HTMLDivElement | null>(null);
   const [isProjectLiveConnected, setIsProjectLiveConnected] = useState(false);
@@ -735,22 +753,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     localAlbumRef.current = localAlbum;
   }, [localAlbum]);
 
-  useEffect(() => {
-    setLiveLibraries(libraries);
-  }, [libraries]);
-
-  const refreshWorkflowLibraries = useCallback(async () => {
+  const refreshLibrarySummaries = useCallback(async () => {
     if (libraryRefreshPromiseRef.current) return libraryRefreshPromiseRef.current;
 
     setIsRefreshingLibraries(true);
-    const promise = fetchWorkflowLibraries()
-      .then((freshLibraries) => {
-        setLiveLibraries(freshLibraries);
+    const promise = fetchLibrarySummaries()
+      .then((summaries) => {
+        setLibrarySummaries(summaries);
         setLibraryRefreshError(null);
-        return freshLibraries;
+        return summaries;
       })
       .catch((error) => {
-        console.error('Failed to refresh workflow libraries:', error);
+        console.error('Failed to refresh libraries:', error);
         setLibraryRefreshError(error instanceof Error ? error.message : 'Failed to refresh libraries');
         throw error;
       })
@@ -763,21 +777,31 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     return promise;
   }, []);
 
-  const upsertLiveLibrary = useCallback((library: Library) => {
-    setLiveLibraries((current) => {
-      const existingIndex = current.findIndex((item) => item.id === library.id);
-      if (existingIndex === -1) return [library, ...current];
-      const next = [...current];
-      next[existingIndex] = library;
+  /** Fetch the summaries and match counts behind these filters, replacing what was loaded for them. */
+  const loadWorkflowLibrarySummaries = useCallback(async (filters: KeyedLibraryFilter[]) => {
+    const { libraries, counts } = await fetchLibraryMatchCounts(
+      filters.map(({ libraryId, tags, tagMatchMode }) => ({ libraryId, tags, tagMatchMode })),
+    );
+    const requested = new Set(filters.map((filter) => filter.libraryId));
+    setWorkflowLibrarySummaries((current) => [...current.filter((library) => !requested.has(library.id)), ...libraries]);
+    setLibraryMatchCounts((current) => {
+      const next = new Map(current);
+      filters.forEach((filter, index) => next.set(filter.key, counts[index] ?? 0));
       return next;
     });
   }, []);
 
+  const libraryFilters = React.useMemo(() => workflowLibraryFilters(localProject.workflow || []), [localProject.workflow]);
   useEffect(() => {
-    void refreshWorkflowLibraries().catch(() => {
-      // Keep the route-provided libraries as a fallback if the refresh fails.
+    const requested = requestedLibraryFilterKeysRef.current;
+    const missing = libraryFilters.filter((filter) => !requested.has(filter.key));
+    if (missing.length === 0) return;
+    missing.forEach((filter) => requested.add(filter.key));
+    void loadWorkflowLibrarySummaries(missing).catch((error) => {
+      missing.forEach((filter) => requested.delete(filter.key));
+      console.error('Failed to load workflow libraries:', error);
     });
-  }, [refreshWorkflowLibraries]);
+  }, [libraryFilters, loadWorkflowLibrarySummaries]);
 
   useEffect(() => {
     if (rawTab) {
@@ -937,11 +961,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
       setLocalProject({ ...freshProject, workflow });
     } catch (error) {
       console.error('Failed to refresh project settings:', error);
-      return;
     }
-    // The workflow may now point at libraries this view has not loaded.
-    void refreshWorkflowLibraries().catch(() => {});
-  }, [localProject.id, refreshWorkflowLibraries]);
+  }, [localProject.id]);
 
   useEffect(() => {
     refreshProjectDefinitionRef.current = () => {
@@ -958,8 +979,27 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, []);
 
   // Libraries the workflow draws from may gain or lose items elsewhere, which
-  // changes the combination count and the library pickers.
-  useLiveRefresh((event) => event.resource === 'library', () => refreshWorkflowLibraries());
+  // changes the combination count and the library pickers. No events means
+  // the feed reconnected, and a change without an ID spans several libraries,
+  // so both recount every library the workflow draws from.
+  useLiveRefresh((event) => event.resource === 'library', (events) => {
+    const changedIds = events.length === 0 || events.some((event) => !event.id)
+      ? null
+      : new Set(events.map((event) => event.id));
+    // Counts kept for a changed library's other tag filters are out of date
+    // too; forget them so switching back to one counts it again.
+    const requested = requestedLibraryFilterKeysRef.current;
+    for (const key of requested) {
+      if (!changedIds || changedIds.has(key.split('\u0000')[0])) requested.delete(key);
+    }
+    const filters = workflowLibraryFilters(projectRef.current.workflow || []);
+    const changed = changedIds ? filters.filter((filter) => changedIds.has(filter.libraryId)) : filters;
+    changed.forEach((filter) => requested.add(filter.key));
+    return Promise.all([
+      librarySummaries.length > 0 && refreshLibrarySummaries(),
+      changed.length > 0 && loadWorkflowLibrarySummaries(changed),
+    ]);
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
@@ -1179,8 +1219,8 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
   }, [selectedModelId, selectedModel]);
 
   const combinationsCount = React.useMemo(
-    () => countWorkflowCombinations(localProject.workflow || [], liveLibraries),
-    [localProject.workflow, liveLibraries]
+    () => countWorkflowCombinations(localProject.workflow || [], (item) => libraryMatchCounts.get(libraryFilterKey(item)) ?? 0),
+    [localProject.workflow, libraryMatchCounts]
   );
 
   /**
@@ -1230,7 +1270,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
     if (type === 'library') {
       setShowLibrarySelector(true);
-      void refreshWorkflowLibraries().catch(() => {
+      void refreshLibrarySummaries().catch(() => {
         toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
       });
       return;
@@ -1270,14 +1310,11 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const openWorkflowItemLibrarySelector = (workflowItemId: string) => {
     setSelectingLibraryForItemId(workflowItemId);
-    void refreshWorkflowLibraries().catch(() => {
-      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
-    });
   };
 
   const openWorkflowLibraryChangeSelector = (workflowItemId: string) => {
     setChangingLibraryItemId(workflowItemId);
-    void refreshWorkflowLibraries().catch(() => {
+    void refreshLibrarySummaries().catch(() => {
       toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
   };
@@ -1317,7 +1354,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
 
   const openSaveWorkflowItemToLibrary = (item: WorkflowItemType) => {
     setSavingLibraryItemId(item.id);
-    void refreshWorkflowLibraries().catch(() => {
+    void refreshLibrarySummaries().catch(() => {
       toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
   };
@@ -1338,6 +1375,9 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         optimizedUrl: item.optimizedUrl,
         size: item.size,
       });
+      // This tab's own changes do not come back as live events, so recount here.
+      const affected = libraryFilters.filter((filter) => filter.libraryId === libraryId);
+      if (affected.length > 0) void loadWorkflowLibrarySummaries(affected).catch(() => {});
       toast.success(t('projectViewer.toasts.savedToLibrary', { defaultValue: 'Saved to library' }));
       setSavingLibraryItemId(null);
     } catch (error) {
@@ -1348,17 +1388,22 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
   };
 
+  /** Open the library's detail dialog at once, loading its items into it. */
   const openLibraryPreview = async (library: Library, workflowItemId: string) => {
+    const request = ++libraryPreviewRequestRef.current;
     setPreviewingLibrary(library);
     setPreviewingWorkflowItemId(workflowItemId);
+    setIsLoadingPreviewLibrary(true);
 
     try {
-      const freshLibrary = await fetchLibrary(library.id);
-      upsertLiveLibrary(freshLibrary);
-      setPreviewingLibrary(freshLibrary);
+      const fullLibrary = await fetchLibrary(library.id);
+      if (libraryPreviewRequestRef.current !== request) return;
+      setPreviewingLibrary(fullLibrary);
     } catch (error) {
-      console.error('Failed to refresh library preview:', error);
+      console.error('Failed to load library preview:', error);
       toast.error(t('projectViewer.toasts.refreshLibraryFailed', { defaultValue: 'Failed to refresh library' }));
+    } finally {
+      if (libraryPreviewRequestRef.current === request) setIsLoadingPreviewLibrary(false);
     }
   };
 
@@ -1597,52 +1642,16 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setIsAddingDrafts(true);
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
     try {
-      let librariesForGeneration: Library[];
-      try {
-        librariesForGeneration = await refreshWorkflowLibraries();
-      } catch {
-        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
-        return;
-      }
-
-      const combinations = generateJobs(bindings, librariesForGeneration, queueCount, !!localProject.shuffle);
-      const selected: Combination[] = combinations.length > 0
-        ? combinations
-        : Array.from({ length: queueCount }, () => ({ prompt: '', filenameParts: [] }));
-      const format = localProject.format || 'png';
-      const newJobs: Job[] = selected.map((combo) => {
-        const comfyInputs = combo.comfyInputs || [];
-        return {
-          id: crypto.randomUUID(),
-          prompt: summarizeComfyPrompt(comfyWorkflow, comfyInputs),
-          imageContexts: combo.imageContexts,
-          videoContexts: combo.videoContexts,
-          audioContexts: combo.audioContexts,
-          comfyInputs,
-          status: 'draft',
-          format,
-          filename: buildJobFilename([localProject.prefix, ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
-          workflowSnapshot: localProject.workflow || [],
-        };
-      });
-
-      const nextJobs = [...localJobs, ...newJobs];
-      setDraftsProgress({ current: newJobs.length, total: newJobs.length, stage: 'saving' });
+      // The server builds drafts from the saved workflow, so save it first.
       await apiUpdateProject(localProject.id, {
-        jobs: nextJobs,
         workflow: localProject.workflow,
-        format,
+        format: localProject.format || 'png',
         shuffle: localProject.shuffle,
         lastQueueCount: queueCount,
       });
-
       setLocalProject({ ...localProject, lastQueueCount: queueCount });
-      setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
-      setActiveTab('draft');
-      setIsWorkflowExpanded(false);
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        setMobileView('jobs');
-      }
+      const created = await generateDraftsOnServer();
+      if (created) await showNewDrafts();
     } catch (error) {
       console.error('Failed to add drafts:', error);
       toast.error(t('projectViewer.toasts.addDraftsFailed'));
@@ -1674,7 +1683,6 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     }
     // A video engine brings its own model; an image needs a checkpoint.
     const video = isCivitaiVideo(localProject.civitaiConfig);
-    const engine = civitaiVideoEngine(localProject.civitaiConfig?.video?.engine);
     if (!video && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
       showError(t('projectViewer.civitai.chooseCheckpointFirst'));
       return;
@@ -1683,62 +1691,85 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setIsAddingDrafts(true);
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
     try {
-      let librariesForGeneration: Library[];
-      try {
-        librariesForGeneration = await refreshWorkflowLibraries();
-      } catch {
-        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
-        return;
-      }
-
-      const combinations = generateJobs(workflow, librariesForGeneration, queueCount, !!localProject.shuffle);
-      if (combinations.length === 0) return;
-      // Civitai needs a prompt; a workflow of only negative items has none.
-      if (combinations.some((combo) => !combo.prompt.trim())) {
-        showError(t('projectViewer.civitai.promptRequired'));
-        return;
-      }
-      if (video && !engine.imageToVideo && combinations.some((combo) => combo.imageContexts?.length)) {
-        showError(t('projectViewer.civitai.video.textOnlyHint', { engine: engine.label }));
-        return;
-      }
       const format = video
         ? 'mp4'
         : localProject.format && ['png', 'jpeg', 'webp'].includes(localProject.format) ? localProject.format : 'png';
-      const newJobs: Job[] = combinations.map((combo) => ({
-        id: crypto.randomUUID(),
-        prompt: combo.prompt,
-        status: 'draft',
-        providerId,
-        ...civitaiDraftFields(localProject.civitaiConfig, combo, format),
-        filename: buildJobFilename([localProject.prefix, ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
-        workflowSnapshot: workflow,
-      }));
-
-      const nextJobs = [...localJobs, ...newJobs];
-      setDraftsProgress({ current: newJobs.length, total: newJobs.length, stage: 'saving' });
+      // The server builds drafts from the saved workflow, so save it first.
       await apiUpdateProject(localProject.id, {
-        jobs: nextJobs,
         workflow,
         providerId,
         format,
         shuffle: localProject.shuffle,
         lastQueueCount: queueCount,
       });
-
       setLocalProject({ ...localProject, lastQueueCount: queueCount });
-      setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
-      setActiveTab('draft');
-      setIsWorkflowExpanded(false);
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        setMobileView('jobs');
-      }
+      const created = await generateDraftsOnServer();
+      if (created) await showNewDrafts();
     } catch (error) {
       console.error('Failed to add drafts:', error);
       toast.error(t('projectViewer.toasts.addDraftsFailed'));
     } finally {
       setIsAddingDrafts(false);
       setDraftsProgress(null);
+    }
+  };
+
+  /** Explain why the server could not turn the workflow into drafts. */
+  const showDraftProblem = (problem: DraftProblem) => {
+    setWorkflowError(problem.code === 'civitai_text_only'
+      ? t('projectViewer.civitai.video.textOnlyHint', { engine: problem.engine })
+      : t('projectViewer.civitai.promptRequired'));
+    setTimeout(() => setWorkflowError(null), 4000);
+  };
+
+  /**
+   * Have the server build `queueCount` drafts from the saved project. Prompts
+   * past the model's limit are put to the user, and the same seed is sent
+   * again with their answer so the drafts stay the ones they were asked about.
+   * Returns how many drafts were created; 0 when cancelled or nothing to build.
+   */
+  const generateDraftsOnServer = async (): Promise<number> => {
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    const result = await generateProjectDrafts(localProject.id, { count: queueCount, seed });
+    if ('problem' in result) {
+      showDraftProblem(result.problem);
+      return 0;
+    }
+    if (!('promptLimit' in result)) return result.created;
+
+    const { limit, affectedCount, longestPromptLength } = result.promptLimit;
+    const decision = await new Promise<PromptLimitDecision>((resolve) => {
+      setPromptLimitDialog({
+        modelName: selectedModel?.name || t('projectViewer.settings.selectModel'),
+        affectedCount,
+        limitLabel: formatPromptLimit(limit),
+        longestPromptLabel: `${longestPromptLength.toLocaleString()} ${limit.unit}`,
+        resolve,
+      });
+    });
+    if (decision === 'cancel') return 0;
+
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'saving' });
+    const retried = await generateProjectDrafts(localProject.id, { count: queueCount, seed, promptLimitDecision: decision });
+    if ('problem' in retried) {
+      showDraftProblem(retried.problem);
+      return 0;
+    }
+    if ('promptLimit' in retried) throw new Error('Prompt limit decision was not applied');
+    return retried.created;
+  };
+
+  /** Read the jobs back and switch to the drafts. */
+  const showNewDrafts = async () => {
+    const jobsFetchToken = ++jobsFetchTokenRef.current;
+    const jobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+    if (jobsFetchTokenRef.current === jobsFetchToken) setLocalJobs(jobs);
+    setActiveTab('draft');
+    // Reveal the drafts we just created: mobile swaps to the jobs view, desktop
+    // leaves full screen (which keeps the jobs pane hidden).
+    setIsWorkflowExpanded(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setMobileView('jobs');
     }
   };
 
@@ -1761,133 +1792,18 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
     setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
 
     try {
-      let librariesForGeneration: Library[];
-      try {
-        librariesForGeneration = await refreshWorkflowLibraries();
-      } catch (error) {
-        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
-        return;
-      }
-
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-
-      const selectedCombinations = generateJobs(localProject.workflow || [], librariesForGeneration, queueCount, !!localProject.shuffle);
-      if (selectedCombinations.length === 0) return;
-
-      const newJobs: Job[] = [];
-      const total = selectedCombinations.length;
-      const chunkSize = 25;
-
-      setDraftsProgress({ current: 0, total, stage: 'composing' });
-
-      for (let index = 0; index < total; index += chunkSize) {
-        const chunk = selectedCombinations.slice(index, index + chunkSize);
-
-        for (const combo of chunk) {
-          const shortuuid = crypto.randomUUID().slice(0, 8);
-          const filename = buildJobFilename([
-            localProject.prefix,
-            ...combo.filenameParts,
-          ], shortuuid);
-
-          const isTextProject = localProject.type === 'text';
-          const isAudioProject = localProject.type === 'audio';
-          const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
-          const audioFormat = (localProject.format
-            || selectedModel?.options.audioFormats?.[0]
-            || (audioConfig.kind === 'remix-audio-music' ? 'mp3' : 'wav')) as 'wav' | 'mp3' | 'aac';
-          newJobs.push({
-            id: crypto.randomUUID(),
-            prompt: combo.prompt,
-            imageContexts: combo.imageContexts,
-            videoContexts: combo.videoContexts,
-            audioContexts: combo.audioContexts,
-            status: 'draft',
-            providerId: selectedProviderId,
-            modelConfigId: selectedModelId,
-            ...(isTextProject || isAudioProject ? {} : {
-              aspectRatio: localProject.aspectRatio || (selectedModel?.options.aspectRatios?.[0] || '1024x1024'),
-              quality: localProject.quality || (selectedModel?.options.qualities?.[0] || 'standard'),
-              background: localProject.background || (selectedModel?.options.backgrounds?.[0]),
-              format: localProject.format || 'png',
-            }),
-            ...(isAudioProject ? {
-              quality: audioConfig.kind === 'remix-audio-music'
-                ? (audioConfig.mode === 'instrumental' ? 'instrumental' : 'with-lyrics')
-                : audioConfig.speakers[0].voice,
-              background: audioConfig.kind === 'remix-audio-music' ? 'music' : audioConfig.mode,
-              format: audioFormat,
-            } : {}),
-            ...(localProject.type === 'video' ? {
-              duration: localProject.duration || selectedModel?.options.durations?.[0] || 4,
-              resolution: localProject.resolution || selectedModel?.options.resolutions?.[0] || '720p',
-              sound: localProject.sound || 'on',
-              format: 'mp4' as const,
-            } : {}),
-            filename,
-            workflowSnapshot: localProject.workflow || []
-          });
-        }
-
-        setDraftsProgress({ current: Math.min(index + chunk.length, total), total, stage: 'composing' });
-        await new Promise<void>(resolve => setTimeout(resolve, 0));
-      }
-
-      const promptLimit = selectedModel?.promptLimit;
-      let finalizedJobs = newJobs;
-
-      if (promptLimit) {
-        const overLimitJobs = newJobs.filter(job => isPromptOverLimit(job.prompt, promptLimit));
-
-        if (overLimitJobs.length > 0) {
-          const longestPromptLength = overLimitJobs.reduce((max, job) => {
-            return Math.max(max, estimatePromptLength(job.prompt, promptLimit));
-          }, 0);
-
-          const decision = await new Promise<PromptLimitDecision>((resolve) => {
-            setPromptLimitDialog({
-              modelName: selectedModel?.name || t('projectViewer.settings.selectModel'),
-              affectedCount: overLimitJobs.length,
-              limitLabel: formatPromptLimit(promptLimit),
-              longestPromptLabel: `${longestPromptLength.toLocaleString()} ${promptLimit.unit}`,
-              resolve,
-            });
-          });
-
-          if (decision === 'cancel') return;
-
-          if (decision === 'truncate') {
-            finalizedJobs = newJobs.map((job) => (
-              isPromptOverLimit(job.prompt, promptLimit)
-                ? { ...job, prompt: truncatePromptToLimit(job.prompt, promptLimit) }
-                : job
-            ));
-          }
-        }
-      }
-
-      const nextJobs = [...localJobs, ...finalizedJobs];
-      const updatedProject = { ...localProject, lastQueueCount: queueCount };
-      setDraftsProgress({ current: total, total, stage: 'saving' });
-
-      await apiUpdateProject(updatedProject.id, {
-        jobs: nextJobs, workflow: updatedProject.workflow, providerId: selectedProviderId,
+      // The server builds drafts from the saved project, so save it first.
+      await apiUpdateProject(localProject.id, {
+        workflow: localProject.workflow, providerId: selectedProviderId,
         modelConfigId: selectedModelId,
         aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
         systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
         duration: localProject.duration, resolution: localProject.resolution, sound: localProject.sound,
         lastQueueCount: queueCount,
       });
-
-      setLocalProject(updatedProject);
-      setLocalJobs(stripJobWorkflowSnapshots(nextJobs));
-      setActiveTab('draft');
-      // Reveal the drafts we just created: mobile swaps to the jobs view, desktop
-      // leaves full screen (which keeps the jobs pane hidden).
-      setIsWorkflowExpanded(false);
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-        setMobileView('jobs');
-      }
+      setLocalProject({ ...localProject, lastQueueCount: queueCount });
+      const created = await generateDraftsOnServer();
+      if (created) await showNewDrafts();
     } catch (error) {
       console.error('Failed to add drafts:', error);
       toast.error(t('projectViewer.toasts.addDraftsFailed'));
@@ -2635,7 +2551,7 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
         onFilesDrop={handleFilesDrop}
         isRefreshingLibraries={isRefreshingLibraries}
         libraryRefreshError={libraryRefreshError}
-        onRefreshLibraries={refreshWorkflowLibraries}
+        onRefreshLibraries={refreshLibrarySummaries}
       />
 
       {/*
@@ -2873,10 +2789,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
           if (savingLibraryItemId) {
             const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === savingLibraryItemId);
             const type = item?.type === 'image' ? 'image' : 'text';
-            return liveLibraries.filter((library) => library.type === type);
+            return librarySummaries.filter((library) => library.type === type);
           }
-          if (isCivitaiProject) return liveLibraries.filter((library) => library.type === 'text' || library.type === 'image');
-          return isAudioProject ? liveLibraries.filter((library) => library.type === 'text') : liveLibraries;
+          if (isCivitaiProject) return librarySummaries.filter((library) => library.type === 'text' || library.type === 'image');
+          return isAudioProject ? librarySummaries.filter((library) => library.type === 'text') : librarySummaries;
         })()}
         selectedLibraryIds={savingLibraryItemId ? [] : (localProject.workflow || []).filter(item => item.type === 'library').map(item => item.value)}
         isLoading={isRefreshingLibraries || isSavingToLibrary}
@@ -2925,7 +2841,10 @@ export function ProjectViewer({ project, libraries, onUpdate: onUpdateProp, onDe
             setPreviewingWorkflowItemId(null);
           }
         }}
+        isLoading={isLoadingPreviewLibrary}
         onClose={() => {
+          ++libraryPreviewRequestRef.current;
+          setIsLoadingPreviewLibrary(false);
           setPreviewingLibrary(null);
           setPreviewingWorkflowItemId(null);
         }}

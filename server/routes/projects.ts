@@ -17,6 +17,9 @@ import {
 import { checkStorageLimit } from '../utils/storage-check';
 import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
+import type { ProviderRepository } from '../db/provider-repository';
+import { composeDraftJobs, seededRandom } from '../services/draft-jobs';
+import { estimatePromptLength, isPromptOverLimit, truncatePromptToLimit } from '../../src/types';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow, CivitaiGenerationConfig } from '../../src/types';
 import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
 import { civitaiWorkflowItemsFromParams, sanitizeCivitaiConfig } from '../../src/lib/civitai';
@@ -36,6 +39,9 @@ type Variables = { user: JwtPayload };
 
 /** Storage round trips kept in flight at once by the album move. */
 const STORAGE_CONCURRENCY = 16;
+
+/** Most drafts one generate request may add. */
+const MAX_GENERATED_DRAFTS = 10000;
 
 /** Presign an S3 key if it looks like one (not already a URL), or re-sign an expired presigned URL */
 async function presignIfKey(value: string, storage: S3Storage): Promise<string> {
@@ -501,7 +507,7 @@ function readAlbumDestination(body: any) {
   };
 }
 
-export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, projectEvents?: ProjectEventPublisher, liveEvents?: LiveEventPublisher) {
+export function createProjectRouter(repository: IRepository, userRepository: UserRepository, storage: S3Storage, exportStorage: S3Storage, queueManager: QueueManager, exportManager: ExportManager, deliveryManager: DeliveryManager, projectImportManager: ProjectImportManager, prisma: PrismaClient, providerRepository: ProviderRepository, projectEvents?: ProjectEventPublisher, liveEvents?: LiveEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
 
   const exportDeps = { repository, userRepository, storage, exportStorage, exportManager };
@@ -825,6 +831,83 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e) {
       console.error('[POST /api/projects/:id/jobs/delete-batch]', e);
       return c.json({ error: 'Failed to delete jobs' }, 500);
+    }
+  });
+
+  // Builds drafts from the project's saved workflow and settings. Combinations
+  // are picked from library item IDs and tags, and only the picked items'
+  // content is read. A `seed` makes the picks repeatable, so the request can be
+  // sent again with a decision on prompts over the model's limit.
+  router.post('/api/projects/:id/jobs/generate', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      const count = Number(body?.count);
+      if (!projectId || !Number.isInteger(count) || count < 1 || count > MAX_GENERATED_DRAFTS) {
+        return c.json({ error: `count must be a whole number from 1 to ${MAX_GENERATED_DRAFTS}` }, 400);
+      }
+      const promptLimitDecision: 'truncate' | 'keep' | undefined =
+        body?.promptLimitDecision === 'truncate' || body?.promptLimitDecision === 'keep' ? body.promptLimitDecision : undefined;
+      const random = Number.isInteger(body?.seed) ? seededRandom(body.seed) : Math.random;
+
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Not found' }, 404);
+      const workflow = await repository.getProjectWorkflow(user.userId, projectId);
+      const provider = project.providerId ? await providerRepository.getPublicProvider(user.userId, project.providerId) : null;
+      const model = provider?.models.find((m) => m.id === project.modelConfigId);
+
+      const composed = await composeDraftJobs(repository, user.userId, project, workflow, model, count, random);
+      if (composed.problem) return c.json({ error: 'The workflow cannot be drafted', problem: composed.problem }, 422);
+      let { jobs } = composed;
+      if (jobs.length === 0) return c.json({ success: true, created: 0 });
+
+      const promptLimit = project.type === 'comfyui' || project.type === 'civitai' ? undefined : model?.promptLimit;
+      const overLimit = promptLimit ? jobs.filter((job) => isPromptOverLimit(job.prompt, promptLimit)) : [];
+      if (promptLimit && overLimit.length > 0) {
+        if (!promptLimitDecision) {
+          return c.json({
+            error: 'Some prompts exceed the model limit',
+            promptLimit: {
+              limit: promptLimit,
+              affectedCount: overLimit.length,
+              longestPromptLength: overLimit.reduce((max, job) => Math.max(max, estimatePromptLength(job.prompt, promptLimit)), 0),
+            },
+          }, 409);
+        }
+        if (promptLimitDecision === 'truncate') {
+          jobs = jobs.map((job) => (
+            isPromptOverLimit(job.prompt, promptLimit) ? { ...job, prompt: truncatePromptToLimit(job.prompt, promptLimit) } : job
+          ));
+        }
+      }
+
+      // Simple estimate: 25MB per image (orig + thumb + opt)
+      const estimatedNewSize = jobs.length * 25 * 1024 * 1024;
+      const { allowed, currentUsage, limit } = await checkStorageLimit(
+        user.userId,
+        estimatedNewSize,
+        userRepository,
+        storage,
+        exportStorage,
+        repository
+      );
+      if (!allowed) {
+        return c.json({
+          error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.`
+        }, 403);
+      }
+
+      const created = await repository.createProjectJobs(user.userId, projectId, normalizeJobsForStorage(jobs, storage.getBucketName()));
+      projectEvents?.notifyProjectChanged({
+        userId: user.userId,
+        projectId,
+        reason: 'jobs.changed',
+      });
+      return c.json({ success: true, created });
+    } catch (e: any) {
+      console.error('[POST /api/projects/:id/jobs/generate]', e);
+      return c.json({ error: 'Failed to add drafts' }, 500);
     }
   });
 

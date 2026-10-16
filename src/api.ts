@@ -1,5 +1,5 @@
 import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
-import { AlbumItem, AppData, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, PromptLimitMeta, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -417,13 +417,14 @@ export async function loadData(): Promise<AppData> {
 
 // ========== Library CRUD ==========
 
-export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
+export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false, cover: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
   if (q) params.set('q', q);
   if (includeItems) params.set('includeItems', 'true');
   if (nameOnly) params.set('nameOnly', 'true');
+  if (cover) params.set('cover', 'true');
 
   const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
@@ -432,6 +433,26 @@ export async function fetchLibraries(page: number = 1, limit: number = 50, q?: s
 export async function fetchLibrary(id: string): Promise<Library> {
   const res = await apiFetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
   return handleResponse<Library>(res, 'Failed to get library');
+}
+
+export interface LibraryTagFilter {
+  libraryId: string;
+  tags?: string[];
+  tagMatchMode?: 'and' | 'or';
+}
+
+/**
+ * Summaries of the filtered libraries, without their items, and how many items
+ * each filter keeps (counts line up with `filters`). Missing libraries are left
+ * out of `libraries` and count 0.
+ */
+export async function fetchLibraryMatchCounts(filters: LibraryTagFilter[]): Promise<{ libraries: Library[]; counts: number[] }> {
+  const res = await apiFetch('/api/libraries/match-counts', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ filters }),
+  });
+  return handleResponse<{ libraries: Library[]; counts: number[] }>(res, 'Failed to count library items');
 }
 
 export async function createLibrary(library: { id: string; name: string; description?: string; type: string }): Promise<void> {
@@ -683,6 +704,40 @@ export async function deleteProjectJob(id: string, jobId: string): Promise<void>
     headers: getHeaders(false),
   });
   await handleResponse<{ success: boolean }>(res, 'Failed to delete job');
+}
+
+export interface PromptLimitOverflow {
+  limit: PromptLimitMeta;
+  affectedCount: number;
+  longestPromptLength: number;
+}
+
+/** Why a workflow's combinations cannot become drafts. */
+export type DraftProblem =
+  | { code: 'civitai_prompt_required' }
+  | { code: 'civitai_text_only'; engine: string };
+
+/**
+ * Build drafts on the server from the project's saved workflow and settings.
+ * When prompts run past the model's limit and no decision was sent, nothing is
+ * created and the overflow comes back instead; send the same seed again with a
+ * decision to get the same drafts. A workflow that cannot be drafted comes
+ * back as a problem, with nothing created.
+ */
+export async function generateProjectDrafts(
+  id: string,
+  request: { count: number; seed: number; promptLimitDecision?: 'truncate' | 'keep' },
+): Promise<{ created: number } | { promptLimit: PromptLimitOverflow } | { problem: DraftProblem }> {
+  const res = await apiFetch(`/api/projects/${id}/jobs/generate`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 409 && data?.promptLimit) return { promptLimit: data.promptLimit };
+  if (res.status === 422 && data?.problem) return { problem: data.problem };
+  if (!res.ok) throw new Error(data?.error || 'Failed to add drafts');
+  return { created: data.created ?? 0 };
 }
 
 export async function deleteProjectJobs(id: string, jobIds: string[]): Promise<{ deleted: number }> {

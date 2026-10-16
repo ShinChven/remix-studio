@@ -5,6 +5,9 @@ import { civitaiModelItemValue, sanitizeCivitaiBinding, sanitizeCivitaiConfig } 
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
 
+/** Jobs per insert statement: well under Postgres's bound-parameter limit at ~23 columns each. */
+const JOB_INSERT_BATCH_SIZE = 1000;
+
 /**
  * Album items carry no title, so `name-*` orders on the prompt — the same
  * field the UI shows as an item's label. Ties fall back to newest-first.
@@ -281,6 +284,8 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      // Every job carries a copy of the workflow; lists rarely need it.
+      omit: { workflowSnapshot: !options.includeWorkflowSnapshot },
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -292,6 +297,7 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where: { projectId, userId, id: { in: ids } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      omit: { workflowSnapshot: !options.includeWorkflowSnapshot },
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -363,34 +369,39 @@ export class ProjectRepository {
     await this.assertOwnedProject(userId, projectId);
     if (jobs.length === 0) return 0;
 
-    const result = await this.prisma.job.createMany({
-      data: jobs.map((job) => ({
-        id: job.id,
-        projectId,
-        userId,
-        prompt: job.prompt,
-        status: job.status ?? 'draft',
-        imageContexts: job.imageContexts ?? [],
-        videoContexts: job.videoContexts ?? [],
-        audioContexts: job.audioContexts ?? [],
-        modelConfigId: job.modelConfigId ?? null,
-        aspectRatio: job.aspectRatio ?? null,
-        quality: job.quality ?? null,
-        format: job.format ?? null,
-        duration: job.duration ?? null,
-        resolution: job.resolution ?? null,
-        sound: job.sound ?? null,
-        background: (job as any).background ?? null,
-        filename: job.filename ?? null,
-        providerId: job.providerId ?? null,
-        workflowSnapshot: job.workflowSnapshot ?? null,
-        comfyInputs: job.comfyInputs ?? null,
-        civitaiParams: job.civitaiParams ?? null,
-        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-      })) as any,
-    });
+    const rows = jobs.map((job) => ({
+      id: job.id,
+      projectId,
+      userId,
+      prompt: job.prompt,
+      status: job.status ?? 'draft',
+      imageContexts: job.imageContexts ?? [],
+      videoContexts: job.videoContexts ?? [],
+      audioContexts: job.audioContexts ?? [],
+      modelConfigId: job.modelConfigId ?? null,
+      aspectRatio: job.aspectRatio ?? null,
+      quality: job.quality ?? null,
+      format: job.format ?? null,
+      duration: job.duration ?? null,
+      resolution: job.resolution ?? null,
+      sound: job.sound ?? null,
+      background: (job as any).background ?? null,
+      filename: job.filename ?? null,
+      providerId: job.providerId ?? null,
+      workflowSnapshot: job.workflowSnapshot ?? null,
+      comfyInputs: job.comfyInputs ?? null,
+      civitaiParams: job.civitaiParams ?? null,
+      createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+    }));
 
-    return result.count;
+    // One statement per batch keeps each insert under Postgres's limit on bound
+    // parameters; the transaction keeps the whole set all-or-nothing.
+    const batches = [];
+    for (let start = 0; start < rows.length; start += JOB_INSERT_BATCH_SIZE) {
+      batches.push(this.prisma.job.createMany({ data: rows.slice(start, start + JOB_INSERT_BATCH_SIZE) as any }));
+    }
+    const results = await this.prisma.$transaction(batches);
+    return results.reduce((sum, result) => sum + result.count, 0);
   }
 
   async startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number> {
@@ -1923,6 +1934,7 @@ export class ProjectRepository {
           thumbnailUrl: item.thumbnailUrl ?? null,
           optimizedUrl: item.optimizedUrl ?? null,
           selectedTags: this.toNullableJsonArray(item.selectedTags),
+          tagMatchMode: item.tagMatchMode === 'and' ? 'and' : null,
           disabled: item.disabled ?? false,
           comfyTarget: item.comfyTarget
             ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input, ...(item.comfyTarget.remix ? { remix: true } : {}) }
@@ -1984,6 +1996,7 @@ export class ProjectRepository {
       thumbnailUrl: w.thumbnailUrl ?? undefined,
       optimizedUrl: w.optimizedUrl ?? undefined,
       selectedTags: (w.selectedTags as string[]) ?? undefined,
+      tagMatchMode: w.tagMatchMode === 'and' ? 'and' : undefined,
       disabled: w.disabled ?? false,
       comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyBinding) : undefined,
       civitai: w.civitai && typeof w.civitai === 'object' ? (w.civitai as WorkflowItem['civitai']) : undefined,
