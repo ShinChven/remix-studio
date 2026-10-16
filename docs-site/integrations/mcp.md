@@ -15,6 +15,7 @@ Available MCP capabilities include:
 - **Inspect** storage usage, albums, libraries, library items, and usable model/provider pairings.
 - **Browse** the items inside a project album with `get_album_items`, including each item's prompt, tags, format, aspect ratio, size, and storage keys, plus a `tagCounts` roll-up of every tag in the album. Filter with `tags` and `tag_match`.
 - **Tag album items** with `tag_album_items` — `add`, `remove`, or `replace` tags on the ids given in `item_ids`, or on every item in the album with `all_items`, optionally narrowed by `filter_tags` and `aspect_ratios`.
+- **Rename album items** with `rename_album_items` — rename specific items with `updates`, or batch-replace / prepend / strip filename prefixes across `item_ids` or `all_items` with `old_prefix` and `new_prefix` while keeping storage keys, thumbnails, optimized files, and originating job records in sync.
 - **Download** stored files with `get_file_urls`, which converts internal storage keys into temporary presigned URLs (optionally as save-as download links).
 - **Upload** image, video and audio files with `create_upload`, then add them to a library (`add_files_to_library`), pin them in a project workflow (`uploadId` on `update_project` / `create_project_with_workflow` items), or post them to a campaign (`create_posts_from_files`, `add_media_to_post`). See [file uploads](#file-uploads).
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
@@ -125,7 +126,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | :--- | :--- | :--- |
 | Account | `get_current_account` | — |
 | Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
-| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `export_project`, `export_project_album` |
+| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `rename_album_items`, `export_project`, `export_project_album` |
 | Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
 | Files | `get_file_urls`, `get_upload` | `create_upload`, `add_files_to_library`, `create_posts_from_files` |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |

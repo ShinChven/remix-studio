@@ -16,6 +16,12 @@ import {
   startProjectBundleExport,
   type StartedProjectExport,
 } from '../services/project-export';
+import {
+  AlbumRenameError,
+  basenameFromKey,
+  renameAlbumItems,
+  trimPrefix,
+} from '../services/album-rename';
 import { createAppUrlBuilder, type AppUrlBuilder } from './app-urls';
 import {
   copyStagedFiles,
@@ -1384,6 +1390,7 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         return {
           id: item.id,
           jobId: item.jobId ?? null,
+          filename: item.imageUrl ? (basenameFromKey(item.imageUrl) || null) : null,
           prompt: preview.text,
           promptTruncated: preview.truncated,
           tags: item.tags ?? [],
@@ -1501,6 +1508,167 @@ Exactly one operation per call: "add" leaves existing tags alone, "remove" takes
         message: `Tags updated on ${updated} album item${updated === 1 ? '' : 's'}.`,
       };
       return { text: JSON.stringify(response, null, 2), structuredContent: response };
+    },
+  });
+
+  // ─── rename_album_items ───
+  tools.push({
+    name: 'rename_album_items',
+    title: 'Rename Album Items',
+    description: `Rename files in a project's album while preserving all metadata, tags, prompts, workflow snapshots, and originating job links.
+
+Choose one of two modes:
+1. **Explicit per-item rename ("updates")**: pass an array of { item_id, filename } to set exact filenames for specific items (file extensions are preserved automatically). Filenames cannot contain /, \\, %, ? or #.
+2. **Batch prefix rename ("new_prefix" / "old_prefix")**: rename prefixes across "item_ids" or "all_items": true (optionally narrowed by "filter_tags" and "aspect_ratios").
+   - When both "old_prefix" and "new_prefix" are provided (e.g. old_prefix="Reika", new_prefix="Shandy"), replaces leading "<old_prefix>_" with "<new_prefix>_" while keeping the rest of each filename intact.
+   - Pass only "old_prefix" (or new_prefix="" with it) to strip "<old_prefix>_" from the start of matching filenames.
+   - When only "new_prefix" is provided, prepends "<new_prefix>_" to filenames that do not already start with it.
+   - Set "update_project_prefix": true to also set the project's own prefix for future draft jobs to new_prefix (stripping clears it).
+
+A rename may not take a name another album item still uses, so swapping two names takes two calls via a temporary name. If a rename fails part way, the response lists what was renamed, the item that failed, and how many were not attempted.`,
+    inputSchema: {
+      project_id: z.string().min(1).describe('The project whose album items to rename (from list_albums)'),
+      updates: z
+        .array(
+          z.object({
+            item_id: z.string().min(1).describe('Album item ID (from get_album_items)'),
+            filename: z.string().min(1).max(255).describe('New filename (original file extension is preserved automatically)'),
+          }),
+        )
+        .min(1)
+        .max(500)
+        .optional()
+        .describe('Explicit per-item filename renames. Mutually exclusive with new_prefix / old_prefix.'),
+      new_prefix: z
+        .string()
+        .max(120)
+        .optional()
+        .describe('Prefix mode: new filename prefix to apply (e.g. "Shandy"). Omit or pass "" with old_prefix to strip old_prefix.'),
+      old_prefix: z
+        .string()
+        .max(120)
+        .optional()
+        .describe('Prefix mode: existing filename prefix to replace or strip (e.g. "Reika"). Trailing underscore is optional.'),
+      item_ids: z
+        .array(z.string().min(1))
+        .max(1000)
+        .optional()
+        .describe('With prefix mode: specific album item IDs to rename (from get_album_items). Omit when all_items is true.'),
+      all_items: z
+        .boolean()
+        .optional()
+        .describe('With prefix mode: apply to every album item in the project, narrowed by filter_tags / aspect_ratios when given'),
+      filter_tags: z.array(z.string()).optional().describe('With all_items: only touch items carrying these tags'),
+      tag_match: z.enum(['all', 'any']).default('all').describe('How filter_tags combine: "all" (default) requires every tag, "any" requires at least one'),
+      aspect_ratios: z.array(z.string()).optional().describe('With all_items: only touch items with these aspect ratios'),
+      update_project_prefix: z
+        .boolean()
+        .optional()
+        .describe('With prefix mode: also set the project prefix used by future draft jobs to new_prefix, or clear it when stripping'),
+    },
+    // Renaming moves the stored files and deletes the old objects, and a
+    // strip removes one more leading prefix each time it runs.
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    requiresConfirmation: true,
+    handler: async (userId, input) => {
+      const {
+        project_id,
+        updates,
+        new_prefix,
+        old_prefix,
+        item_ids,
+        all_items,
+        filter_tags,
+        tag_match,
+        aspect_ratios,
+        update_project_prefix,
+      } = input as {
+        project_id: string;
+        updates?: Array<{ item_id: string; filename: string }>;
+        new_prefix?: string;
+        old_prefix?: string;
+        item_ids?: string[];
+        all_items?: boolean;
+        filter_tags?: string[];
+        tag_match: 'all' | 'any';
+        aspect_ratios?: string[];
+        update_project_prefix?: boolean;
+      };
+
+      const hasUpdates = Array.isArray(updates) && updates.length > 0;
+      const hasPrefix = new_prefix !== undefined || old_prefix !== undefined;
+      if (hasUpdates && hasPrefix) {
+        return {
+          text: JSON.stringify({ error: 'Provide either "updates" or prefix parameters ("new_prefix" / "old_prefix"), not both.' }),
+          isError: true,
+        };
+      }
+      if (!hasUpdates && !hasPrefix) {
+        return {
+          text: JSON.stringify({ error: 'Provide either "updates" for explicit filenames, or "new_prefix" / "old_prefix" for prefix renaming.' }),
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await renameAlbumItems(
+          { repository, storage },
+          userId,
+          project_id,
+          hasUpdates
+            ? {
+                updates: updates!.map((u) => ({ itemId: u.item_id, filename: u.filename })),
+              }
+            : {
+                newPrefix: new_prefix ?? '',
+                oldPrefix: old_prefix,
+                itemIds: all_items ? undefined : item_ids,
+                all: all_items === true,
+                tags: filter_tags,
+                tagMatch: tag_match,
+                aspectRatios: aspect_ratios,
+              },
+        );
+
+        if (result.renamed > 0) {
+          projectEvents?.notifyProjectChanged({ userId, projectId: project_id, reason: 'album.renamed' });
+        }
+
+        const failed = result.failed.length > 0;
+        let projectPrefix = result.project.prefix ?? null;
+        let projectPrefixUpdated = false;
+        if (update_project_prefix && hasPrefix && !failed) {
+          projectPrefix = trimPrefix(new_prefix) || null;
+          await repository.updateProject(userId, project_id, { prefix: projectPrefix });
+          projectPrefixUpdated = true;
+          projectEvents?.notifyProjectChanged({ userId, projectId: project_id, reason: 'project.updated' });
+        }
+
+        const outcome = `Renamed ${result.renamed} album item${result.renamed === 1 ? '' : 's'}${result.unchanged ? ` (${result.unchanged} already matched)` : ''}${result.skipped ? ` (${result.skipped} skipped)` : ''}.`;
+        const response = {
+          projectId: project_id,
+          projectUrl: appUrls.project(project_id),
+          projectName: result.project.name,
+          projectPrefix,
+          projectPrefixUpdated,
+          renamed: result.renamed,
+          unchanged: result.unchanged,
+          skipped: result.skipped,
+          ...(failed ? { failed: result.failed, notAttempted: result.notAttempted } : {}),
+          items: result.items.slice(0, 100),
+          itemsTruncated: result.items.length > 100,
+          message: failed
+            ? `${outcome} Stopped after ${result.failed.length} failed; ${result.notAttempted} not attempted.${update_project_prefix ? ' The project prefix was left unchanged.' : ''}`
+            : outcome,
+        };
+        return { text: JSON.stringify(response, null, 2), structuredContent: response, ...(failed ? { isError: true } : {}) };
+      } catch (e) {
+        if (e instanceof AlbumRenameError) {
+          return { text: JSON.stringify({ error: e.message }), isError: true };
+        }
+        throw e;
+      }
     },
   });
 
