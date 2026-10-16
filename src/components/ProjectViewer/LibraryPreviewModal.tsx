@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Search, ExternalLink } from 'lucide-react';
+import { X, ChevronDown, Library as LibraryIcon, Video as VideoIcon, Volume2, Search, ExternalLink, Loader2 } from 'lucide-react';
 import { Library, LibraryItem } from '../../types';
 import { imageDisplayUrl } from '../../api';
 import { filterItemsByTags } from '../../lib/remixEngine';
@@ -68,6 +68,8 @@ interface LibraryPreviewModalProps {
   onClose: () => void;
   isSelectionMode?: boolean;
   onSelectItem?: (itemContent: string) => void;
+  /** The library's items are still loading; it is shown by name until they arrive. */
+  isLoading?: boolean;
 }
 
 export function LibraryPreviewModal({
@@ -78,7 +80,8 @@ export function LibraryPreviewModal({
   onUpdateTagMatchMode,
   onClose,
   isSelectionMode = false,
-  onSelectItem
+  onSelectItem,
+  isLoading = false,
 }: LibraryPreviewModalProps) {
   const { t } = useTranslation();
   const [previewLightbox, setPreviewLightbox] = useState<{images: string[], index: number} | null>(null);
@@ -135,7 +138,7 @@ export function LibraryPreviewModal({
                 </p>
               )}
               <p className="text-[10px] font-bold text-neutral-500 dark:text-neutral-500 uppercase tracking-widest mt-0.5 truncate">
-                {t('projectViewer.libraryPreview.itemsSummary', { filtered: filteredItems.length, total: library.items.length })}
+                {t('projectViewer.libraryPreview.itemsSummary', { filtered: filteredItems.length, total: isLoading ? (library.itemCount ?? library.items.length) : library.items.length })}
               </p>
             </div>
           </div>
@@ -174,7 +177,11 @@ export function LibraryPreviewModal({
         )}
 
         <div className="flex-1 overflow-y-auto p-3 md:p-6 custom-scrollbar bg-neutral-50/10 dark:bg-neutral-950/10">
-          {filteredItems.length === 0 ? (
+          {isLoading && library.items.length === 0 ? (
+            <div className="h-64 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-neutral-500 animate-spin" />
+            </div>
+          ) : filteredItems.length === 0 ? (
              <div className="h-64 flex flex-col items-center justify-center text-neutral-600 gap-4 opacity-50">
                <LibraryIcon className="w-12 h-12 stroke-[1px]" />
                <div className="text-center">

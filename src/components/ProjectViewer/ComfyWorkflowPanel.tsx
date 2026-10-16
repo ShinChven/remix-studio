@@ -642,7 +642,7 @@ export function ComfyWorkflowPanel({
 
     if (item.type === 'library') {
       const library = libraries.find((lib) => lib.id === item.value);
-      const firstImage = library?.type === 'image' ? library.items[0]?.thumbnailUrl || library.items[0]?.content : undefined;
+      const firstImage = library?.type === 'image' ? library.items[0]?.thumbnailUrl || library.items[0]?.content || library.coverUrl : undefined;
       return (
         <div className="flex items-center gap-2">
           <button
@@ -656,7 +656,7 @@ export function ComfyWorkflowPanel({
             <div className="min-w-0">
               <div className="text-xs font-bold text-neutral-900 dark:text-white truncate">{library?.name || t('projectViewer.workflow.unknownLibrary')}</div>
               <div className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                {t('projectViewer.workflow.itemsCount', { count: library?.items.length || 0 })}
+                {t('projectViewer.workflow.itemsCount', { count: library?.itemCount ?? library?.items.length ?? 0 })}
                 {(item.selectedTags || []).length > 0 && ` · ${t('projectViewer.workflow.filteredTags', { count: (item.selectedTags || []).length })}`}
               </div>
             </div>

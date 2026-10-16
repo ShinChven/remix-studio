@@ -27,15 +27,13 @@ import {
   type ReadyStagedUpload,
 } from '../services/staged-uploads';
 import { createCampaignMediaService, StorageLimitError } from '../services/campaign-media';
-import { generateJobs } from '../../src/lib/remixEngine';
+import { composeDraftJobs } from '../services/draft-jobs';
 import {
   CIVITAI_DEFAULT_VIDEO_ENGINE,
   CIVITAI_SCHEDULERS,
   CIVITAI_VIDEO_ENGINES,
-  civitaiDraftFields,
   civitaiModelItems,
   civitaiResourceLabel,
-  civitaiVideoEngine,
   isCivitaiEmbedding,
   isCivitaiVideo,
   normalizeCivitaiAir,
@@ -44,13 +42,11 @@ import {
 import { CivitaiClient } from '../civitai/civitai-client';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 import {
-  DEFAULT_AUDIO_PROJECT_CONFIG,
-  parseAudioProjectConfig,
   PROVIDER_MODELS_MAP,
   resolveSupportedAspectRatio,
   resolveSupportedOption,
 } from '../../src/types';
-import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiVideoEngine, CivitaiVideoSettings, Job, Library, ModelConfig, Project, WorkflowItem } from '../../src/types';
+import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiVideoEngine, CivitaiVideoSettings, ModelConfig, Project, WorkflowItem } from '../../src/types';
 import { VISUAL_PROJECT_TYPES } from '../../src/lib/project-media';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
@@ -231,7 +227,6 @@ const MAX_CONTENT_PREVIEW_CHARS = 4096;
 // fetch the full copy with get_post_text once they know which post they want.
 const MAX_POST_PREVIEW_CHARS = 280;
 const MAX_DRAFT_JOBS_PER_CALL = 10000;
-const MAX_JOB_FILENAME_LENGTH = 200;
 /** Same rough per-job reservation the REST job routes use for quota checks. */
 const JOB_STORAGE_ESTIMATE_BYTES = 25 * 1024 * 1024;
 /** Fallback quota for users created before a limit was stored on the record. */
@@ -510,24 +505,6 @@ function basenameForKey(key: string): string {
   return name.replace(/["\\]/g, '');
 }
 
-/**
- * Mirror of the project viewer's job filename builder: a readable slug made of
- * the project prefix plus the tags/titles of the library items that composed
- * the prompt, suffixed with a short uuid so two identical combinations never
- * collide in storage.
- */
-function buildJobFilename(filenameParts: string[], suffixId: string): string {
-  const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
-  const readableName = filenameParts
-    .filter(Boolean)
-    .join('_')
-    .replace(/[^a-zA-Z0-9-_]/g, '_');
-  const separator = readableName ? '_' : '';
-  const maxReadableLength = Math.max(0, MAX_JOB_FILENAME_LENGTH - separator.length - safeSuffixId.length);
-
-  return `${readableName.substring(0, maxReadableLength)}${separator}${safeSuffixId}`;
-}
-
 /** Look a catalog model up by its config id, across every provider type. */
 function findCatalogModel(modelConfigId: string): ModelConfig | undefined {
   for (const models of Object.values(PROVIDER_MODELS_MAP)) {
@@ -558,53 +535,6 @@ function unsupportedOptionError(
     return `${field} "${value}" is not offered by model "${model.name}". Supported values: ${allowed.join(', ')}.`;
   }
   return undefined;
-}
-
-/**
- * Per-job generation settings, resolved from the project and — where the
- * project leaves a field unset, or holds a value this model does not offer —
- * from the options the model advertises. Matches what the project viewer
- * writes onto drafts it creates.
- */
-function buildJobSettings(project: Project, model: ModelConfig | undefined): Partial<Job> {
-  const type = project.type ?? 'image';
-
-  if (type === 'text') return {};
-
-  if (type === 'audio') {
-    const audioConfig = project.systemPrompt
-      ? parseAudioProjectConfig(project.systemPrompt)
-      : DEFAULT_AUDIO_PROJECT_CONFIG;
-    const isMusic = audioConfig.kind === 'remix-audio-music';
-    return {
-      quality: isMusic
-        ? (audioConfig.mode === 'instrumental' ? 'instrumental' : 'with-lyrics')
-        : audioConfig.speakers[0].voice,
-      background: isMusic ? 'music' : audioConfig.mode,
-      format: (project.format
-        || model?.options.audioFormats?.[0]
-        || (isMusic ? 'mp3' : 'wav')) as Job['format'],
-    };
-  }
-
-  const common: Partial<Job> = {
-    aspectRatio: resolveSupportedAspectRatio(project.aspectRatio, model?.options.aspectRatios)
-      || '1024x1024',
-    quality: resolveSupportedOption(project.quality, model?.options.qualities) || 'standard',
-    background: resolveSupportedOption(project.background, model?.options.backgrounds),
-  };
-
-  if (type === 'video') {
-    return {
-      ...common,
-      duration: project.duration || model?.options.durations?.[0] || 4,
-      resolution: resolveSupportedOption(project.resolution, model?.options.resolutions) || '720p',
-      sound: project.sound || 'on',
-      format: 'mp4',
-    };
-  }
-
-  return { ...common, format: (project.format || 'png') as Job['format'] };
 }
 
 const EXPORT_POLL_INTERVAL_MS = 2000;
@@ -3302,7 +3232,6 @@ Returns the project's "url" — share it so the user can review the drafts befor
       const workflow = await repository.getProjectWorkflow(userId, projectId);
       // A video engine brings its own model; an image needs a checkpoint.
       const civitaiVideo = isCivitai && isCivitaiVideo(project.civitaiConfig);
-      const civitaiEngine = civitaiVideoEngine(project.civitaiConfig?.video?.engine);
       if (isCivitai && !civitaiVideo && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
         return {
           text: JSON.stringify({
@@ -3331,27 +3260,31 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
-      // Library-backed workflow items are stored as a library ID; the remix
-      // engine needs the items themselves to build combinations.
-      const libraryIds = Array.from(new Set(
-        enabledItems.filter((item) => item.type === 'library').map((item) => item.value),
-      ));
-      const libraries: Library[] = [];
-      for (const libraryId of libraryIds) {
-        const library = await repository.getLibrary(userId, libraryId);
-        if (!library) {
-          return {
-            text: JSON.stringify({
-              error: `Workflow references library "${libraryId}", which no longer exists. Fix the workflow with update_project before drafting jobs.`,
-            }),
-            isError: true,
-          };
-        }
-        libraries.push(library);
+      const provider = await providerRepository.getPublicProvider(userId, project.providerId);
+      const model = provider?.models.find((m) => m.id === project.modelConfigId);
+      const { jobs: drafts, missingLibraryIds, problem } = await composeDraftJobs(repository, userId, project, workflow, model, count);
+      if (missingLibraryIds.length > 0) {
+        return {
+          text: JSON.stringify({
+            error: `Workflow references library "${missingLibraryIds[0]}", which no longer exists. Fix the workflow with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+      if (problem?.code === 'civitai_prompt_required') {
+        return {
+          text: JSON.stringify({ error: `Civitai project "${project.name}" builds an empty prompt: every text item feeds the negative prompt. Add prompt text before drafting jobs.` }),
+          isError: true,
+        };
+      }
+      if (problem?.code === 'civitai_text_only') {
+        return {
+          text: JSON.stringify({ error: `${problem.engine} only makes videos from text. Disable the image items or pick another engine (civitaiSettings.video.engine) with update_project.` }),
+          isError: true,
+        };
       }
 
-      const combinations = generateJobs(workflow, libraries, count, !!project.shuffle);
-      if (combinations.length === 0) {
+      if (drafts.length === 0) {
         return {
           text: JSON.stringify({
             error: `Project "${project.name}" workflow produced no prompt combinations. Its libraries may be empty or filtered down to nothing by their selected tags.`,
@@ -3360,53 +3293,8 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
-      if (isCivitai && combinations.some((combo) => !combo.prompt.trim())) {
-        return {
-          text: JSON.stringify({ error: `Civitai project "${project.name}" builds an empty prompt: every text item feeds the negative prompt. Add prompt text before drafting jobs.` }),
-          isError: true,
-        };
-      }
-      if (civitaiVideo && !civitaiEngine.imageToVideo && combinations.some((combo) => combo.imageContexts?.length)) {
-        return {
-          text: JSON.stringify({ error: `${civitaiEngine.label} only makes videos from text. Disable the image items or pick another engine (civitaiSettings.video.engine) with update_project.` }),
-          isError: true,
-        };
-      }
-
-      const storageError = await assertStorageHeadroom(userId, combinations.length);
+      const storageError = await assertStorageHeadroom(userId, drafts.length);
       if (storageError) return storageError;
-
-      const provider = await providerRepository.getPublicProvider(userId, project.providerId!);
-      const model = provider?.models.find((m) => m.id === project.modelConfigId);
-      const settings = buildJobSettings(project, model);
-      const civitaiFormat = project.format && ['png', 'jpeg', 'webp'].includes(project.format) ? project.format : 'png';
-
-      // A Civitai job takes its checkpoint, LoRAs and negative prompt from its
-      // combination and keeps a copy of everything it runs with.
-      const drafts: Job[] = isCivitai ? combinations.map((combo) => ({
-        id: crypto.randomUUID(),
-        prompt: combo.prompt,
-        status: 'draft' as const,
-        providerId: project.providerId,
-        ...civitaiDraftFields(project.civitaiConfig, combo, civitaiFormat),
-        filename: buildJobFilename([project.prefix ?? '', ...combo.filenameParts], crypto.randomUUID().slice(0, 8)),
-        workflowSnapshot: workflow,
-      })) : combinations.map((combo) => ({
-        id: crypto.randomUUID(),
-        prompt: combo.prompt,
-        imageContexts: combo.imageContexts,
-        videoContexts: combo.videoContexts,
-        audioContexts: combo.audioContexts,
-        status: 'draft' as const,
-        providerId: project.providerId,
-        modelConfigId: project.modelConfigId,
-        ...settings,
-        filename: buildJobFilename(
-          [project.prefix ?? '', ...combo.filenameParts],
-          crypto.randomUUID().slice(0, 8),
-        ),
-        workflowSnapshot: workflow,
-      }));
 
       const created = await repository.createProjectJobs(userId, projectId, drafts);
       projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'jobs.changed' });

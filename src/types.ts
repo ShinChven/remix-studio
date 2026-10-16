@@ -180,6 +180,8 @@ export interface Library {
   type: LibraryType;
   items: LibraryItem[];
   itemCount?: number;
+  /** Picture of the newest item, sent with library lists that skip the items. */
+  coverUrl?: string;
   createdAt?: number;
   updatedAt?: number;
   pinnedAt?: string | null;

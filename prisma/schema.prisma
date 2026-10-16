@@ -286,6 +286,7 @@ model WorkflowItem {
   thumbnailUrl String?
   optimizedUrl String?
   selectedTags Json? // String[]
+  tagMatchMode String? // 'and'; null matches any selected tag
   disabled     Boolean @default(false)
   comfyTarget  Json? // ComfyInputTarget (ComfyUI projects)
   civitai      Json? // CivitaiBinding (Civitai projects)

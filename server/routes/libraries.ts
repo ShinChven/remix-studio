@@ -18,6 +18,7 @@ import {
   type QuickWatermarkSource,
 } from '../services/quick-watermark';
 import type { AlbumItem, LibraryItem, Library } from '../../src/types';
+import { filterItemsByTags } from '../../src/lib/remixEngine';
 
 type Variables = { user: JwtPayload };
 
@@ -159,6 +160,39 @@ export function createLibraryRouter(
     return error?.message === 'Library not found' || error?.message === 'Library item not found';
   }
 
+  /**
+   * Store the sizes signing had to read from storage, so later loads skip
+   * that lookup. Runs in the background, one item at a time.
+   */
+  function storeRecoveredSizes(userId: string, libraryId: string, stored: LibraryItem[], signed: LibraryItem[]) {
+    const recovered = signed.filter((item, index) => item.size && !stored[index].size);
+    if (recovered.length === 0) return;
+    void (async () => {
+      for (const item of recovered) {
+        await repository.updateLibraryItem(userId, libraryId, item.id, { size: item.size });
+      }
+    })().catch((e) => console.warn(`Failed to store recovered sizes for library ${libraryId}:`, e));
+  }
+
+  async function signLibraryForUser(userId: string, lib: Library): Promise<Library> {
+    const signed = await signLibrary(lib, storage);
+    storeRecoveredSizes(userId, lib.id, lib.items, signed.items);
+    return signed;
+  }
+
+  /** Give image and video libraries the URL of their newest item's picture. */
+  async function addLibraryCovers<T extends { id: string; type: string }>(userId: string, libraries: T[]): Promise<Array<T & { coverUrl?: string }>> {
+    const visual = libraries.filter((lib) => lib.type === 'image' || lib.type === 'video');
+    const covers = await repository.getLibraryCoverItems(userId, visual.map((lib) => lib.id));
+    return Promise.all(libraries.map(async (lib) => {
+      const item = covers.get(lib.id);
+      const key = lib.type === 'image' ? (item?.thumbnailUrl || item?.content) : item?.thumbnailUrl;
+      if (!key) return lib;
+      const coverUrl = key.startsWith('http') || key.startsWith('data:') ? key : await storage.getPresignedUrl(key);
+      return { ...lib, coverUrl };
+    }));
+  }
+
   // === Libraries ===
 
   router.get('/api/libraries', authMiddleware, async (c) => {
@@ -168,15 +202,20 @@ export function createLibraryRouter(
       const limit = parseInt(c.req.query('limit') || '50', 10);
       const q = c.req.query('q');
       const includeItems = c.req.query('includeItems') === 'true';
+      const includeCover = c.req.query('cover') === 'true';
       const nameOnly = c.req.query('nameOnly') === 'true';
 
       const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems, undefined, nameOnly);
 
       if (!includeItems) {
-        return c.json(result);
+        if (!includeCover) return c.json(result);
+        return c.json({
+          ...result,
+          items: await addLibraryCovers(user.userId, result.items),
+        });
       }
 
-      const signedItems = await Promise.all(result.items.map((lib) => signLibrary(lib, storage)));
+      const signedItems = await Promise.all(result.items.map((lib) => signLibraryForUser(user.userId, lib)));
       return c.json({
         ...result,
         items: signedItems,
@@ -187,12 +226,43 @@ export function createLibraryRouter(
     }
   });
 
+  // What a project workflow shows for its library steps: each library's
+  // summary, and how many of its items each step's tag filter keeps. The
+  // counting happens here so the page never loads the items themselves.
+  router.post('/api/libraries/match-counts', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const body = await c.req.json().catch(() => ({}));
+      const rawFilters: unknown[] = Array.isArray(body?.filters) ? body.filters : [];
+      if (rawFilters.length > 500) return c.json({ error: 'Too many filters' }, 400);
+      const filters = rawFilters
+        .filter((filter): filter is { libraryId: string } => typeof (filter as any)?.libraryId === 'string')
+        .map((filter: any) => ({
+          libraryId: filter.libraryId as string,
+          tags: Array.isArray(filter.tags) ? filter.tags.filter((tag: unknown): tag is string => typeof tag === 'string') : [],
+          tagMatchMode: (filter.tagMatchMode === 'and' ? 'and' : 'or') as 'and' | 'or',
+        }));
+
+      const libraries = await repository.getLibraryItemRefs(user.userId, Array.from(new Set(filters.map((filter) => filter.libraryId))));
+      const byId = new Map(libraries.map((lib) => [lib.id, lib]));
+      const counts = filters.map((filter) => {
+        const lib = byId.get(filter.libraryId);
+        return lib ? filterItemsByTags(lib.items, filter.tags, filter.tagMatchMode).length : 0;
+      });
+      const summaries = libraries.map(({ items, ...lib }) => ({ ...lib, items: [], itemCount: items.length }));
+      return c.json({ libraries: await addLibraryCovers(user.userId, summaries), counts });
+    } catch (e) {
+      console.error('[POST /api/libraries/match-counts]', e);
+      return c.json({ error: 'Failed to count library items' }, 500);
+    }
+  });
+
   router.get('/api/libraries/:id', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
       const library = await repository.getLibrary(user.userId, c.req.param('id'));
       if (!library) return c.json({ error: 'Not found' }, 404);
-      return c.json(await signLibrary(library, storage));
+      return c.json(await signLibraryForUser(user.userId, library));
     } catch (e) {
       console.error('[GET /api/libraries/:id]', e);
       return c.json({ error: 'Failed to get library' }, 500);
@@ -489,6 +559,7 @@ export function createLibraryRouter(
 
       const result = await repository.getLibraryItemsPaginated(user.userId, libId, page, limit, q, tags, sortBy, sortOrder);
       const signedItems = await signLibraryImages(result.items, storage, library.type);
+      storeRecoveredSizes(user.userId, libId, result.items, signedItems);
 
       return c.json({
         ...result,

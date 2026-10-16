@@ -1,4 +1,4 @@
-import { CivitaiResource, ComfyInputTarget, ComfyJobInput, Library, WorkflowItem } from '../types';
+import { CivitaiResource, ComfyInputTarget, ComfyJobInput, LibraryType, WorkflowItem } from '../types';
 import { isSameComfyTarget } from './comfyWorkflow';
 import { CivitaiPicks, civitaiOptionLabel } from './civitai';
 
@@ -14,7 +14,12 @@ export interface Combination {
   civitai?: CivitaiPicks;
 }
 
-type Choice = {
+/**
+ * One option for one workflow step. A library item's choice keeps its ID, so
+ * combinations can be picked from IDs and tags alone and the content of just
+ * the picked items loaded afterwards.
+ */
+export type Choice = {
   type: 'text' | 'image' | 'video' | 'audio' | 'model',
   value: string,
   tags?: string[],
@@ -24,7 +29,22 @@ type Choice = {
   negative?: boolean,
   /** Civitai projects: the checkpoint or LoRA a model item contributes. */
   model?: { slot: 'checkpoint' | 'lora', resource: CivitaiResource },
+  itemId?: string,
 };
+
+/** A library item as the engine reads it. Without `content` it is picked by ID alone. */
+export interface ChoiceLibraryItem {
+  id: string;
+  content?: string;
+  tags?: string[];
+  title?: string;
+}
+
+export interface ChoiceLibrary {
+  id: string;
+  type: LibraryType;
+  items: ChoiceLibraryItem[];
+}
 
 /**
  * A ComfyUI binding stands for its input even when empty — clearing a prompt
@@ -75,7 +95,7 @@ export function filterItemsByTags<T extends { tags?: string[] }>(
   });
 }
 
-function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): Choice[][] {
+export function buildWorkflowChoices(workflow: WorkflowItem[], libraries: ChoiceLibrary[]): Choice[][] {
   const allChoices: Choice[][] = [];
 
   for (const item of workflow) {
@@ -109,15 +129,16 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
       if (lib && lib.items.length > 0) {
         const validItems = filterItemsByTags(lib.items, item.selectedTags, item.tagMatchMode);
 
-        const contents = validItems.filter(i => i.content.trim() !== '');
+        const contents = validItems.filter(i => i.content === undefined || i.content.trim() !== '');
         if (contents.length > 0) {
           allChoices.push(contents.map(i => ({
             type: lib.type || 'text',
-            value: i.content,
+            value: i.content ?? '',
             tags: i.tags,
             title: i.title,
             target,
             negative,
+            itemId: i.id,
           })));
         }
       }
@@ -127,7 +148,7 @@ function buildWorkflowChoices(workflow: WorkflowItem[], libraries: Library[]): C
   return allChoices;
 }
 
-function choicesToCombination(combo: Choice[]): Combination {
+export function choicesToCombination(combo: Choice[]): Combination {
   const texts: string[] = [];
   const images: string[] = [];
   const videos: string[] = [];
@@ -172,6 +193,12 @@ function choicesToCombination(combo: Choice[]): Combination {
   };
 }
 
+/** How many checkpoints or LoRAs a Civitai model step varies over; other slots vary nothing. */
+function modelOptionCount(item: WorkflowItem): number {
+  const slot = item.civitai?.slot;
+  return slot === 'checkpoint' || slot === 'lora' ? item.civitai?.options?.length ?? 0 : 0;
+}
+
 function getCombinationByIndex(choices: Choice[][], index: number): Choice[] {
   const result: Choice[] = new Array(choices.length);
   let remaining = index;
@@ -183,19 +210,36 @@ function getCombinationByIndex(choices: Choice[][], index: number): Choice[] {
   return result;
 }
 
-export function countWorkflowCombinations(workflow: WorkflowItem[], libraries: Library[]): number {
-  const choices = buildWorkflowChoices(workflow, libraries);
-  if (choices.length === 0) return 0;
-  return choices.reduce((product, arr) => product * arr.length, 1);
+/**
+ * How many combinations a workflow makes, from how many items each library
+ * step keeps after its tag filter — counted without the items themselves.
+ * Steps that offer nothing are left out, as buildWorkflowChoices leaves them out.
+ */
+export function countWorkflowCombinations(workflow: WorkflowItem[], librarySize: (item: WorkflowItem) => number): number {
+  let product = 1;
+  let steps = 0;
+  for (const item of workflow) {
+    if (item.disabled) continue;
+    const size = item.type === 'library' ? librarySize(item)
+      : item.type === 'model' ? modelOptionCount(item)
+      : item.type === 'text' ? (hasTextValue(item) ? 1 : 0)
+      : (item.value ? 1 : 0);
+    if (size === 0) continue;
+    product *= size;
+    steps++;
+  }
+  return steps === 0 ? 0 : product;
 }
 
-export function generateJobs(workflow: WorkflowItem[], libraries: Library[], count: number, shuffle: boolean): Combination[] {
-  const choices = buildWorkflowChoices(workflow, libraries);
-
+/**
+ * Pick `count` combinations: at random with shuffle on, otherwise walking them
+ * in order and wrapping around once they run out.
+ */
+export function pickCombinations(choices: Choice[][], count: number, shuffle: boolean, random: () => number = Math.random): Choice[][] {
   if (shuffle) {
-    const results: Combination[] = [];
+    const results: Choice[][] = [];
     for (let i = 0; i < count; i++) {
-      results.push(choicesToCombination(choices.map(arr => arr[Math.floor(Math.random() * arr.length)])));
+      results.push(choices.map(arr => arr[Math.floor(random() * arr.length)]));
     }
     return results;
   }
@@ -204,9 +248,9 @@ export function generateJobs(workflow: WorkflowItem[], libraries: Library[], cou
   const total = choices.reduce((product, arr) => product * arr.length, 1);
   if (total === 0) return [];
 
-  const results: Combination[] = [];
+  const results: Choice[][] = [];
   for (let i = 0; i < count; i++) {
-    results.push(choicesToCombination(getCombinationByIndex(choices, i % total)));
+    results.push(getCombinationByIndex(choices, i % total));
   }
   return results;
 }
