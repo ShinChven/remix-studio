@@ -106,6 +106,8 @@ export function normalizeAlbumTags(values: unknown): string[] {
   return tags;
 }
 
+type AlbumCover = Pick<Prisma.AlbumItemGetPayload<{}>, 'id' | 'thumbnailUrl' | 'optimizedUrl' | 'imageUrl'>;
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -156,13 +158,6 @@ export class ProjectRepository {
         take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
-          ...(summary ? {} : {
-            albumItems: {
-              orderBy: { createdAt: 'desc' as const },
-              take: 1,
-              select: { id: true, thumbnailUrl: true, optimizedUrl: true, imageUrl: true }
-            }
-          }),
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
@@ -170,15 +165,18 @@ export class ProjectRepository {
 
     const projectIds = projects.map((p) => p.id);
     const projectSizes: Record<string, number> = {};
+    let covers = new Map<string, AlbumCover>();
 
     if (projectIds.length > 0 && !summary) {
       const where = { userId, projectId: { in: projectIds } };
       const mediaSum = { size: true, optimizedSize: true, thumbnailSize: true } as const;
-      const [albumSums, trashSums, exportSums] = await Promise.all([
+      const [albumSums, trashSums, exportSums, latestItems] = await Promise.all([
         this.prisma.albumItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
         this.prisma.trashItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
         this.prisma.exportTask.groupBy({ by: ['projectId'], where, _sum: { size: true } }),
+        this.getAlbumCovers(projectIds),
       ]);
+      covers = latestItems;
 
       const add = (projectId: string | null, ...sizes: (bigint | null)[]) => {
         if (!projectId) return;
@@ -199,7 +197,7 @@ export class ProjectRepository {
       createdAt: p.createdAt.getTime(),
       workflow: [],
       jobs: [],
-      album: (p as any).albumItems || [],
+      album: covers.has(p.id) ? [covers.get(p.id) as any] : [],
       jobCount: p._count.jobs,
       albumCount: p._count.albumItems,
       totalSize: projectSizes[p.id] || 0,
@@ -223,6 +221,26 @@ export class ProjectRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  /**
+   * Each project's newest album item, keyed by project. A nested `take: 1`
+   * include would do this too, but Prisma pages nested relations in memory:
+   * it reads every album item of every listed project to keep one each.
+   */
+  private async getAlbumCovers(projectIds: string[]): Promise<Map<string, AlbumCover>> {
+    const rows = await this.prisma.$queryRaw<Array<AlbumCover & { projectId: string }>>`
+      SELECT p.id AS "projectId", a."id", a."thumbnailUrl", a."optimizedUrl", a."imageUrl"
+      FROM unnest(${projectIds}::text[]) AS p(id)
+      CROSS JOIN LATERAL (
+        SELECT "id", "thumbnailUrl", "optimizedUrl", "imageUrl"
+        FROM "AlbumItem"
+        WHERE "projectId" = p.id
+        ORDER BY "createdAt" DESC, "id" DESC
+        LIMIT 1
+      ) a
+    `;
+    return new Map(rows.map(({ projectId, ...cover }) => [projectId, cover]));
   }
 
   async getProject(userId: string, projectId: string): Promise<Project | null> {
