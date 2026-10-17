@@ -69,6 +69,8 @@
       "manageOrphans": "Orphelins",
       "deleteProject": "Supprimer",
       "duplicateProject": "Dupliquer",
+      "importWorkflow": "Importer un workflow",
+      "importWorkflowTitle": "Importer un workflow depuis un album",
       "archiveProject": "Archiver",
       "unarchiveProject": "Restaurer",
       "archivedBadge": "Archivé",

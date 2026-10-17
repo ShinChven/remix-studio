@@ -8,6 +8,7 @@ import {
   Job,
   JobConfiguration,
   Library,
+  LibraryType,
   WorkflowItem as WorkflowItemType,
   WorkflowItemType as WorkflowItemTypeKind,
   Provider,
@@ -279,6 +280,7 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
   const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
+  const [isImportingWorkflow, setIsImportingWorkflow] = useState(false);
   const [changingLibraryItemId, setChangingLibraryItemId] = useState<string | null>(null);
   const [savingLibraryItemId, setSavingLibraryItemId] = useState<string | null>(null);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
@@ -603,6 +605,24 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
       () => fetchProjectAlbumItemConfiguration(localProject.id, item.id),
       t('projectViewer.album.reuseWorkflowUnavailable'),
     );
+
+  /** Reuse, but for an album item picked from any project rather than this one. */
+  const handleImportWorkflow = (items: UniversalPickedItem[]) => {
+    const picked = items[0];
+    setIsImportingWorkflow(false);
+    if (!picked) return;
+    void loadReuseConfiguration(
+      picked.itemId,
+      // Workflow item ids are unique across projects, and the snapshot still
+      // carries the source project's, so the copy gets fresh ones — as a
+      // duplicated project's workflow does.
+      () => fetchProjectAlbumItemConfiguration(picked.sourceId, picked.itemId).then((config) => ({
+        ...config,
+        workflowSnapshot: config.workflowSnapshot?.map((item) => ({ ...item, id: crypto.randomUUID() })),
+      })),
+      t('projectViewer.album.reuseWorkflowUnavailable'),
+    );
+  };
 
   const confirmReuseWorkflow = () => {
     if (!configToReuse || !configToReuse.workflowSnapshot) return;
@@ -2522,6 +2542,9 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
         onNavigateToEdit={() => setProjectFormMode('edit')}
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
         onNavigateToDuplicate={() => setProjectFormMode('duplicate')}
+        // A ComfyUI workflow's items are bound to the nodes of its own graph,
+        // so they mean nothing in another ComfyUI project.
+        onImportWorkflow={isComfyProject ? undefined : () => setIsImportingWorkflow(true)}
         onStartAssistantChat={handleStartAssistantChat}
         onShowDeleteProject={() => setShowDeleteProjectModal(true)}
         onToggleArchive={handleToggleArchive}
@@ -2831,6 +2854,20 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
           );
           setSelectingLibraryForItemId(null);
         }}
+      />
+      <UniversalMediaPicker
+        isOpen={isImportingWorkflow}
+        title={t('projectViewer.main.importWorkflowTitle')}
+        allowedTypes={[mediaProjectType as LibraryType]}
+        // Only the same kind of project: a Civitai workflow and its Civitai
+        // provider are no use to a regular image project, nor the reverse.
+        projectTypes={[localProject.type || 'image']}
+        sourceKinds={['album']}
+        defaultSourceKind="album"
+        multiple={false}
+        memoryKey={`workflow-import:${localProject.type || 'image'}:${mediaProjectType}`}
+        onClose={() => setIsImportingWorkflow(false)}
+        onConfirm={handleImportWorkflow}
       />
       <LibraryPreviewModal
         library={previewingLibrary}
