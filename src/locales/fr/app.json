@@ -120,5 +120,10 @@
     "matchMode": "Filtre",
     "matchAny": "Au moins un",
     "matchAll": "Tous"
+  },
+  "resourceRef": {
+    "copy": "Copier l'ID pour l'IA",
+    "copied": "Référence copiée",
+    "copyFailed": "Impossible de copier la référence"
   }
 }

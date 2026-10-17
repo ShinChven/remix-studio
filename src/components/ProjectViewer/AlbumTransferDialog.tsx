@@ -188,7 +188,7 @@ export function AlbumTransferDialog({
           const result = await fetchLibraries(1, LIBRARY_PAGE_SIZE);
           if (!cancelled) setLibraries(result.items.filter((library) => library.type === mediaType));
         } else {
-          const result = await fetchProjects(1, PROJECT_PAGE_SIZE, undefined, 'all');
+          const result = await fetchProjects(1, PROJECT_PAGE_SIZE, undefined, 'all', false, true);
           if (!cancelled) {
             setProjects(result.items.filter(
               (candidate) => candidate.id !== projectId && (candidate.type || 'image') === projectType,

@@ -17,6 +17,8 @@ import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
 import { TagModal } from '../TagModal';
 import { EmptyState } from './EmptyState';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './PaginationBar';
+import { CopyRefButton } from '../CopyRefButton';
+import { resourceRef } from '../../lib/resource-ref';
 
 import { toast } from 'sonner';
 
@@ -522,6 +524,16 @@ export function AlbumTab({
     );
   };
 
+  const renderRefButton = (item: AlbumItem, variant: 'title' | 'inline') => (
+    <CopyRefButton
+      reference={resourceRef.albumItem(projectId, item.id)}
+      className={variant === 'title'
+        ? 'flex-shrink-0 inline-flex items-center justify-center rounded-sm text-[13px] leading-none text-neutral-500 hover:text-blue-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60'
+        : 'flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors'}
+      iconClassName={variant === 'title' ? 'w-[1em] h-[1em]' : 'w-3.5 h-3.5'}
+    />
+  );
+
   const aspectRatioOptions = aspectRatioCounts;
   const hasAspectRatioFilter = selectedAspectRatios.length > 0;
   const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 0;
@@ -804,6 +816,7 @@ export function AlbumTab({
                     <AlbumTagChips tags={item.tags} onTagClick={toggleTagFilter} limit={2} />
                   </div>
 
+                  {renderRefButton(item, 'inline')}
                   {renderTagButton(item, 'inline')}
                   {renderReuseButton(item, 'inline')}
 
@@ -867,6 +880,7 @@ export function AlbumTab({
                       {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
                     </button>
 
+                    {renderRefButton(item, 'inline')}
                     {renderTagButton(item, 'inline')}
                     {renderReuseButton(item, 'inline')}
 
@@ -1120,6 +1134,7 @@ export function AlbumTab({
                       >
                         <Pencil className="w-[1em] h-[1em]" />
                       </button>
+                      {renderRefButton(item, 'title')}
                       {renderTagButton(item, 'title')}
                       {renderReuseButton(item, 'title')}
                     </div>

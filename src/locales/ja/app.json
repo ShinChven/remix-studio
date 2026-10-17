@@ -120,5 +120,10 @@
     "matchMode": "条件",
     "matchAny": "いずれか",
     "matchAll": "すべて"
+  },
+  "resourceRef": {
+    "copy": "AI 用に ID をコピー",
+    "copied": "参照をコピーしました",
+    "copyFailed": "参照をコピーできませんでした"
   }
 }

@@ -84,6 +84,7 @@ export class ImageProcessor {
         id: i === 0 ? job.id : `${job.id}-layer-${i}`,
         jobId: job.id,
         prompt: job.prompt,
+        tags: job.tags,
         imageUrl: image.imageUrl,
         thumbnailUrl: image.thumbnailUrl,
         optimizedUrl: image.optimizedUrl,

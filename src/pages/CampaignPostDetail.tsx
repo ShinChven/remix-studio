@@ -28,9 +28,11 @@ import {
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { CopyRefButton } from '../components/CopyRefButton';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
+import { resourceRef } from '../lib/resource-ref';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon } from '../lib/platform';
 
@@ -311,6 +313,11 @@ export function CampaignPostDetail() {
         backLink={backCampaignId ? { to: `/campaigns/${backCampaignId}`, label: 'Back to Campaign' } : undefined}
         actions={(
           <div className="flex flex-wrap items-center gap-2">
+            <CopyRefButton
+              reference={resourceRef.post(post.campaignId, post.id)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 text-neutral-700 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+              iconClassName="h-4 w-4"
+            />
             <button className="inline-flex h-10 items-center gap-2 rounded-xl border border-neutral-200 px-4 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10" onClick={() => navigate(`/campaigns/${backCampaignId}/posts/edit/${post.id}`)}>
               <Pencil className="h-4 w-4" /> Edit
             </button>

@@ -103,6 +103,7 @@ export class VideoProcessor {
         id: job.id,
         jobId: job.id,
         prompt: job.prompt,
+        tags: job.tags,
         imageUrl: videoKey,
         thumbnailUrl: thumbKey,
         optimizedUrl: optKey,

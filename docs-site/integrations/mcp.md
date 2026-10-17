@@ -125,8 +125,8 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Area | Read tools | Write/destructive tools |
 | :--- | :--- | :--- |
 | Account | `get_current_account` | — |
-| Libraries | `list_libraries`, `get_library_items`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
-| Projects | `get_project`, `list_albums`, `get_album_items`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `rename_album_items`, `export_project`, `export_project_album` |
+| Libraries | `list_libraries`, `get_library_items`, `get_library_item`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_prompt` |
+| Projects | `get_project`, `list_albums`, `get_album_items`, `get_album_item`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `rename_album_items`, `export_project`, `export_project_album` |
 | Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
 | Files | `get_file_urls`, `get_upload` | `create_upload`, `add_files_to_library`, `create_posts_from_files` |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |

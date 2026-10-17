@@ -120,5 +120,10 @@
     "matchMode": "匹配",
     "matchAny": "任一",
     "matchAll": "全部"
+  },
+  "resourceRef": {
+    "copy": "复制 ID 给 AI",
+    "copied": "已复制引用",
+    "copyFailed": "无法复制引用"
   }
 }

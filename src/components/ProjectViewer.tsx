@@ -28,6 +28,7 @@ import { countWorkflowCombinations } from '../lib/remixEngine';
 import { groupComfyBindings, isComfyRemix } from '../lib/comfyWorkflow';
 import { civitaiModelItems, civitaiResourceLabel, civitaiVideoEngineLabel, isCivitaiVideo, parseCivitaiAir } from '../lib/civitai';
 import { projectMediaType } from '../lib/project-media';
+import { DEFAULT_ALBUM_PAGE_SIZE, getRememberedAlbumPageSize, parseAlbumPageSize, rememberAlbumPageSize, type AlbumPageSize } from '../lib/album-page-size-memory';
 import { LIVE_CLIENT_ID } from '../lib/live';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { ConfirmModal } from './ConfirmModal';
@@ -162,10 +163,17 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
   // Album view state is URL-driven (subscribes to the search params) so it is
   // shareable and survives back/forward, matching the `tab` param pattern.
   const albumPage = Math.max(1, Math.floor(Number(searchParams.get('albumPage')) || 1));
-  const albumSizeParam = searchParams.get('albumSize');
-  const albumPageSize: number | 'all' = albumSizeParam === 'all'
-    ? 'all'
-    : (Number(albumSizeParam) > 0 ? Math.floor(Number(albumSizeParam)) : 500);
+  // Without an `albumSize` param the album uses the page size last picked for
+  // this project in this browser. The viewer is reused across projects, so the
+  // remembered size is tied to the project it was read for.
+  const [rememberedAlbumPageSize, setRememberedAlbumPageSize] = useState(() => ({
+    projectId: project.id,
+    size: getRememberedAlbumPageSize(project.id),
+  }));
+  const albumDefaultPageSize = rememberedAlbumPageSize.projectId === project.id
+    ? rememberedAlbumPageSize.size
+    : getRememberedAlbumPageSize(project.id);
+  const albumPageSize: AlbumPageSize = parseAlbumPageSize(searchParams.get('albumSize')) ?? albumDefaultPageSize;
   const albumSearch = searchParams.get('albumSearch') || '';
   const albumSort: 'newest' | 'oldest' = searchParams.get('albumSort') === 'oldest' ? 'oldest' : 'newest';
   const albumRatiosParam = searchParams.get('albumRatios') || '';
@@ -208,7 +216,7 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
           else next.delete('albumPage');
         }
         if (updates.pageSize !== undefined) {
-          if (updates.pageSize !== 500) next.set('albumSize', String(updates.pageSize));
+          if (updates.pageSize !== DEFAULT_ALBUM_PAGE_SIZE) next.set('albumSize', String(updates.pageSize));
           else next.delete('albumSize');
         }
         if (updates.sort !== undefined) {
@@ -524,9 +532,11 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
     scrollTabContentTop();
   }, [updateAlbumParams, scrollTabContentTop]);
   const handleAlbumPageSizeChange = useCallback((size: number | 'all') => {
+    rememberAlbumPageSize(project.id, size);
+    setRememberedAlbumPageSize({ projectId: project.id, size });
     updateAlbumParams({ pageSize: size });
     scrollTabContentTop();
-  }, [updateAlbumParams, scrollTabContentTop]);
+  }, [project.id, updateAlbumParams, scrollTabContentTop]);
   const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => {
     updateAlbumParams({ sort });
   }, [updateAlbumParams]);

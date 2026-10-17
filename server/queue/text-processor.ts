@@ -28,6 +28,7 @@ export class TextProcessor {
         prompt: job.prompt,
         textContent: text,
         imageContexts: job.imageContexts,
+        tags: job.tags,
         imageUrl: '', // Not used for text generation
         providerId: providerId || job.providerId,
         modelConfigId: modelConfigId || job.modelConfigId,

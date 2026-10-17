@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
 import { createAssistantToolDefinitions, AssistantToolDefinition, ToolDependencies } from './tool-definitions';
 import { getTransportInputSchema, resolveExternalToolCall } from './tool-confirmation';
+import { RESOURCE_REF_GUIDE } from './resource-refs';
 
 type Variables = { mcpUserId: string };
 
@@ -86,10 +87,13 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
 }
 
 function createMcpServerInstance(toolDeps: ToolDependencies, userId: string, appBaseUrl: string) {
-  const server = new McpServer({
-    name: 'remix-studio',
-    version: '1.0.0',
-  });
+  const server = new McpServer(
+    {
+      name: 'remix-studio',
+      version: '1.0.0',
+    },
+    { instructions: RESOURCE_REF_GUIDE },
+  );
 
   // appBaseUrl is per-request (the incoming origin), so it is layered on top
   // of the shared dependencies rather than stored with them.
