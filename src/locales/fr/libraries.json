@@ -46,6 +46,7 @@
     "exportLibrary": "Exporter la bibliothèque",
     "deleteLibrary": "Supprimer la bibliothèque",
     "selectAll": "Tout sélectionner",
+    "selectItem": "Sélectionner l'élément",
     "selectedCount": "{{count}} sélectionné(s)",
     "filterByTag": "Filtrer par tag",
     "tagsSelected": "{{count}} tag(s) sélectionné(s)",

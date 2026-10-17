@@ -46,6 +46,7 @@
     "exportLibrary": "导出媒体库",
     "deleteLibrary": "删除库",
     "selectAll": "全选",
+    "selectItem": "选择此项",
     "selectedCount": "已选择 {{count}} 项",
     "sort": {
       "timeDesc": "最新优先",
