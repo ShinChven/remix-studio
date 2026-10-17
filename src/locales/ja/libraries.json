@@ -46,6 +46,7 @@
     "exportLibrary": "ライブラリをエクスポート",
     "deleteLibrary": "ライブラリを削除",
     "selectAll": "すべて選択",
+    "selectItem": "アイテムを選択",
     "selectedCount": "{{count}} 個選択済み",
     "filterByTag": "タグで絞り込む",
     "tagsSelected": "{{count}} 個のタグを選択済み",

@@ -845,6 +845,22 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                           </div>
                         </div>
                       </div>
+                      {/* Always visible, so a single item can be picked without a modifier key or on touch.
+                          No z-index: DOM order keeps it above the gradient without painting over the sticky toolbar. */}
+                      <button
+                        type="button"
+                        onClick={(e) => toggleItemSelection(item.id, index, e)}
+                        className={`absolute top-2 left-2 w-7 h-7 rounded-lg flex items-center justify-center border backdrop-blur-md transition-ui active:scale-90 ${isSelected ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-black/60 border-white/20 hover:border-white/40'}`}
+                        title={t('libraryEditor.selectItem')}
+                        aria-label={t('libraryEditor.selectItem')}
+                        aria-pressed={isSelected}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-white" />
+                        ) : (
+                          <Square className="w-4 h-4 text-white/60" />
+                        )}
+                      </button>
                     </div>
                   ) : (
                     <div
