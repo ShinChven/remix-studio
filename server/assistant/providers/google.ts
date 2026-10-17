@@ -69,6 +69,8 @@ export class GoogleAIChatProvider implements ChatProvider {
       ...(typeof req.maxTokens === 'number' ? { maxOutputTokens: req.maxTokens } : {}),
       ...(systemInstruction ? { systemInstruction } : {}),
       ...(tools ? { tools } : {}),
+      // Closes the request when the user stops the turn.
+      ...(req.abortSignal ? { abortSignal: req.abortSignal } : {}),
     };
 
     const includeThoughts = req.includeThoughts ?? typeof req.onThought === 'function';

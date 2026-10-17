@@ -46,6 +46,8 @@ export interface ActiveTurnInfo {
   kind: TurnKind;
   startedAt: number;
   lastSeq: number;
+  /** The user pressed Stop and the loop is winding down to its next safe point. */
+  stopping: boolean;
   /** Progress label at the moment of the snapshot, if the turn has emitted one. */
   lastEvent: AssistantStatusEvent | null;
 }
@@ -69,6 +71,8 @@ class TurnRecord {
   private lastEvent: AssistantStatusEvent | null = null;
   private subscribers = new Set<Subscriber>();
   private finishWaiters: Array<() => void> = [];
+  /** Aborted by `AssistantTurnHub.cancel` — the loop stops at its next safe point. */
+  readonly abortController = new AbortController();
   finished = false;
 
   constructor(
@@ -87,6 +91,7 @@ class TurnRecord {
       startedAt: this.startedAt,
       lastSeq: this.seq,
       lastEvent: this.lastEvent,
+      stopping: this.abortController.signal.aborted,
     };
   }
 
@@ -167,8 +172,14 @@ export class AssistantTurnHub {
     userId: string;
     conversationId: string;
     kind: TurnKind;
-    /** Runs the turn. Its resolved value becomes the terminal NDJSON frame. */
-    execute: (emit: (event: AssistantStatusEvent) => void) => Promise<Record<string, unknown>>;
+    /**
+     * Runs the turn. Its resolved value becomes the terminal NDJSON frame.
+     * `signal` aborts when the user stops the turn.
+     */
+    execute: (
+      emit: (event: AssistantStatusEvent) => void,
+      signal: AbortSignal,
+    ) => Promise<Record<string, unknown>>;
   }): TurnRecord {
     if (this.isActive(input.conversationId)) {
       throw new TurnAlreadyRunningError(input.conversationId);
@@ -179,7 +190,10 @@ export class AssistantTurnHub {
 
     void (async () => {
       try {
-        const payload = await input.execute((event) => record.emitStatus(event));
+        const payload = await input.execute(
+          (event) => record.emitStatus(event),
+          record.abortController.signal,
+        );
         record.finish(payload);
       } catch (e: any) {
         console.error('[AssistantTurnHub] Turn failed', e);
@@ -214,8 +228,29 @@ export class AssistantTurnHub {
     return { unsubscribe, waitForFinish: () => record.waitForFinish(), live: true };
   }
 
+  /**
+   * Ask a conversation's running turn to stop. The loop notices at its next
+   * safe point — an in-flight model call is abandoned at once, a running tool
+   * is let finish so its result is recorded — and then ends with a `stopped`
+   * result. Returns false when nothing is running.
+   */
+  cancel(conversationId: string): boolean {
+    const record = this.turns.get(conversationId);
+    if (!record || record.finished) return false;
+    if (!record.abortController.signal.aborted) {
+      // Tell every attached tab before the loop gets there, so the progress
+      // line can say "Stopping…" while a tool finishes.
+      record.emitStatus({ type: 'stop_requested' });
+      record.abortController.abort();
+    }
+    return true;
+  }
+
   /** Drop a conversation's turn record — used when the conversation is deleted. */
   discard(conversationId: string): void {
+    const record = this.turns.get(conversationId);
+    // A deleted conversation has nothing left to write to; stop its loop too.
+    if (record && !record.finished) record.abortController.abort();
     this.turns.delete(conversationId);
   }
 

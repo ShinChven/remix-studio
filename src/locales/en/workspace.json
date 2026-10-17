@@ -462,6 +462,8 @@
     "reconnecting": "Reconnecting to the assistant...",
     "turnBusy": "The assistant is still working in this chat — nothing was sent.",
     "reconnectFailed": "Lost track of the assistant — reloading the chat.",
+    "stopping": "Stopping...",
+    "stopFailed": "Could not stop the assistant.",
     "attachImage": "Attach image",
     "dropImagesHere": "Drop images here",
     "maxImagesReached": "Maximum 5 images per message",
