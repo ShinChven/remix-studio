@@ -120,5 +120,10 @@
     "matchMode": "Match",
     "matchAny": "Any",
     "matchAll": "All"
+  },
+  "resourceRef": {
+    "copy": "Copy ID for AI",
+    "copied": "Reference copied",
+    "copyFailed": "Could not copy the reference"
   }
 }

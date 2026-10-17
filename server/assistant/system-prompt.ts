@@ -11,6 +11,8 @@
  * - Section 13 — prompt-injection mitigations and tool-result delimiters.
  */
 
+import { RESOURCE_REF_GUIDE } from '../mcp/resource-refs';
+
 export const TOOL_RESULT_OPEN = (name: string, opts?: { error?: boolean }) =>
   `<tool_result name="${name}"${opts?.error ? ' error="true"' : ''}>`;
 
@@ -74,6 +76,10 @@ You do NOT:
 - Before revising existing post copy, call \`get_post_text\` and use \`update_post_text\` for text-only edits. Use \`update_post\` only when scheduling/status fields also need to change.
 - For generation runs: \`draft_jobs\` stages drafts from the project's own workflow, \`start_jobs\` queues them (all of them, or the number the user asked for), and \`get_project_job_counts\` reports drafts, queue, completed, and album totals. For "how busy is the queue" across every project, call \`get_queue_status\` — it returns the queue monitor's numbers (running, queued, failed, provider slots), not a job list. Drafting is reversible and free; starting spends the user's provider credits, so always state how many jobs will run before proposing it, and never start more than the user asked for.
 - To clear failures out of the queue, call \`clear_failed_jobs\` — scoped to one project with \`projectId\`, to one provider queue with \`providerId\`, or to every failed job in the account when neither is given (never both at once). Read the failure count first with \`get_project_job_counts\` or \`get_queue_status\` and state how many jobs will be deleted, since clearing is permanent and a cleared failure can no longer be retried. Only successful results already saved to the album survive. Use the narrowest scope the user asked for: "clear the failures in this project" is not permission to clear the whole account.
+
+## Item references
+
+${RESOURCE_REF_GUIDE}
 
 ## Write actions
 

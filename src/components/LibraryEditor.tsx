@@ -15,6 +15,8 @@ import { CopyMoveItemsDialog } from './CopyMoveItemsDialog';
 import { RenameItemModal } from './RenameItemModal';
 import { ImageLightbox } from './ProjectViewer/ImageLightbox';
 import { ExportFileNameModal } from './ExportFileNameModal';
+import { CopyRefButton } from './CopyRefButton';
+import { resourceRef } from '../lib/resource-ref';
 import type { BoundContext } from './Assistant/AssistantComposer';
 import { toast } from 'sonner';
 
@@ -818,6 +820,10 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                               {library.type.toUpperCase()}
                             </span>
                             <div className="flex items-center gap-1.5">
+                               <CopyRefButton
+                                 reference={resourceRef.libraryItem(library.id, item.id)}
+                                 className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-ui active:scale-90"
+                               />
                                {library.type === 'image' && (
                                  <a
                                    href={`/library/${library.id}/items/${item.id}/watermark`}
@@ -919,6 +925,11 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                           >
                             <Copy className="w-4 h-4" />
                           </button>
+                          <CopyRefButton
+                            reference={resourceRef.libraryItem(library.id, item.id)}
+                            className="p-2 text-neutral-600 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                            iconClassName="w-4 h-4"
+                          />
                           <button
                             onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}
                             className="p-2 text-neutral-600 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
