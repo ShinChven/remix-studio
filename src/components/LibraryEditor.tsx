@@ -819,14 +819,17 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                             </span>
                             <div className="flex items-center gap-1.5">
                                {library.type === 'image' && (
-                                 <button
-                                   onClick={(e) => { e.stopPropagation(); navigate(`/library/${library.id}/items/${item.id}/watermark`); }}
+                                 <a
+                                   href={`/library/${library.id}/items/${item.id}/watermark`}
+                                   target="_blank"
+                                   rel="noreferrer"
+                                   onClick={(e) => e.stopPropagation()}
                                    className="p-1.5 bg-neutral-50/80 dark:bg-neutral-950/80 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 rounded-lg backdrop-blur-md border border-white/5 hover:border-blue-400/20 transition-ui active:scale-90"
                                    title={t('libraryEditor.quickWatermark')}
                                    aria-label={t('libraryEditor.quickWatermark')}
                                  >
                                    <Stamp className="w-3.5 h-3.5" />
-                                 </button>
+                                 </a>
                                )}
                                <button
                                  onClick={(e) => { e.stopPropagation(); setTagModalItemId(item.id); }}

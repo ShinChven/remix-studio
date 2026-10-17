@@ -1007,18 +1007,17 @@ export function AlbumTab({
                       </a>
 
                       {!isVideoProject && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/project/${projectId}/album/${item.id}/watermark`);
-                          }}
+                        <a
+                          href={`/project/${projectId}/album/${item.id}/watermark`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
                           title={t('projectViewer.album.quickWatermark')}
                           aria-label={t('projectViewer.album.quickWatermark')}
                         >
                           <Stamp className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
-                        </button>
+                        </a>
                       )}
                     </div>
 
