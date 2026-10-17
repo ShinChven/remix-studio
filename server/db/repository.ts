@@ -42,6 +42,7 @@ export interface IRepository {
   createProjectJobs(userId: string, projectId: string, jobs: Job[]): Promise<number>;
   startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number>;
   getJob(userId: string, projectId: string, jobId: string): Promise<Job | null>;
+  updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>): Promise<void>;
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
@@ -79,6 +80,13 @@ export interface IRepository {
   getAllProjectAlbumItems(userId: string, projectId: string): Promise<AlbumItem[]>;
   getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
+  updateAlbumItemFiles(
+    userId: string,
+    projectId: string,
+    itemId: string,
+    files: Partial<Pick<AlbumItem, 'imageUrl' | 'thumbnailUrl' | 'optimizedUrl'>>,
+    options?: { ifImageUrl?: string },
+  ): Promise<boolean>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   moveAlbumItemsToProject(
     userId: string,

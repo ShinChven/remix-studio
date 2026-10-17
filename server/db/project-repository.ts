@@ -776,6 +776,32 @@ export class ProjectRepository {
     });
   }
 
+  /**
+   * Point one album item at new storage keys, leaving every other column as
+   * it stands. With `ifImageUrl`, only while the row still holds that key.
+   * Returns false when no row matched.
+   */
+  async updateAlbumItemFiles(
+    userId: string,
+    projectId: string,
+    itemId: string,
+    files: Partial<Pick<AlbumItem, 'imageUrl' | 'thumbnailUrl' | 'optimizedUrl'>>,
+    options: { ifImageUrl?: string } = {},
+  ): Promise<boolean> {
+    const data: any = {};
+    if (files.imageUrl !== undefined) data.imageUrl = files.imageUrl ?? null;
+    if (files.thumbnailUrl !== undefined) data.thumbnailUrl = files.thumbnailUrl ?? null;
+    if (files.optimizedUrl !== undefined) data.optimizedUrl = files.optimizedUrl ?? null;
+
+    const where: any = { id: itemId, projectId, userId };
+    if (options.ifImageUrl !== undefined) where.imageUrl = options.ifImageUrl;
+    if (Object.keys(data).length === 0) {
+      return (await this.prisma.albumItem.count({ where })) > 0;
+    }
+    const result = await this.prisma.albumItem.updateMany({ where, data });
+    return result.count > 0;
+  }
+
   async getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
     const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) return null;

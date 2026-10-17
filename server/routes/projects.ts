@@ -4,7 +4,7 @@ import { Readable } from 'node:stream';
 import type { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
-import { S3Storage } from '../storage/s3-storage';
+import { isMissingObjectError, S3Storage } from '../storage/s3-storage';
 import { QueueManager } from '../queue/queue-manager';
 import { ExportManager } from '../queue/export-manager';
 import { DeliveryManager } from '../queue/delivery-manager';
@@ -14,6 +14,12 @@ import {
   startProjectAlbumExport,
   startProjectBundleExport,
 } from '../services/project-export';
+import {
+  AlbumRenameError,
+  basenameFromKey,
+  renameAlbumItems,
+} from '../services/album-rename';
+import { mapWithConcurrency } from '../utils/concurrency';
 import { checkStorageLimit } from '../utils/storage-check';
 import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
@@ -182,19 +188,6 @@ function reconstructWorkflowSnapshot(source: {
   return items;
 }
 
-function basenameFromKey(value: string | undefined): string {
-  if (!value) return '';
-  const clean = value.split('?')[0];
-  return decodeURIComponent(clean.split('/').pop() || clean);
-}
-
-function splitFilename(filename: string, fallbackExt?: string): { base: string; ext: string } {
-  const trimmed = filename.trim();
-  const match = trimmed.match(/^(.*?)(\.[^.\/\\]+)$/);
-  if (match && match[1]) return { base: match[1], ext: match[2].slice(1) };
-  return { base: trimmed, ext: fallbackExt || '' };
-}
-
 export async function signJobs(jobs: Job[], storage: S3Storage): Promise<Job[]> {
   return Promise.all(
     jobs.map(async (job) => {
@@ -323,41 +316,6 @@ export async function signWorkflowItems(workflow: WorkflowItem[], storage: S3Sto
       return item;
     })
   );
-}
-
-/**
- * Run an async job over every entry with a bounded number in flight. The album
- * move touches three storage objects per item, so a selection of a few hundred
- * is thousands of round trips — sequentially that is minutes, and unbounded
- * `Promise.all` opens thousands of sockets at once.
- */
-async function mapWithConcurrency<T, R>(
-  values: T[],
-  limit: number,
-  run: (value: T) => Promise<R>,
-): Promise<R[]> {
-  const results = new Array<R>(values.length);
-  let cursor = 0;
-  const workers = Array.from({ length: Math.min(limit, values.length) }, async () => {
-    while (cursor < values.length) {
-      const index = cursor++;
-      results[index] = await run(values[index]);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
-
-/**
- * Whether a storage error means the object is not there, as opposed to the
- * request being refused or failing in transit. `S3Storage.exists` cannot tell
- * the two apart — it answers false for any error — and treating a throttled
- * HeadObject as "missing" would strand a file in the source folder.
- */
-function isMissingObjectError(error: unknown): boolean {
-  const err = error as { name?: string; Code?: string; $metadata?: { httpStatusCode?: number } };
-  const name = err?.name || err?.Code;
-  return name === 'NoSuchKey' || name === 'NotFound' || err?.$metadata?.httpStatusCode === 404;
 }
 
 /**
@@ -1198,57 +1156,30 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const projectId = c.req.param('id');
       const itemId = c.req.param('itemId');
       const body = await c.req.json().catch(() => ({}));
-      const requested = typeof body.filename === 'string' ? body.filename.trim() : '';
+      const requested = typeof body.filename === 'string' ? body.filename : '';
       if (!projectId) return c.json({ error: 'Project id is required' }, 400);
       if (!itemId) return c.json({ error: 'Item id is required' }, 400);
-      if (!requested) return c.json({ error: 'Filename is required' }, 400);
-      if (/[\/\\]/.test(requested)) return c.json({ error: 'Filename cannot contain path separators' }, 400);
 
-      const project = await repository.getProject(user.userId, projectId);
-      if (!project) return c.json({ error: 'Project not found' }, 404);
-      const albumPage = await repository.getProjectAlbum(user.userId, projectId, { limit: 999999 });
-      const albumItems = albumPage.items;
-      const item = albumItems.find((albumItem) => albumItem.id === itemId);
-      if (!item) return c.json({ error: 'Album item not found' }, 404);
-
-      const currentName = basenameFromKey(stripToKey(item.imageUrl, storage.getBucketName()));
-      const currentParts = splitFilename(currentName, item.format);
-      const requestedParts = splitFilename(requested, currentParts.ext);
-      const normalizedFilename = currentParts.ext ? `${requestedParts.base}.${currentParts.ext}` : requestedParts.base;
-      const duplicate = albumItems.some((albumItem) => {
-        if (albumItem.id === itemId) return false;
-        const name = basenameFromKey(stripToKey(albumItem.imageUrl, storage.getBucketName()));
-        return name.trim().toLowerCase() === normalizedFilename.toLowerCase();
-      });
-      if (duplicate) return c.json({ error: 'Filename already exists in this album' }, 409);
-
-      const updates: Partial<typeof item> = {};
-      const mainKey = stripToKey(item.imageUrl, storage.getBucketName());
-      if (mainKey && !mainKey.startsWith('http') && !mainKey.startsWith('data:') && currentParts.base && requestedParts.base !== currentParts.base) {
-        const renameKey = async (value?: string) => {
-          const key = stripToKey(value, storage.getBucketName());
-          if (!key || key.startsWith('http') || key.startsWith('data:')) return value;
-          const keyBasename = basenameFromKey(key);
-          const dir = key.slice(0, key.length - keyBasename.length);
-          if (!keyBasename.startsWith(currentParts.base)) return value;
-          const renamedKey = `${dir}${requestedParts.base}${keyBasename.slice(currentParts.base.length)}`;
-          await storage.copy(key, renamedKey);
-          await storage.delete(key);
-          return renamedKey;
-        };
-        updates.imageUrl = await renameKey(item.imageUrl);
-        updates.thumbnailUrl = await renameKey(item.thumbnailUrl);
-        updates.optimizedUrl = await renameKey(item.optimizedUrl);
-      }
-
-      const updated = { ...item, ...updates };
-      await repository.addAlbumItem(user.userId, projectId, updated);
-      projectEvents?.notifyProjectChanged({
-        userId: user.userId,
+      const result = await renameAlbumItems(
+        { repository, storage },
+        user.userId,
         projectId,
-        itemId,
-        reason: 'album.renamed',
-      });
+        { updates: [{ itemId, filename: requested }] },
+      );
+      if (result.failed.length > 0) {
+        console.error('[PATCH /api/projects/:id/album/:itemId/filename]', result.failed[0].error);
+        return c.json({ error: 'Failed to rename album item' }, 500);
+      }
+      const [updated] = result.updatedAlbumItems;
+
+      if (result.renamed > 0) {
+        projectEvents?.notifyProjectChanged({
+          userId: user.userId,
+          projectId,
+          itemId,
+          reason: 'album.renamed',
+        });
+      }
       return c.json({
         ...updated,
         imageUrl: updated.imageUrl ? await presignIfKey(updated.imageUrl, storage) : updated.imageUrl,
@@ -1256,6 +1187,9 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
         optimizedUrl: updated.optimizedUrl ? await presignIfKey(updated.optimizedUrl, storage) : updated.optimizedUrl,
       });
     } catch (e) {
+      if (e instanceof AlbumRenameError) {
+        return c.json({ error: e.code === 'item_not_found' ? 'Album item not found' : e.message }, e.status);
+      }
       console.error('[PATCH /api/projects/:id/album/:itemId/filename]', e);
       return c.json({ error: 'Failed to rename album item' }, 500);
     }

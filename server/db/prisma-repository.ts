@@ -72,6 +72,7 @@ export class PrismaRepository implements IRepository {
     return this.projects.startProjectJobs(userId, projectId, jobIds);
   }
   getJob(userId: string, projectId: string, jobId: string) { return this.projects.getJob(userId, projectId, jobId); }
+  updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>) { return this.projects.updateJob(userId, projectId, jobId, updates); }
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
@@ -107,6 +108,15 @@ export class PrismaRepository implements IRepository {
   getAllProjectAlbumItems(userId: string, projectId: string) { return this.projects.getAllProjectAlbumItems(userId, projectId); }
   getAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.getAlbumItem(userId, projectId, itemId); }
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
+  updateAlbumItemFiles(
+    userId: string,
+    projectId: string,
+    itemId: string,
+    files: Partial<Pick<AlbumItem, 'imageUrl' | 'thumbnailUrl' | 'optimizedUrl'>>,
+    options?: { ifImageUrl?: string },
+  ) {
+    return this.projects.updateAlbumItemFiles(userId, projectId, itemId, files, options);
+  }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
   moveAlbumItemsToProject(
     userId: string,
