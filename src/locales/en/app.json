@@ -121,6 +121,11 @@
     "matchAny": "Any",
     "matchAll": "All"
   },
+  "resourceRef": {
+    "copy": "Copy ID for AI",
+    "copied": "Reference copied",
+    "copyFailed": "Could not copy the reference"
+  },
   "autoTag": {
     "dialogTitle_one": "Auto-tag {{count}} item",
     "dialogTitle_other": "Auto-tag {{count}} items",

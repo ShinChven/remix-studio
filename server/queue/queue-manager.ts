@@ -1423,6 +1423,7 @@ export class QueueManager {
       resolution: item.resolution ?? undefined,
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
+      tags: Array.isArray(item.tags) ? item.tags : undefined,
       size: item.size != null ? Number(item.size) : undefined,
       civitaiParams: item.civitaiParams && typeof item.civitaiParams === 'object' ? item.civitaiParams : undefined,
     };

@@ -38,6 +38,8 @@ import {
   updatePost,
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
+import { CopyRefButton } from '../components/CopyRefButton';
+import { resourceRef } from '../lib/resource-ref';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
@@ -853,6 +855,11 @@ export function CampaignDetail() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 self-end transition-all duration-300 sm:self-auto sm:opacity-0 sm:group-hover:opacity-100">
+                        <CopyRefButton
+                          reference={resourceRef.post(campaign.id, post.id)}
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white"
+                          iconClassName="h-4 w-4"
+                        />
                         <button className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" title="View Post" onClick={() => navigate(`/campaigns/${id}/posts/${post.id}`)}>
                           <ExternalLink className="h-4 w-4" />
                         </button>

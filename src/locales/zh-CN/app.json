@@ -121,6 +121,11 @@
     "matchAny": "任一",
     "matchAll": "全部"
   },
+  "resourceRef": {
+    "copy": "复制 ID 给 AI",
+    "copied": "已复制引用",
+    "copyFailed": "无法复制引用"
+  },
   "autoTag": {
     "dialogTitle_one": "为 {{count}} 个项目自动打标签",
     "dialogTitle_other": "为 {{count}} 个项目自动打标签",

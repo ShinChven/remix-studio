@@ -121,6 +121,11 @@
     "matchAny": "하나라도",
     "matchAll": "모두"
   },
+  "resourceRef": {
+    "copy": "AI용 ID 복사",
+    "copied": "참조가 복사됨",
+    "copyFailed": "참조를 복사할 수 없습니다"
+  },
   "autoTag": {
     "dialogTitle_one": "{{count}}개 항목 자동 태그 지정",
     "dialogTitle_other": "{{count}}개 항목 자동 태그 지정",

@@ -121,6 +121,11 @@
     "matchAny": "任一",
     "matchAll": "全部"
   },
+  "resourceRef": {
+    "copy": "複製 ID 給 AI",
+    "copied": "已複製引用",
+    "copyFailed": "無法複製引用"
+  },
   "autoTag": {
     "dialogTitle_one": "為 {{count}} 個項目自動加上標籤",
     "dialogTitle_other": "為 {{count}} 個項目自動加上標籤",

@@ -210,7 +210,6 @@ export function UniversalMediaPicker({
   const sourceKindKey = sourceKinds.join('|');
   const enabledTypeSet = useMemo(() => new Set(allowedTypes), [allowedTypeKey]);
   const enabledKinds = useMemo(() => sourceKinds.filter((kind) => DEFAULT_SOURCE_KINDS.includes(kind)), [sourceKindKey]);
-  const enabledKindKey = enabledKinds.join('|');
   const memoryEnabled = !!memoryKey && !fixedSourceId;
   const rememberedSource = useMemo(
     () => (memoryEnabled && isOpen ? getLastMediaPickerSource(memoryKey!) : null),
@@ -268,9 +267,23 @@ export function UniversalMediaPicker({
     setItemPages(1);
   }, [allowedTypeKey, initialKind, initialSourceId, isOpen, fixedSourceId]);
 
+  // A tab's sources are fetched the first time it is shown in each opening,
+  // rather than both up front, so the visible tab never waits on the other.
+  const loadedKindsRef = useRef(new Set<PickerSourceKind>());
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      loadedKindsRef.current.clear();
+      return;
+    }
+    const kind = fixedSourceId ? initialKind : activeKind;
+    if (loadedKindsRef.current.has(kind)) {
+      setLoadingSources(false);
+      return;
+    }
+    loadedKindsRef.current.add(kind);
     let cancelled = false;
+    let done = false;
 
     async function loadSources() {
       setLoadingSources(true);
@@ -292,20 +305,14 @@ export function UniversalMediaPicker({
               }]);
             }
           }
+        } else if (kind === 'library') {
+          const result = await fetchLibraries(1, 500, undefined, false);
+          if (!cancelled) setLibraries(result.items || []);
         } else {
-          const tasks: Promise<void>[] = [];
-          if (enabledKinds.includes('library')) {
-            tasks.push(fetchLibraries(1, 500, undefined, false).then((result) => {
-              if (!cancelled) setLibraries(result.items || []);
-            }));
-          }
-          if (enabledKinds.includes('album')) {
-            tasks.push(fetchProjects(1, 500, undefined, 'all').then((result) => {
-              if (!cancelled) setProjects(result.items || []);
-            }));
-          }
-          await Promise.all(tasks);
+          const result = await fetchProjects(1, 500, undefined, 'all', false, true);
+          if (!cancelled) setProjects(result.items || []);
         }
+        done = true;
       } finally {
         if (!cancelled) setLoadingSources(false);
       }
@@ -314,8 +321,10 @@ export function UniversalMediaPicker({
     void loadSources();
     return () => {
       cancelled = true;
+      // Switched away mid-fetch: let the tab fetch again when it is shown.
+      if (!done) loadedKindsRef.current.delete(kind);
     };
-  }, [enabledKindKey, isOpen, fixedSourceId, initialKind]);
+  }, [activeKind, isOpen, fixedSourceId, initialKind]);
 
   const librarySources = useMemo<PickerSource[]>(() => (
     libraries

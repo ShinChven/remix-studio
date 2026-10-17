@@ -124,7 +124,12 @@ export class ProjectRepository {
     }
   }
 
-  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string, status?: ProjectStatus | 'all', nameOnly: boolean = false): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+  /**
+   * `summary` leaves out each project's cover item and storage total, which a
+   * plain list of names and album counts has no use for and which cost a scan
+   * of every album, trash and export row the listed projects own.
+   */
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string, status?: ProjectStatus | 'all', nameOnly: boolean = false, summary: boolean = false): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -151,11 +156,13 @@ export class ProjectRepository {
         take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
-          albumItems: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { id: true, thumbnailUrl: true, optimizedUrl: true, imageUrl: true }
-          }
+          ...(summary ? {} : {
+            albumItems: {
+              orderBy: { createdAt: 'desc' as const },
+              take: 1,
+              select: { id: true, thumbnailUrl: true, optimizedUrl: true, imageUrl: true }
+            }
+          }),
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
@@ -164,34 +171,23 @@ export class ProjectRepository {
     const projectIds = projects.map((p) => p.id);
     const projectSizes: Record<string, number> = {};
 
-    if (projectIds.length > 0) {
-      const [albumItems, trashItems, exportTasks] = await Promise.all([
-        this.prisma.albumItem.findMany({
-          where: { userId, projectId: { in: projectIds } },
-          select: { projectId: true, size: true, optimizedSize: true, thumbnailSize: true },
-        }),
-        this.prisma.trashItem.findMany({
-          where: { userId, projectId: { in: projectIds } },
-          select: { projectId: true, size: true, optimizedSize: true, thumbnailSize: true },
-        }),
-        this.prisma.exportTask.findMany({
-          where: { userId, projectId: { in: projectIds } },
-          select: { projectId: true, size: true },
-        }),
+    if (projectIds.length > 0 && !summary) {
+      const where = { userId, projectId: { in: projectIds } };
+      const mediaSum = { size: true, optimizedSize: true, thumbnailSize: true } as const;
+      const [albumSums, trashSums, exportSums] = await Promise.all([
+        this.prisma.albumItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
+        this.prisma.trashItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
+        this.prisma.exportTask.groupBy({ by: ['projectId'], where, _sum: { size: true } }),
       ]);
 
-      for (const item of albumItems) {
-        const s = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + s;
-      }
-      for (const item of trashItems) {
-        const s = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + s;
-      }
-      for (const item of exportTasks) {
-        if (!item.projectId) continue;
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + Number(item.size || 0);
-      }
+      const add = (projectId: string | null, ...sizes: (bigint | null)[]) => {
+        if (!projectId) return;
+        const s = sizes.reduce((total, size) => total + Number(size || 0), 0);
+        projectSizes[projectId] = (projectSizes[projectId] || 0) + s;
+      };
+      for (const row of albumSums) add(row.projectId, row._sum.size, row._sum.optimizedSize, row._sum.thumbnailSize);
+      for (const row of trashSums) add(row.projectId, row._sum.size, row._sum.optimizedSize, row._sum.thumbnailSize);
+      for (const row of exportSums) add(row.projectId, row._sum.size);
     }
 
     const mappedProjects = projects.map((p) => ({
@@ -387,6 +383,7 @@ export class ProjectRepository {
       sound: job.sound ?? null,
       background: (job as any).background ?? null,
       filename: job.filename ?? null,
+      tags: job.tags ?? null,
       providerId: job.providerId ?? null,
       workflowSnapshot: job.workflowSnapshot ?? null,
       comfyInputs: job.comfyInputs ?? null,
@@ -1027,6 +1024,7 @@ export class ProjectRepository {
       workflowSnapshot: remapSnapshot(job.workflowSnapshot),
       comfyInputs: copyJsonColumn(job.comfyInputs),
       civitaiParams: copyJsonColumn(job.civitaiParams),
+      tags: copyJsonColumn(job.tags),
     }));
 
     const itemRows: Prisma.AlbumItemCreateManyInput[] = items.map(({ id, ...item }) => ({
@@ -1787,6 +1785,9 @@ export class ProjectRepository {
         if (job.comfyInputs !== undefined) {
           updateData.comfyInputs = job.comfyInputs;
         }
+        if (job.tags !== undefined) {
+          updateData.tags = job.tags;
+        }
         // Once a Civitai job has run, its params carry the seed the server
         // rolled; a client copy taken before that must not drop it.
         if (job.civitaiParams !== undefined && dbStatus === 'draft') {
@@ -1836,6 +1837,7 @@ export class ProjectRepository {
           background: (job as any).background ?? null,
           taskId: job.taskId ?? null,
           filename: job.filename ?? null,
+          tags: job.tags ?? null,
           size: job.size != null ? BigInt(job.size) : null,
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
           providerId: job.providerId ?? null,
@@ -2009,6 +2011,9 @@ export class ProjectRepository {
     }
     if (j.civitaiParams && typeof j.civitaiParams === 'object') {
       job.civitaiParams = j.civitaiParams as CivitaiGenerationConfig;
+    }
+    if (Array.isArray(j.tags)) {
+      job.tags = j.tags as string[];
     }
     return job;
   }

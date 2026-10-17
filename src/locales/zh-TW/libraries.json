@@ -46,6 +46,7 @@
     "exportLibrary": "匯出素材庫",
     "deleteLibrary": "刪除庫",
     "selectAll": "全選",
+    "selectItem": "選擇此項",
     "selectedCount": "已選擇 {{count}} 項",
     "sort": {
       "timeDesc": "最新優先",

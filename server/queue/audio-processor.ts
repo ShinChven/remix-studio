@@ -56,6 +56,7 @@ export class AudioProcessor {
         jobId: job.id,
         prompt: job.prompt,
         textContent: text,
+        tags: job.tags,
         imageUrl: audioKey,
         providerId: providerId || job.providerId,
         modelConfigId: modelConfigId || job.modelConfigId,

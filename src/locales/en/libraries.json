@@ -46,6 +46,7 @@
     "exportLibrary": "Export Library",
     "deleteLibrary": "Delete Library",
     "selectAll": "Select All",
+    "selectItem": "Select item",
     "selectedCount": "{{count}} Selected",
     "sort": {
       "timeDesc": "Newest First",

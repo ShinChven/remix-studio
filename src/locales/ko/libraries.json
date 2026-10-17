@@ -46,6 +46,7 @@
     "exportLibrary": "라이브러리 내보내기",
     "deleteLibrary": "라이브러리 삭제",
     "selectAll": "전체 선택",
+    "selectItem": "항목 선택",
     "selectedCount": "{{count}}개 선택됨",
     "filterByTag": "태그로 필터링",
     "tagsSelected": "{{count}}개 태그 선택됨",

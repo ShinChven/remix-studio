@@ -61,11 +61,17 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Back to the exact album or library view (page, filters) this was opened
-  // from; a page loaded directly has no such history to return to.
+  // The album and library open this page in its own tab, so closing that tab
+  // returns to the exact view (page, filters) it came from. Reached in-app it
+  // goes back instead; a tab the browser won't close falls back to the album
+  // or library itself.
   const goBack = () => {
-    if (location.key !== 'default') navigate(-1);
-    else navigate(fallbackPath);
+    if (location.key !== 'default') {
+      navigate(-1);
+      return;
+    }
+    window.close();
+    if (!window.closed) navigate(fallbackPath);
   };
 
   useEffect(() => {
@@ -154,7 +160,7 @@ export function QuickWatermark({ source }: QuickWatermarkProps) {
                 onClick={goBack}
                 disabled={isCreating}
               >
-                Cancel
+                Close
               </button>
               <button
                 type="button"

@@ -121,6 +121,11 @@
     "matchAny": "いずれか",
     "matchAll": "すべて"
   },
+  "resourceRef": {
+    "copy": "AI 用に ID をコピー",
+    "copied": "参照をコピーしました",
+    "copyFailed": "参照をコピーできませんでした"
+  },
   "autoTag": {
     "dialogTitle_one": "{{count}} 件を自動タグ付け",
     "dialogTitle_other": "{{count}} 件を自動タグ付け",

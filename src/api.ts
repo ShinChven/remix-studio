@@ -632,7 +632,9 @@ export async function fetchProjects(
   limit: number = 50,
   q?: string,
   status?: 'active' | 'archived' | 'all',
-  nameOnly: boolean = false
+  nameOnly: boolean = false,
+  /** Leave out each project's cover and storage total. */
+  summary: boolean = false,
 ): Promise<import('./types').PaginatedResult<Project>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
@@ -640,6 +642,7 @@ export async function fetchProjects(
   if (q) params.set('q', q);
   if (status) params.set('status', status);
   if (nameOnly) params.set('nameOnly', 'true');
+  if (summary) params.set('summary', 'true');
 
   const res = await apiFetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');

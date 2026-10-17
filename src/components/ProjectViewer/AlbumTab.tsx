@@ -19,6 +19,8 @@ import { AutoTagDialog } from '../AutoTagDialog';
 import { AutoTagProgress } from '../AutoTagProgress';
 import { EmptyState } from './EmptyState';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './PaginationBar';
+import { CopyRefButton } from '../CopyRefButton';
+import { resourceRef } from '../../lib/resource-ref';
 
 import { toast } from 'sonner';
 
@@ -550,6 +552,16 @@ export function AlbumTab({
     );
   };
 
+  const renderRefButton = (item: AlbumItem, variant: 'title' | 'inline') => (
+    <CopyRefButton
+      reference={resourceRef.albumItem(projectId, item.id)}
+      className={variant === 'title'
+        ? 'flex-shrink-0 inline-flex items-center justify-center rounded-sm text-[13px] leading-none text-neutral-500 hover:text-blue-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60'
+        : 'flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors'}
+      iconClassName={variant === 'title' ? 'w-[1em] h-[1em]' : 'w-3.5 h-3.5'}
+    />
+  );
+
   const aspectRatioOptions = aspectRatioCounts;
   const hasAspectRatioFilter = selectedAspectRatios.length > 0;
   const showAspectRatioFilterControl = !isTextProject && !isAudioProject && aspectRatioOptions.length > 0;
@@ -839,6 +851,7 @@ export function AlbumTab({
                     <AlbumTagChips tags={item.tags} onTagClick={toggleTagFilter} limit={2} />
                   </div>
 
+                  {renderRefButton(item, 'inline')}
                   {renderTagButton(item, 'inline')}
                   {renderReuseButton(item, 'inline')}
 
@@ -902,6 +915,7 @@ export function AlbumTab({
                       {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
                     </button>
 
+                    {renderRefButton(item, 'inline')}
                     {renderTagButton(item, 'inline')}
                     {renderReuseButton(item, 'inline')}
 
@@ -1042,18 +1056,17 @@ export function AlbumTab({
                       </a>
 
                       {!isVideoProject && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/project/${projectId}/album/${item.id}/watermark`);
-                          }}
+                        <a
+                          href={`/project/${projectId}/album/${item.id}/watermark`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
                           title={t('projectViewer.album.quickWatermark')}
                           aria-label={t('projectViewer.album.quickWatermark')}
                         >
                           <Stamp className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
-                        </button>
+                        </a>
                       )}
                     </div>
 
@@ -1156,6 +1169,7 @@ export function AlbumTab({
                       >
                         <Pencil className="w-[1em] h-[1em]" />
                       </button>
+                      {renderRefButton(item, 'title')}
                       {renderTagButton(item, 'title')}
                       {renderReuseButton(item, 'title')}
                     </div>

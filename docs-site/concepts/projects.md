@@ -161,7 +161,7 @@ Files are copied into the destination's storage folder, and a name already taken
 
 ## Watermarking a Single Image
 
-The stamp button on an image album card opens **Quick Watermark** for that one result, without queueing an export. The page starts from your saved watermark settings — text, position, padding, font size, opacity, and color — and previews them over the image as you change them. When the result has an optimized version, choose **Raw** or **Optimized**; the preview shows the version that will be rendered.
+The stamp button on an image album card opens **Quick Watermark** for that one result in a new tab, without queueing an export, so the album stays where you left it. **Close** closes the tab when you are done. The page starts from your saved watermark settings — text, position, padding, font size, opacity, and color — and previews them over the image as you change them. When the result has an optimized version, choose **Raw** or **Optimized**; the preview shows the version that will be rendered.
 
 **Create** renders the watermarked image on the server and downloads it to your browser as `<name>_watermark.jpg`. Nothing is written to storage and nothing appears on the Exports page: the file is sent once, and creating it again renders it again. Changes made on the page are not saved, so your saved watermark — which campaign uploads also use — stays as it was.
 

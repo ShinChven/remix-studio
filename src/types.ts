@@ -2237,6 +2237,8 @@ export interface Job {
   format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'aac' | 'ogg' | 'webm';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
+  /** The tags of the library items this job was drafted from, which its album items start with. */
+  tags?: string[];
   // Video generation
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p', '4k'
