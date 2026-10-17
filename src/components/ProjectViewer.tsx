@@ -2542,7 +2542,8 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
         onNavigateToEdit={() => setProjectFormMode('edit')}
         onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
         onNavigateToDuplicate={() => setProjectFormMode('duplicate')}
-        // The picker lists albums by project type, which never matches a ComfyUI project.
+        // A ComfyUI workflow's items are bound to the nodes of its own graph,
+        // so they mean nothing in another ComfyUI project.
         onImportWorkflow={isComfyProject ? undefined : () => setIsImportingWorkflow(true)}
         onStartAssistantChat={handleStartAssistantChat}
         onShowDeleteProject={() => setShowDeleteProjectModal(true)}
@@ -2858,10 +2859,13 @@ export function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Pro
         isOpen={isImportingWorkflow}
         title={t('projectViewer.main.importWorkflowTitle')}
         allowedTypes={[mediaProjectType as LibraryType]}
+        // Only the same kind of project: a Civitai workflow and its Civitai
+        // provider are no use to a regular image project, nor the reverse.
+        projectTypes={[localProject.type || 'image']}
         sourceKinds={['album']}
         defaultSourceKind="album"
         multiple={false}
-        memoryKey={`workflow-import:${mediaProjectType}`}
+        memoryKey={`workflow-import:${localProject.type || 'image'}:${mediaProjectType}`}
         onClose={() => setIsImportingWorkflow(false)}
         onConfirm={handleImportWorkflow}
       />

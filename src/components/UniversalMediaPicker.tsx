@@ -21,7 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../api';
-import { AlbumItem, AspectRatioCount, Library, LibraryItem, LibraryType, Project } from '../types';
+import { AlbumItem, AspectRatioCount, Library, LibraryItem, LibraryType, Project, ProjectType } from '../types';
 import type { AlbumItemSort } from '../types';
 import { cn } from '../lib/utils';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './ProjectViewer/PaginationBar';
@@ -76,6 +76,8 @@ interface UniversalMediaPickerProps {
   isOpen: boolean;
   title?: string;
   allowedTypes?: LibraryType[];
+  /** Albums only: list just these project types (a project without one is an image project). */
+  projectTypes?: ProjectType[];
   defaultSourceKind?: PickerSourceKind;
   fixedSourceId?: string;
   sourceKinds?: PickerSourceKind[];
@@ -196,6 +198,7 @@ export function UniversalMediaPicker({
   isOpen,
   title = 'Media Picker',
   allowedTypes = ALL_TYPES,
+  projectTypes,
   defaultSourceKind = 'library',
   fixedSourceId,
   sourceKinds = DEFAULT_SOURCE_KINDS,
@@ -209,6 +212,8 @@ export function UniversalMediaPicker({
   const allowedTypeKey = allowedTypes.join('|');
   const sourceKindKey = sourceKinds.join('|');
   const enabledTypeSet = useMemo(() => new Set(allowedTypes), [allowedTypeKey]);
+  const projectTypeKey = projectTypes?.join('|');
+  const projectTypeSet = useMemo(() => (projectTypes ? new Set<string>(projectTypes) : null), [projectTypeKey]);
   const enabledKinds = useMemo(() => sourceKinds.filter((kind) => DEFAULT_SOURCE_KINDS.includes(kind)), [sourceKindKey]);
   const memoryEnabled = !!memoryKey && !fixedSourceId;
   const rememberedSource = useMemo(
@@ -343,7 +348,11 @@ export function UniversalMediaPicker({
   const albumSources = useMemo<PickerSource[]>(() => (
     projects
       // ComfyUI and Civitai projects list under the media they make.
-      .filter((project) => fixedSourceId === project.id || (enabledTypeSet.has(projectMediaType(project) as LibraryType) && ((project as any).albumCount ?? project.album?.length ?? 0) > 0))
+      .filter((project) => fixedSourceId === project.id || (
+        enabledTypeSet.has(projectMediaType(project) as LibraryType)
+        && (!projectTypeSet || projectTypeSet.has(project.type || 'image'))
+        && ((project as any).albumCount ?? project.album?.length ?? 0) > 0
+      ))
       .map((project) => ({
         id: project.id,
         kind: 'album' as const,
@@ -353,7 +362,7 @@ export function UniversalMediaPicker({
         itemCount: (project as any).albumCount ?? project.album?.length ?? 0,
         createdAt: project.createdAt,
       }))
-  ), [enabledTypeSet, projects]);
+  ), [enabledTypeSet, projectTypeSet, projects]);
 
   const sources = activeKind === 'library' ? librarySources : albumSources;
   const filteredSources = useMemo(() => {
