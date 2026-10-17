@@ -1,0 +1,480 @@
+import type { CivitaiGenerationConfig, CivitaiResource, CivitaiSearchResult } from '../../src/types';
+import {
+  CIVITAI_WEB_URL,
+  civitaiVideoEngine,
+  isCivitaiEmbedding,
+  normalizeCivitaiAir,
+  parseCivitaiAir,
+  parseCivitaiModelUrl,
+  resolveCivitaiVideoSettings,
+} from '../../src/lib/civitai';
+
+/**
+ * Client for the two Civitai APIs a Civitai project uses, both authorised with
+ * the user's Civitai API token:
+ *
+ * - the orchestration API, which runs generations as workflows
+ *   (`POST /v2/consumer/workflows`, then `GET /v2/consumer/workflows/{id}`) and
+ *   bills them in Buzz to the token's account;
+ * - the public REST API, which describes a model version (its AIR, base model
+ *   and trigger words) when a resource is added by link or AIR.
+ */
+
+export const CIVITAI_ORCHESTRATION_URL = 'https://orchestration.civitai.com';
+
+const REQUEST_TIMEOUT_MS = 30_000;
+const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
+const MAX_ERROR_LENGTH = 1500;
+
+/** Statuses a workflow and its steps move through, as Civitai spells them. */
+export type CivitaiWorkflowStatus =
+  | 'unassigned' | 'preparing' | 'scheduled' | 'processing'
+  | 'succeeded' | 'failed' | 'expired' | 'canceled';
+
+export interface CivitaiImageBlob {
+  id: string;
+  available: boolean;
+  url?: string | null;
+  blockedReason?: string | null;
+}
+
+/** An image handed to Civitai for image-to-image, already uploaded and sized. */
+export interface CivitaiSourceImage {
+  url: string;
+  width: number;
+  height: number;
+}
+
+/** The frames a video starts (and for some engines ends) on, already uploaded. */
+export interface CivitaiVideoFrames {
+  start?: string;
+  end?: string;
+}
+
+export interface CivitaiWorkflowStep {
+  $type: string;
+  name?: string;
+  status?: CivitaiWorkflowStatus;
+  output?: {
+    images?: CivitaiImageBlob[];
+    /** Video steps: the video, and any further ones a batching engine made. */
+    video?: CivitaiImageBlob | null;
+    additionalVideos?: CivitaiImageBlob[] | null;
+    errors?: string[] | null;
+  } | null;
+}
+
+export interface CivitaiWorkflow {
+  id?: string | null;
+  status?: CivitaiWorkflowStatus;
+  steps?: CivitaiWorkflowStep[];
+}
+
+/** Raised for a response Civitai returned; network failures surface as plain errors. */
+export class CivitaiApiError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+    this.name = 'CivitaiApiError';
+  }
+}
+
+function truncate(text: string): string {
+  return text.length > MAX_ERROR_LENGTH ? `${text.slice(0, MAX_ERROR_LENGTH)}…` : text;
+}
+
+/**
+ * Pull a readable message out of an error body. The orchestrator answers with
+ * ASP.NET problem details — `detail`/`title`, plus `errors` as either
+ * `{ messages: [...] }` or per-field lists — and the REST API with `{ error }`.
+ */
+export function formatCivitaiError(status: number, text: string): string {
+  let body: any;
+  try {
+    body = text ? JSON.parse(text) : undefined;
+  } catch {
+    body = undefined;
+  }
+
+  const parts: string[] = [];
+  if (typeof body === 'string') parts.push(body);
+  const errors = body?.errors;
+  if (Array.isArray(errors?.messages)) {
+    parts.push(...errors.messages.filter((m: unknown) => typeof m === 'string'));
+  } else if (errors && typeof errors === 'object') {
+    for (const [field, messages] of Object.entries<any>(errors)) {
+      for (const message of Array.isArray(messages) ? messages : [messages]) {
+        if (typeof message === 'string') parts.push(field ? `${field}: ${message}` : message);
+      }
+    }
+  }
+  if (parts.length === 0) {
+    const detail = body?.detail || body?.error?.message || body?.error || body?.message || body?.title;
+    if (typeof detail === 'string') parts.push(detail);
+  }
+  if (parts.length === 0) {
+    const plain = text.trim();
+    if (plain && !/^<(!doctype|html)/i.test(plain)) parts.push(plain);
+  }
+
+  const detail = parts.join('\n');
+  if (status === 401) {
+    return truncate(`Civitai rejected the API token (HTTP 401)${detail ? `: ${detail}` : ''} — check the token on the Civitai provider`);
+  }
+  if (status === 429) {
+    return truncate(`Civitai is rate limiting requests (HTTP 429)${detail ? `: ${detail}` : ''}`);
+  }
+  return truncate(detail ? `${detail} (HTTP ${status})` : `Civitai returned HTTP ${status}`);
+}
+
+/** Civitai's edge images take a resize step in place of `original=true`. */
+function previewSized(url: string): string {
+  return url.replace(/\/original=true\//, '/width=450/');
+}
+
+/** The first safe-for-work example image of a version, resized for a thumbnail. */
+function previewOf(version: any): string | undefined {
+  const image = Array.isArray(version?.images)
+    ? version.images.find((entry: any) => typeof entry?.url === 'string'
+      && (entry.type === undefined || entry.type === 'image')
+      && (typeof entry.nsfwLevel !== 'number' || entry.nsfwLevel <= 2))
+    : undefined;
+  return image ? previewSized(image.url) : undefined;
+}
+
+/** A model version as the REST API describes it, reduced to what a project keeps. */
+function resourceFromVersion(version: any, air?: string): CivitaiResource {
+  const resolvedAir = air || (typeof version?.air === 'string' ? normalizeCivitaiAir(version.air) : null);
+  if (!resolvedAir) throw new Error('Civitai did not report an AIR for this model version');
+
+  // Only a safe-for-work example goes on the project's cards.
+  const preview = previewOf(version);
+
+  const resource: CivitaiResource = { air: resolvedAir };
+  if (typeof version?.model?.name === 'string') resource.name = version.model.name;
+  if (typeof version?.name === 'string') resource.versionName = version.name;
+  if (typeof version?.model?.type === 'string') resource.type = version.model.type;
+  if (typeof version?.baseModel === 'string') resource.baseModel = version.baseModel;
+  if (Array.isArray(version?.trainedWords)) {
+    const words = version.trainedWords.filter((word: unknown) => typeof word === 'string' && word.trim());
+    if (words.length > 0) resource.trainedWords = words;
+  }
+  if (preview) resource.previewUrl = preview;
+  return resource;
+}
+
+const URN_TYPE_TO_MODEL_TYPE: Record<string, string> = {
+  checkpoint: 'Checkpoint',
+  lora: 'LORA',
+  lycoris: 'LoCon',
+  dora: 'DoRA',
+  embedding: 'TextualInversion',
+  hypernet: 'Hypernetwork',
+  vae: 'VAE',
+};
+
+export class CivitaiClient {
+  private readonly orchestrationUrl: string;
+  private readonly webUrl: string;
+
+  constructor(private token: string, orchestrationUrl?: string | null) {
+    this.orchestrationUrl = (orchestrationUrl || process.env.CIVITAI_ORCHESTRATION_URL || CIVITAI_ORCHESTRATION_URL).replace(/\/+$/, '');
+    this.webUrl = (process.env.CIVITAI_WEB_URL || CIVITAI_WEB_URL).replace(/\/+$/, '');
+  }
+
+  private async request(url: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<any> {
+    const headers = new Headers(init.headers);
+    headers.set('Authorization', `Bearer ${this.token}`);
+    headers.set('Accept', 'application/json');
+    const res = await fetch(url, { ...init, headers, signal: AbortSignal.timeout(timeoutMs) });
+    const text = await res.text();
+    if (!res.ok) throw new CivitaiApiError(formatCivitaiError(res.status, text), res.status);
+    try {
+      return text ? JSON.parse(text) : {};
+    } catch {
+      throw new Error(`Civitai returned a response that is not JSON (HTTP ${res.status})`);
+    }
+  }
+
+  /** Start a workflow. Civitai answers right away with its id and status. */
+  async submitWorkflow(body: Record<string, unknown>): Promise<CivitaiWorkflow> {
+    return this.request(`${this.orchestrationUrl}/v2/consumer/workflows`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async getWorkflow(workflowId: string): Promise<CivitaiWorkflow> {
+    return this.request(`${this.orchestrationUrl}/v2/consumer/workflows/${encodeURIComponent(workflowId)}`);
+  }
+
+  /**
+   * Delete a workflow. Civitai refunds it when the work has not started; one
+   * already running finishes and is charged.
+   */
+  async deleteWorkflow(workflowId: string): Promise<void> {
+    await this.request(`${this.orchestrationUrl}/v2/consumer/workflows/${encodeURIComponent(workflowId)}`, { method: 'DELETE' });
+  }
+
+  /**
+   * Upload an image to Civitai's blob storage, the way Civitai's own site
+   * sends a source image: the raw bytes with their content type. The blob's
+   * URL is what a workflow step takes, so the image does not need to be
+   * publicly reachable where Remix Studio stores it.
+   */
+  async uploadBlob(bytes: Buffer, contentType: string): Promise<CivitaiImageBlob> {
+    return this.request(`${this.orchestrationUrl}/v2/consumer/blobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': contentType },
+      body: new Uint8Array(bytes),
+    }, DOWNLOAD_TIMEOUT_MS);
+  }
+
+  /** The orchestrator's record of a resource; it knows every AIR it can run. */
+  async getResource(air: string): Promise<any> {
+    return this.request(`${this.orchestrationUrl}/v2/resources/${encodeURIComponent(air)}`);
+  }
+
+  async getModelVersion(versionId: number): Promise<any> {
+    return this.request(`${this.webUrl}/api/v1/model-versions/${versionId}`);
+  }
+
+  async getModel(modelId: number): Promise<any> {
+    return this.request(`${this.webUrl}/api/v1/models/${modelId}`);
+  }
+
+  /** Search Civitai's catalog by name, newest version of each model first. */
+  async searchModels(query: string, types: string[], baseModels: string[] = []): Promise<CivitaiSearchResult[]> {
+    const params = new URLSearchParams({ query, limit: '12' });
+    for (const type of types) params.append('types', type);
+    for (const baseModel of baseModels) params.append('baseModels', baseModel);
+    const body = await this.request(`${this.webUrl}/api/v1/models?${params.toString()}`);
+    const results: CivitaiSearchResult[] = [];
+    for (const model of Array.isArray(body?.items) ? body.items : []) {
+      const version = Array.isArray(model?.modelVersions) ? model.modelVersions[0] : undefined;
+      if (typeof model?.id !== 'number' || typeof version?.id !== 'number') continue;
+      results.push({
+        modelId: model.id,
+        versionId: version.id,
+        name: typeof model.name === 'string' ? model.name : `#${model.id}`,
+        ...(typeof version.name === 'string' ? { versionName: version.name } : {}),
+        ...(typeof model.type === 'string' ? { type: model.type } : {}),
+        ...(typeof version.baseModel === 'string' ? { baseModel: version.baseModel } : {}),
+        ...(previewOf(version) ? { previewUrl: previewOf(version) } : {}),
+      });
+    }
+    return results;
+  }
+
+  /**
+   * Turn what a user pasted — a model page link or an AIR — into a resource.
+   * A link without `modelVersionId` picks the model's newest version.
+   */
+  async resolveResource(input: string): Promise<CivitaiResource> {
+    const air = normalizeCivitaiAir(input);
+    if (air) {
+      const parsed = parseCivitaiAir(air)!;
+      if (parsed.source === 'civitai' && parsed.version && /^\d+$/.test(parsed.version)) {
+        try {
+          return resourceFromVersion(await this.getModelVersion(Number(parsed.version)), air);
+        } catch (e) {
+          // The REST API hides some versions the orchestrator still runs;
+          // anything other than "not there" is worth reporting.
+          if (!(e instanceof CivitaiApiError) || e.status !== 404) throw e;
+        }
+      }
+      const info = await this.getResource(air);
+      return {
+        air,
+        ...(typeof info?.resourceName === 'string' ? { name: info.resourceName } : {}),
+        ...(typeof info?.versionName === 'string' ? { versionName: info.versionName } : {}),
+        ...(URN_TYPE_TO_MODEL_TYPE[parsed.type] ? { type: URN_TYPE_TO_MODEL_TYPE[parsed.type] } : {}),
+      };
+    }
+
+    const link = parseCivitaiModelUrl(input);
+    if (!link) throw new Error('Paste a Civitai model link or an AIR (urn:air:…)');
+    let versionId = link.versionId;
+    if (versionId === undefined) {
+      const model = await this.getModel(link.modelId!);
+      versionId = Array.isArray(model?.modelVersions) ? model.modelVersions[0]?.id : undefined;
+      if (typeof versionId !== 'number') throw new Error('This Civitai model has no published version');
+    }
+    return resourceFromVersion(await this.getModelVersion(versionId));
+  }
+
+  /** Fetch a finished image or video. Blob URLs are signed, so no token goes with them. */
+  async download(url: string, what = 'image'): Promise<{ bytes: Buffer; contentType?: string }> {
+    const res = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+    if (!res.ok) throw new CivitaiApiError(`Downloading the ${what} from Civitai failed (HTTP ${res.status})`, res.status);
+    return { bytes: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') || undefined };
+  }
+}
+
+const OUTPUT_FORMATS: Record<string, string> = { jpeg: 'jpeg', jpg: 'jpeg', webp: 'webP', png: 'png' };
+
+/**
+ * The workflow one job submits: a single text-to-image step producing one
+ * image with the job's checkpoint, resources and parameters.
+ */
+export function buildCivitaiWorkflow(prompt: string, params: CivitaiGenerationConfig, format?: string, source?: CivitaiSourceImage): Record<string, unknown> {
+  if (!params.model?.air) throw new Error('Choose a Civitai checkpoint for this project first');
+
+  const additionalNetworks: Record<string, { strength?: number; triggerWord?: string }> = {};
+  for (const resource of params.resources || []) {
+    if (resource.air === params.model.air) continue;
+    additionalNetworks[resource.air] = isCivitaiEmbedding(resource)
+      ? (resource.trainedWords?.[0] ? { triggerWord: resource.trainedWords[0] } : {})
+      : { strength: resource.strength ?? 1 };
+  }
+
+  const input: Record<string, unknown> = {
+    model: params.model.air,
+    prompt,
+    quantity: 1,
+    outputFormat: OUTPUT_FORMATS[format || 'png'] || 'png',
+  };
+  if (Object.keys(additionalNetworks).length > 0) input.additionalNetworks = additionalNetworks;
+  if (params.negativePrompt) input.negativePrompt = params.negativePrompt;
+  if (params.scheduler) input.scheduler = params.scheduler;
+  if (params.steps !== undefined) input.steps = params.steps;
+  if (params.cfgScale !== undefined) input.cfgScale = params.cfgScale;
+  if (params.width !== undefined) input.width = params.width;
+  if (params.height !== undefined) input.height = params.height;
+  if (params.clipSkip !== undefined) input.clipSkip = params.clipSkip;
+  if (params.seed !== undefined) input.seed = params.seed;
+  if (source) {
+    // Image-to-image: the output takes the source's size, which the queue
+    // already fitted to the job's area and shape.
+    input.sourceImage = source.url;
+    // Spelled as Civitai's API spells it.
+    input.sourceImageDenoiseStrenght = params.denoise ?? 0.7;
+    input.width = source.width;
+    input.height = source.height;
+  }
+
+  return {
+    steps: [{ $type: 'textToImage', name: 'image', input }],
+    allowMatureContent: !!params.allowMatureContent,
+    tags: ['remix-studio'],
+  };
+}
+
+export const CIVITAI_PENDING_STATUSES: ReadonlySet<string> = new Set(['unassigned', 'preparing', 'scheduled', 'processing']);
+
+/**
+ * The workflow one video job submits, built the way Civitai's own generator
+ * builds it for each engine (`wan.handler.ts`, `hunyuan.handler.ts` in
+ * Civitai's source): one `videoGen` step — and for Wan 2.2, which renders at
+ * 12 fps, a `videoInterpolation` step doubling it to 24 fps. A start frame
+ * makes it image-to-video; an end frame is used by engines that take one.
+ */
+export function buildCivitaiVideoWorkflow(prompt: string, params: CivitaiGenerationConfig, frames: CivitaiVideoFrames = {}): Record<string, unknown> {
+  const engine = civitaiVideoEngine(params.video?.engine);
+  const video = resolveCivitaiVideoSettings(params.video);
+  const start = engine.imageToVideo ? frames.start : undefined;
+  const end = start && engine.endFrame ? frames.end : undefined;
+  const loras = engine.loras > 0
+    ? (params.resources || []).filter((resource) => !isCivitaiEmbedding(resource)).map((resource) => ({ air: resource.air, strength: resource.strength ?? 1 }))
+    : [];
+  const negativePrompt = engine.negativePrompt ? params.negativePrompt : undefined;
+  const operation = start ? 'image-to-video' : 'text-to-video';
+  // What every Wan version but 2.7 and 3.0 shares.
+  const wanBase = {
+    engine: 'wan',
+    prompt,
+    cfgScale: video.cfgScale,
+    duration: video.duration,
+    quantity: 1,
+    seed: params.seed,
+    loras: loras.length > 0 ? loras : undefined,
+    frameRate: 24,
+  };
+
+  const steps: Array<Record<string, unknown>> = [];
+  switch (engine.value) {
+    case 'wan-2.1':
+      steps.push(videoGen({
+        ...wanBase, version: 'v2.1', provider: 'civitai',
+        width: video.width, height: video.height,
+        images: start ? [start] : undefined,
+      }));
+      break;
+    case 'wan-2.2':
+      steps.push({
+        ...videoGen({
+          ...wanBase, version: 'v2.2', provider: 'comfy', frameRate: 12,
+          width: video.width, height: video.height,
+          steps: 20, negativePrompt, shift: video.shift,
+          images: start ? [start] : undefined,
+        }),
+        metadata: { suppressOutput: true },
+      });
+      steps.push({
+        $type: 'videoInterpolation',
+        input: { video: { $ref: '$0', path: 'output.video.url' }, interpolationFactor: 2, model: 'VFIMamba' },
+      });
+      break;
+    case 'wan-2.2-5b':
+      steps.push(videoGen({
+        ...wanBase, duration: undefined, version: 'v2.2-5b', provider: 'fal', operation,
+        negativePrompt, resolution: video.resolution, aspectRatio: video.aspectRatio,
+        enablePromptExpansion: false, shift: video.shift, numInferenceSteps: video.steps,
+        interpolatorModel: video.interpolator,
+        images: start ? [start] : undefined,
+      }));
+      break;
+    case 'wan-2.5':
+      steps.push(videoGen({
+        ...wanBase, loras: undefined, version: 'v2.5', provider: 'fal', operation,
+        negativePrompt, resolution: video.resolution, aspectRatio: video.aspectRatio,
+        enablePromptExpansion: false,
+        images: start ? [start] : undefined,
+      }));
+      break;
+    case 'wan-2.7':
+      // Takes no cfgScale, steps, frame rate or LoRAs.
+      steps.push(videoGen({
+        engine: 'wan', version: 'v2.7', provider: 'fal', operation,
+        prompt,
+        negativePrompt, duration: video.duration, resolution: video.resolution, seed: params.seed,
+        enablePromptExpansion: video.promptExpansion,
+        ...(start ? { startImage: start, endImage: end } : { aspectRatio: video.aspectRatio }),
+      }));
+      break;
+    case 'wan-3.0':
+      // Unlike the other Wan versions, takes no provider.
+      steps.push(videoGen({
+        engine: 'wan', version: 'v3.0', operation,
+        prompt,
+        negativePrompt, duration: video.duration, resolution: video.resolution, seed: params.seed,
+        enablePromptExpansion: video.promptExpansion, usePrime: video.usePrime,
+        ...(start ? { startImage: start, endImage: end } : { aspectRatio: video.aspectRatio }),
+      }));
+      break;
+    case 'hunyuan':
+      steps.push(videoGen({
+        engine: 'hunyuan', prompt,
+        width: video.width, height: video.height,
+        cfgScale: video.cfgScale, steps: video.steps, duration: video.duration,
+        quantity: 1, seed: params.seed,
+        loras: loras.length > 0 ? loras : undefined,
+      }));
+      break;
+  }
+
+  return {
+    steps,
+    allowMatureContent: !!params.allowMatureContent,
+    tags: ['remix-studio'],
+  };
+}
+
+/** A `videoGen` step with the input's unset fields left out. */
+function videoGen(input: Record<string, unknown>): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(input)) {
+    if (value !== undefined && value !== null && value !== '') clean[key] = value;
+  }
+  return { $type: 'videoGen', input: clean };
+}

@@ -1,3 +1,5 @@
+import type { CivitaiGenerationConfig } from '../../src/types';
+
 export interface GenerateRequest {
   prompt: string;
   modelId?: string;       // The actual API model string
@@ -13,6 +15,8 @@ export interface GenerateRequest {
   steps?: number;
   guidance?: number;
   promptUpsampling?: boolean;
+  /** Civitai projects: the checkpoint, resources and parameters, seed included. */
+  civitai?: CivitaiGenerationConfig;
 }
 
 export type GenerateResult =
@@ -28,9 +32,23 @@ export interface CheckStatusResult {
   status: 'processing' | 'completed' | 'failed';
   error?: string;
   imageBytes?: Buffer;
+  // Further images the same task produced, each saved as its own album item
+  // next to `imageBytes` (e.g. the PNG layers of a layer decomposition).
+  additionalImages?: Buffer[];
+  // A video result, for generators that make video as well as images (Civitai).
+  videoBytes?: Buffer;
+  mimeType?: string;
+}
+
+/** The job's model, for generators whose result shape depends on it. */
+export interface CheckStatusContext {
+  modelId?: string;
+  apiUrl?: string;
 }
 
 export abstract class ImageGenerator {
   abstract generate(req: GenerateRequest): Promise<GenerateResult>;
-  checkStatus?(taskId: string): Promise<CheckStatusResult>;
+  checkStatus?(taskId: string, context?: CheckStatusContext): Promise<CheckStatusResult>;
+  /** Stop a remote task whose job was deleted. Best effort: errors are the caller's to ignore. */
+  cancel?(taskId: string): Promise<void>;
 }

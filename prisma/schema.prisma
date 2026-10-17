@@ -44,6 +44,7 @@ model User {
   campaigns               Campaign[]
   posts                   Post[]
   postWatermarkSetting    PostWatermarkSetting?
+  autoTagSetting          AutoTagSetting?
   stores                  Store[]
   driveConnections        DriveConnection[]
   products                Product[]
@@ -150,7 +151,8 @@ model Provider {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  jobs Job[]
+  jobs            Job[]
+  autoTagSettings AutoTagSetting[]
 
   @@index([userId])
 }
@@ -196,7 +198,7 @@ model Project {
   userId            String
   name              String
   description       String?  @db.Text
-  type              String   @default("image") // "image", "text", "video", "audio", or "comfyui"
+  type              String   @default("image") // "image", "text", "video", "audio", "comfyui" or "civitai"
   status            String   @default("active") // "active" or "archived"
   providerId        String?
   aspectRatio       String?
@@ -220,6 +222,8 @@ model Project {
   comfyUrl          String?
   comfyWorkflow     Json?
   comfyPassword     String?
+  // Civitai projects: checkpoint, resources and parameters (CivitaiGenerationConfig)
+  civitaiConfig     Json?
   createdAt         DateTime @default(now())
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -254,6 +258,7 @@ model Job {
   resultText       String?  @db.Text
   taskId           String?
   filename         String?
+  tags             Json? // String[]: the library item tags its album items start with
   size             BigInt?
   optimizedSize    BigInt?
   thumbnailSize    BigInt?
@@ -263,6 +268,7 @@ model Job {
   sound            String? // 'on' | 'off'
   workflowSnapshot Json? // WorkflowItem[]
   comfyInputs      Json? // ComfyJobInput[] (ComfyUI projects)
+  civitaiParams    Json? // CivitaiGenerationConfig (Civitai projects)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @default(now()) @updatedAt
 
@@ -283,8 +289,10 @@ model WorkflowItem {
   thumbnailUrl String?
   optimizedUrl String?
   selectedTags Json? // String[]
+  tagMatchMode String? // 'and'; null matches any selected tag
   disabled     Boolean @default(false)
   comfyTarget  Json? // ComfyInputTarget (ComfyUI projects)
+  civitai      Json? // CivitaiBinding (Civitai projects)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
@@ -316,11 +324,12 @@ model AlbumItem {
   // Video-specific
   duration      Int? // seconds
   resolution    String? // '720p' | '1080p' | '4k'
+  civitaiParams Json? // CivitaiGenerationConfig (Civitai projects)
   createdAt     DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId])
+  @@index([projectId, createdAt])
   @@index([userId])
 }
 
@@ -349,12 +358,13 @@ model TrashItem {
   thumbnailSize BigInt?
   duration      Int?
   resolution    String?
+  civitaiParams Json?
   createdAt     DateTime @default(now())
   deletedAt     DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId, deletedAt])
 }
 
 model ExportTask {
@@ -366,6 +376,11 @@ model ExportTask {
   error       String?   @db.Text
   size        BigInt?
   data        Json? // Flexible blob for any extra fields
+  // What the worker archives: `items` and, for project bundles, the
+  // `bundleManifest`. These run to megabytes on a large album, so they stay
+  // out of `data` (which every list and status poll reads) and are cleared
+  // once the task settles.
+  payload     Json?
   createdAt   DateTime  @default(now())
   expiresAt   DateTime?
   // Queue fields
@@ -378,7 +393,7 @@ model ExportTask {
   project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
   deliveryTasks DeliveryTask[]
 
-  @@index([userId])
+  @@index([userId, createdAt])
   @@index([userId, projectId])
   @@index([status, createdAt])
 }
@@ -448,6 +463,7 @@ model DeliveryTask {
   @@index([userId])
   @@index([status, createdAt])
   @@index([driveConnectionId])
+  @@index([exportTaskId])
 }
 
 model Product {
@@ -816,6 +832,24 @@ model PostWatermarkSetting {
   @@index([userId])
 }
 
+// Which vision-capable text model tags a user's album and library media, and
+// how many tagging requests may run at once. Deleting the provider turns
+// auto-tagging off rather than deleting the setting.
+model AutoTagSetting {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  providerId       String?
+  modelConfigId    String?
+  concurrencyLimit Int      @default(2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
+}
+
 model Post {
   id          String    @id @default(uuid())
   campaignId  String
@@ -833,6 +867,8 @@ model Post {
 
   // High-frequency index for the polling engine looking for due posts
   @@index([status, scheduledAt])
+  @@index([campaignId])
+  @@index([userId, status])
 }
 
 model PostMedia {
@@ -881,6 +917,8 @@ model PostExecution {
 
   // Critical index for the execution worker loop
   @@index([status, nextAttemptAt])
+  @@index([postId])
+  @@index([socialAccountId])
 }
 
 // A browser's Web Push subscription. One user can have several (one per

@@ -8,6 +8,7 @@ import {
   Clock,
   Copy,
   HardDrive,
+  Hexagon,
   ImageIcon,
   LayoutGrid,
   Loader2,
@@ -22,6 +23,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { Library, Project, ProjectType } from '../types';
+import { projectMediaType } from '../lib/project-media';
 
 function getLibraryTypeMeta(type: Library['type'] | undefined) {
   switch (type) {
@@ -89,6 +91,16 @@ function getProjectTypeMeta(type: ProjectType | undefined) {
         assetIcon: Music,
         assetLabel: 'audios',
       };
+    case 'civitai':
+      return {
+        icon: Hexagon,
+        iconClassName: 'bg-sky-500/10 text-sky-500 shadow-sky-500/5',
+        borderClassName: 'hover:border-sky-500/50',
+        accentClassName: 'text-sky-500/80',
+        glowClassName: 'via-sky-500/20',
+        assetIcon: ImageIcon,
+        assetLabel: 'images',
+      };
     case 'comfyui':
       return {
         icon: Workflow,
@@ -142,6 +154,7 @@ function projectThumbnail(id: string, type: ProjectType = 'image', resolvedTheme
     case 'video': colors = 'a855f7,c084fc,9333ea'; break; // purple
     case 'audio': colors = '06b6d4,22d3ee,0891b2'; break; // cyan
     case 'comfyui': colors = 'f97316,fb923c,ea580c'; break; // orange
+    case 'civitai': colors = '0ea5e9,38bdf8,0284c7'; break; // sky
     case 'image': default: colors = '10b981,34d399,059669'; break; // emerald
   }
   
@@ -188,7 +201,7 @@ export function ProjectCard({ project, isToggling = false, isExporting = false, 
   // Use thumbnail/optimized image if available. Only use imageUrl directly for image projects.
   const albumImage = lastAlbumItem?.thumbnailUrl || 
                      lastAlbumItem?.optimizedUrl || 
-                     (project.type === 'image' ? lastAlbumItem?.imageUrl : null);
+                     (projectMediaType(project) === 'image' ? lastAlbumItem?.imageUrl : null);
 
   const bgImage = albumImage || projectThumbnail(project.id, project.type, resolvedTheme);
 
@@ -227,7 +240,7 @@ export function ProjectCard({ project, isToggling = false, isExporting = false, 
         
         {/* Kicker */}
         <div className="text-[11px] font-medium uppercase tracking-wider text-white/60 mb-1 flex items-center gap-2">
-          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : project.type === 'comfyui' ? 'COMFYUI' : 'TEXT'}
+          {project.type === 'image' ? 'IMAGE' : project.type === 'video' ? 'VIDEO' : project.type === 'audio' ? 'AUDIO' : project.type === 'comfyui' ? 'COMFYUI' : project.type === 'civitai' ? (projectMediaType(project) === 'video' ? 'CIVITAI · VIDEO' : 'CIVITAI') : 'TEXT'}
         </div>
 
         {/* Title */}

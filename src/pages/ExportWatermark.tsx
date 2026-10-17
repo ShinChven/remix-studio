@@ -15,6 +15,7 @@ import {
 import type { AlbumItem, Project } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
+import { projectMediaType } from '../lib/project-media';
 
 type WatermarkExportLocationState = {
   itemIds?: string[];
@@ -126,7 +127,7 @@ export function ExportWatermark() {
     const size = exportVersion === 'optimized' ? item.optimizedSize || item.size : item.size;
     return total + (size || 0);
   }, 0);
-  const canExport = Boolean(id && packageName.trim() && selectedItems.length > 0 && !isSubmitting && project?.type === 'image');
+  const canExport = Boolean(id && packageName.trim() && selectedItems.length > 0 && !isSubmitting && (project ? projectMediaType(project) === 'image' : false));
 
   const handleStartExport = async () => {
     if (!id || !canExport) return;
@@ -156,7 +157,7 @@ export function ExportWatermark() {
     );
   }
 
-  if (project?.type !== 'image') {
+  if (!project || projectMediaType(project) !== 'image') {
     return (
       <div className="relative flex h-full flex-col overflow-y-auto p-4 md:p-8">
         <PageHeader

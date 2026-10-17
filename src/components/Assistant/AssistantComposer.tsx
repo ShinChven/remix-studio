@@ -7,6 +7,7 @@ import { fetchLibraries, fetchLibraryItems, fetchProjects, transcribeAssistantAu
 import { resolveAssistantSkillsLibraryId } from '../../lib/assistant-skills';
 import { getTextModelsForProvider, Provider } from '../../types';
 import { ProviderIcon } from '../ProviderIcon';
+import { PlainTextEditable, PlainTextEditableHandle } from './PlainTextEditable';
 
 export type BoundContextType = 'project' | 'library' | 'campaign' | 'post';
 
@@ -59,6 +60,8 @@ export interface AssistantComposerProps {
   setSelectedModelId: (id: string) => void;
   providers: Provider[];
   isSending: boolean;
+  /** Stop was pressed and the turn is winding down. */
+  isStopping?: boolean;
   onSend: (text: string, boundContexts: BoundContext[], attachedImages: AttachedImage[]) => void;
   onStop?: () => void;
   placeholder?: string;
@@ -207,6 +210,7 @@ export function AssistantComposer({
   setSelectedModelId,
   providers,
   isSending,
+  isStopping = false,
   onSend,
   onStop,
   placeholder,
@@ -226,7 +230,7 @@ export function AssistantComposer({
   }, [onSend, boundContexts, attachedImages]);
 
   const _handleSend = () => sendWithText(inputText);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<PlainTextEditableHandle>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -265,12 +269,6 @@ export function AssistantComposer({
     ? getTextModelsForProvider(selectedProvider.type).find((model) => model.id === selectedModelId)
     : null;
   const selectedModelLabel = selectedModel?.name || t('assistant.selectModel', 'Select a model');
-
-  useEffect(() => {
-    if (!textareaRef.current) return;
-    textareaRef.current.style.height = 'auto';
-    textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-  }, [inputText]);
 
   useEffect(() => {
     if (!activePicker || !dropdownRef.current) return;
@@ -644,7 +642,7 @@ export function AssistantComposer({
     processImageFiles(files);
   };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLElement>) => {
     const items = Array.from(e.clipboardData.items);
     const imageItems = items.filter((item) => item.type.startsWith('image/'));
     if (imageItems.length === 0) return;
@@ -666,9 +664,9 @@ export function AssistantComposer({
           ? current
           : [...current, context]
       ));
-      textareaRef.current?.focus();
+      editorRef.current?.focus();
     },
-    focus: () => textareaRef.current?.focus(),
+    focus: () => editorRef.current?.focus(),
   }), []);
 
   // ─── Mention / skill pickers ───
@@ -678,7 +676,7 @@ export function AssistantComposer({
       setBoundContexts((current) => [...current, option]);
     }
 
-    const cursorPosition = textareaRef.current?.selectionStart ?? inputText.length;
+    const cursorPosition = editorRef.current?.getSelectionStart() ?? inputText.length;
     const textBeforeCursor = inputText.slice(0, cursorPosition);
     const textAfterCursor = inputText.slice(cursorPosition);
     const match = textBeforeCursor.match(/@([a-zA-Z0-9_\-\u4e00-\u9fa5\s]*)$/);
@@ -689,10 +687,10 @@ export function AssistantComposer({
       setInputText(nextValue);
 
       window.setTimeout(() => {
-        if (!textareaRef.current) return;
-        textareaRef.current.focus();
+        if (!editorRef.current) return;
+        editorRef.current.focus();
         const nextCursor = prefix.length + (needsSpacer ? 1 : 0);
-        textareaRef.current.setSelectionRange(nextCursor, nextCursor);
+        editorRef.current.setSelectionRange(nextCursor, nextCursor);
       }, 0);
     }
 
@@ -700,7 +698,7 @@ export function AssistantComposer({
   };
 
   const selectSkill = (option: SkillOption) => {
-    const cursorPosition = textareaRef.current?.selectionStart ?? inputText.length;
+    const cursorPosition = editorRef.current?.getSelectionStart() ?? inputText.length;
     const textBeforeCursor = inputText.slice(0, cursorPosition);
     const textAfterCursor = inputText.slice(cursorPosition);
     const match = textBeforeCursor.match(/\/([^\n/]*)$/);
@@ -714,17 +712,15 @@ export function AssistantComposer({
     closePickers();
 
     window.setTimeout(() => {
-      if (!textareaRef.current) return;
-      textareaRef.current.focus();
-      textareaRef.current.setSelectionRange(nextCursor, nextCursor);
+      if (!editorRef.current) return;
+      editorRef.current.focus();
+      editorRef.current.setSelectionRange(nextCursor, nextCursor);
     }, 0);
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const nextValue = event.target.value;
+  const handleInputChange = (nextValue: string, cursorPosition: number) => {
     setInputText(nextValue);
 
-    const cursorPosition = event.target.selectionStart;
     const textBeforeCursor = nextValue.slice(0, cursorPosition);
 
     const skillMatch = getSkillTriggerMatch(textBeforeCursor);
@@ -748,7 +744,7 @@ export function AssistantComposer({
     closePickers();
   };
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.nativeEvent.isComposing) return;
 
     if (event.key === '/' && activePicker === 'skill') {
@@ -784,7 +780,7 @@ export function AssistantComposer({
     if ((mentionSearch !== null || skillSearch !== null) && event.key === 'Escape') {
       event.preventDefault();
       if (skillSearch !== null) {
-        const cursorPosition = textareaRef.current?.selectionStart ?? inputText.length;
+        const cursorPosition = editorRef.current?.getSelectionStart() ?? inputText.length;
         const textBeforeCursor = inputText.slice(0, cursorPosition);
         const skillMatch = getSkillTriggerMatch(textBeforeCursor);
         setDismissedSkillTriggerStart(skillMatch?.start ?? null);
@@ -1082,20 +1078,20 @@ export function AssistantComposer({
             )}
           </div>
 
-          {/* Textarea + action buttons */}
+          {/* Input + action buttons */}
           <div className="flex items-end gap-2 pl-1 pr-0 sm:gap-3 sm:pl-[10px] sm:pr-2">
             <div className="min-w-0 flex-1">
-              <textarea
-                ref={textareaRef}
+              <PlainTextEditable
+                editorRef={editorRef}
                 value={inputText}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 placeholder={placeholder || t('assistant.typePlaceholder')}
-                rows={1}
                 enterKeyHint="enter"
                 disabled={isSending}
-                className="custom-scrollbar block max-h-[200px] w-full resize-none border-none bg-transparent py-1 text-base text-neutral-800 outline-none placeholder-neutral-400 disabled:opacity-50 dark:text-neutral-200 dark:placeholder-neutral-500"
+                className="custom-scrollbar block max-h-[200px] min-h-8 w-full overflow-y-auto bg-transparent py-1 text-base text-neutral-800 outline-none dark:text-neutral-200"
+                placeholderClassName="py-1 text-base text-neutral-400 dark:text-neutral-500"
               />
               <span className="mt-1 block text-[11px] leading-none text-neutral-400 dark:text-neutral-500 sm:hidden">
                 {t('assistant.mobileInputHint', 'Enter for a new line · Tap the arrow to send')}
@@ -1116,8 +1112,9 @@ export function AssistantComposer({
               <button
                 type="button"
                 onClick={onStop}
-                className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95"
-                title={t('assistant.stop')}
+                disabled={!onStop || isStopping}
+                className="group/btn inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-red-600 transition-all hover:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                title={isStopping ? t('assistant.stopping', 'Stopping...') : t('assistant.stop')}
               >
                 <Square className="h-4 w-4 fill-current" />
               </button>

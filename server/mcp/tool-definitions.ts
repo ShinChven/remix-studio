@@ -16,6 +16,12 @@ import {
   startProjectBundleExport,
   type StartedProjectExport,
 } from '../services/project-export';
+import {
+  AlbumRenameError,
+  basenameFromKey,
+  renameAlbumItems,
+  trimPrefix,
+} from '../services/album-rename';
 import { createAppUrlBuilder, type AppUrlBuilder } from './app-urls';
 import {
   copyStagedFiles,
@@ -27,15 +33,27 @@ import {
   type ReadyStagedUpload,
 } from '../services/staged-uploads';
 import { createCampaignMediaService, StorageLimitError } from '../services/campaign-media';
-import { generateJobs } from '../../src/lib/remixEngine';
+import { composeDraftJobs } from '../services/draft-jobs';
 import {
-  DEFAULT_AUDIO_PROJECT_CONFIG,
-  parseAudioProjectConfig,
+  CIVITAI_DEFAULT_VIDEO_ENGINE,
+  CIVITAI_SCHEDULERS,
+  CIVITAI_VIDEO_ENGINES,
+  civitaiModelItems,
+  civitaiResourceLabel,
+  isCivitaiEmbedding,
+  isCivitaiVideo,
+  normalizeCivitaiAir,
+  sanitizeCivitaiConfig,
+} from '../../src/lib/civitai';
+import { CivitaiClient } from '../civitai/civitai-client';
+import { assertSafeProviderApiUrl } from '../utils/url-safety';
+import {
   PROVIDER_MODELS_MAP,
   resolveSupportedAspectRatio,
   resolveSupportedOption,
 } from '../../src/types';
-import type { Job, Library, ModelConfig, Project } from '../../src/types';
+import type { AlbumItem, CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiVideoEngine, CivitaiVideoSettings, ModelConfig, Project, WorkflowItem } from '../../src/types';
+import { VISUAL_PROJECT_TYPES } from '../../src/lib/project-media';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
 const PROVIDER_TYPE_VALUES = Object.keys(PROVIDER_MODELS_MAP) as [
@@ -49,7 +67,76 @@ const WORKFLOW_ITEM_TYPES = [
   'image', 'image_from_library', 'image_library',
   'audio', 'audio_from_library', 'audio_library',
   'video', 'video_from_library', 'video_library',
+  // Civitai projects only
+  'negative_text', 'negative_text_library',
+  'checkpoint', 'lora',
 ] as const;
+const CIVITAI_ONLY_ITEM_TYPES = new Set(['negative_text', 'negative_text_library', 'checkpoint', 'lora']);
+const CIVITAI_SCHEDULER_VALUES = CIVITAI_SCHEDULERS.map((s) => s.value) as [string, ...string[]];
+const CIVITAI_VIDEO_ENGINE_VALUES = CIVITAI_VIDEO_ENGINES.map((engine) => engine.value) as [CivitaiVideoEngine, ...CivitaiVideoEngine[]];
+const CIVITAI_VIDEO_ENGINE_SUMMARY = CIVITAI_VIDEO_ENGINES.map((engine) => {
+  const lengths = engine.durations ? `${engine.durations.join('/')}s` : engine.durationRange ? `${engine.durationRange.min}–${engine.durationRange.max}s` : 'fixed length';
+  const parts = [
+    engine.resolutions.join('/'),
+    lengths,
+    engine.loras ? `up to ${engine.loras} LoRAs` : 'no LoRAs',
+    engine.negativePrompt ? 'negative prompt' : 'no negative prompt',
+    engine.imageToVideo ? (engine.endFrame ? 'first image = start frame, second = end frame' : 'first image = start frame') : 'text only',
+  ];
+  return `"${engine.value}" (${engine.label}): ${parts.join(', ')}.`;
+}).join(' ');
+const CIVITAI_MODELS_SCHEMA = z.array(z.object({
+  ref: z.string().min(1).describe('A Civitai model page link (https://civitai.com/models/<id>?modelVersionId=<v>) or AIR (urn:air:…). get_project returns the AIR here.'),
+  strength: z.number().min(-5).max(5).optional().describe('LoRA strength (default 1). Ignored for checkpoints and embeddings.'),
+})).max(20).optional().describe('For "checkpoint" and "lora" items (Civitai projects): the options this slot chooses between. Each job uses one, so several options multiply the combinations like a library does — e.g. two checkpoints, or one LoRA listed twice at different strengths.');
+const CIVITAI_SETTINGS_SCHEMA = z.object({
+  sampler: z.enum(CIVITAI_SCHEDULER_VALUES).optional().describe('Sampler, e.g. "eulerA", "dpM2MKarras"'),
+  steps: z.number().int().min(1).max(100).optional(),
+  cfgScale: z.number().min(1).max(30).optional(),
+  width: z.number().int().min(64).max(2048).optional().describe('Image width; snapped to a multiple of 8. With a source image, the output keeps the source shape at this area.'),
+  height: z.number().int().min(64).max(2048).optional(),
+  clipSkip: z.number().int().min(1).max(12).optional(),
+  seed: z.number().int().min(0).max(4294967295).nullable().optional().describe('A fixed seed for every job; null or omitted rolls one per job. Video projects use at most 2147483647.'),
+  denoise: z.number().min(0.05).max(1).optional().describe('Image-to-image strength: how far the result may move from the source image (default 0.7).'),
+  allowMatureContent: z.boolean().optional().describe('Let Civitai return mature results instead of blocking them.'),
+  mediaType: z.enum(['image', 'video']).optional().describe('What the project makes (default "image"). Fixed once the project has jobs or results. A video project needs no checkpoint item: its engine brings the model.'),
+  video: z.object({
+    engine: z.enum(CIVITAI_VIDEO_ENGINE_VALUES).optional().describe(`Video engine (default "${CIVITAI_DEFAULT_VIDEO_ENGINE}"). ${CIVITAI_VIDEO_ENGINE_SUMMARY}`),
+    resolution: z.string().optional().describe('One of the engine\'s resolutions, e.g. "480p", "720p".'),
+    aspectRatio: z.string().optional().describe('Text-to-video shape, e.g. "16:9", "1:1", "9:16". Image-to-video takes the shape closest to the start frame.'),
+    duration: z.number().int().optional().describe('Seconds: one of the engine\'s lengths, or within its range.'),
+    cfgScale: z.number().optional(),
+    steps: z.number().int().optional().describe('Wan 2.2 5B and Hunyuan only.'),
+    shift: z.number().optional().describe('Wan 2.2 and 2.2 5B only (1–20, default 8).'),
+    interpolator: z.enum(['none', 'film', 'rife']).optional().describe('Wan 2.2 5B only: frame interpolation.'),
+    promptExpansion: z.boolean().optional().describe('Wan 2.7 and 3.0: let the engine rewrite the prompt.'),
+    usePrime: z.boolean().optional().describe('Wan 3.0: faster, pricier tier.'),
+  }).optional().describe('Video projects: the engine and its settings; omitted fields keep their value (or the engine default).'),
+}).optional().describe('Civitai projects: settings shared by every job — an image project\'s sampling, a video project\'s engine. The checkpoint, LoRAs, prompt, negative prompt and source images are workflow items.');
+
+type CivitaiSettingsInput = {
+  sampler?: string;
+  steps?: number;
+  cfgScale?: number;
+  width?: number;
+  height?: number;
+  clipSkip?: number;
+  seed?: number | null;
+  denoise?: number;
+  allowMatureContent?: boolean;
+  mediaType?: 'image' | 'video';
+  video?: CivitaiVideoSettings;
+};
+
+function civitaiConfigToSettings(config: CivitaiGenerationConfig | undefined): CivitaiSettingsInput {
+  const { scheduler, seed, model, resources, negativePrompt, ...rest } = config || {};
+  return { ...rest, ...(scheduler ? { sampler: scheduler } : {}), seed: seed ?? null };
+}
+
+function civitaiSettingsToConfig(settings: CivitaiSettingsInput): Record<string, unknown> {
+  const { sampler, seed, ...rest } = settings;
+  return { ...rest, ...(sampler !== undefined ? { scheduler: sampler } : {}), ...(seed !== undefined ? { seed: seed ?? undefined } : {}) };
+}
 const SOCIAL_ACCOUNT_STATUS_VALUES = ['active', 'disconnected', 'expired'] as const;
 const CAMPAIGN_STATUS_VALUES = ['active', 'completed', 'archived'] as const;
 const MCP_POST_STATUS_VALUES = ['draft', 'scheduled'] as const;
@@ -146,7 +233,6 @@ const MAX_CONTENT_PREVIEW_CHARS = 4096;
 // fetch the full copy with get_post_text once they know which post they want.
 const MAX_POST_PREVIEW_CHARS = 280;
 const MAX_DRAFT_JOBS_PER_CALL = 10000;
-const MAX_JOB_FILENAME_LENGTH = 200;
 /** Same rough per-job reservation the REST job routes use for quota checks. */
 const JOB_STORAGE_ESTIMATE_BYTES = 25 * 1024 * 1024;
 /** Fallback quota for users created before a limit was stored on the record. */
@@ -304,7 +390,7 @@ async function assertPostMediaSourceAllowed(
         userId,
         project: {
           userId,
-          type: { in: ['image', 'video'] },
+          type: { in: [...VISUAL_PROJECT_TYPES] },
         },
         OR: [
           { imageUrl: source },
@@ -425,24 +511,6 @@ function basenameForKey(key: string): string {
   return name.replace(/["\\]/g, '');
 }
 
-/**
- * Mirror of the project viewer's job filename builder: a readable slug made of
- * the project prefix plus the tags/titles of the library items that composed
- * the prompt, suffixed with a short uuid so two identical combinations never
- * collide in storage.
- */
-function buildJobFilename(filenameParts: string[], suffixId: string): string {
-  const safeSuffixId = suffixId.replace(/[^a-zA-Z0-9-_]/g, '_');
-  const readableName = filenameParts
-    .filter(Boolean)
-    .join('_')
-    .replace(/[^a-zA-Z0-9-_]/g, '_');
-  const separator = readableName ? '_' : '';
-  const maxReadableLength = Math.max(0, MAX_JOB_FILENAME_LENGTH - separator.length - safeSuffixId.length);
-
-  return `${readableName.substring(0, maxReadableLength)}${separator}${safeSuffixId}`;
-}
-
 /** Look a catalog model up by its config id, across every provider type. */
 function findCatalogModel(modelConfigId: string): ModelConfig | undefined {
   for (const models of Object.values(PROVIDER_MODELS_MAP)) {
@@ -473,53 +541,6 @@ function unsupportedOptionError(
     return `${field} "${value}" is not offered by model "${model.name}". Supported values: ${allowed.join(', ')}.`;
   }
   return undefined;
-}
-
-/**
- * Per-job generation settings, resolved from the project and — where the
- * project leaves a field unset, or holds a value this model does not offer —
- * from the options the model advertises. Matches what the project viewer
- * writes onto drafts it creates.
- */
-function buildJobSettings(project: Project, model: ModelConfig | undefined): Partial<Job> {
-  const type = project.type ?? 'image';
-
-  if (type === 'text') return {};
-
-  if (type === 'audio') {
-    const audioConfig = project.systemPrompt
-      ? parseAudioProjectConfig(project.systemPrompt)
-      : DEFAULT_AUDIO_PROJECT_CONFIG;
-    const isMusic = audioConfig.kind === 'remix-audio-music';
-    return {
-      quality: isMusic
-        ? (audioConfig.mode === 'instrumental' ? 'instrumental' : 'with-lyrics')
-        : audioConfig.speakers[0].voice,
-      background: isMusic ? 'music' : audioConfig.mode,
-      format: (project.format
-        || model?.options.audioFormats?.[0]
-        || (isMusic ? 'mp3' : 'wav')) as Job['format'],
-    };
-  }
-
-  const common: Partial<Job> = {
-    aspectRatio: resolveSupportedAspectRatio(project.aspectRatio, model?.options.aspectRatios)
-      || '1024x1024',
-    quality: resolveSupportedOption(project.quality, model?.options.qualities) || 'standard',
-    background: resolveSupportedOption(project.background, model?.options.backgrounds),
-  };
-
-  if (type === 'video') {
-    return {
-      ...common,
-      duration: project.duration || model?.options.durations?.[0] || 4,
-      resolution: resolveSupportedOption(project.resolution, model?.options.resolutions) || '720p',
-      sound: project.sound || 'on',
-      format: 'mp4',
-    };
-  }
-
-  return { ...common, format: (project.format || 'png') as Job['format'] };
 }
 
 const EXPORT_POLL_INTERVAL_MS = 2000;
@@ -581,17 +602,61 @@ function toToolWorkflowItem(item: {
   disabled?: boolean;
   thumbnailUrl?: string;
   optimizedUrl?: string;
+  civitai?: CivitaiBinding;
 }) {
+  if (item.type === 'model') {
+    const slot = item.civitai?.slot === 'checkpoint' ? 'checkpoint' : 'lora';
+    return {
+      id: item.id,
+      itemType: slot,
+      models: (item.civitai?.options || []).map((option) => ({
+        ref: option.air,
+        name: civitaiResourceLabel(option),
+        ...(option.type ? { type: option.type } : {}),
+        ...(slot === 'lora' && !isCivitaiEmbedding(option) ? { strength: option.strength ?? 1 } : {}),
+        ...(option.trainedWords?.length ? { triggerWords: option.trainedWords } : {}),
+      })),
+      disabled: item.disabled ?? false,
+    };
+  }
   const isLibrary = item.type === 'library';
+  const negative = item.civitai?.slot === 'negative';
   return {
     id: item.id,
-    itemType: isLibrary ? 'library' : item.type,
+    itemType: isLibrary ? (negative ? 'negative_text_library' : 'library') : (negative ? 'negative_text' : item.type),
     value: isLibrary ? undefined : item.value ?? '',
     libraryId: isLibrary ? item.value ?? '' : undefined,
     selectedTags: item.selectedTags,
     disabled: item.disabled ?? false,
     thumbnailUrl: item.thumbnailUrl,
     optimizedUrl: item.optimizedUrl,
+  };
+}
+
+/**
+ * One album item as get_album_items and get_album_item report it. The prompt
+ * fields come from the caller: the paged listing truncates them, the
+ * single-item read returns them in full.
+ */
+function toToolAlbumItem<Text extends object>(item: AlbumItem, text: Text) {
+  return {
+    id: item.id,
+    jobId: item.jobId ?? null,
+    filename: item.imageUrl ? (basenameFromKey(item.imageUrl) || null) : null,
+    ...text,
+    tags: item.tags ?? [],
+    storageKey: item.imageUrl || null,
+    thumbnailKey: item.thumbnailUrl ?? null,
+    optimizedKey: item.optimizedUrl ?? null,
+    format: item.format ?? null,
+    aspectRatio: item.aspectRatio ?? null,
+    ...(item.duration != null ? { duration: item.duration } : {}),
+    ...(item.resolution ? { resolution: item.resolution } : {}),
+    size: item.size ?? null,
+    sizeFormatted: item.size ? formatSize(item.size) : null,
+    // What a Civitai result was generated with: checkpoint or video engine, LoRAs, negative prompt, seed and settings.
+    ...(item.civitaiParams ? { civitaiParams: item.civitaiParams } : {}),
+    createdAt: item.createdAt,
   };
 }
 
@@ -700,6 +765,84 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
    * keys must name files the user already owns. Everything is validated before
    * the first copy, so a rejected call leaves storage untouched.
    */
+  /**
+   * Civitai projects: turn the "models" of checkpoint and LoRA items into
+   * resources, looked up on Civitai with the project's account. An AIR the
+   * project already holds keeps what was looked up before, so carrying items
+   * forward through update_project does not look every model up again.
+   */
+  async function resolveCivitaiItems(
+    userId: string,
+    projectType: string | undefined,
+    providerId: string | undefined,
+    items: Array<{ itemType: string; models?: Array<{ ref: string; strength?: number }> }>,
+    existing: WorkflowItem[],
+  ): Promise<{ options: Map<number, CivitaiResource[]> } | { error: ToolResult }> {
+    const options = new Map<number, CivitaiResource[]>();
+    const civitaiItems = items.map((item, index) => ({ item, index })).filter(({ item }) => CIVITAI_ONLY_ITEM_TYPES.has(item.itemType));
+    if (civitaiItems.length === 0) return { options };
+    if (projectType !== 'civitai') {
+      return { error: errorResult(`workflowItems[${civitaiItems[0].index}] has itemType "${civitaiItems[0].item.itemType}", which only Civitai projects take.`) };
+    }
+    if (items.filter((item) => item.itemType === 'checkpoint').length > 1) {
+      return { error: errorResult('A Civitai project has one "checkpoint" item. List several checkpoints in its "models" to vary them.') };
+    }
+    const modelItems = civitaiItems.filter(({ item }) => item.itemType === 'checkpoint' || item.itemType === 'lora');
+    if (modelItems.length === 0) return { options };
+    for (const { item, index } of modelItems) {
+      if (!item.models?.length) return { error: errorResult(`workflowItems[${index}] ("${item.itemType}") needs at least one entry in "models".`) };
+    }
+
+    if (!providerId) return { error: errorResult('Checkpoint and LoRA items are looked up with the project\'s Civitai account. Set providerId to a Civitai provider (list_available_models → civitaiAccounts).') };
+    const provider = await providerRepository.getProvider(userId, providerId);
+    if (!provider || provider.type !== 'Civitai') return { error: errorResult(`providerId "${providerId}" is not a Civitai provider.`) };
+    const apiKey = await providerRepository.getDecryptedApiKey(userId, provider.id);
+    if (!apiKey) return { error: errorResult('The Civitai provider has no API key.') };
+    const client = new CivitaiClient(apiKey, assertSafeProviderApiUrl('Civitai', provider.apiUrl));
+
+    const known = new Map<string, CivitaiResource>();
+    for (const item of existing) for (const option of item.civitai?.options || []) known.set(option.air, option);
+
+    for (const { item, index } of modelItems) {
+      const slot = item.itemType as 'checkpoint' | 'lora';
+      const resolved: CivitaiResource[] = [];
+      for (const model of item.models!) {
+        const air = normalizeCivitaiAir(model.ref);
+        let resource = air ? known.get(air) : undefined;
+        if (!resource) {
+          try {
+            resource = await client.resolveResource(model.ref);
+          } catch (e: any) {
+            return { error: errorResult(`workflowItems[${index}]: could not look up "${model.ref}" on Civitai: ${e?.message || e}`) };
+          }
+          known.set(resource.air, resource);
+        }
+        const isCheckpoint = !resource.type || resource.type === 'Checkpoint';
+        if (slot === 'checkpoint' && !isCheckpoint) return { error: errorResult(`workflowItems[${index}]: "${model.ref}" is a ${resource.type}, not a checkpoint. Put it in a "lora" item.`) };
+        if (slot === 'lora' && resource.type === 'Checkpoint') return { error: errorResult(`workflowItems[${index}]: "${model.ref}" is a checkpoint. Put it in the "checkpoint" item.`) };
+        const { strength: _ignored, ...base } = resource;
+        resolved.push(slot === 'lora' && !isCivitaiEmbedding(base) ? { ...base, strength: model.strength ?? 1 } : base);
+      }
+      options.set(index, resolved);
+    }
+    return { options };
+  }
+
+  /** The stored form of a workflow item type that only Civitai projects take. */
+  function civitaiWorkflowItem(itemType: string, libraryId: string | undefined, value: string | undefined, options: CivitaiResource[] | undefined) {
+    switch (itemType) {
+      case 'negative_text':
+        return { type: 'text' as const, value: value || '', civitai: { slot: 'negative' as const } };
+      case 'negative_text_library':
+        return { type: 'library' as const, value: libraryId || '', civitai: { slot: 'negative' as const } };
+      case 'checkpoint':
+      case 'lora':
+        return { type: 'model' as const, value: '', civitai: { slot: itemType, options: options || [] } };
+      default:
+        return null;
+    }
+  }
+
   async function resolveWorkflowMedia(
     userId: string,
     projectId: string,
@@ -858,7 +1001,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       const nextName = name?.trim();
       const hasDescription = description !== undefined;
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -905,7 +1048,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         title?: string;
         tags?: string[];
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -938,7 +1081,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         library_id: string;
         items: { content: string; title?: string; tags?: string[] }[];
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id, true);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -952,7 +1095,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
       // libraryTotal lets the model compare progress against the requested
       // count and decide whether another batch is still owed.
-      const libraryTotal = (library.items?.length ?? 0) + libraryItems.length;
+      const libraryTotal = (library.itemCount ?? 0) + libraryItems.length;
       return {
         text: JSON.stringify({
           library_id,
@@ -990,7 +1133,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         tags?: string[];
       };
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -998,7 +1141,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
       }
 
-      const existingItem = library.items.find((item) => item.id === item_id);
+      const [existingItem] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
       if (!existingItem) {
         return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
       }
@@ -1049,7 +1192,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         item_id: string;
       };
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -1057,7 +1200,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
       }
 
-      const existingItem = library.items.find((item) => item.id === item_id);
+      const [existingItem] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
       if (!existingItem) {
         return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
       }
@@ -1271,21 +1414,7 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
 
       const items = album.items.map((item) => {
         const preview = truncateContent(item.prompt ?? '');
-        return {
-          id: item.id,
-          jobId: item.jobId ?? null,
-          prompt: preview.text,
-          promptTruncated: preview.truncated,
-          tags: item.tags ?? [],
-          storageKey: item.imageUrl || null,
-          thumbnailKey: item.thumbnailUrl ?? null,
-          optimizedKey: item.optimizedUrl ?? null,
-          format: item.format ?? null,
-          aspectRatio: item.aspectRatio ?? null,
-          size: item.size ?? null,
-          sizeFormatted: item.size ? formatSize(item.size) : null,
-          createdAt: item.createdAt,
-        };
+        return toToolAlbumItem(item, { prompt: preview.text, promptTruncated: preview.truncated });
       });
 
       const response = {
@@ -1302,6 +1431,47 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         aspectRatioCounts: album.aspectRatioCounts,
         tagCounts: album.tagCounts,
         ...paginationHints(album.page, album.pages),
+        hint: 'Pass storageKey / thumbnailKey / optimizedKey to get_file_urls to download or view a file.',
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── get_album_item ───
+  tools.push({
+    name: 'get_album_item',
+    title: 'Get Album Item',
+    description: `Read one album item by id, with its full prompt and, for text projects, the full generated text — nothing is truncated. Returns the same fields as an item from get_album_items (id, jobId, filename, tags, storage keys, format, aspect ratio, size, Civitai parameters, createdAt), plus the project's id, name and "projectUrl".
+
+Use this when you already have the item id, such as from a pasted \`project:<projectId>/album-item:<itemId>\` reference, instead of paging through get_album_items. Storage keys are internal references, not fetchable URLs — pass them to get_file_urls to obtain a temporary download URL.`,
+    inputSchema: {
+      project_id: z.string().min(1).describe('The project whose album holds the item'),
+      item_id: z.string().min(1).describe('The album item to read'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { project_id, item_id } = input as { project_id: string; item_id: string };
+
+      const project = await repository.getProject(userId, project_id);
+      if (!project) return errorResult(`Project "${project_id}" not found.`);
+
+      const item = await repository.getAlbumItem(userId, project_id, item_id);
+      if (!item) return errorResult(`Album item "${item_id}" not found in project "${project_id}".`);
+
+      const response = {
+        projectId: project.id,
+        projectUrl: appUrls.project(project.id),
+        projectName: project.name,
+        projectType: project.type,
+        item: toToolAlbumItem(item, {
+          prompt: item.prompt ?? '',
+          ...(item.textContent != null ? { textContent: item.textContent } : {}),
+        }),
         hint: 'Pass storageKey / thumbnailKey / optimizedKey to get_file_urls to download or view a file.',
       };
 
@@ -1387,6 +1557,167 @@ Exactly one operation per call: "add" leaves existing tags alone, "remove" takes
         message: `Tags updated on ${updated} album item${updated === 1 ? '' : 's'}.`,
       };
       return { text: JSON.stringify(response, null, 2), structuredContent: response };
+    },
+  });
+
+  // ─── rename_album_items ───
+  tools.push({
+    name: 'rename_album_items',
+    title: 'Rename Album Items',
+    description: `Rename files in a project's album while preserving all metadata, tags, prompts, workflow snapshots, and originating job links.
+
+Choose one of two modes:
+1. **Explicit per-item rename ("updates")**: pass an array of { item_id, filename } to set exact filenames for specific items (file extensions are preserved automatically). Filenames cannot contain /, \\, %, ? or #.
+2. **Batch prefix rename ("new_prefix" / "old_prefix")**: rename prefixes across "item_ids" or "all_items": true (optionally narrowed by "filter_tags" and "aspect_ratios").
+   - When both "old_prefix" and "new_prefix" are provided (e.g. old_prefix="Reika", new_prefix="Shandy"), replaces leading "<old_prefix>_" with "<new_prefix>_" while keeping the rest of each filename intact.
+   - Pass only "old_prefix" (or new_prefix="" with it) to strip "<old_prefix>_" from the start of matching filenames.
+   - When only "new_prefix" is provided, prepends "<new_prefix>_" to filenames that do not already start with it.
+   - Set "update_project_prefix": true to also set the project's own prefix for future draft jobs to new_prefix (stripping clears it).
+
+A rename may not take a name another album item still uses, so swapping two names takes two calls via a temporary name. If a rename fails part way, the response lists what was renamed, the item that failed, and how many were not attempted.`,
+    inputSchema: {
+      project_id: z.string().min(1).describe('The project whose album items to rename (from list_albums)'),
+      updates: z
+        .array(
+          z.object({
+            item_id: z.string().min(1).describe('Album item ID (from get_album_items)'),
+            filename: z.string().min(1).max(255).describe('New filename (original file extension is preserved automatically)'),
+          }),
+        )
+        .min(1)
+        .max(500)
+        .optional()
+        .describe('Explicit per-item filename renames. Mutually exclusive with new_prefix / old_prefix.'),
+      new_prefix: z
+        .string()
+        .max(120)
+        .optional()
+        .describe('Prefix mode: new filename prefix to apply (e.g. "Shandy"). Omit or pass "" with old_prefix to strip old_prefix.'),
+      old_prefix: z
+        .string()
+        .max(120)
+        .optional()
+        .describe('Prefix mode: existing filename prefix to replace or strip (e.g. "Reika"). Trailing underscore is optional.'),
+      item_ids: z
+        .array(z.string().min(1))
+        .max(1000)
+        .optional()
+        .describe('With prefix mode: specific album item IDs to rename (from get_album_items). Omit when all_items is true.'),
+      all_items: z
+        .boolean()
+        .optional()
+        .describe('With prefix mode: apply to every album item in the project, narrowed by filter_tags / aspect_ratios when given'),
+      filter_tags: z.array(z.string()).optional().describe('With all_items: only touch items carrying these tags'),
+      tag_match: z.enum(['all', 'any']).default('all').describe('How filter_tags combine: "all" (default) requires every tag, "any" requires at least one'),
+      aspect_ratios: z.array(z.string()).optional().describe('With all_items: only touch items with these aspect ratios'),
+      update_project_prefix: z
+        .boolean()
+        .optional()
+        .describe('With prefix mode: also set the project prefix used by future draft jobs to new_prefix, or clear it when stripping'),
+    },
+    // Renaming moves the stored files and deletes the old objects, and a
+    // strip removes one more leading prefix each time it runs.
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    requiresConfirmation: true,
+    handler: async (userId, input) => {
+      const {
+        project_id,
+        updates,
+        new_prefix,
+        old_prefix,
+        item_ids,
+        all_items,
+        filter_tags,
+        tag_match,
+        aspect_ratios,
+        update_project_prefix,
+      } = input as {
+        project_id: string;
+        updates?: Array<{ item_id: string; filename: string }>;
+        new_prefix?: string;
+        old_prefix?: string;
+        item_ids?: string[];
+        all_items?: boolean;
+        filter_tags?: string[];
+        tag_match: 'all' | 'any';
+        aspect_ratios?: string[];
+        update_project_prefix?: boolean;
+      };
+
+      const hasUpdates = Array.isArray(updates) && updates.length > 0;
+      const hasPrefix = new_prefix !== undefined || old_prefix !== undefined;
+      if (hasUpdates && hasPrefix) {
+        return {
+          text: JSON.stringify({ error: 'Provide either "updates" or prefix parameters ("new_prefix" / "old_prefix"), not both.' }),
+          isError: true,
+        };
+      }
+      if (!hasUpdates && !hasPrefix) {
+        return {
+          text: JSON.stringify({ error: 'Provide either "updates" for explicit filenames, or "new_prefix" / "old_prefix" for prefix renaming.' }),
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await renameAlbumItems(
+          { repository, storage },
+          userId,
+          project_id,
+          hasUpdates
+            ? {
+                updates: updates!.map((u) => ({ itemId: u.item_id, filename: u.filename })),
+              }
+            : {
+                newPrefix: new_prefix ?? '',
+                oldPrefix: old_prefix,
+                itemIds: all_items ? undefined : item_ids,
+                all: all_items === true,
+                tags: filter_tags,
+                tagMatch: tag_match,
+                aspectRatios: aspect_ratios,
+              },
+        );
+
+        if (result.renamed > 0) {
+          projectEvents?.notifyProjectChanged({ userId, projectId: project_id, reason: 'album.renamed' });
+        }
+
+        const failed = result.failed.length > 0;
+        let projectPrefix = result.project.prefix ?? null;
+        let projectPrefixUpdated = false;
+        if (update_project_prefix && hasPrefix && !failed) {
+          projectPrefix = trimPrefix(new_prefix) || null;
+          await repository.updateProject(userId, project_id, { prefix: projectPrefix });
+          projectPrefixUpdated = true;
+          projectEvents?.notifyProjectChanged({ userId, projectId: project_id, reason: 'project.updated' });
+        }
+
+        const outcome = `Renamed ${result.renamed} album item${result.renamed === 1 ? '' : 's'}${result.unchanged ? ` (${result.unchanged} already matched)` : ''}${result.skipped ? ` (${result.skipped} skipped)` : ''}.`;
+        const response = {
+          projectId: project_id,
+          projectUrl: appUrls.project(project_id),
+          projectName: result.project.name,
+          projectPrefix,
+          projectPrefixUpdated,
+          renamed: result.renamed,
+          unchanged: result.unchanged,
+          skipped: result.skipped,
+          ...(failed ? { failed: result.failed, notAttempted: result.notAttempted } : {}),
+          items: result.items.slice(0, 100),
+          itemsTruncated: result.items.length > 100,
+          message: failed
+            ? `${outcome} Stopped after ${result.failed.length} failed; ${result.notAttempted} not attempted.${update_project_prefix ? ' The project prefix was left unchanged.' : ''}`
+            : outcome,
+        };
+        return { text: JSON.stringify(response, null, 2), structuredContent: response, ...(failed ? { isError: true } : {}) };
+      } catch (e) {
+        if (e instanceof AlbumRenameError) {
+          return { text: JSON.stringify({ error: e.message }), isError: true };
+        }
+        throw e;
+      }
     },
   });
 
@@ -1707,7 +2038,7 @@ Staged files are kept for 24 hours and count toward the storage quota until then
         library_id: string;
         files: { uploadId: string; title?: string; tags?: string[] }[];
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id, true);
       if (!library) return errorResult(`Library "${library_id}" not found.`);
       if (library.type !== 'image' && library.type !== 'video' && library.type !== 'audio') {
         return errorResult(`Library "${library.name}" is a ${library.type} library. Files go into image, video or audio libraries; add text with create_prompt.`);
@@ -1744,7 +2075,7 @@ Staged files are kept for 24 hours and count toward the storage quota until then
       await repository.createLibraryItemsBatch(userId, library_id, items);
       publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
 
-      const libraryTotal = (library.items?.length ?? 0) + items.length;
+      const libraryTotal = (library.itemCount ?? 0) + items.length;
       const payload = {
         library_id,
         libraryUrl: appUrls.library(library_id),
@@ -1996,7 +2327,10 @@ Staged files are kept for 24 hours and count toward the storage quota until then
             modelConfigId: modelConfigIdFilter ?? null,
             includeUnusable,
           },
-          note: 'Pass providerId and modelConfigId from a usableModels entry directly to create_project_with_workflow.',
+          civitaiAccounts: savedProviders
+            .filter((provider) => provider.type === 'Civitai')
+            .map((provider) => ({ providerId: provider.id, name: provider.name })),
+          note: 'Pass providerId and modelConfigId from a usableModels entry directly to create_project_with_workflow. For a Civitai project (type "civitai") pass a civitaiAccounts providerId and no modelConfigId; its checkpoint and LoRAs are workflow items.',
         }, null, 2),
       };
     },
@@ -2071,7 +2405,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         page: number;
         limit: number;
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return {
           text: JSON.stringify({ error: 'Library not found' }),
@@ -2115,6 +2449,63 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         page: result.page,
         pages: result.pages,
         ...paginationHints(result.page, result.pages),
+        hint: isText
+          ? 'Use item.text as the "value" of a "text" workflow item.'
+          : `Use item.storageKey as the "value" of an "${library.type}" workflow item to pin this specific file.`,
+      };
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── get_library_item ───
+  tools.push({
+    name: 'get_library_item',
+    title: 'Get Library Item',
+    description: `Read one library item by id. Returns the same fields as an item from get_library_items — id, title, tags, and either the full "text" (text libraries, never truncated) or "storageKey" (image/audio/video libraries) — plus the library's id, name, type and "libraryUrl".
+
+Use this when you already have the item id, such as from a pasted \`library:<libraryId>/item:<itemId>\` reference, instead of paging through get_library_items or searching.`,
+    inputSchema: {
+      library_id: z.string().min(1).describe('The library that holds the item'),
+      item_id: z.string().min(1).describe('The library item to read'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { library_id, item_id } = input as { library_id: string; item_id: string };
+
+      const library = await repository.getLibrarySummary(userId, library_id);
+      if (!library) return errorResult(`Library "${library_id}" not found.`);
+
+      const [item] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
+      if (!item) return errorResult(`Library item "${item_id}" not found in library "${library_id}".`);
+
+      const isText = library.type === 'text';
+      const rawContent = item.content ?? '';
+      const response = {
+        libraryId: library_id,
+        libraryUrl: appUrls.library(library_id),
+        libraryName: library.name,
+        libraryDescription: library.description ?? null,
+        libraryType: library.type,
+        item: isText
+          ? {
+            id: item.id,
+            title: item.title ?? null,
+            text: rawContent,
+            textLength: rawContent.length,
+            tags: item.tags ?? [],
+            thumbnailUrl: item.thumbnailUrl ?? null,
+          }
+          : {
+            id: item.id,
+            title: item.title ?? null,
+            storageKey: rawContent,
+            tags: item.tags ?? [],
+            thumbnailUrl: item.thumbnailUrl ?? null,
+          },
         hint: isText
           ? 'Use item.text as the "value" of a "text" workflow item.'
           : `Use item.storageKey as the "value" of an "${library.type}" workflow item to pin this specific file.`,
@@ -2172,6 +2563,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         duration: project.duration ?? null,
         resolution: project.resolution ?? null,
         sound: project.sound ?? null,
+        ...(project.type === 'civitai' ? { civitaiSettings: civitaiConfigToSettings(project.civitaiConfig) } : {}),
         workflowItemCount: workflowItems.length,
         workflowItems,
         workflowUpdateWarning:
@@ -2207,6 +2599,12 @@ Workflow item types:
 - "video": video context slot. Leave "value" empty, set "value" to item.storageKey from get_library_items to pin a specific video file, or set "uploadId" to pin an uploaded file.
 - "video_from_library" / "video_library": reference a video library. Requires "libraryId".
 
+Civitai projects (type "civitai") generate on Civitai with any checkpoint and LoRA from its catalog. Set providerId to a Civitai provider (list_available_models → civitaiAccounts), leave modelConfigId out, and put settings in civitaiSettings. They make images, or videos with civitaiSettings.mediaType "video" (fixed once the project has jobs or results). Their workflow also takes:
+- "checkpoint": images only; exactly one; "models" lists one or more checkpoints (Civitai link or AIR), one per job. A video's engine (civitaiSettings.video.engine) brings its own model.
+- "lora": any number; each lists one or more LoRAs (or, for images, embeddings) in "models" (with "strength"), one per job; every enabled LoRA item applies. Video engines take LoRAs made for them, up to their limit.
+- "negative_text" / "negative_text_library": text or a text library that goes to the negative prompt instead of the prompt.
+- "image" / "image_library": images: the source for image-to-image (the first image is used). Videos: the start frame (first image) and, with Wan 2.7 and 3.0, the end frame (second image).
+
 Recommended workflow:
 1. Call list_available_models → pick one usableModels entry (copy providerId + modelConfigId verbatim).
 2. Call list_libraries → discover libraries.
@@ -2215,7 +2613,7 @@ Recommended workflow:
     inputSchema: {
       name: z.string().min(1).max(256).describe('Project display name'),
       description: z.string().max(2000).optional().describe('Optional project description explaining what it does, generates, or how it should be used'),
-      type: z.enum(['image', 'text', 'video', 'audio']).describe('Project generation type'),
+      type: z.enum(['image', 'text', 'video', 'audio', 'civitai']).describe('Project generation type'),
       providerId: z.string().optional().describe('Saved provider ID (from list_available_models usableModels[].providerId)'),
       modelConfigId: z.string().optional().describe('Model config ID (from list_available_models usableModels[].modelConfigId)'),
       aspectRatio: z.string().optional().describe('Aspect ratio (e.g. "16:9", "1:1") — available options depend on the selected model'),
@@ -2229,9 +2627,11 @@ Recommended workflow:
       duration: z.number().int().optional().describe('Video duration in seconds'),
       resolution: z.string().optional().describe('Video resolution (e.g. "720p", "1080p")'),
       sound: z.enum(['on', 'off']).optional().describe('Sound for video generation'),
+      civitaiSettings: CIVITAI_SETTINGS_SCHEMA,
       workflowItems: z.array(z.object({
         itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": leave empty for a blank slot, or set to item.storageKey from get_library_items to pin a specific file.'),
+        models: CIVITAI_MODELS_SCHEMA,
         uploadId: z.string().min(1).optional().describe('For "image"/"audio"/"video": a ready upload from create_upload to pin. The server copies it into the project; leave value empty.'),
         libraryId: z.string().optional().describe('Library ID (required for "library", *_from_library, and *_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter applied when picking items from the library'),
@@ -2242,11 +2642,12 @@ Recommended workflow:
     handler: async (userId, input) => {
       const {
         name, description, type, providerId, modelConfigId, aspectRatio, quality, format, shuffle, prefix,
-        systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
+        systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems, civitaiSettings,
       } = input as {
         name: string;
         description?: string;
-        type: 'image' | 'text' | 'video' | 'audio';
+        type: 'image' | 'text' | 'video' | 'audio' | 'civitai';
+        civitaiSettings?: CivitaiSettingsInput;
         providerId?: string;
         modelConfigId?: string;
         aspectRatio?: string;
@@ -2266,8 +2667,13 @@ Recommended workflow:
           uploadId?: string;
           libraryId?: string;
           selectedTags?: string[];
+          models?: { ref: string; strength?: number }[];
         }[];
       };
+
+      if (type === 'civitai' && modelConfigId) {
+        return { text: JSON.stringify({ error: 'Civitai projects take no modelConfigId: their checkpoint and LoRAs are "checkpoint" and "lora" workflow items.' }), isError: true };
+      }
 
       // ─── Validate provider/model pairing ───
       let providerRecord: Awaited<ReturnType<ProviderRepository['getPublicProvider']>> | null = null;
@@ -2307,6 +2713,17 @@ Recommended workflow:
         };
       }
 
+      if (providerRecord && (type === 'civitai') !== (providerRecord.type === 'Civitai')) {
+        return {
+          text: JSON.stringify({
+            error: type === 'civitai'
+              ? `Civitai projects need a Civitai provider; "${providerRecord.name}" is "${providerRecord.type}".`
+              : `A Civitai provider only serves Civitai projects (type "civitai").`,
+          }),
+          isError: true,
+        };
+      }
+
       if (modelMeta && modelMeta.category !== type) {
         return {
           text: JSON.stringify({
@@ -2340,9 +2757,15 @@ Recommended workflow:
       const projectId = crypto.randomUUID();
       const media = await resolveWorkflowMedia(userId, projectId, workflowItems);
       if ('error' in media) return media.error;
+      const civitai = await resolveCivitaiItems(userId, type, providerId, workflowItems, []);
+      if ('error' in civitai) return civitai.error;
 
       // ─── Normalize workflow ───
       const workflow = workflowItems.map((item, idx) => {
+        const civitaiItem = civitaiWorkflowItem(item.itemType, item.libraryId, item.value, civitai.options.get(idx));
+        if (civitaiItem) {
+          return { id: crypto.randomUUID(), ...civitaiItem, order: idx, selectedTags: item.selectedTags };
+        }
         let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
         let internalValue: string;
 
@@ -2384,6 +2807,11 @@ Recommended workflow:
             internalType = 'library';
             internalValue = item.libraryId || '';
             break;
+          case 'negative_text':
+          case 'negative_text_library':
+          case 'checkpoint':
+          case 'lora':
+            throw new Error(`${item.itemType} is stored by civitaiWorkflowItem`);
           default: {
             const exhaustive: never = item.itemType;
             throw new Error(`Unknown workflow itemType: ${exhaustive as string}`);
@@ -2417,7 +2845,8 @@ Recommended workflow:
         modelConfigId: modelConfigId || undefined,
         aspectRatio: aspectRatio || undefined,
         quality: quality || undefined,
-        format: format || undefined,
+        // A Civitai video project's results are mp4s.
+        format: (type === 'civitai' && civitaiSettings?.mediaType === 'video' ? 'mp4' : format || undefined) as Project['format'],
         shuffle: shuffle ?? undefined,
         prefix: prefix?.trim() || undefined,
         systemPrompt: systemPrompt || undefined,
@@ -2426,6 +2855,7 @@ Recommended workflow:
         duration: duration ?? undefined,
         resolution: resolution || undefined,
         sound: sound || undefined,
+        civitaiConfig: type === 'civitai' && civitaiSettings ? sanitizeCivitaiConfig(civitaiSettingsToConfig(civitaiSettings)) : undefined,
       };
 
       await repository.createProject(userId, project);
@@ -2460,7 +2890,7 @@ Important workflow behavior:
       name: z.string().min(1).max(256).optional().describe('New project display name'),
       description: z.string().max(2000).optional().describe('New project description. Pass an empty string to clear it.'),
       status: z.enum(['active', 'archived']).optional().describe('Update project status'),
-      type: z.enum(['image', 'text', 'video', 'audio']).optional().describe('Update project generation type'),
+      type: z.enum(['image', 'text', 'video', 'audio', 'civitai']).optional().describe('Update project generation type'),
       providerId: z.string().optional().describe('Update saved provider ID'),
       modelConfigId: z.string().optional().describe('Update model config ID'),
       aspectRatio: z.string().optional().describe('Update aspect ratio'),
@@ -2474,9 +2904,11 @@ Important workflow behavior:
       duration: z.number().int().optional().describe('Update video duration'),
       resolution: z.string().optional().describe('Update video resolution'),
       sound: z.enum(['on', 'off']).optional().describe('Update video sound setting'),
+      civitaiSettings: CIVITAI_SETTINGS_SCHEMA.describe('Civitai projects: sampling settings to change; omitted fields keep their value.'),
       workflowItems: z.array(z.object({
-        itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type'),
+        itemType: z.enum(WORKFLOW_ITEM_TYPES).describe('Workflow item type (Civitai projects also take "checkpoint", "lora", "negative_text" and "negative_text_library")'),
         value: z.string().optional().describe('For "text": the prompt text. For "image"/"audio"/"video": file storage key to pin a file.'),
+        models: CIVITAI_MODELS_SCHEMA,
         uploadId: z.string().min(1).optional().describe('For "image"/"audio"/"video": a ready upload from create_upload to pin. The server copies it into the project and fills value, thumbnailUrl and optimizedUrl; leave those empty.'),
         libraryId: z.string().optional().describe('Library ID (required for "library" and *_from_library types)'),
         selectedTags: z.array(z.string()).optional().describe('Optional tag filter for library items'),
@@ -2491,13 +2923,14 @@ Important workflow behavior:
     handler: async (userId, input) => {
       const {
         projectId, name, description, status, type, providerId, modelConfigId, aspectRatio, quality, format,
-        shuffle, prefix, systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems,
+        shuffle, prefix, systemPrompt, temperature, maxTokens, duration, resolution, sound, workflowItems, civitaiSettings,
       } = input as {
         projectId: string;
         name?: string;
         description?: string;
         status?: 'active' | 'archived';
-        type?: 'image' | 'text' | 'video' | 'audio';
+        type?: 'image' | 'text' | 'video' | 'audio' | 'civitai';
+        civitaiSettings?: CivitaiSettingsInput;
         providerId?: string;
         modelConfigId?: string;
         aspectRatio?: string;
@@ -2521,6 +2954,7 @@ Important workflow behavior:
           disabled?: boolean;
           thumbnailUrl?: string;
           optimizedUrl?: string;
+          models?: { ref: string; strength?: number }[];
         }[];
       };
 
@@ -2556,7 +2990,38 @@ Important workflow behavior:
       const effectiveModelConfigId = modelConfigId ?? existingProject.modelConfigId;
       const effectiveType = type ?? existingProject.type;
 
-      if (providerId || modelConfigId || type) {
+      if (effectiveType === 'civitai') {
+        // A Civitai project's models are workflow items; only the account is checked.
+        if (modelConfigId) {
+          return { text: JSON.stringify({ error: 'Civitai projects take no modelConfigId: their checkpoint and LoRAs are "checkpoint" and "lora" workflow items.' }), isError: true };
+        }
+        if (providerId) {
+          const providerRecord = await providerRepository.getPublicProvider(userId, providerId);
+          if (!providerRecord || providerRecord.type !== 'Civitai') {
+            return { text: JSON.stringify({ error: `providerId "${providerId}" is not a Civitai provider.` }), isError: true };
+          }
+        }
+        if (civitaiSettings !== undefined) {
+          const existing = existingProject.civitaiConfig || {};
+          const patch = civitaiSettingsToConfig(civitaiSettings) as CivitaiGenerationConfig;
+          const next = sanitizeCivitaiConfig({ ...existing, ...patch, ...(patch.video ? { video: { ...existing.video, ...patch.video } } : {}) }) ?? null;
+          if ((next?.mediaType ?? 'image') !== (existing.mediaType ?? 'image')) {
+            const [jobs, album] = await Promise.all([
+              repository.getProjectJobs(userId, projectId),
+              repository.getProjectAlbum(userId, projectId, { limit: 1 }),
+            ]);
+            if (jobs.length > 0 || album.total > 0) {
+              return { text: JSON.stringify({ error: 'This Civitai project already has jobs or results, so it can no longer switch between images and videos. Create a new Civitai project instead.' }), isError: true };
+            }
+            updates.format = next?.mediaType === 'video' ? 'mp4' : 'png';
+          }
+          updates.civitaiConfig = next;
+        }
+      } else if (civitaiSettings !== undefined) {
+        return { text: JSON.stringify({ error: 'civitaiSettings only applies to Civitai projects.' }), isError: true };
+      }
+
+      if (effectiveType !== 'civitai' && (providerId || modelConfigId || type)) {
         let providerRecord = null;
         if (effectiveProviderId) {
           providerRecord = await providerRepository.getPublicProvider(userId, effectiveProviderId);
@@ -2649,8 +3114,15 @@ Important workflow behavior:
 
         const media = await resolveWorkflowMedia(userId, projectId, workflowItems);
         if ('error' in media) return media.error;
+        const existingWorkflow = await repository.getProjectWorkflow(userId, projectId);
+        const civitai = await resolveCivitaiItems(userId, effectiveType, effectiveProviderId, workflowItems, existingWorkflow);
+        if ('error' in civitai) return civitai.error;
 
         updates.workflow = workflowItems.map((item, idx) => {
+          const civitaiItem = civitaiWorkflowItem(item.itemType, item.libraryId, item.value, civitai.options.get(idx));
+          if (civitaiItem) {
+            return { id: item.id || crypto.randomUUID(), ...civitaiItem, order: idx, selectedTags: item.selectedTags, disabled: item.disabled };
+          }
           let internalType: 'text' | 'library' | 'image' | 'video' | 'audio';
           let internalValue: string;
 
@@ -2992,7 +3464,7 @@ Returns "url" — the project page when scoped to a project, otherwise the queue
 
 Each draft gets one prompt combination built from the project's enabled workflow items: static text is used as-is and every library reference contributes one of its items. With shuffle on, each draft picks randomly; with shuffle off, drafts walk the combinations in order and wrap around once they are exhausted.
 
-The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.
+The project supplies the provider, model, and generation settings (aspect ratio, quality, format, duration, resolution, sound) — set them with update_project first if they are missing. A Civitai project instead takes each draft's checkpoint, LoRAs and negative prompt from its combination of "checkpoint", "lora" and negative items, and its sampling settings from civitaiSettings. Call get_project to review the workflow, and get_project_job_counts to see what is already staged.
 
 Returns the project's "url" — share it so the user can review the drafts before starting them.`,
     inputSchema: {
@@ -3013,7 +3485,16 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
-      if (!project.providerId || !project.modelConfigId) {
+      const isCivitai = project.type === 'civitai';
+      if (isCivitai && !project.providerId) {
+        return {
+          text: JSON.stringify({
+            error: `Civitai project "${project.name}" has no Civitai account. Set providerId to a Civitai provider (list_available_models → civitaiAccounts) with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+      if (!isCivitai && (!project.providerId || !project.modelConfigId)) {
         return {
           text: JSON.stringify({
             error: `Project "${project.name}" has no provider/model configured. Pick a pair with list_available_models and set it with update_project before drafting jobs.`,
@@ -3023,6 +3504,16 @@ Returns the project's "url" — share it so the user can review the drafts befor
       }
 
       const workflow = await repository.getProjectWorkflow(userId, projectId);
+      // A video engine brings its own model; an image needs a checkpoint.
+      const civitaiVideo = isCivitai && isCivitaiVideo(project.civitaiConfig);
+      if (isCivitai && !civitaiVideo && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
+        return {
+          text: JSON.stringify({
+            error: `Civitai project "${project.name}" has no enabled checkpoint. Add a "checkpoint" workflow item with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
       const enabledItems = workflow.filter((item) => !item.disabled);
       if (enabledItems.length === 0) {
         return {
@@ -3043,27 +3534,31 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
-      // Library-backed workflow items are stored as a library ID; the remix
-      // engine needs the items themselves to build combinations.
-      const libraryIds = Array.from(new Set(
-        enabledItems.filter((item) => item.type === 'library').map((item) => item.value),
-      ));
-      const libraries: Library[] = [];
-      for (const libraryId of libraryIds) {
-        const library = await repository.getLibrary(userId, libraryId);
-        if (!library) {
-          return {
-            text: JSON.stringify({
-              error: `Workflow references library "${libraryId}", which no longer exists. Fix the workflow with update_project before drafting jobs.`,
-            }),
-            isError: true,
-          };
-        }
-        libraries.push(library);
+      const provider = await providerRepository.getPublicProvider(userId, project.providerId);
+      const model = provider?.models.find((m) => m.id === project.modelConfigId);
+      const { jobs: drafts, missingLibraryIds, problem } = await composeDraftJobs(repository, userId, project, workflow, model, count);
+      if (missingLibraryIds.length > 0) {
+        return {
+          text: JSON.stringify({
+            error: `Workflow references library "${missingLibraryIds[0]}", which no longer exists. Fix the workflow with update_project before drafting jobs.`,
+          }),
+          isError: true,
+        };
+      }
+      if (problem?.code === 'civitai_prompt_required') {
+        return {
+          text: JSON.stringify({ error: `Civitai project "${project.name}" builds an empty prompt: every text item feeds the negative prompt. Add prompt text before drafting jobs.` }),
+          isError: true,
+        };
+      }
+      if (problem?.code === 'civitai_text_only') {
+        return {
+          text: JSON.stringify({ error: `${problem.engine} only makes videos from text. Disable the image items or pick another engine (civitaiSettings.video.engine) with update_project.` }),
+          isError: true,
+        };
       }
 
-      const combinations = generateJobs(workflow, libraries, count, !!project.shuffle);
-      if (combinations.length === 0) {
+      if (drafts.length === 0) {
         return {
           text: JSON.stringify({
             error: `Project "${project.name}" workflow produced no prompt combinations. Its libraries may be empty or filtered down to nothing by their selected tags.`,
@@ -3072,29 +3567,8 @@ Returns the project's "url" — share it so the user can review the drafts befor
         };
       }
 
-      const storageError = await assertStorageHeadroom(userId, combinations.length);
+      const storageError = await assertStorageHeadroom(userId, drafts.length);
       if (storageError) return storageError;
-
-      const provider = await providerRepository.getPublicProvider(userId, project.providerId);
-      const model = provider?.models.find((m) => m.id === project.modelConfigId);
-      const settings = buildJobSettings(project, model);
-
-      const drafts: Job[] = combinations.map((combo) => ({
-        id: crypto.randomUUID(),
-        prompt: combo.prompt,
-        imageContexts: combo.imageContexts,
-        videoContexts: combo.videoContexts,
-        audioContexts: combo.audioContexts,
-        status: 'draft' as const,
-        providerId: project.providerId,
-        modelConfigId: project.modelConfigId,
-        ...settings,
-        filename: buildJobFilename(
-          [project.prefix ?? '', ...combo.filenameParts],
-          crypto.randomUUID().slice(0, 8),
-        ),
-        workflowSnapshot: workflow,
-      }));
 
       const created = await repository.createProjectJobs(userId, projectId, drafts);
       projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'jobs.changed' });
@@ -3216,8 +3690,8 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         content?: string;
       };
 
-      const library = await repository.getLibrary(userId, library_id);
-      if (!library) {
+      const libraryType = await repository.getLibraryType(userId, library_id);
+      if (!libraryType) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
 
@@ -3270,7 +3744,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         updates: { item_id: string; title?: string; tags?: string[]; content?: string }[];
       };
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }

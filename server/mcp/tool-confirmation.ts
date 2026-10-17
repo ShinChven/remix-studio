@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { z } from 'zod';
 import type { AssistantToolDefinition, ToolResult } from './tool-definitions';
+import { toFilenamePrefix, trimPrefix } from '../services/album-rename';
 
 const CONFIRMATION_FIELD_DESCRIPTIONS = {
   confirmed:
@@ -145,6 +146,36 @@ export function summarizeToolEffect(
         return `Remove the tags ${remove.map((tag) => `"${tag}"`).join(', ')} from ${scope} on ${project}.`;
       }
       return `Add the tags ${(add ?? []).map((tag) => `"${tag}"`).join(', ')} to ${scope} on ${project}.`;
+    }
+    case 'rename_album_items': {
+      const project = `project ${getLabel(objectArgs.project_id, 'project')}`;
+      const updates = Array.isArray(objectArgs.updates) ? objectArgs.updates : null;
+      if (updates && updates.length > 0) {
+        return `Rename ${updates.length} album item${updates.length === 1 ? '' : 's'} on ${project}.`;
+      }
+      const itemIds = Array.isArray(objectArgs.item_ids) ? objectArgs.item_ids : null;
+      const filtered = (Array.isArray(objectArgs.filter_tags) && objectArgs.filter_tags.length > 0)
+        || (Array.isArray(objectArgs.aspect_ratios) && objectArgs.aspect_ratios.length > 0);
+      const scope = objectArgs.all_items === true
+        ? filtered ? 'every album item matching the filters' : 'every album item'
+        : `${itemIds?.length ?? 0} album item${itemIds?.length === 1 ? '' : 's'}`;
+      // Matching takes the old prefix as typed; written names carry the new one
+      // reduced to the characters file names keep.
+      const oldPrefix = typeof objectArgs.old_prefix === 'string' ? trimPrefix(objectArgs.old_prefix) : '';
+      const newPrefix = typeof objectArgs.new_prefix === 'string' ? toFilenamePrefix(objectArgs.new_prefix) : '';
+      const projectPrefix = typeof objectArgs.new_prefix === 'string' ? trimPrefix(objectArgs.new_prefix) : '';
+      const projectPrefixNote = objectArgs.update_project_prefix !== true
+        ? ''
+        : projectPrefix
+          ? ` Also set the project prefix to "${projectPrefix}".`
+          : ' Also clear the project prefix.';
+      if (oldPrefix && newPrefix) {
+        return `Replace filename prefix "${oldPrefix}" with "${newPrefix}" on ${scope} on ${project}.${projectPrefixNote}`;
+      }
+      if (oldPrefix) {
+        return `Remove filename prefix "${oldPrefix}" from ${scope} on ${project}.${projectPrefixNote}`;
+      }
+      return `Prepend filename prefix "${newPrefix}" to ${scope} on ${project}.${projectPrefixNote}`;
     }
     case 'export_project_album': {
       if (typeof objectArgs.task_id === 'string' && objectArgs.task_id) {

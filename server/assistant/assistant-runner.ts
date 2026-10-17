@@ -84,7 +84,8 @@ export type AssistantStatusEvent =
   | { type: 'tool_call_started'; call: ToolCall }
   | { type: 'tool_call_finished'; call: ToolCall; isError: boolean }
   | { type: 'confirmation_required'; call: ToolCall; confirmationId: string }
-  | { type: 'circuit_open'; reason: string };
+  | { type: 'circuit_open'; reason: string }
+  | { type: 'stop_requested' };
 
 export type TurnResult =
   | { kind: 'final'; finalMessage: AssistantMessageRecord }
@@ -93,7 +94,9 @@ export type TurnResult =
       assistantMessage: AssistantMessageRecord;
       confirmation: AssistantPendingConfirmationRecord;
     }
-  | { kind: 'error'; error: string; partialMessage?: AssistantMessageRecord };
+  | { kind: 'error'; error: string; partialMessage?: AssistantMessageRecord }
+  /** The user pressed Stop; `stoppedMessage` is the transcript's note saying so. */
+  | { kind: 'stopped'; stoppedMessage: AssistantMessageRecord };
 
 export interface SendUserMessageInput {
   userId: string;
@@ -416,7 +419,6 @@ export class AssistantRunner {
     let toolCallBudget = ASSISTANT_LIMITS.MAX_TOOL_CALLS;
     const recentCallHashes: string[] = [];
     let lastTurnEnd = Date.now();
-    let lastFinalMessage: AssistantMessageRecord | undefined;
     // Truncation recovery: `retryHint` is injected into the next provider call
     // only (never persisted), so the model learns its last response was cut off
     // without the nudge showing up in the user's transcript.
@@ -424,9 +426,7 @@ export class AssistantRunner {
     let retryHint: string | undefined;
 
     for (let iter = 0; iter < ASSISTANT_LIMITS.MAX_ITERATIONS; iter++) {
-      if (abortSignal?.aborted) {
-        return { kind: 'error', error: 'Turn aborted by client', partialMessage: lastFinalMessage };
-      }
+      if (abortSignal?.aborted) return this.stopTurn(conversationId);
 
       if (Date.now() - lastTurnEnd > ASSISTANT_LIMITS.MAX_TURN_GAP_MS) {
         emit(onStatusEvent, { type: 'circuit_open', reason: 'turn_gap_exceeded' });
@@ -461,6 +461,8 @@ export class AssistantRunner {
           },
         });
       } catch (e: any) {
+        // Stopping abandons the model call; that is not a provider failure.
+        if (abortSignal?.aborted) return this.stopTurn(conversationId);
         console.error(`[Assistant] Provider error: conversation=${conversationId} iter=${iter} error=${e?.message}`);
         const partial = await this.recordProviderError(conversationId, e?.message ?? 'Provider call failed');
         return { kind: 'error', error: e?.message ?? 'Provider call failed', partialMessage: partial };
@@ -479,7 +481,13 @@ export class AssistantRunner {
         inputTokens: response.usage?.inputTokens,
         outputTokens: response.usage?.outputTokens,
       });
-      lastFinalMessage = assistantMessage;
+
+      // Stop arrived while the model was answering. A plain answer is complete
+      // and is kept as the turn's result; proposed tool calls are not run.
+      if (abortSignal?.aborted && response.toolCalls.length > 0) {
+        await this.recordStoppedToolCalls(conversationId, response.toolCalls);
+        return this.stopTurn(conversationId);
+      }
 
       // A `max_tokens` stop means the provider cut generation off mid-response —
       // it is never a completed answer. When a tool call survived the cut its
@@ -518,7 +526,14 @@ export class AssistantRunner {
       // Execute each proposed tool call in order; halt on the first one that
       // requires confirmation.
       const processedCalls: ToolCall[] = [];
-      for (const call of response.toolCalls) {
+      for (const [callIndex, call] of response.toolCalls.entries()) {
+        // A tool already running is let finish so its result is on record;
+        // the ones after it never start.
+        if (abortSignal?.aborted) {
+          await this.recordStoppedToolCalls(conversationId, response.toolCalls.slice(callIndex));
+          return this.stopTurn(conversationId);
+        }
+
         if (--toolCallBudget < 0) {
           emit(onStatusEvent, { type: 'circuit_open', reason: 'tool_call_budget_exceeded' });
           const partial = await this.recordCircuitStop(conversationId, 'Hit the tool-call budget for this turn — stopped for safety.');
@@ -834,18 +849,59 @@ export class AssistantRunner {
     let lastError: any;
     for (let attempt = 0; attempt <= ASSISTANT_LIMITS.PROVIDER_RETRY_COUNT; attempt++) {
       try {
-        return await withTimeout(
-          provider.chat(req),
-          ASSISTANT_LIMITS.PROVIDER_TIMEOUT_MS,
-          'Provider call timed out',
+        // Not every provider SDK honours the abort signal promptly, so stop
+        // waiting on our side the moment it fires.
+        return await raceAbort(
+          withTimeout(
+            provider.chat(req),
+            ASSISTANT_LIMITS.PROVIDER_TIMEOUT_MS,
+            'Provider call timed out',
+          ),
+          req.abortSignal,
         );
       } catch (e: any) {
         lastError = e;
+        if (req.abortSignal?.aborted) throw e;
         if (!isRetryableProviderError(e) || attempt === ASSISTANT_LIMITS.PROVIDER_RETRY_COUNT) throw e;
         await sleep(ASSISTANT_LIMITS.PROVIDER_RETRY_BACKOFF_MS * (attempt + 1));
       }
     }
     throw lastError;
+  }
+
+  /** End a turn the user stopped, leaving a note in the transcript. */
+  private async stopTurn(conversationId: string): Promise<TurnResult> {
+    console.log(`[Assistant] Turn stopped by user: conversation=${conversationId}`);
+    const stoppedMessage = await this.repo.appendMessage({
+      conversationId,
+      role: 'assistant',
+      content: 'Stopped at your request.',
+      status: 'cancelled',
+    });
+    await this.repo.touchConversation(conversationId);
+    return { kind: 'stopped', stoppedMessage };
+  }
+
+  /**
+   * Answer tool calls the turn will never run. Every call the model proposed
+   * needs a result in the history, or the next request to the provider is
+   * rejected for an unanswered tool call.
+   */
+  private async recordStoppedToolCalls(conversationId: string, calls: ToolCall[]): Promise<void> {
+    for (const call of calls) {
+      await this.repo.appendMessage({
+        conversationId,
+        role: 'tool',
+        toolCallId: call.id,
+        toolName: call.name,
+        toolArgsJson: call.arguments,
+        content: wrapToolResult(call.name, JSON.stringify({
+          cancelled: true,
+          message: 'The user stopped the turn before this ran.',
+        })),
+        status: 'cancelled',
+      });
+    }
   }
 
   private async recordCircuitStop(conversationId: string, message: string): Promise<AssistantMessageRecord> {
@@ -1023,6 +1079,24 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
     promise.then(
       (v) => { clearTimeout(timer); resolve(v); },
       (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
+/** Settle with `promise`, or reject as soon as `signal` aborts — whichever comes first. */
+function raceAbort<T>(promise: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  if (!signal) return promise;
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      const err = new Error('Turn stopped by user');
+      err.name = 'AbortError';
+      reject(err);
+    };
+    if (signal.aborted) onAbort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+    promise.then(
+      (v) => { signal.removeEventListener('abort', onAbort); resolve(v); },
+      (e) => { signal.removeEventListener('abort', onAbort); reject(e); },
     );
   });
 }

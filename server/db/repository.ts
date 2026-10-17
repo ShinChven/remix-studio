@@ -5,6 +5,11 @@ export interface IRepository {
   // === Library CRUD ===
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
+  getLibraryType(userId: string, libraryId: string): Promise<LibraryType | null>;
+  getLibrarySummary(userId: string, libraryId: string, includeItemCount?: boolean): Promise<Omit<Library, 'items'> | null>;
+  getLibraryCoverItems(userId: string, libraryIds: string[]): Promise<Map<string, LibraryItem>>;
+  getLibraryItemRefs(userId: string, libraryIds: string[]): Promise<import('./library-repository').LibraryItemRefs[]>;
+  getLibraryItemContents(userId: string, itemIds: string[]): Promise<Map<string, { content: string; title?: string }>>;
   createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void>;
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }): Promise<void>;
   deleteLibrary(userId: string, libraryId: string): Promise<void>;
@@ -24,7 +29,7 @@ export interface IRepository {
   searchLibraryItems(userId: string, query?: string, options?: { libraryId?: string; tags?: string[]; page?: number; limit?: number }): Promise<{ items: (LibraryItem & { libraryId: string; libraryName: string; libraryDescription?: string })[]; total: number; page: number; pages: number }>;
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean): Promise<{ items: Project[], total: number, page: number, pages: number }>;
+  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean, summary?: boolean): Promise<{ items: Project[], total: number, page: number, pages: number }>;
   getProject(userId: string, projectId: string): Promise<Project | null>;
   getProjectWorkflow(userId: string, projectId: string): Promise<import('../../src/types').WorkflowItem[]>;
   getProjectJobs(userId: string, projectId: string, options?: { excludeStatus?: string[]; includeWorkflowSnapshot?: boolean }): Promise<Job[]>;
@@ -39,6 +44,7 @@ export interface IRepository {
   createProjectJobs(userId: string, projectId: string, jobs: Job[]): Promise<number>;
   startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number>;
   getJob(userId: string, projectId: string, jobId: string): Promise<Job | null>;
+  updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>): Promise<void>;
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
@@ -76,6 +82,13 @@ export interface IRepository {
   getAllProjectAlbumItems(userId: string, projectId: string): Promise<AlbumItem[]>;
   getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void>;
+  updateAlbumItemFiles(
+    userId: string,
+    projectId: string,
+    itemId: string,
+    files: Partial<Pick<AlbumItem, 'imageUrl' | 'thumbnailUrl' | 'optimizedUrl'>>,
+    options?: { ifImageUrl?: string },
+  ): Promise<boolean>;
   deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null>;
   moveAlbumItemsToProject(
     userId: string,
@@ -83,6 +96,12 @@ export interface IRepository {
     destinationProjectId: string,
     options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
   ): Promise<{ movedItems: number; movedJobs: number }>;
+  copyAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
+  ): Promise<{ copiedItems: number; copiedJobs: number }>;
   getAlbumTagCounts(userId: string, projectId: string): Promise<{ tag: string; count: number }[]>;
   setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]): Promise<AlbumItem | null>;
   updateAlbumItemsTags(

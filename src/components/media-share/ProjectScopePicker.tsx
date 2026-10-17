@@ -25,7 +25,7 @@ export function ProjectScopePicker({ value, onChange }: {
   useEffect(() => {
     if (!selected || projects) return;
     let cancelled = false;
-    fetchProjects(1, 500, undefined, 'all', true)
+    fetchProjects(1, 500, undefined, 'all', true, true)
       .then((result) => {
         if (!cancelled) setProjects(result.items.map((p) => ({ id: p.id, name: p.name, status: (p as { status?: string }).status })));
       })

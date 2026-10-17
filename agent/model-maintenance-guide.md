@@ -147,7 +147,9 @@ This repo's current pattern is model metadata first: `promptLimit` is the source
 ### Adding a new model to an existing provider
 
 1. Add an entry to `PROVIDER_MODELS_MAP[ProviderType]` in `src/types.ts`
-2. That's it — the UI and generators pick it up automatically via `modelId`
+2. Add its explanation, keyed by the entry's `id`, to `modelDescriptions` in
+   `src/locales/<locale>/models.json` for all six locales (see below)
+3. The UI and generators pick the model up automatically via `modelId`
 
 ### Adding a new model category to a provider (e.g. adding audio to a text/image provider)
 
@@ -172,6 +174,27 @@ This repo's current pattern is model metadata first: `promptLimit` is the source
 6. Add color config in `src/pages/Providers.tsx` (`TYPE_COLORS`) and `src/pages/ProviderProfile.tsx`
 7. Add to `VALID_TYPES` in `server/routes/providers.ts`
 
+### Model explanations
+
+Every bundled model has a one- or two-sentence explanation, shown under the
+**AI model** button in the project settings and on its card in
+`ModelSelectorModal.tsx` (whose search matches it too). They live in
+`src/locales/<locale>/models.json` under `modelDescriptions`, keyed by the model
+entry's `id`, and `npm run i18n:check` fails when a locale is missing one that
+`en` has. Model ids contain dots (`openai-gpt-5.4-text`), which i18next reads as
+key nesting, so `useModelDescriptions` in
+`src/components/ProjectViewer/modelDescriptions.ts` fetches the block whole with
+`returnObjects` and indexes it — never look one up as
+`t('modelDescriptions.<id>')`. Custom aliases (`custom-<modelId>`) have no entry
+and show nothing.
+
+Write what a user choosing between neighbouring entries needs: what the model is
+for, what sets it apart from its siblings (tier, channel, Omni vs standard), and
+limits that would otherwise surprise (prompt cap, required source image, a
+temperature that is not sent). Keep claims to what the entry, its generator or
+the provider's docs establish. When a model is renamed, retired or repointed,
+update its explanation in all six files with it.
+
 ---
 
 ## Provider API Details for Model Listing
@@ -192,13 +215,13 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 
 ---
 
-## Current Model Inventory (September 2026)
+## Current Model Inventory (October 2026)
 
 ### Google AI / Vertex AI
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
 | nano banana Pro | `gemini-3-pro-image` | image | 32,768 |
-| nano banana 2 | `gemini-3.1-flash-image` | image | 32,768 |
+| nano banana 2.1 | `gemini-nano-banana-2.1` | image | 32,768 |
 | nano banana 2 Lite | `gemini-3.1-flash-lite-image` | image | 32,768 |
 | Gemini 3.8 Flash | `gemini-3.8-flash` | text | 65,536 |
 | Gemini 3.7 Flash | `gemini-3.7-flash` | text | 65,536 |
@@ -235,6 +258,22 @@ ID in this catalog is a thing to re-check, not a stable pin. The Veo and Lyria
 rows are still preview-only on the Gemini API this app calls, so they keep the
 suffix; the `-001` GA IDs published for Veo 3.1 belong to Vertex's own endpoint,
 not this one.
+
+Nano Banana 2.1 (`gemini-nano-banana-2.1`, GA on October 6, 2026, on both the
+Gemini API and Vertex) replaced `gemini-3.1-flash-image`, which Google deprecated
+the same day and stops serving on October 29, 2026. The request shape is the same
+`generateContent` call with `imageConfig.aspectRatio` and `imageSize`, so the
+move was a `modelId` swap on the `google-nano-banana-2` and `vertex-nano-banana-2`
+entries plus both image generators' fallbacks. The entries keep their `id`s so
+projects pinned to nano banana 2 carry over instead of falling back. The new ID
+drops the `gemini-<version>-<tier>-image` naming, and `categorizeGoogleModel` in
+`provider-model-lister.ts` recognised image models only by `flash-image` and
+`pro-image`, so it now matches `nano-banana` as well — check that predicate
+again when Google ships the next image model. The aspect ratios, quality tiers,
+prompt limit and max output were carried over from nano banana 2 rather than
+re-verified: Vertex documents the same 15 ratios, but one Gemini API listing
+omits `9:21`, and the 131,072-token prompt limit has not been checked against
+the 2.1 docs.
 
 ### OpenAI
 | Name | Model ID | Category | Max Output |
@@ -350,7 +389,8 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | Qwen Image 3 Pro | `alibaba/qwen-image-3.0-pro` | image |
 | Qwen Image 3 | `alibaba/qwen-image-3.0` | image |
 | Grok Imagine Quality | `rhart-imagine-image-quality` | image |
-| Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
+| Dola Seedream 5.0 Pro | `dola-Seedream-5.0-pro` | image |
+| Dola Seedream 5.0 Pro Layer Decomposition | `dola-Seedream-5.0-pro/layer-decomposition` | image |
 | Seedream V5 Pro | `seedream-v5-pro` | image |
 | Wan 2.7 Pro | `alibaba/wan-2.7` | image |
 | Seedance 2.0 Global | `bytedance/seedance-2.0-global` | video |
@@ -443,6 +483,38 @@ discrete `width*height` enum that `QWEN_SIZE_MAP` resolves from the ratio and
 limit is Alibaba's published 4,500 tokens; RunningHub documents none of its
 own. `negativePrompt`, `seed`, `promptExtend`, `promptExtendMode` and
 `enableThinking` are optional and left at RunningHub's defaults.
+
+`Dola-Seedream-5.0-pro` and `seedream-v5-pro` are separate RunningHub listings,
+and the entries are named the way RunningHub names them — **Dola Seedream 5.0
+Pro** and **Seedream V5 Pro** — so the picker tells them apart. Both take the
+same body through `isSeedream5Pro`; V5 Pro caps prompts at 2,000 characters to
+Dola's 5,000.
+
+`dola-Seedream-5.0-pro/layer-decomposition` splits one source image into a base
+image plus up to 16 transparent PNG layers. Its `modelId` carries the endpoint,
+so the generator submits to `.../openapi/v2/<modelId>` without appending a
+suffix, and since it also contains `dola-seedream-5.0-pro`,
+`isLayerDecomposition` is tested first. The body is a single `imageUrl`, a
+`resolution` tier (`auto`/`1k`/`1.5k`/`2k`), `outputFormat` for the base only
+(`jpeg`/`png`), and the prompt only when non-empty (2,000 characters). A job
+without an image fails before upload.
+
+It is the one image model whose task returns several images, so the multi-output
+path exists for it. `ImageGenerator.checkStatus` takes an optional
+`CheckStatusContext` (the job's `modelId`/`apiUrl`, resolved by the detached
+poller with `getProviderRecordModels`), and `CheckStatusResult` may carry
+`additionalImages` next to `imageBytes`. The generator takes the result that is
+not PNG as the base — the layers are always PNG — or the first when all are, and
+returns the rest in order. `ImageProcessor.processCompletedImage` saves the base
+in the job's format and every additional image as PNG (`<name>.layer-<n>.png`
+plus thumbnail and optimized copies), creates one album item each with the id
+`<job id>-layer-<n>` so a retry overwrites rather than duplicates, offsets their
+`createdAt` by a millisecond each so the set stays together in either sort
+order, and checks the quota against the whole set. The job itself records only
+the base. Every other model still reads `results[0]` alone; the queue manager's
+stale-task pre-check passes no context, which only matters for the status it
+reads. Which result is the base has not been confirmed against a live response —
+check one when touching this.
 
 RunningHub model IDs may carry an endpoint suffix. When present it pins the
 request to that endpoint; otherwise the video generator picks `image-to-video`

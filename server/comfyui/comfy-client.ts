@@ -26,10 +26,36 @@ export class ComfyApiError extends Error {
 
 const REQUEST_TIMEOUT_MS = 30_000;
 const TRANSFER_TIMEOUT_MS = 5 * 60_000;
+// A download over a slow link — a rented GPU behind a proxy — can take many
+// minutes for a large PNG, so it is given up when it stalls rather than after
+// a fixed time, within a generous overall limit.
+const DOWNLOAD_STALL_TIMEOUT_MS = 60_000;
+const DOWNLOAD_TIMEOUT_MS = 30 * 60_000;
 const MAX_ERROR_LENGTH = 1500;
+
+/** Where uploads go in ComfyUI's input folder. */
+export const COMFY_UPLOAD_SUBFOLDER = 'remix-studio';
 
 function truncate(text: string): string {
   return text.length > MAX_ERROR_LENGTH ? `${text.slice(0, MAX_ERROR_LENGTH)}…` : text;
+}
+
+function megabytes(bytes: number): string {
+  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+}
+
+/**
+ * What an error response adds to its message. A proxy in front of the
+ * instance answers with an HTML page — Cloudflare's 524 when the instance took
+ * longer than 100 s — which only clutters a job's error, so it is replaced by
+ * what the status means.
+ */
+function httpErrorDetail(status: number, text: string): string {
+  if (status === 524) {
+    return ': the proxy in front of ComfyUI gave up after 100 s without an answer — the link to the instance is too slow for this transfer, or the instance is busy';
+  }
+  const body = text.trim();
+  return !body || /^<(!doctype|html)/i.test(body) ? '' : `: ${body}`;
 }
 
 /**
@@ -133,7 +159,9 @@ export class ComfyClient {
     if (this.bearerToken) headers.set('Authorization', `Bearer ${this.bearerToken}`);
     const cookie = this.loginPassword ? sessionCookies.get(this.sessionKey) : undefined;
     if (cookie) headers.set('Cookie', cookie);
-    return fetch(this.url(path), { ...init, headers, signal: AbortSignal.timeout(timeoutMs) });
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+    return fetch(this.url(path), { ...init, headers, signal });
   }
 
   private async request(path: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
@@ -194,7 +222,7 @@ export class ComfyClient {
     const res = await this.request(path, init);
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new ComfyApiError(truncate(`ComfyUI ${path} returned HTTP ${res.status}${text ? `: ${text}` : ''}`), res.status);
+      throw new ComfyApiError(truncate(`ComfyUI ${path} returned HTTP ${res.status}${httpErrorDetail(res.status, text)}`), res.status);
     }
     return res.json();
   }
@@ -213,17 +241,32 @@ export class ComfyClient {
     const form = new FormData();
     form.append('image', new Blob([new Uint8Array(bytes)], { type: mimeType }), filename);
     form.append('type', 'input');
-    form.append('subfolder', 'remix-studio');
+    form.append('subfolder', COMFY_UPLOAD_SUBFOLDER);
     form.append('overwrite', 'true');
 
     const res = await this.request('/upload/image', { method: 'POST', body: form }, TRANSFER_TIMEOUT_MS);
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new ComfyApiError(truncate(`ComfyUI upload failed with HTTP ${res.status}${text ? `: ${text}` : ''}`), res.status);
+      throw new ComfyApiError(truncate(`ComfyUI upload of ${megabytes(bytes.length)} failed with HTTP ${res.status}${httpErrorDetail(res.status, text)}`), res.status);
     }
     const body: any = await res.json();
     if (!body?.name) throw new Error('ComfyUI upload response did not include a file name');
     return body.subfolder ? `${body.subfolder}/${body.name}` : body.name;
+  }
+
+  /**
+   * Whether ComfyUI's input folder already holds a file, given the name a Load
+   * node takes (`subfolder/name`). Asks with HEAD, so nothing is downloaded.
+   */
+  async hasInputFile(name: string): Promise<boolean> {
+    const slash = name.lastIndexOf('/');
+    const params = new URLSearchParams({
+      filename: name.slice(slash + 1),
+      subfolder: slash >= 0 ? name.slice(0, slash) : '',
+      type: 'input',
+    });
+    const res = await this.request(`/view?${params.toString()}`, { method: 'HEAD' });
+    return res.ok;
   }
 
   /** Queue a prompt and return its prompt id. */
@@ -241,7 +284,7 @@ export class ComfyClient {
       body = undefined;
     }
     if (!res.ok) {
-      throw new ComfyApiError(formatPromptError(body, `ComfyUI rejected the prompt (HTTP ${res.status})${text && !body ? `: ${text}` : ''}`), res.status);
+      throw new ComfyApiError(formatPromptError(body, `ComfyUI rejected the prompt (HTTP ${res.status})${body ? '' : httpErrorDetail(res.status, text)}`), res.status);
     }
     if (body?.node_errors && Object.keys(body.node_errors).length > 0) {
       throw new ComfyApiError(formatPromptError(body, 'ComfyUI rejected the prompt'), res.status);
@@ -272,15 +315,51 @@ export class ComfyClient {
     });
   }
 
+  /**
+   * Download an output file. It is abandoned when no data has arrived for a
+   * minute, however long it has been running; see DOWNLOAD_STALL_TIMEOUT_MS.
+   */
   async view(file: ComfyOutputFile): Promise<{ bytes: Buffer; contentType: string }> {
     const params = new URLSearchParams({ filename: file.filename, subfolder: file.subfolder, type: file.type });
-    const res = await this.request(`/view?${params.toString()}`, {}, TRANSFER_TIMEOUT_MS);
-    if (!res.ok) {
-      throw new ComfyApiError(`Failed to download ${file.filename} from ComfyUI (HTTP ${res.status})`, res.status);
-    }
-    return {
-      bytes: Buffer.from(await res.arrayBuffer()),
-      contentType: res.headers.get('content-type') || 'application/octet-stream',
+    const stalled = new AbortController();
+    let timer: NodeJS.Timeout | undefined;
+    const waitForData = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => stalled.abort(), DOWNLOAD_STALL_TIMEOUT_MS);
     };
+    let received = 0;
+    waitForData();
+    try {
+      const res = await this.request(`/view?${params.toString()}`, { signal: stalled.signal }, DOWNLOAD_TIMEOUT_MS);
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new ComfyApiError(`Failed to download ${file.filename} from ComfyUI (HTTP ${res.status})${httpErrorDetail(res.status, text)}`, res.status);
+      }
+      const chunks: Uint8Array[] = [];
+      if (res.body) {
+        const reader = res.body.getReader();
+        for (;;) {
+          waitForData();
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+        }
+      }
+      return {
+        bytes: Buffer.concat(chunks),
+        contentType: res.headers.get('content-type') || 'application/octet-stream',
+      };
+    } catch (e: any) {
+      if (stalled.signal.aborted) {
+        throw new Error(`Downloading ${file.filename} from ComfyUI stalled: nothing arrived for ${DOWNLOAD_STALL_TIMEOUT_MS / 1000} s, after ${megabytes(received)}`);
+      }
+      if (e?.name === 'TimeoutError') {
+        throw new Error(`Downloading ${file.filename} from ComfyUI took longer than ${DOWNLOAD_TIMEOUT_MS / 60_000} minutes (${megabytes(received)} received)`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }

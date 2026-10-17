@@ -22,6 +22,7 @@ import { createVideoRouter } from './server/routes/videos';
 import { createAudioRouter } from './server/routes/audios';
 import { createProviderRouter } from './server/routes/providers';
 import { createComfyUIRouter } from './server/routes/comfyui';
+import { createCivitaiRouter } from './server/routes/civitai';
 import { createGenerateRouter } from './server/routes/generate';
 import { createTrashRouter } from './server/routes/trash';
 import { createCampaignsRouter } from './server/routes/campaigns';
@@ -57,6 +58,8 @@ import { UserLiveHub } from './server/live/user-live-hub';
 import { liveOriginMiddleware } from './server/live/live-origin';
 import { PushService } from './server/services/push/push-service';
 import { createPushRouter } from './server/routes/push';
+import { createAutoTagRouter } from './server/routes/auto-tag';
+import { AutoTagQueue } from './server/services/auto-tag/queue';
 import { MediaCatalog } from './server/media-share/catalog';
 import { MediaDeviceAuth } from './server/media-share/device-auth';
 import { createMediaRouter } from './server/media-share/media-router';
@@ -276,12 +279,13 @@ async function startServer() {
   // Mount routers
   app.route('/', createAuthRouter(userRepository));
   app.route('/', createLibraryRouter(repository, storage, userRepository, exportStorage, exportManager, liveEvents, projectEvents));
-  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, projectEvents, liveEvents));
+  app.route('/', createProjectRouter(repository, userRepository, storage, exportStorage, queueManager, exportManager, deliveryManager, projectImportManager, prisma, providerRepository, projectEvents, liveEvents));
   app.route('/', createImageRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createVideoRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createAudioRouter(storage, exportStorage, repository, userRepository));
   app.route('/', createProviderRouter(providerRepository));
   app.route('/', createComfyUIRouter());
+  app.route('/', createCivitaiRouter(providerRepository));
   app.route('/', createGenerateRouter(providerRepository));
   app.route('/', createTrashRouter(repository, storage, projectEvents));
   app.route('/', createStorageRouter(repository, userRepository, storage, exportStorage));
@@ -292,6 +296,8 @@ async function startServer() {
   app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
   app.route('/', createPushRouter(pushService));
+  const autoTagQueue = new AutoTagQueue({ prisma, repository, storage, projectEvents, liveEvents });
+  app.route('/', createAutoTagRouter(prisma, repository, autoTagQueue));
 
   // === Media sharing: TV mode, WebDAV and DLNA ===
   const mediaCatalog = new MediaCatalog(prisma);

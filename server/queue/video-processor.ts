@@ -103,6 +103,7 @@ export class VideoProcessor {
         id: job.id,
         jobId: job.id,
         prompt: job.prompt,
+        tags: job.tags,
         imageUrl: videoKey,
         thumbnailUrl: thumbKey,
         optimizedUrl: optKey,
@@ -117,6 +118,7 @@ export class VideoProcessor {
         optimizedSize: optBuffer.length,
         thumbnailSize: thumbBuffer.length,
         createdAt: Date.now(),
+        ...(job.civitaiParams ? { civitaiParams: job.civitaiParams } : {}),
       };
       await this.projectRepo.addAlbumItem(userId, projectId, albumItem);
 

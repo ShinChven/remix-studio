@@ -131,6 +131,23 @@
         "needsInstall": "Sur iPhone et iPad, ajoutez Remix Studio à l'écran d'accueil (Partager → Sur l'écran d'accueil) et ouvrez-le depuis celui-ci pour activer les notifications.",
         "testSent": "Notification de test envoyée.",
         "testFailed": "Aucun appareil n'a reçu la notification de test."
+      },
+      "autoTag": {
+        "title": "Étiquetage automatique",
+        "description": "Choisissez le modèle de vision qui analyse vos images et rédige leurs étiquettes dans les albums de projet et les bibliothèques.",
+        "provider": "Fournisseur",
+        "off": "Désactivé",
+        "model": "Modèle",
+        "selectModel": "Sélectionnez un modèle",
+        "concurrencyLimit": "Limite de simultanéité",
+        "concurrencyLimitDescription": "Nombre maximal de requêtes d'étiquetage envoyées simultanément au fournisseur ({{min}}–{{max}}). Réduisez-le si le fournisseur commence à refuser des requêtes pour dépassement de sa limite de débit.",
+        "noVisionProviders": "Aucun de vos fournisseurs ne dispose d'un modèle capable de lire les images. Ajoutez-en un, comme Google AI, OpenAI ou Claude, pour activer l'étiquetage automatique.",
+        "manageProviders": "Gérer les fournisseurs",
+        "save": "Enregistrer",
+        "saved": "Paramètres d'étiquetage automatique enregistrés.",
+        "saveFailed": "Impossible d'enregistrer les paramètres d'étiquetage automatique.",
+        "loadFailed": "Impossible de charger les paramètres d'étiquetage automatique.",
+        "retry": "Réessayer"
       }
     },
     "confirm": {

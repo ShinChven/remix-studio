@@ -1,7 +1,7 @@
 import { ImageGenerator, GenerateRequest, GenerateResult } from './image-generator';
 
 const DEFAULT_ENDPOINT = 'aiplatform.googleapis.com';
-const DEFAULT_MODEL = 'gemini-3.1-flash-image';
+const DEFAULT_MODEL = 'gemini-nano-banana-2.1';
 
 export class VertexAIGenerator extends ImageGenerator {
   private apiKey: string;

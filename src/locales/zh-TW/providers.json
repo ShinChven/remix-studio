@@ -63,7 +63,8 @@
       "saveFailed": "儲存失敗。"
     },
     "supportedModels": "支援的模型",
-    "modelsSubtitle": "這些模型由所選提供商原生支援。"
+    "modelsSubtitle": "這些模型由所選提供商原生支援。",
+    "civitaiModelsNote": "Civitai 專案直接從 Civitai 的模型庫選擇底模與 LoRA，因此這裡沒有固定的模型清單。請在 Civitai 的「帳戶設定 → API Keys」建立 API 金鑰並貼到左側；生成費用以該帳戶的 Buzz 支付。"
   },
   "providerProfile": {
     "errorLoad": "加載供應商失敗。",

@@ -23,6 +23,11 @@ export class PrismaRepository implements IRepository {
   // === Library CRUD ===
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems, type, nameOnly); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
+  getLibraryType(userId: string, libraryId: string) { return this.libraries.getLibraryType(userId, libraryId); }
+  getLibrarySummary(userId: string, libraryId: string, includeItemCount?: boolean) { return this.libraries.getLibrarySummary(userId, libraryId, includeItemCount); }
+  getLibraryCoverItems(userId: string, libraryIds: string[]) { return this.libraries.getLibraryCoverItems(userId, libraryIds); }
+  getLibraryItemRefs(userId: string, libraryIds: string[]) { return this.libraries.getLibraryItemRefs(userId, libraryIds); }
+  getLibraryItemContents(userId: string, itemIds: string[]) { return this.libraries.getLibraryItemContents(userId, itemIds); }
   createLibrary(userId: string, library: Omit<Library, 'items'>) { return this.libraries.createLibrary(userId, library); }
   updateLibrary(userId: string, libraryId: string, updates: { name?: string; description?: string | null; type?: string }) { return this.libraries.updateLibrary(userId, libraryId, updates); }
   deleteLibrary(userId: string, libraryId: string) { return this.libraries.deleteLibrary(userId, libraryId); }
@@ -42,8 +47,8 @@ export class PrismaRepository implements IRepository {
   deleteLibraryItem(userId: string, libraryId: string, itemId: string) { return this.libraries.deleteLibraryItem(userId, libraryId, itemId); }
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean) {
-    return this.projects.getUserProjects(userId, page, limit, q, status, nameOnly);
+  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean, summary?: boolean) {
+    return this.projects.getUserProjects(userId, page, limit, q, status, nameOnly, summary);
   }
   getProject(userId: string, projectId: string) { return this.projects.getProject(userId, projectId); }
   getProjectWorkflow(userId: string, projectId: string) { return this.projects.getProjectWorkflow(userId, projectId); }
@@ -69,6 +74,7 @@ export class PrismaRepository implements IRepository {
     return this.projects.startProjectJobs(userId, projectId, jobIds);
   }
   getJob(userId: string, projectId: string, jobId: string) { return this.projects.getJob(userId, projectId, jobId); }
+  updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>) { return this.projects.updateJob(userId, projectId, jobId, updates); }
   getProjectCompletedJobs(
     userId: string,
     projectId: string,
@@ -104,6 +110,15 @@ export class PrismaRepository implements IRepository {
   getAllProjectAlbumItems(userId: string, projectId: string) { return this.projects.getAllProjectAlbumItems(userId, projectId); }
   getAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.getAlbumItem(userId, projectId, itemId); }
   addAlbumItem(userId: string, projectId: string, item: AlbumItem) { return this.projects.addAlbumItem(userId, projectId, item); }
+  updateAlbumItemFiles(
+    userId: string,
+    projectId: string,
+    itemId: string,
+    files: Partial<Pick<AlbumItem, 'imageUrl' | 'thumbnailUrl' | 'optimizedUrl'>>,
+    options?: { ifImageUrl?: string },
+  ) {
+    return this.projects.updateAlbumItemFiles(userId, projectId, itemId, files, options);
+  }
   deleteAlbumItem(userId: string, projectId: string, itemId: string) { return this.projects.deleteAlbumItem(userId, projectId, itemId); }
   moveAlbumItemsToProject(
     userId: string,
@@ -112,6 +127,14 @@ export class PrismaRepository implements IRepository {
     options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
   ) {
     return this.projects.moveAlbumItemsToProject(userId, sourceProjectId, destinationProjectId, options);
+  }
+  copyAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
+  ) {
+    return this.projects.copyAlbumItemsToProject(userId, sourceProjectId, destinationProjectId, options);
   }
   getAlbumTagCounts(userId: string, projectId: string) { return this.projects.getAlbumTagCounts(userId, projectId); }
   setAlbumItemTags(userId: string, projectId: string, itemId: string, tags: string[]) { return this.projects.setAlbumItemTags(userId, projectId, itemId, tags); }

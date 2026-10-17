@@ -46,6 +46,7 @@
     "exportLibrary": "라이브러리 내보내기",
     "deleteLibrary": "라이브러리 삭제",
     "selectAll": "전체 선택",
+    "selectItem": "항목 선택",
     "selectedCount": "{{count}}개 선택됨",
     "filterByTag": "태그로 필터링",
     "tagsSelected": "{{count}}개 태그 선택됨",
@@ -115,7 +116,10 @@
       "nameDesc": "이름 Z-A"
     },
     "createdAt": "생성",
-    "updatedAt": "수정"
+    "updatedAt": "수정",
+    "autoTag": "자동 태그",
+    "autoTagLibrary": "라이브러리 자동 태그",
+    "autoTagResults": "일치하는 항목 자동 태그"
   },
   "libraryImportExport": {
     "badge": "텍스트 라이브러리 작업 공간",

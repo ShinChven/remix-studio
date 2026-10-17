@@ -12,6 +12,7 @@ import {
   serializeAudioProjectConfig,
 } from '../../types';
 import { NumberInput } from '../NumberInput';
+import { useModelDescriptions } from './modelDescriptions';
 
 const getRatioDimensions = (ratioStr: string) => {
   let w = 1, h = 1;
@@ -75,6 +76,7 @@ export function SettingsPanel({
   const selectedProvider = providers.find(p => p.id === selectedProviderId);
   const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
   const hasSelectedModel = Boolean(selectedProviderId && selectedModelId && selectedModel);
+  const modelDescription = useModelDescriptions()[selectedModelId];
   const isTextProject = localProject.type === 'text';
   const isVideoProject = localProject.type === 'video';
   const isAudioProject = localProject.type === 'audio';
@@ -241,6 +243,11 @@ export function SettingsPanel({
               </div>
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/0 group-hover/model-btn:from-blue-500/5 group-hover/model-btn:to-transparent transition-all" />
             </button>
+            {hasSelectedModel && modelDescription && (
+              <p className="px-1 pt-0.5 text-xs leading-5 text-neutral-600 dark:text-neutral-400">
+                {modelDescription}
+              </p>
+            )}
           </div>
 
           {!hasSelectedModel ? (

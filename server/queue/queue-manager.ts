@@ -1,3 +1,5 @@
+import { randomInt } from 'node:crypto';
+import sharp from 'sharp';
 import { PrismaClient } from '@prisma/client';
 import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
@@ -7,6 +9,7 @@ import { buildTextGenerator } from '../generators/build-text-generator';
 import { buildAudioGenerator } from '../generators/build-audio-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
 import {
+  CivitaiGenerationConfig,
   Job,
   ProviderType,
   ProjectType,
@@ -14,6 +17,7 @@ import {
   PROVIDER_MODELS_MAP,
   parseAudioProjectConfig,
   resolveCustomModels,
+  getProviderRecordModels,
   resolveSupportedAspectRatio,
   resolveSupportedOption,
   QueueMonitorJob,
@@ -28,6 +32,15 @@ import { VideoProcessor } from './video-processor';
 import { AudioProcessor } from './audio-processor';
 import { DetachedPoller } from './detached-poller';
 import type { ComfyUIRunner } from './comfyui-runner';
+import {
+  CIVITAI_MAX_ROLLED_SEED,
+  civitaiImageToImageSize,
+  civitaiParamsModelLabel,
+  civitaiVideoEngine,
+  closestCivitaiAspectRatio,
+  isCivitaiVideo,
+  resolveCivitaiVideoSettings,
+} from '../../src/lib/civitai';
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
@@ -60,12 +73,7 @@ export interface QueuedJob {
 /**
  * Build the full model list for a provider record: built-in models + resolved custom variants.
  */
-function getAllModels(providerRecord: any): ModelConfig[] {
-  const providerType = providerRecord.type as ProviderType;
-  const baseModels = PROVIDER_MODELS_MAP[providerType] || [];
-  const customAliases = Array.isArray(providerRecord.models) ? providerRecord.models : [];
-  return [...baseModels, ...resolveCustomModels(providerType, customAliases)];
-}
+const getAllModels = getProviderRecordModels;
 
 function inferImageMimeType(value: string): string {
   const dataUrlMatch = value.match(/^data:(image\/[\w+.-]+);base64,/i);
@@ -213,9 +221,14 @@ export class QueueManager {
       const publicProvider = providerId ? providerById.get(providerId) : undefined;
       const providerType = (row.provider?.type || publicProvider?.type) as ProviderType | undefined;
       const modelConfigId = row.modelConfigId ?? undefined;
-      const modelName = modelConfigId && publicProvider
-        ? publicProvider.models.find((model) => model.id === modelConfigId)?.name
+      // A Civitai job's model is the checkpoint or video engine it carries, not a provider model.
+      const civitaiParams = row.civitaiParams as CivitaiGenerationConfig | null;
+      const civitaiModelName = civitaiParams && (isCivitaiVideo(civitaiParams) || civitaiParams.model?.name)
+        ? civitaiParamsModelLabel(civitaiParams)
         : undefined;
+      const modelName = (modelConfigId && publicProvider
+        ? publicProvider.models.find((model) => model.id === modelConfigId)?.name
+        : undefined) ?? civitaiModelName;
 
       return {
         id: row.id,
@@ -1206,6 +1219,8 @@ export class QueueManager {
     // than letting the provider reject the request.
     const background = queued.background || job.background;
 
+    const civitai = job.civitaiParams ? await this.settleCivitaiParams(queued, refImages?.[0]) : undefined;
+
     return {
       prompt: job.prompt,
       modelId: modelConfig?.modelId,
@@ -1217,8 +1232,96 @@ export class QueueManager {
       // a project that never asked for it should not get it by default.
       background: background ? resolveSupportedOption(background, options?.backgrounds) : undefined,
       refImagesBase64: refImages,
-      refImageUrls
+      refImageUrls,
+      civitai,
     };
+  }
+
+  /**
+   * Stop the remote tasks of a project's running jobs before the project is
+   * deleted, for generators that can (Civitai refunds work that has not
+   * started). Best effort: a failure is logged and the deletion goes ahead.
+   */
+  public async cancelRemoteTasks(userId: string, projectId: string) {
+    const rows = await this.prisma.job.findMany({
+      where: { userId, projectId, status: 'processing', taskId: { not: null }, providerId: { not: null } },
+      select: { id: true, taskId: true, providerId: true },
+    });
+    for (const row of rows) {
+      try {
+        const provider = await this.providerRepo.getProvider(userId, row.providerId!);
+        if (!provider) continue;
+        let canCancel = false;
+        try {
+          canCancel = !!buildGenerator(provider.type as ProviderType, 'probe', provider.apiUrl).cancel;
+        } catch {
+          // Not an image provider; nothing to cancel.
+        }
+        if (!canCancel) continue;
+        const apiKey = await this.providerRepo.getDecryptedApiKey(userId, provider.id);
+        if (!apiKey) continue;
+        await buildGenerator(provider.type as ProviderType, apiKey, provider.apiUrl).cancel!(row.taskId!);
+        console.log(`[QueueManager] Cancelled remote task ${row.taskId} of job ${row.id} (project deleted)`);
+      } catch (e: any) {
+        console.warn(`[QueueManager] Could not cancel remote task ${row.taskId} of job ${row.id}: ${e?.message || e}`);
+      }
+    }
+  }
+
+  /**
+   * Fill in what a Civitai job only learns when it runs, and keep it on the
+   * job so the result can be reproduced and a retry renders the same image:
+   * the seed, when the project left it random, and for image-to-image the
+   * size, which takes the source image's shape at the area the job asked for.
+   */
+  private async settleCivitaiParams(queued: QueuedJob, sourceBase64?: string) {
+    const { job } = queued;
+    let params = job.civitaiParams!;
+    const updates: { aspectRatio?: string } = {};
+    if (params.seed === undefined) {
+      params = { ...params, seed: randomInt(0, CIVITAI_MAX_ROLLED_SEED) };
+    }
+    const sourceSize = async () => {
+      const meta = await sharp(Buffer.from(sourceBase64!, 'base64')).metadata().catch(() => undefined);
+      const turned = (meta?.orientation ?? 1) >= 5;
+      return meta?.width && meta?.height
+        ? { width: turned ? meta.height : meta.width, height: turned ? meta.width : meta.height }
+        : undefined;
+    };
+    if (isCivitaiVideo(params)) {
+      // Image-to-video takes the engine's shape closest to the start frame,
+      // as Civitai's generator does; the frame is cut to it on upload.
+      const engine = civitaiVideoEngine(params.video?.engine);
+      const source = sourceBase64 && engine.imageToVideo ? await sourceSize() : undefined;
+      if (source) {
+        const aspectRatio = closestCivitaiAspectRatio(source, engine.aspectRatios);
+        if (aspectRatio !== params.video?.aspectRatio) {
+          params = { ...params, video: resolveCivitaiVideoSettings({ ...params.video, aspectRatio }) };
+          updates.aspectRatio = aspectRatio;
+          job.aspectRatio = aspectRatio;
+        }
+      }
+    } else if (sourceBase64) {
+      const source = await sourceSize();
+      const target = { width: params.width || 1024, height: params.height || 1024 };
+      // Already shaped after the source on an earlier run: leave it, rather
+      // than let rounding move it by a few pixels on every retry.
+      if (source && Math.abs(target.width / target.height - source.width / source.height) > 0.02 * (source.width / source.height)) {
+        const size = civitaiImageToImageSize(source, target);
+        params = { ...params, ...size };
+        updates.aspectRatio = `${size.width}x${size.height}`;
+        job.aspectRatio = updates.aspectRatio;
+      }
+    }
+    if (params !== job.civitaiParams) {
+      job.civitaiParams = params;
+      // updateJob leaves aspectRatio alone, so the album gets the real shape this way.
+      if (updates.aspectRatio) {
+        await this.prisma.job.updateMany({ where: { id: job.id, userId: queued.userId }, data: { aspectRatio: updates.aspectRatio } });
+      }
+      await this.updateJobStatus(queued.userId, queued.projectId, job.id, { civitaiParams: params });
+    }
+    return params;
   }
 
   private async updateJobStatus(userId: string, projectId: string, jobId: string, updates: Partial<Job>) {
@@ -1320,7 +1423,9 @@ export class QueueManager {
       resolution: item.resolution ?? undefined,
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
+      tags: Array.isArray(item.tags) ? item.tags : undefined,
       size: item.size != null ? Number(item.size) : undefined,
+      civitaiParams: item.civitaiParams && typeof item.civitaiParams === 'object' ? item.civitaiParams : undefined,
     };
   }
 }

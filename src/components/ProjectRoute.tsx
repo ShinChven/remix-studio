@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Project, Library } from '../types';
-import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder, fetchLibraries } from '../api';
+import { Project } from '../types';
+import { fetchProject, updateProject as apiUpdateProject, deleteProject as apiDeleteProject, renameProjectFolder } from '../api';
 import { ProjectViewer } from './ProjectViewer';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,7 +11,6 @@ export function ProjectRoute() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [libraries, setLibraries] = useState<Library[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -28,23 +27,10 @@ export function ProjectRoute() {
     }
   };
 
-  const loadLibraries = async () => {
-    try {
-      const res = await fetchLibraries(1, 100, undefined, true);
-      setLibraries(res.items);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   useEffect(() => {
     setLoading(true);
     loadProject();
   }, [id]);
-
-  useEffect(() => {
-    loadLibraries();
-  }, []);
 
   if (loading) {
     return (
@@ -96,6 +82,7 @@ export function ProjectRoute() {
         ...(updatedProject.comfyUrl !== project.comfyUrl ? { comfyUrl: updatedProject.comfyUrl ?? '' } : {}),
         ...(updatedProject.comfyWorkflow !== project.comfyWorkflow ? { comfyWorkflow: updatedProject.comfyWorkflow ?? null as any } : {}),
         ...(updatedProject.comfyPassword !== project.comfyPassword ? { comfyPassword: updatedProject.comfyPassword ?? '' } : {}),
+        civitaiConfig: updatedProject.civitaiConfig,
       });
       setProject(updatedProject);
     } catch (e) {
@@ -117,5 +104,5 @@ export function ProjectRoute() {
     }
   };
 
-  return <ProjectViewer project={project} libraries={libraries} onUpdate={onUpdate} onDelete={onDelete} />;
+  return <ProjectViewer project={project} onUpdate={onUpdate} onDelete={onDelete} />;
 }

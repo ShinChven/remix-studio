@@ -74,6 +74,13 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
           <path d="M3 19V5h3l6 8.4L18 5h3v14h-3v-8.6l-6 8.4-6-8.4V19H3Z" />
         </svg>
       );
+    case 'Civitai':
+      // Hexagon mark — react-icons has no Civitai glyph.
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2 3.3 7v10L12 22l8.7-5V7L12 2Zm0 3.5 5.6 3.2-1.8 1.05A4.4 4.4 0 0 0 12 8a4 4 0 1 0 3.8 5.25l1.8 1.05L12 17.5l-5.6-3.2V9.7L12 6.5V5.5Z" />
+        </svg>
+      );
     default:
       // Fallback key icon
       return (

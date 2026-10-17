@@ -3,7 +3,7 @@ import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
 import { buildGenerator } from '../generators/build-generator';
 import { buildVideoGenerator } from '../generators/build-video-generator';
-import { Job, ProviderType } from '../../src/types';
+import { Job, ProviderType, getProviderRecordModels } from '../../src/types';
 import { ImageProcessor } from './image-processor';
 import { VideoProcessor } from './video-processor';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
@@ -13,8 +13,15 @@ import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/proj
 // stuck, fail the job, and free the slot. Override with JOB_PROCESSING_TIMEOUT_MS.
 const DEFAULT_STUCK_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
 
+// Providers whose tasks finish in seconds are also checked on a short cycle,
+// so a result shows up promptly rather than up to 30 s after it is ready.
+const FAST_POLL_PROVIDER_TYPES = ['Civitai'];
+const FAST_POLL_INTERVAL_MS = 5_000;
+
 export class DetachedPoller {
   private isPollingDetached = false;
+  private isPollingFast = false;
+  private fastIntervalId?: NodeJS.Timeout;
   private activePolls: Set<string> = new Set();
   private intervalId?: NodeJS.Timeout;
   private onJobFinalize?: (providerId: string | null, jobId: string) => void;
@@ -101,12 +108,50 @@ export class DetachedPoller {
         console.error('[DetachedPoller] Poller Error:', e);
       });
     }, 30_000); // 30s
+    this.fastIntervalId = setInterval(() => {
+      this.pollFastLane().catch((e) => {
+        console.error('[DetachedPoller] Fast lane error:', e);
+      });
+    }, FAST_POLL_INTERVAL_MS);
   }
 
   public stop() {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = undefined;
+    }
+    if (this.fastIntervalId) {
+      clearInterval(this.fastIntervalId);
+      this.fastIntervalId = undefined;
+    }
+  }
+
+  /**
+   * Check the in-flight jobs of FAST_POLL_PROVIDER_TYPES. The regular cycle
+   * still covers them too (finalizing, stuck timeouts); a job already being
+   * checked by one cycle is skipped by the other.
+   */
+  private async pollFastLane() {
+    if (this.isPollingFast) return;
+    this.isPollingFast = true;
+    try {
+      const jobs = await this.prisma.job.findMany({
+        where: {
+          status: 'processing',
+          taskId: { not: null },
+          provider: { is: { type: { in: FAST_POLL_PROVIDER_TYPES } } },
+          project: { type: { not: 'comfyui' } },
+        },
+        include: {
+          project: { select: { type: true } },
+        },
+      });
+      for (const item of jobs) {
+        const projectType = ((item as any).project?.type as string) || 'image';
+        await this.checkJobStatus(item.userId, item.projectId, this.prisma_jobToJob(item), projectType);
+      }
+    } finally {
+      this.isPollingFast = false;
     }
   }
 
@@ -152,6 +197,12 @@ export class DetachedPoller {
     if (this.activePolls.has(job.id)) return;
     this.activePolls.add(job.id);
     try {
+      // Two cycles poll some jobs (see pollFastLane), and either may hold a
+      // copy listed before the other finished the job. Act only on a job that
+      // is still in flight with this task.
+      const current = await this.prisma.job.findUnique({ where: { id: job.id }, select: { status: true, taskId: true } });
+      if (!current || current.status !== 'processing' || current.taskId !== job.taskId) return;
+
       // Snapshotting fallback: The `providerId` on the `job` record should be fully resolved by QueueManager.
       if (!job.providerId) {
          console.warn(`[DetachedPoller] Job ${job.id} is missing providerId. Marking as failed.`);
@@ -228,16 +279,34 @@ export class DetachedPoller {
       }
 
       console.log(`[DetachedPoller] Checking status for Job ${job.id} (TaskId: ${job.taskId})`);
-      const res = await generator.checkStatus(job.taskId!);
+      const modelConfig = getProviderRecordModels(providerRecord).find((m) => m.id === job.modelConfigId);
+      const res = await generator.checkStatus(job.taskId!, { modelId: modelConfig?.modelId, apiUrl: modelConfig?.apiUrl });
       console.log(`[DetachedPoller] Job ${job.id} Status: ${res.status}`);
 
-      if (res.status === 'completed' && res.imageBytes) {
+      if (res.status === 'completed' && res.videoBytes) {
+        // A generator that makes both (Civitai) returned a video.
+        console.log(`[DetachedPoller] Job ${job.id} detached poll completed with a video. Dispatched to VideoProcessor.`);
+        await this.videoProcessor.processCompletedVideo({
+          userId,
+          projectId,
+          job,
+          videoBytes: res.videoBytes,
+          mimeType: res.mimeType,
+          aspectRatio: job.aspectRatio,
+          resolution: job.resolution,
+          duration: job.duration,
+          modelConfigId: job.modelConfigId,
+          providerId: job.providerId,
+        });
+        this.finalize(job.providerId, job.id);
+      } else if (res.status === 'completed' && res.imageBytes) {
         console.log(`[DetachedPoller] Job ${job.id} detached poll completed successfully. Dispatched to ImageProcessor.`);
         await this.imageProcessor.processCompletedImage({
           userId,
           projectId,
           job,
           imageBytes: res.imageBytes,
+          additionalImages: res.additionalImages,
           format: job.format,
           quality: job.quality,
           aspectRatio: job.aspectRatio,
@@ -302,7 +371,9 @@ export class DetachedPoller {
       resolution: item.resolution ?? undefined,
       taskId: item.taskId ?? undefined,
       filename: item.filename ?? undefined,
+      tags: Array.isArray(item.tags) ? item.tags : undefined,
       size: item.size != null ? Number(item.size) : undefined,
+      civitaiParams: item.civitaiParams && typeof item.civitaiParams === 'object' ? item.civitaiParams : undefined,
     };
   }
 }

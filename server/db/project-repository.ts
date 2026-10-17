@@ -1,8 +1,12 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyInputTarget, ComfyJobInput } from '../../src/types';
+import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput, CivitaiGenerationConfig } from '../../src/types';
+import { civitaiModelItemValue, sanitizeCivitaiBinding, sanitizeCivitaiConfig } from '../../src/lib/civitai';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
+
+/** Jobs per insert statement: well under Postgres's bound-parameter limit at ~23 columns each. */
+const JOB_INSERT_BATCH_SIZE = 1000;
 
 /**
  * Album items carry no title, so `name-*` orders on the prompt — the same
@@ -27,6 +31,52 @@ function normalizeAspectRatio(value: string | null | undefined): string {
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const divisor = gcd(width, height);
   return `${width / divisor}:${height / divisor}`;
+}
+
+/**
+ * Rewrites the storage keys on album and job rows through an old-key → new-key
+ * map, for rows that follow their files into another project folder.
+ *
+ * The map is keyed by bare storage keys, but a row can hold a full presigned
+ * URL for the same object — `presignIfKey` exists because that happens.
+ * Normalising first means such a row is rewritten like any other instead of
+ * keeping a URL that points back at the source folder.
+ */
+function createStorageKeyRemapper(keyMap: Record<string, string>, bucket?: string) {
+  const lookup = (value: string): string | undefined => {
+    const direct = keyMap[value];
+    if (direct) return direct;
+    if (!bucket) return undefined;
+    const key = stripToKey(value, bucket);
+    return key ? keyMap[key] : undefined;
+  };
+  const remapKey = (value: unknown): string | null => {
+    if (typeof value !== 'string' || !value) return (value as string) ?? null;
+    return lookup(value) ?? value;
+  };
+  const remapKeyList = (values: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
+    if (!Array.isArray(values)) return Prisma.DbNull;
+    return values.map((value) => (typeof value === 'string' ? (lookup(value) ?? value) : value)) as Prisma.InputJsonValue;
+  };
+  const remapSnapshot = (snapshot: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
+    if (!Array.isArray(snapshot)) return Prisma.DbNull;
+    return snapshot.map((entry) => {
+      if (!entry || typeof entry !== 'object') return entry;
+      const item = entry as Record<string, unknown>;
+      return {
+        ...item,
+        value: remapKey(item.value),
+        thumbnailUrl: remapKey(item.thumbnailUrl),
+        optimizedUrl: remapKey(item.optimizedUrl),
+      };
+    }) as Prisma.InputJsonValue;
+  };
+  return { remapKey, remapKeyList, remapSnapshot };
+}
+
+/** A JSON column read back from one row, in the shape a create on another row takes. */
+function copyJsonColumn(value: Prisma.JsonValue | null): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  return value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
 }
 
 /** An album item carries at most this many tags, each at most this long. */
@@ -56,6 +106,8 @@ export function normalizeAlbumTags(values: unknown): string[] {
   return tags;
 }
 
+type AlbumCover = Pick<Prisma.AlbumItemGetPayload<{}>, 'id' | 'thumbnailUrl' | 'optimizedUrl' | 'imageUrl'>;
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -74,7 +126,12 @@ export class ProjectRepository {
     }
   }
 
-  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string, status?: ProjectStatus | 'all', nameOnly: boolean = false): Promise<{ items: Project[], total: number, page: number, pages: number }> {
+  /**
+   * `summary` leaves out each project's cover item and storage total, which a
+   * plain list of names and album counts has no use for and which cost a scan
+   * of every album, trash and export row the listed projects own.
+   */
+  async getUserProjects(userId: string, page: number = 1, limit: number = 50, q?: string, status?: ProjectStatus | 'all', nameOnly: boolean = false, summary: boolean = false): Promise<{ items: Project[], total: number, page: number, pages: number }> {
     const skip = (page - 1) * limit;
 
     const where: any = { userId };
@@ -101,11 +158,6 @@ export class ProjectRepository {
         take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
-          albumItems: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { id: true, thumbnailUrl: true, optimizedUrl: true, imageUrl: true }
-          }
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
@@ -113,35 +165,27 @@ export class ProjectRepository {
 
     const projectIds = projects.map((p) => p.id);
     const projectSizes: Record<string, number> = {};
+    let covers = new Map<string, AlbumCover>();
 
-    if (projectIds.length > 0) {
-      const [albumItems, trashItems, exportTasks] = await Promise.all([
-        this.prisma.albumItem.findMany({
-          where: { userId, projectId: { in: projectIds } },
-          select: { projectId: true, size: true, optimizedSize: true, thumbnailSize: true },
-        }),
-        this.prisma.trashItem.findMany({
-          where: { userId, projectId: { in: projectIds } },
-          select: { projectId: true, size: true, optimizedSize: true, thumbnailSize: true },
-        }),
-        this.prisma.exportTask.findMany({
-          where: { userId, projectId: { in: projectIds } },
-          select: { projectId: true, size: true },
-        }),
+    if (projectIds.length > 0 && !summary) {
+      const where = { userId, projectId: { in: projectIds } };
+      const mediaSum = { size: true, optimizedSize: true, thumbnailSize: true } as const;
+      const [albumSums, trashSums, exportSums, latestItems] = await Promise.all([
+        this.prisma.albumItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
+        this.prisma.trashItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
+        this.prisma.exportTask.groupBy({ by: ['projectId'], where, _sum: { size: true } }),
+        this.getAlbumCovers(projectIds),
       ]);
+      covers = latestItems;
 
-      for (const item of albumItems) {
-        const s = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + s;
-      }
-      for (const item of trashItems) {
-        const s = Number(item.size || 0) + Number(item.optimizedSize || 0) + Number(item.thumbnailSize || 0);
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + s;
-      }
-      for (const item of exportTasks) {
-        if (!item.projectId) continue;
-        projectSizes[item.projectId] = (projectSizes[item.projectId] || 0) + Number(item.size || 0);
-      }
+      const add = (projectId: string | null, ...sizes: (bigint | null)[]) => {
+        if (!projectId) return;
+        const s = sizes.reduce((total, size) => total + Number(size || 0), 0);
+        projectSizes[projectId] = (projectSizes[projectId] || 0) + s;
+      };
+      for (const row of albumSums) add(row.projectId, row._sum.size, row._sum.optimizedSize, row._sum.thumbnailSize);
+      for (const row of trashSums) add(row.projectId, row._sum.size, row._sum.optimizedSize, row._sum.thumbnailSize);
+      for (const row of exportSums) add(row.projectId, row._sum.size);
     }
 
     const mappedProjects = projects.map((p) => ({
@@ -153,7 +197,7 @@ export class ProjectRepository {
       createdAt: p.createdAt.getTime(),
       workflow: [],
       jobs: [],
-      album: (p as any).albumItems || [],
+      album: covers.has(p.id) ? [covers.get(p.id) as any] : [],
       jobCount: p._count.jobs,
       albumCount: p._count.albumItems,
       totalSize: projectSizes[p.id] || 0,
@@ -165,6 +209,10 @@ export class ProjectRepository {
       modelConfigId: p.modelConfigId ?? undefined,
       prefix: p.prefix ?? undefined,
       background: (p as any).background ?? undefined,
+      // Only what lists need: whether a Civitai project makes images or videos.
+      ...(p.type === 'civitai' && (p.civitaiConfig as CivitaiGenerationConfig | null)?.mediaType
+        ? { civitaiConfig: { mediaType: (p.civitaiConfig as CivitaiGenerationConfig).mediaType } }
+        : {}),
     }));
 
     return {
@@ -173,6 +221,26 @@ export class ProjectRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  /**
+   * Each project's newest album item, keyed by project. A nested `take: 1`
+   * include would do this too, but Prisma pages nested relations in memory:
+   * it reads every album item of every listed project to keep one each.
+   */
+  private async getAlbumCovers(projectIds: string[]): Promise<Map<string, AlbumCover>> {
+    const rows = await this.prisma.$queryRaw<Array<AlbumCover & { projectId: string }>>`
+      SELECT p.id AS "projectId", a."id", a."thumbnailUrl", a."optimizedUrl", a."imageUrl"
+      FROM unnest(${projectIds}::text[]) AS p(id)
+      CROSS JOIN LATERAL (
+        SELECT "id", "thumbnailUrl", "optimizedUrl", "imageUrl"
+        FROM "AlbumItem"
+        WHERE "projectId" = p.id
+        ORDER BY "createdAt" DESC, "id" DESC
+        LIMIT 1
+      ) a
+    `;
+    return new Map(rows.map(({ projectId, ...cover }) => [projectId, cover]));
   }
 
   async getProject(userId: string, projectId: string): Promise<Project | null> {
@@ -207,6 +275,7 @@ export class ProjectRepository {
       comfyUrl: (p as any).comfyUrl ?? undefined,
       comfyWorkflow: (p as any).comfyWorkflow ?? undefined,
       comfyPassword: (p as any).comfyPassword ?? undefined,
+      civitaiConfig: (p as any).civitaiConfig ?? undefined,
       jobs: [],
       workflow: [],
       album: [],
@@ -229,6 +298,8 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where,
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      // Every job carries a copy of the workflow; lists rarely need it.
+      omit: { workflowSnapshot: !options.includeWorkflowSnapshot },
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -240,6 +311,7 @@ export class ProjectRepository {
     const jobs = await this.prisma.job.findMany({
       where: { projectId, userId, id: { in: ids } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      omit: { workflowSnapshot: !options.includeWorkflowSnapshot },
     });
     return jobs.map((j) => this.mapJob(j, { includeWorkflowSnapshot: options.includeWorkflowSnapshot }));
   }
@@ -311,33 +383,40 @@ export class ProjectRepository {
     await this.assertOwnedProject(userId, projectId);
     if (jobs.length === 0) return 0;
 
-    const result = await this.prisma.job.createMany({
-      data: jobs.map((job) => ({
-        id: job.id,
-        projectId,
-        userId,
-        prompt: job.prompt,
-        status: job.status ?? 'draft',
-        imageContexts: job.imageContexts ?? [],
-        videoContexts: job.videoContexts ?? [],
-        audioContexts: job.audioContexts ?? [],
-        modelConfigId: job.modelConfigId ?? null,
-        aspectRatio: job.aspectRatio ?? null,
-        quality: job.quality ?? null,
-        format: job.format ?? null,
-        duration: job.duration ?? null,
-        resolution: job.resolution ?? null,
-        sound: job.sound ?? null,
-        background: (job as any).background ?? null,
-        filename: job.filename ?? null,
-        providerId: job.providerId ?? null,
-        workflowSnapshot: job.workflowSnapshot ?? null,
-        comfyInputs: job.comfyInputs ?? null,
-        createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
-      })) as any,
-    });
+    const rows = jobs.map((job) => ({
+      id: job.id,
+      projectId,
+      userId,
+      prompt: job.prompt,
+      status: job.status ?? 'draft',
+      imageContexts: job.imageContexts ?? [],
+      videoContexts: job.videoContexts ?? [],
+      audioContexts: job.audioContexts ?? [],
+      modelConfigId: job.modelConfigId ?? null,
+      aspectRatio: job.aspectRatio ?? null,
+      quality: job.quality ?? null,
+      format: job.format ?? null,
+      duration: job.duration ?? null,
+      resolution: job.resolution ?? null,
+      sound: job.sound ?? null,
+      background: (job as any).background ?? null,
+      filename: job.filename ?? null,
+      tags: job.tags ?? null,
+      providerId: job.providerId ?? null,
+      workflowSnapshot: job.workflowSnapshot ?? null,
+      comfyInputs: job.comfyInputs ?? null,
+      civitaiParams: job.civitaiParams ?? null,
+      createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
+    }));
 
-    return result.count;
+    // One statement per batch keeps each insert under Postgres's limit on bound
+    // parameters; the transaction keeps the whole set all-or-nothing.
+    const batches = [];
+    for (let start = 0; start < rows.length; start += JOB_INSERT_BATCH_SIZE) {
+      batches.push(this.prisma.job.createMany({ data: rows.slice(start, start + JOB_INSERT_BATCH_SIZE) as any }));
+    }
+    const results = await this.prisma.$transaction(batches);
+    return results.reduce((sum, result) => sum + result.count, 0);
   }
 
   async startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number> {
@@ -562,6 +641,7 @@ export class ProjectRepository {
         comfyUrl: project.comfyUrl ?? null,
         comfyWorkflow: project.comfyWorkflow ?? undefined,
         comfyPassword: project.comfyPassword ?? null,
+        civitaiConfig: project.civitaiConfig ?? undefined,
       } as any,
     });
 
@@ -595,6 +675,7 @@ export class ProjectRepository {
     if (updates.comfyUrl !== undefined) data.comfyUrl = updates.comfyUrl ?? null;
     if (updates.comfyWorkflow !== undefined) data.comfyWorkflow = updates.comfyWorkflow ?? Prisma.DbNull;
     if (updates.comfyPassword !== undefined) data.comfyPassword = updates.comfyPassword ?? null;
+    if (updates.civitaiConfig !== undefined) data.civitaiConfig = updates.civitaiConfig ?? Prisma.DbNull;
 
     if (Object.keys(data).length > 0) {
       await this.prisma.project.updateMany({ where: { id: projectId, userId }, data: data as any });
@@ -631,6 +712,7 @@ export class ProjectRepository {
     if (updates.resolution !== undefined) data.resolution = updates.resolution ?? null;
     if (updates.sound !== undefined) data.sound = updates.sound ?? null;
     if (updates.comfyInputs !== undefined) data.comfyInputs = updates.comfyInputs ?? Prisma.DbNull;
+    if (updates.civitaiParams !== undefined) data.civitaiParams = updates.civitaiParams ?? Prisma.DbNull;
     if (updates.size !== undefined) data.size = updates.size != null ? BigInt(updates.size) : null;
     if ((updates as any).optimizedSize !== undefined) data.optimizedSize = (updates as any).optimizedSize != null ? BigInt((updates as any).optimizedSize) : null;
     if ((updates as any).thumbnailSize !== undefined) data.thumbnailSize = (updates as any).thumbnailSize != null ? BigInt((updates as any).thumbnailSize) : null;
@@ -680,6 +762,7 @@ export class ProjectRepository {
       format: item.format ?? null,
       duration: item.duration ?? null,
       resolution: item.resolution ?? null,
+      civitaiParams: (sanitizeCivitaiConfig(item.civitaiParams) as Prisma.InputJsonValue | undefined) ?? Prisma.DbNull,
       size: item.size != null ? BigInt(item.size) : null,
       optimizedSize: (item as any).optimizedSize != null ? BigInt((item as any).optimizedSize) : null,
       thumbnailSize: (item as any).thumbnailSize != null ? BigInt((item as any).thumbnailSize) : null,
@@ -706,6 +789,32 @@ export class ProjectRepository {
     await this.prisma.albumItem.create({
       data: { id: item.id, ...data },
     });
+  }
+
+  /**
+   * Point one album item at new storage keys, leaving every other column as
+   * it stands. With `ifImageUrl`, only while the row still holds that key.
+   * Returns false when no row matched.
+   */
+  async updateAlbumItemFiles(
+    userId: string,
+    projectId: string,
+    itemId: string,
+    files: Partial<Pick<AlbumItem, 'imageUrl' | 'thumbnailUrl' | 'optimizedUrl'>>,
+    options: { ifImageUrl?: string } = {},
+  ): Promise<boolean> {
+    const data: any = {};
+    if (files.imageUrl !== undefined) data.imageUrl = files.imageUrl ?? null;
+    if (files.thumbnailUrl !== undefined) data.thumbnailUrl = files.thumbnailUrl ?? null;
+    if (files.optimizedUrl !== undefined) data.optimizedUrl = files.optimizedUrl ?? null;
+
+    const where: any = { id: itemId, projectId, userId };
+    if (options.ifImageUrl !== undefined) where.imageUrl = options.ifImageUrl;
+    if (Object.keys(data).length === 0) {
+      return (await this.prisma.albumItem.count({ where })) > 0;
+    }
+    const result = await this.prisma.albumItem.updateMany({ where, data });
+    return result.count > 0;
   }
 
   async getAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
@@ -831,40 +940,7 @@ export class ProjectRepository {
     const jobIds = Array.from(new Set((options.jobIds ?? []).map((id) => id.trim()).filter(Boolean)));
     if (itemIds.length === 0) return { movedItems: 0, movedJobs: 0 };
 
-    const keyMap = options.keyMap ?? {};
-    const bucket = options.bucket;
-    // The map is keyed by bare storage keys, but a row can hold a full
-    // presigned URL for the same object — `presignIfKey` exists because that
-    // happens. Normalising first means such a row is rewritten like any other
-    // instead of keeping a URL whose file the caller is about to delete.
-    const lookup = (value: string): string | undefined => {
-      const direct = keyMap[value];
-      if (direct) return direct;
-      if (!bucket) return undefined;
-      const key = stripToKey(value, bucket);
-      return key ? keyMap[key] : undefined;
-    };
-    const remapKey = (value: unknown): string | null => {
-      if (typeof value !== 'string' || !value) return (value as string) ?? null;
-      return lookup(value) ?? value;
-    };
-    const remapKeyList = (values: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
-      if (!Array.isArray(values)) return Prisma.DbNull;
-      return values.map((value) => (typeof value === 'string' ? (lookup(value) ?? value) : value)) as Prisma.InputJsonValue;
-    };
-    const remapSnapshot = (snapshot: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull => {
-      if (!Array.isArray(snapshot)) return Prisma.DbNull;
-      return snapshot.map((entry) => {
-        if (!entry || typeof entry !== 'object') return entry;
-        const item = entry as Record<string, unknown>;
-        return {
-          ...item,
-          value: remapKey(item.value),
-          thumbnailUrl: remapKey(item.thumbnailUrl),
-          optimizedUrl: remapKey(item.optimizedUrl),
-        };
-      }) as Prisma.InputJsonValue;
-    };
+    const { remapKey, remapKeyList, remapSnapshot } = createStorageKeyRemapper(options.keyMap ?? {}, options.bucket);
 
     return this.prisma.$transaction(async (tx) => {
       let movedJobs = 0;
@@ -914,6 +990,87 @@ export class ProjectRepository {
     });
   }
 
+  /**
+   * Copy album items — and the completed jobs that produced them — into
+   * another project of the same user, leaving the source untouched.
+   *
+   * Every copy gets a new id, and an item's `jobId` follows its job to the
+   * copy, so "Reuse workflow" works from the destination on its own. The
+   * caller has already copied the storage objects and hands over the
+   * old-key → new-key map; keys missing from it stay as they were, which is
+   * how a reference to a library file stays shared. An item whose job is not
+   * among the copied ones is copied without one: a job id from another
+   * project would only ever resolve to nothing there.
+   */
+  async copyAlbumItemsToProject(
+    userId: string,
+    sourceProjectId: string,
+    destinationProjectId: string,
+    options: { itemIds: string[]; jobIds?: string[]; keyMap?: Record<string, string>; bucket?: string },
+  ): Promise<{ copiedItems: number; copiedJobs: number }> {
+    await this.assertOwnedProject(userId, sourceProjectId);
+    await this.assertOwnedProject(userId, destinationProjectId);
+
+    const itemIds = Array.from(new Set(options.itemIds.map((id) => id.trim()).filter(Boolean)));
+    const jobIds = Array.from(new Set((options.jobIds ?? []).map((id) => id.trim()).filter(Boolean)));
+    if (itemIds.length === 0) return { copiedItems: 0, copiedJobs: 0 };
+
+    const { remapKey, remapKeyList, remapSnapshot } = createStorageKeyRemapper(options.keyMap ?? {}, options.bucket);
+
+    const [jobs, items] = await Promise.all([
+      jobIds.length > 0
+        ? this.prisma.job.findMany({ where: { id: { in: jobIds }, projectId: sourceProjectId, userId, status: 'completed' } })
+        : Promise.resolve([]),
+      this.prisma.albumItem.findMany({ where: { id: { in: itemIds }, projectId: sourceProjectId, userId } }),
+    ]);
+
+    const jobIdMap = new Map(jobs.map((job) => [job.id, crypto.randomUUID()]));
+
+    const jobRows: Prisma.JobCreateManyInput[] = jobs.map(({ id, updatedAt, ...job }) => ({
+      ...job,
+      id: jobIdMap.get(id)!,
+      projectId: destinationProjectId,
+      // The provider's task belongs to the original run; a late callback for
+      // it should find that job, not this copy.
+      taskId: null,
+      imageUrl: remapKey(job.imageUrl),
+      thumbnailUrl: remapKey(job.thumbnailUrl),
+      optimizedUrl: remapKey(job.optimizedUrl),
+      imageContexts: remapKeyList(job.imageContexts),
+      videoContexts: remapKeyList(job.videoContexts),
+      audioContexts: remapKeyList(job.audioContexts),
+      workflowSnapshot: remapSnapshot(job.workflowSnapshot),
+      comfyInputs: copyJsonColumn(job.comfyInputs),
+      civitaiParams: copyJsonColumn(job.civitaiParams),
+      tags: copyJsonColumn(job.tags),
+    }));
+
+    const itemRows: Prisma.AlbumItemCreateManyInput[] = items.map(({ id, ...item }) => ({
+      ...item,
+      id: crypto.randomUUID(),
+      projectId: destinationProjectId,
+      jobId: item.jobId ? (jobIdMap.get(item.jobId) ?? null) : null,
+      imageUrl: remapKey(item.imageUrl),
+      thumbnailUrl: remapKey(item.thumbnailUrl),
+      optimizedUrl: remapKey(item.optimizedUrl),
+      imageContexts: remapKeyList(item.imageContexts),
+      videoContexts: remapKeyList(item.videoContexts),
+      audioContexts: remapKeyList(item.audioContexts),
+      tags: copyJsonColumn(item.tags),
+      civitaiParams: copyJsonColumn(item.civitaiParams),
+    }));
+
+    // Two bulk inserts in one transaction: copying a whole album is one
+    // request, and a row-at-a-time loop would outrun the interactive
+    // transaction timeout long before it finished.
+    const [copiedJobs, copiedItems] = await this.prisma.$transaction([
+      this.prisma.job.createMany({ data: jobRows }),
+      this.prisma.albumItem.createMany({ data: itemRows }),
+    ]);
+
+    return { copiedItems: copiedItems.count, copiedJobs: copiedJobs.count };
+  }
+
   async deleteAlbumItem(userId: string, projectId: string, itemId: string): Promise<AlbumItem | null> {
     const item = await this.prisma.albumItem.findFirst({ where: { id: itemId, projectId, userId } });
     if (!item) return null;
@@ -952,6 +1109,9 @@ export class ProjectRepository {
         size: item.size ?? null,
         optimizedSize: item.optimizedSize ?? null,
         thumbnailSize: item.thumbnailSize ?? null,
+        duration: item.duration ?? null,
+        resolution: item.resolution ?? null,
+        civitaiParams: (item.civitaiParams as Prisma.InputJsonValue | null) ?? Prisma.DbNull,
         createdAt: item.createdAt,
         deletedAt: new Date(),
       } as any,
@@ -995,6 +1155,9 @@ export class ProjectRepository {
         size: trashItem.size ?? null,
         optimizedSize: trashItem.optimizedSize ?? null,
         thumbnailSize: trashItem.thumbnailSize ?? null,
+        duration: trashItem.duration ?? null,
+        resolution: trashItem.resolution ?? null,
+        civitaiParams: (trashItem.civitaiParams as Prisma.InputJsonValue | null) ?? Prisma.DbNull,
         createdAt: trashItem.createdAt,
       } as any,
     });
@@ -1033,6 +1196,7 @@ export class ProjectRepository {
     const tasks = await this.prisma.exportTask.findMany({
       where: { userId, projectId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      omit: { payload: true },
     });
     return tasks.map((t) => this.mapExportTask(t));
   }
@@ -1046,6 +1210,7 @@ export class ProjectRepository {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limit,
+        omit: { payload: true },
       }),
     ]);
 
@@ -1073,13 +1238,22 @@ export class ProjectRepository {
   }
 
   async getExportTask(userId: string, taskId: string): Promise<any | undefined> {
-    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId } });
+    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId }, omit: { payload: true } });
     if (!t) return undefined;
     return this.mapExportTask(t);
   }
 
+  /**
+   * `items` and `bundleManifest` are written to the `payload` column, which no
+   * read except the worker's claim returns. Leaving them out of an update
+   * keeps the stored payload; settling the task drops it.
+   */
   async saveExportTask(userId: string, taskId: string, data: any): Promise<void> {
-    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, ...rest } = data;
+    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, items, bundleManifest, ...rest } = data;
+    const payload = items !== undefined || bundleManifest !== undefined
+      ? { ...(items !== undefined ? { items } : {}), ...(bundleManifest !== undefined ? { bundleManifest } : {}) }
+      : undefined;
+    const settled = status === 'completed' || status === 'failed';
     await this.prisma.exportTask.upsert({
       where: { id: taskId },
       create: {
@@ -1091,6 +1265,7 @@ export class ProjectRepository {
         error: error ?? null,
         size: size != null ? BigInt(size) : null,
         data: Object.keys(rest).length > 0 ? rest : undefined,
+        payload: settled ? undefined : payload,
         createdAt: createdAt ? new Date(createdAt) : new Date(),
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
@@ -1101,6 +1276,7 @@ export class ProjectRepository {
         error: error ?? null,
         size: size != null ? BigInt(size) : null,
         data: Object.keys(rest).length > 0 ? rest : undefined,
+        payload: settled ? Prisma.DbNull : payload,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
     });
@@ -1151,6 +1327,7 @@ export class ProjectRepository {
       UPDATE "ExportTask"
       SET    status      = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'pending' END,
              error       = CASE WHEN attempts >= 3 THEN 'worker timeout' ELSE error END,
+             payload     = CASE WHEN attempts >= 3 THEN NULL ELSE payload END,
              "claimedAt"  = NULL,
              "workerId"   = NULL
       WHERE  status = 'processing'
@@ -1493,10 +1670,10 @@ export class ProjectRepository {
 
   async getAllUserItems(userId: string): Promise<any[]> {
     const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems, postMedia] = await Promise.all([
-      this.prisma.job.findMany({ where: { userId } }),
+      this.prisma.job.findMany({ where: { userId }, omit: { workflowSnapshot: true } }),
       this.prisma.albumItem.findMany({ where: { userId } }),
       this.prisma.trashItem.findMany({ where: { userId } }),
-      this.prisma.exportTask.findMany({ where: { userId } }),
+      this.prisma.exportTask.findMany({ where: { userId }, omit: { payload: true } }),
       this.prisma.libraryItem.findMany({ where: { library: { userId } } }),
       this.prisma.workflowItem.findMany({ where: { project: { userId } } }),
       this.prisma.postMedia.findMany({
@@ -1545,6 +1722,7 @@ export class ProjectRepository {
       format: t.format as any ?? undefined,
       duration: t.duration ?? undefined,
       resolution: t.resolution ?? undefined,
+      civitaiParams: t.civitaiParams && typeof t.civitaiParams === 'object' ? (t.civitaiParams as CivitaiGenerationConfig) : undefined,
       size: t.size != null ? Number(t.size) : undefined,
       optimizedSize: t.optimizedSize != null ? Number(t.optimizedSize) : undefined,
       thumbnailSize: t.thumbnailSize != null ? Number(t.thumbnailSize) : undefined,
@@ -1639,6 +1817,14 @@ export class ProjectRepository {
         if (job.comfyInputs !== undefined) {
           updateData.comfyInputs = job.comfyInputs;
         }
+        if (job.tags !== undefined) {
+          updateData.tags = job.tags;
+        }
+        // Once a Civitai job has run, its params carry the seed the server
+        // rolled; a client copy taken before that must not drop it.
+        if (job.civitaiParams !== undefined && dbStatus === 'draft') {
+          updateData.civitaiParams = job.civitaiParams;
+        }
 
         // On retry, clear the prior error so the UI doesn't keep showing it.
         if (dbStatus === 'failed' && nextStatus === 'pending') {
@@ -1683,11 +1869,13 @@ export class ProjectRepository {
           background: (job as any).background ?? null,
           taskId: job.taskId ?? null,
           filename: job.filename ?? null,
+          tags: job.tags ?? null,
           size: job.size != null ? BigInt(job.size) : null,
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
           providerId: job.providerId ?? null,
           workflowSnapshot: job.workflowSnapshot ?? null,
           comfyInputs: job.comfyInputs ?? null,
+          civitaiParams: job.civitaiParams ?? null,
         };
         await this.prisma.job.create({ data: createData as any });
       }
@@ -1794,18 +1982,26 @@ export class ProjectRepository {
       if (!normalizedWorkflow.length) return;
 
       await tx.workflowItem.createMany({
-        data: normalizedWorkflow.map((item) => ({
+        data: normalizedWorkflow.map((item) => {
+          const civitai = sanitizeCivitaiBinding(item.civitai, item.type);
+          return {
           id: item.id,
           projectId,
           type: item.type,
-          value: item.value ?? null,
+          // A model item's value is its options' AIRs, kept in step with them.
+          value: item.type === 'model' ? civitaiModelItemValue(civitai?.options) : (item.value ?? null),
           order: item.order,
           thumbnailUrl: item.thumbnailUrl ?? null,
           optimizedUrl: item.optimizedUrl ?? null,
           selectedTags: this.toNullableJsonArray(item.selectedTags),
+          tagMatchMode: item.tagMatchMode === 'and' ? 'and' : null,
           disabled: item.disabled ?? false,
-          comfyTarget: item.comfyTarget ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input } : Prisma.DbNull,
-        })),
+          comfyTarget: item.comfyTarget
+            ? { nodeId: item.comfyTarget.nodeId, input: item.comfyTarget.input, ...(item.comfyTarget.remix ? { remix: true } : {}) }
+            : Prisma.DbNull,
+          civitai: civitai ? (civitai as any) : Prisma.DbNull,
+          };
+        }),
       });
     });
   }
@@ -1845,6 +2041,12 @@ export class ProjectRepository {
     if (Array.isArray(j.comfyInputs)) {
       job.comfyInputs = j.comfyInputs as ComfyJobInput[];
     }
+    if (j.civitaiParams && typeof j.civitaiParams === 'object') {
+      job.civitaiParams = j.civitaiParams as CivitaiGenerationConfig;
+    }
+    if (Array.isArray(j.tags)) {
+      job.tags = j.tags as string[];
+    }
     return job;
   }
 
@@ -1857,8 +2059,10 @@ export class ProjectRepository {
       thumbnailUrl: w.thumbnailUrl ?? undefined,
       optimizedUrl: w.optimizedUrl ?? undefined,
       selectedTags: (w.selectedTags as string[]) ?? undefined,
+      tagMatchMode: w.tagMatchMode === 'and' ? 'and' : undefined,
       disabled: w.disabled ?? false,
-      comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyInputTarget) : undefined,
+      comfyTarget: w.comfyTarget && typeof w.comfyTarget === 'object' ? (w.comfyTarget as ComfyBinding) : undefined,
+      civitai: w.civitai && typeof w.civitai === 'object' ? (w.civitai as WorkflowItem['civitai']) : undefined,
     };
   }
 
@@ -1882,6 +2086,7 @@ export class ProjectRepository {
       format: a.format as AlbumItem['format'] ?? undefined,
       duration: a.duration ?? undefined,
       resolution: a.resolution ?? undefined,
+      civitaiParams: a.civitaiParams && typeof a.civitaiParams === 'object' ? (a.civitaiParams as CivitaiGenerationConfig) : undefined,
       size: a.size != null ? Number(a.size) : undefined,
       optimizedSize: a.optimizedSize != null ? Number(a.optimizedSize) : undefined,
       thumbnailSize: a.thumbnailSize != null ? Number(a.thumbnailSize) : undefined,
@@ -1920,6 +2125,8 @@ export class ProjectRepository {
       createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
       expiresAt: t.expiresAt ? (t.expiresAt instanceof Date ? t.expiresAt.getTime() : t.expiresAt) : undefined,
       ...extra,
+      // Only the worker's claim selects the payload.
+      ...((t.payload as any) ?? {}),
     };
   }
 }

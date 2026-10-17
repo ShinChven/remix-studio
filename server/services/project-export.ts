@@ -13,6 +13,7 @@ import { buildProjectBundleManifest } from './project-bundle';
 import { checkStorageLimit } from '../utils/storage-check';
 import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import type { PostWatermarkConfig } from '../utils/watermark';
+import { projectMediaType } from '../../src/lib/project-media';
 
 export type ExportAssetVersion = 'raw' | 'optimized';
 
@@ -61,7 +62,7 @@ export async function startProjectAlbumExport(
 
   const project = await repository.getProject(userId, projectId);
   if (!project) throw new ProjectExportError(`Project "${projectId}" not found`, 404);
-  if (watermarkSettings?.enabled && project.type !== 'image') {
+  if (watermarkSettings?.enabled && projectMediaType(project) !== 'image') {
     throw new ProjectExportError('Watermark export is only available for image projects', 400);
   }
 

@@ -13,6 +13,7 @@ Choose the type according to the output you want:
 | **Video** | Generated video | Duration, resolution, sound, format |
 | **Audio** | Speech or music, depending on model | Voice/speaker or music mode, output format |
 | **ComfyUI Workflow** | Images or video from your own ComfyUI | ComfyUI address, API-format workflow, input mappings, output format |
+| **Civitai** | Images from Civitai checkpoints and LoRAs | Civitai account, checkpoint, LoRAs and embeddings, negative prompt, size, sampler, steps, CFG, seed |
 
 Available controls come from the selected model profile. A project also stores a default provider/model, description, filename prefix, shuffle setting, and workflow.
 
@@ -26,15 +27,62 @@ A ComfyUI project runs a workflow on a ComfyUI instance you host — a local mac
 3. **Inputs** — every widget value in the workflow is listed by node.
    - **Numbers and toggles** are edited in place, starting from the workflow's value. Change one to override it; the reset button (or typing the workflow's value back) drops the override.
    - **Seeds** are random for every job by default, so a batch does not repeat the same image. Turn off the dice to pin a seed and type it.
-   - **Text and file inputs** choose where their value comes from:
+   - **Text inputs**, such as a prompt, choose where their value comes from:
      - **Default** keeps the value from the workflow.
      - **Input** takes text you type.
-     - **Import** takes a file you upload, for `Load Image`, video and audio loader nodes. It is uploaded to ComfyUI's input folder when the job runs.
-     - **Library** varies the input over a library's items (text libraries for text inputs, media libraries for loader nodes), with the same tag filters a regular workflow uses.
+     - **Remix** builds the value the way a regular project's workflow builds a prompt. It opens a list of workflow items — the same cards a regular project uses — starting from the input's current text. **Add text** and **Add library** add items; drag a card to reorder it, and disable, edit or delete it as in a regular workflow. The items are joined in order, separated by a blank line, and every library multiplies the variations: `a photo of` + a library of 3 subjects + a library of 4 styles gives the prompt 12. The regular workflow's rules apply: deleting an item asks first, an empty text item stops **Add to Draft** until it is filled or deleted, and a remix with every item disabled stops it too rather than fall back to the workflow's prompt. Deleting the last item leaves the remix open and empty; until an item is added, the input keeps the workflow's value. Leaving a remix of several items asks first, since its items are removed.
+   - **File inputs**, for `Load Image`, video and audio loader nodes, choose:
+     - **Default** keeps the file named in the workflow.
+     - **Import** takes a file you upload. It is uploaded to ComfyUI's input folder when the job runs.
+     - **Library** varies the input over a media library's items, with the same tag filters a regular workflow uses.
 
-Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
+Mapped inputs combine like regular workflow steps: two libraries of 3 and 4 items make 12 combinations, whether they are remixed into one input or feed two different inputs, or a random pick per job with **Shuffle**. With nothing mapped, the workflow simply runs once per job.
 
-Jobs run up to two at a time per project. Each result is downloaded from ComfyUI and stored like any other generation; choose **Image** (PNG, JPEG, WebP) or **Video** output — video files that are not mp4 are converted. A job's expanded view lists the values it sent, including the seed it rolled. When a prompt fails in ComfyUI, the job fails with ComfyUI's own error (for example the node that ran out of memory); when the instance restarted and forgot the prompt, retry the job after updating the address.
+Up to two jobs per project are queued or running in ComfyUI at a time — one generating, the next waiting — and a job stops counting once ComfyUI has finished it, so the next one starts while its result downloads and a slow link to the instance does not leave the GPU idle. A reference file ComfyUI already holds is not uploaded again. Each result is downloaded from ComfyUI and stored like any other generation; a download is only abandoned when no data arrives for a minute, and a job whose result cannot be fetched after three tries fails with the reason — retrying it downloads the finished result rather than generating it again. Choose **Image** (PNG, JPEG, WebP) or **Video** output — video files that are not mp4 are converted. A job's expanded view lists the values it sent, including the seed it rolled. When a prompt fails in ComfyUI, the job fails with ComfyUI's own error (for example the node that ran out of memory); when the instance restarted and forgot the prompt, retry the job after updating the address.
+
+## Civitai Projects
+
+A Civitai project generates images on [Civitai](https://civitai.com) with any checkpoint, LoRA or embedding from its catalog that Civitai can run, or videos with Civitai's video engines (see [Civitai video](#civitai-video) below). Generations are billed to your Civitai account in Buzz. Everything that varies — the checkpoint, the LoRAs, the prompt, the negative prompt and the source image — is a workflow item, so it combines and shuffles like any other workflow step.
+
+**Images or videos.** Choose **Images** or **Videos** when you create the project. You can change it in the project's settings until the project has jobs or results; after that it is fixed, so the album holds only one kind. To make the other kind, create another Civitai project.
+
+**Account.** Add your Civitai API key as a provider of type **Civitai** (create the key on Civitai under **Account settings → API Keys**). The project's settings panel links there when you have none, and picks the account for you when you have only one. The provider's **Parallel Tasks** setting caps how many generations run on Civitai at once.
+
+**Workflow items.**
+
+- **Checkpoint** — one per project. Add a checkpoint by pasting a Civitai model link (`https://civitai.com/models/4201?modelVersionId=130072`) or AIR (`urn:air:sd1:checkpoint:civitai:4201@130072`, shown on the model page), or type a name and pick from Civitai's search results. A link without `modelVersionId` takes the model's newest version. Add several checkpoints to the same item and each job uses one of them, the way a library contributes one item per job.
+- **LoRA** — any number. Each holds one or more LoRAs, LyCORIS, DoRAs or embeddings, again one per job; every enabled LoRA item applies. A LoRA's strength runs −1 to 2 on the slider and −5 to 5 typed; **Also try another strength** adds the same LoRA at another strength as a further option. Trigger words are listed under each resource — click one to copy it into your prompt.
+- **Text** and **text libraries** — feed the prompt, or, after clicking their **Prompt** badge to switch it to **Negative**, the negative prompt. Several items join in workflow order, as in an image project.
+- **Image** and **image libraries** — the source image for image-to-image. The first image is used.
+
+Options multiply like libraries do: a checkpoint item with 2 checkpoints, a LoRA item with one LoRA at 0.5 and 1.0, and a library of 3 subjects make 12 combinations. **Shuffle** picks a random combination for each job instead.
+
+**Settings.** The panel below the workflow holds what every job shares: size (presets follow the checkpoint — 512–768 px for SD 1.x and 2.x, about a megapixel for SDXL, Pony, Illustrious, Flux and newer; sides snap to multiples of 8), sampler, steps, CFG scale, clip skip, the seed (random for every job by default, or **Fixed**), the image-to-image **Denoise** strength, the output format, and **Allow mature content**, off by default, in which case Civitai blocks mature results and the job fails with its reason.
+
+**Image to image.** With a source image, the result keeps the image's shape at the area the size asks for — a 1200×600 photo with a 512×768 size renders at 888×440 — and the job records that size. The image is uploaded to Civitai's own storage before the generation is submitted, so it works even when your storage is not reachable from the internet.
+
+**Jobs.** Every drafted job keeps a copy of the checkpoint and LoRAs its combination picked, its negative prompt and the sampling settings, so later changes leave drafted jobs alone, and it records the seed it ran with; its expanded view lists all of it. **Reuse configuration** puts a job's workflow and settings back on the project, without its seed. Each job submits one text-to-image workflow to Civitai and is checked every 5 seconds until its image is ready; the image is then downloaded and stored like any other result. A failed generation fails the job with Civitai's reason, and retrying a job whose image was generated but could not be stored downloads it again instead of paying for a new one. Deleting a project cancels its running Civitai generations (Civitai refunds work that has not started).
+
+**Album.** Each result keeps a record of what it was made with — checkpoint or video engine, LoRAs and strengths, negative prompt, seed and settings — so it outlives the job. Click a result's prompt in the album to see it. **Reuse workflow** on a result whose job has been deleted still brings back its checkpoint, LoRAs and negative prompt as workflow items. Civitai results can be attached to posts and copied to libraries like any image or video project's.
+
+### Civitai video
+
+A video project uses one of the engines Civitai's own generator offers. The engine brings its own model, so a video project has no checkpoint item.
+
+| Engine | Resolutions | Length | LoRAs | Negative prompt | From images |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Wan 2.2** (default) | 480p, 720p | 3 or 5 s | up to 2 | yes | start frame |
+| **Wan 2.1** | 480p, 720p | 3 or 5 s | up to 9 | no | start frame |
+| **Wan 2.2 5B** | 580p, 720p | set by the engine | up to 2 | yes | start frame |
+| **Wan 2.5** | 480p, 720p, 1080p | 5 or 10 s | no | yes | start frame |
+| **Wan 2.7** | 720p, 1080p | 2–15 s | no | yes | start and end frame |
+| **Wan 3.0** | 480p, 720p, 1080p | 2–30 s | no | yes | start and end frame |
+| **Hunyuan** | 480p | 3 or 5 s | up to 9 | no | text only |
+
+- **Settings** show only what the chosen engine takes: resolution, aspect ratio, length, and, depending on the engine, CFG, steps, shift, frame interpolation (Wan 2.2 5B), prompt expansion (Wan 2.7 and 3.0) and **Prime**, Wan 3.0's faster, pricier tier. The seed and **Allow mature content** work as for images.
+- **LoRAs** must be made for the engine's model (for example *Wan Video 2.2 T2V-A14B* or *I2V-A14B* for Wan 2.2). Searching from a LoRA item only finds those, and a LoRA made for another model shows a warning. Past the engine's limit, the first LoRAs are used; engines without LoRAs leave LoRA items out.
+- **Images** start the video: the first image is its first frame and, with Wan 2.7 and 3.0, a second image is its last. The video takes the engine's aspect ratio closest to the start frame. Hunyuan only makes videos from text.
+- **Results** are stored as mp4 files with a poster frame and play in the album like any video project's. Wan 2.2 renders at 12 fps and Civitai doubles that to 24 fps with frame interpolation, as its own generator does.
 
 ## Project Management
 
@@ -69,7 +117,7 @@ The final tab is named for the project modality. It contains durable `AlbumItem`
 - Text projects show generated text and its prompt/context; multiple text results can be compared.
 - Audio projects provide audio result controls.
 
-The collection supports selection, page-size choices, filename changes, tagging, export, copy-to-library, move-to-project, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+The collection supports selection, page-size choices, filename changes, tagging, export, copying and moving to a library or another project, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
 
 ## Tagging Album Items
 
@@ -89,34 +137,31 @@ Tags follow the item: they survive a move to the recycle bin and a restore, they
 
 Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item — so a stray space or a difference in capitalisation cannot split one tag into two entries in the filter list.
 
-## Moving Results to Another Project
+## Copying and Moving Results
 
-Select album items and choose **Move to Project** to hand them to a different project of the same type. Unlike copying to a library, this is a move: the items leave the album they came from.
+**Copy to…** and **Move to…** in the album's **Actions** menu open the same dialog. Switch between **Copy** and **Move** at the top, then pick where the items go:
 
-The action opens a confirmation page rather than a dialog, so what is about to happen is visible in full on any screen size. It lists the selected items, their combined size, and what travels with them:
+- **Library** — a library of the album's media type: an existing one from the searchable list, or a new one named on the spot. For images and videos, choose **Optimized** (smaller derived asset when available) or **Raw** (original generated/uploaded asset).
+- **Project** — another project of the same type: an existing one, searchable by name with its album count beside it, or a new one, which inherits this project's type and generation settings since the results were produced under them.
 
-- The album items and their generated files, thumbnails and optimized versions.
-- The job record behind each item, so the Done history follows the result.
-- The reusable workflow snapshot on that job and the reference media it points at, so **Reuse workflow** keeps working in the destination project.
+The dialog previews the items and says what the chosen combination does to the album:
 
-Pick the destination on the same page — an existing project of the same type, searchable by name, or a new project created on the spot. A new project inherits this project's type and generation settings, since the results were produced under them.
+| | Library | Project |
+|---|---|---|
+| **Copy** | Library items are created from the results, with their own copy of each file and their tags. The album is unchanged. | The results are copied with the completed job behind each one and its workflow snapshot, so the Done history and **Reuse workflow** work in the destination. The album is unchanged. |
+| **Move** | The results are copied into the library, then go to the recycle bin, where they can be restored until it is emptied. | The results leave this project with their files, the job record behind each one and its workflow snapshot. |
 
-Files are copied into the destination project's storage folder before the records move, and a name already taken there is given a numbered variant so nothing is overwritten. A file the source project still points at — a reference shared with a workflow step or with a job that stayed behind — is left in place, so both sides keep working. A job that is still running does not move; its album item does, and the job stays with the project its worker is writing into.
+With nothing selected, **Copy all to…** (or **Copy this page to…** while a filter or search is active) copies without a selection; a move always needs one.
 
-## Copying Results to a Library
+When it finishes you stay on the album, and moved items leave the page at once. The confirmation names the destination and links to it; the link opens in a new tab.
 
-Copy selected results or the entire collection into a compatible library. You may create a library from the dialog or append to an existing library of the project output type.
+A remembered destination is proposed the next time: the kind of destination per action, and the library or project per media type. Only a completed copy or move is recorded, so browsing the list and backing out does not change the next proposal.
 
-For generated media, choose:
-
-- **Optimized** — smaller derived asset when available.
-- **Raw** — original generated/uploaded asset.
-
-Copying creates library items; it does not move or delete the album results.
+Files are copied into the destination's storage folder, and a name already taken there is given a numbered variant so nothing is overwritten. A copy into a project gets its own files and new record ids, so either project can later be cleaned up without affecting the other; a reference to a library file stays a reference. A move into a project deletes a source file only once nothing left in the source project points at it — a reference shared with a workflow step or with a job that stayed behind is left in place, so both sides keep working. A job that is still running does not move; its album item does, and the job stays with the project its worker is writing into. Only completed jobs are copied.
 
 ## Watermarking a Single Image
 
-The stamp button on an image album card opens **Quick Watermark** for that one result, without queueing an export. The page starts from your saved watermark settings — text, position, padding, font size, opacity, and color — and previews them over the image as you change them. When the result has an optimized version, choose **Raw** or **Optimized**; the preview shows the version that will be rendered.
+The stamp button on an image album card opens **Quick Watermark** for that one result in a new tab, without queueing an export, so the album stays where you left it. **Close** closes the tab when you are done. The page starts from your saved watermark settings — text, position, padding, font size, opacity, and color — and previews them over the image as you change them. When the result has an optimized version, choose **Raw** or **Optimized**; the preview shows the version that will be rendered.
 
 **Create** renders the watermarked image on the server and downloads it to your browser as `<name>_watermark.jpg`. Nothing is written to storage and nothing appears on the Exports page: the file is sent once, and creating it again renders it again. Changes made on the page are not saved, so your saved watermark — which campaign uploads also use — stays as it was.
 

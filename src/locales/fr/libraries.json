@@ -46,6 +46,7 @@
     "exportLibrary": "Exporter la bibliothèque",
     "deleteLibrary": "Supprimer la bibliothèque",
     "selectAll": "Tout sélectionner",
+    "selectItem": "Sélectionner l'élément",
     "selectedCount": "{{count}} sélectionné(s)",
     "filterByTag": "Filtrer par tag",
     "tagsSelected": "{{count}} tag(s) sélectionné(s)",
@@ -115,7 +116,10 @@
       "nameDesc": "Nom Z-A"
     },
     "createdAt": "Créé",
-    "updatedAt": "Modifié"
+    "updatedAt": "Modifié",
+    "autoTag": "Étiquetage auto",
+    "autoTagLibrary": "Étiqueter automatiquement la bibliothèque",
+    "autoTagResults": "Étiqueter automatiquement les résultats"
   },
   "libraryImportExport": {
     "badge": "Espace de travail de la bibliothèque de texte",

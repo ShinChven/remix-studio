@@ -46,6 +46,7 @@
     "exportLibrary": "Export Library",
     "deleteLibrary": "Delete Library",
     "selectAll": "Select All",
+    "selectItem": "Select item",
     "selectedCount": "{{count}} Selected",
     "sort": {
       "timeDesc": "Newest First",
@@ -115,7 +116,10 @@
       "error": "Failed to export library"
     },
     "createdAt": "Created",
-    "updatedAt": "Updated"
+    "updatedAt": "Updated",
+    "autoTag": "Auto-tag",
+    "autoTagLibrary": "Auto-tag library",
+    "autoTagResults": "Auto-tag matching items"
   },
   "libraryImportExport": {
     "badge": "Prompt Library Workspace",

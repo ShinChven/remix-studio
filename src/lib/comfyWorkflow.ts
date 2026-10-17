@@ -1,4 +1,4 @@
-import type { ComfyInputTarget, ComfyJobInput, ComfyWorkflow, ComfyWorkflowNode } from '../types';
+import type { ComfyInputTarget, ComfyJobInput, ComfyWorkflow, ComfyWorkflowNode, WorkflowItem } from '../types';
 
 /**
  * Helpers for ComfyUI workflows in API format (ComfyUI: Workflow → Export (API)),
@@ -119,6 +119,26 @@ export function comfyTargetKey(target: ComfyInputTarget): string {
 
 export function isSameComfyTarget(a: ComfyInputTarget | undefined, b: ComfyInputTarget | undefined): boolean {
   return !!a && !!b && a.nodeId === b.nodeId && a.input === b.input;
+}
+
+/** The workflow items bound to each input, keyed by `comfyTargetKey`, in workflow order. */
+export function groupComfyBindings(items: WorkflowItem[]): Map<string, WorkflowItem[]> {
+  const groups = new Map<string, WorkflowItem[]>();
+  for (const item of items) {
+    if (!item.comfyTarget) continue;
+    const key = comfyTargetKey(item.comfyTarget);
+    groups.set(key, [...(groups.get(key) || []), item]);
+  }
+  return groups;
+}
+
+/**
+ * Whether a text input's items make up a remix rather than one typed value:
+ * marked as one, more than one item, or a library on its own (bound before
+ * remixing existed).
+ */
+export function isComfyRemix(items: WorkflowItem[]): boolean {
+  return items.length > 1 || items.some((item) => item.comfyTarget?.remix || item.type === 'library');
 }
 
 /** Order node ids the way ComfyUI numbers them: "2" before "10", "5:3" after "5". */

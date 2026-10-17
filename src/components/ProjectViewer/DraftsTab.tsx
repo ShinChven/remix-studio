@@ -6,6 +6,7 @@ import { imageDisplayUrl } from '../../api';
 import { SelectionToolbar } from './SelectionToolbar';
 import { JobListItem } from './JobListItem';
 import { ComfyJobInputs } from './ComfyJobInputs';
+import { CivitaiJobParams } from './CivitaiJobParams';
 import { InfoChip } from './InfoChip';
 
 interface DraftsTabProps {
@@ -260,6 +261,7 @@ export function DraftsTab({
                           </div>
                       </div>
                       <ComfyJobInputs job={task} />
+                      <CivitaiJobParams job={task} />
                       {task.imageContexts && task.imageContexts.length > 0 && (
                         <div className="space-y-3">
                             <label className="text-[9px] font-black uppercase tracking-[0.2em] text-neutral-600 px-1">{t('projectViewer.queue.visualContexts')}</label>

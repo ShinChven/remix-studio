@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Layers, AlertCircle, CheckCircle2, Search } from 'lucide-react';
 import { Provider, ProjectType } from '../../types';
+import { useModelDescriptions } from './modelDescriptions';
 
 interface ModelSelectorModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export function ModelSelectorModal({
 }: ModelSelectorModalProps) {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
+  const modelDescriptions = useModelDescriptions();
 
   const filteredProviders = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -33,12 +35,13 @@ export function ModelSelectorModal({
         const matchesSearch = query === '' 
           || m.name.toLowerCase().includes(query) 
           || m.generatorId.toLowerCase().includes(query) 
-          || provider.name.toLowerCase().includes(query);
+          || provider.name.toLowerCase().includes(query)
+          || (modelDescriptions[m.id] || '').toLowerCase().includes(query);
         return matchesCategory && matchesSearch;
       }) || [];
       return { ...provider, models: filteredModels };
     }).filter(provider => provider.models.length > 0);
-  }, [providers, projectType, searchQuery]);
+  }, [providers, projectType, searchQuery, modelDescriptions]);
 
   if (!isOpen) return null;
 
@@ -126,6 +129,14 @@ export function ModelSelectorModal({
                             <div className={`text-sm font-bold leading-5 line-clamp-2 break-words tracking-tight transition-colors ${isSelected ? 'text-blue-700 dark:text-blue-50' : 'text-neutral-700 dark:text-neutral-300'}`}>
                               {model.name}
                             </div>
+                            {modelDescriptions[model.id] && (
+                              <div
+                                className="mt-1 text-[11px] leading-4 line-clamp-2 text-neutral-500 dark:text-neutral-500"
+                                title={modelDescriptions[model.id]}
+                              >
+                                {modelDescriptions[model.id]}
+                              </div>
+                            )}
                           </div>
                           {isSelected && (
                             <div className="shrink-0 p-1 bg-blue-500 rounded-full shadow-lg">

@@ -12,8 +12,9 @@
  * anything about the exporting installation's bucket layout.
  */
 
-import type { AlbumItem, ComfyWorkflow, Project, WorkflowItem } from '../../src/types';
+import type { AlbumItem, CivitaiGenerationConfig, ComfyWorkflow, Project, WorkflowItem } from '../../src/types';
 import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
+import { sanitizeCivitaiConfig } from '../../src/lib/civitai';
 
 export const PROJECT_BUNDLE_KIND = 'remix-studio-project';
 export const PROJECT_BUNDLE_VERSION = 1;
@@ -43,6 +44,7 @@ export interface ProjectBundleSettings {
   showDisabledItems?: boolean;
   comfyUrl?: string;
   comfyWorkflow?: ComfyWorkflow;
+  civitaiConfig?: CivitaiGenerationConfig;
   createdAt?: number;
 }
 
@@ -207,6 +209,7 @@ export function buildProjectBundleManifest(input: {
       comfyUrl: project.comfyUrl,
       comfyWorkflow: project.comfyWorkflow,
       // comfyPassword stays out: bundles get handed around, a password shouldn't.
+      civitaiConfig: project.civitaiConfig,
       createdAt: project.createdAt,
     },
     workflow,
@@ -289,7 +292,7 @@ export function parseProjectBundleManifest(raw: unknown): ProjectBundleManifest 
     project: {
       name: project.name.trim().slice(0, 256),
       description: typeof project.description === 'string' ? project.description.slice(0, 2000) : undefined,
-      type: ['image', 'text', 'video', 'audio', 'comfyui'].includes(project.type) ? project.type : 'image',
+      type: ['image', 'text', 'video', 'audio', 'comfyui', 'civitai'].includes(project.type) ? project.type : 'image',
       status: project.status === 'archived' ? 'archived' : 'active',
       providerId: typeof project.providerId === 'string' ? project.providerId : undefined,
       modelConfigId: typeof project.modelConfigId === 'string' ? project.modelConfigId : undefined,
@@ -308,6 +311,7 @@ export function parseProjectBundleManifest(raw: unknown): ProjectBundleManifest 
       showDisabledItems: typeof project.showDisabledItems === 'boolean' ? project.showDisabledItems : undefined,
       comfyUrl: parseBundleComfyUrl(project.comfyUrl),
       comfyWorkflow: parseBundleComfyWorkflow(project.comfyWorkflow),
+      civitaiConfig: sanitizeCivitaiConfig(project.civitaiConfig),
       createdAt: typeof project.createdAt === 'number' ? project.createdAt : undefined,
     },
     workflow: workflow.map((item: any) => ({

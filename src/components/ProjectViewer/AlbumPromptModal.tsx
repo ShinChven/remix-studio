@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Copy, Type, X } from 'lucide-react';
 import { AlbumItem } from '../../types';
 import { toast } from 'sonner';
+import { CivitaiParamsTable } from './CivitaiJobParams';
 
 interface AlbumPromptModalProps {
   item: AlbumItem | null;
@@ -48,11 +49,16 @@ export function AlbumPromptModal({ item, onClose }: AlbumPromptModalProps) {
         </div>
 
         <div className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto custom-scrollbar">
-          <div className="min-h-full rounded-[20px] sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-4 sm:p-6 md:p-8">
+          <div className={`${item.civitaiParams ? '' : 'min-h-full '}rounded-[20px] sm:rounded-card border border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 p-4 sm:p-6 md:p-8`}>
             <p className="whitespace-pre-wrap break-words text-neutral-800 dark:text-neutral-200 text-base sm:text-lg md:text-xl font-medium leading-relaxed">
               {item.prompt}
             </p>
           </div>
+          {item.civitaiParams && (
+            <div className="mt-4 sm:mt-6">
+              <CivitaiParamsTable params={item.civitaiParams} sourceCount={item.imageContexts?.length ?? 0} />
+            </div>
+          )}
         </div>
 
         <div className="p-4 sm:p-6 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-950/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">

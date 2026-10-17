@@ -57,6 +57,7 @@
     "typeVideo": "動画",
     "typeAudio": "音声",
     "typeComfyui": "ComfyUI ワークフロー",
+    "typeCivitai": "Civitai",
     "nameLabel": "プロジェクト名",
     "namePlaceholderText": "例: 製品説明ジェネレーター...",
     "namePlaceholderImage": "例: サイバーパンクキャラクターシリーズ...",
@@ -78,7 +79,12 @@
     "identityTitle": "アイデンティティ",
     "identityDescription": "名前と出力ファイルの設定。",
     "saveFailed": "プロジェクトを保存できませんでした",
-    "loadFailed": "プロジェクトを読み込めませんでした"
+    "loadFailed": "プロジェクトを読み込めませんでした",
+    "civitaiMakes": "生成するもの",
+    "civitaiImages": "画像",
+    "civitaiVideos": "動画",
+    "civitaiImagesHint": "任意のチェックポイントと LoRA",
+    "civitaiVideosHint": "Wan または Hunyuan、LoRA 対応"
   },
   "projectOrphans": {
     "title": "孤立ファイルの管理",

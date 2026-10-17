@@ -363,7 +363,7 @@ export function ImageLightbox({ images, startIndex, onClose, onDelete, onReuse, 
   const chromeClass = `transition-opacity duration-300 ${idle ? 'opacity-0 pointer-events-none' : 'opacity-100'}`;
   // In fullscreen the image always fills the screen with the chrome hovering over
   // it; windowed, it sits within a margin. Chrome still auto-hides while idle.
-  const imageSizeClass = isFullscreen ? 'w-screen h-screen' : 'max-w-[90vw] max-h-[90vh] shadow-2xl';
+  const imageSizeClass = isFullscreen ? 'w-screen h-dvh' : 'max-w-[90vw] max-h-[90vh] shadow-2xl';
 
   return createPortal(
     <div

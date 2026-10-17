@@ -2,6 +2,15 @@ import { PrismaClient } from '@prisma/client';
 import type { LibraryType } from '../../src/types';
 import { Library, LibraryItem } from '../../src/types';
 
+export interface LibraryItemRefs {
+  id: string;
+  name: string;
+  type: LibraryType;
+  items: Array<{ id: string; tags: string[] }>;
+}
+
+const ITEM_ID_BATCH_SIZE = 10000;
+
 export class LibraryRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -79,6 +88,65 @@ export class LibraryRepository {
     };
   }
 
+  /** The newest item of each library, keyed by library ID; empty libraries are left out. */
+  async getLibraryCoverItems(userId: string, libraryIds: string[]): Promise<Map<string, LibraryItem>> {
+    const covers = await Promise.all(
+      libraryIds.map((libraryId) =>
+        this.prisma.libraryItem.findFirst({
+          where: { libraryId, library: { userId } },
+          orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        })
+      )
+    );
+
+    const result = new Map<string, LibraryItem>();
+    covers.forEach((item, index) => {
+      if (item) result.set(libraryIds[index], this.mapItem(item));
+    });
+    return result;
+  }
+
+  /**
+   * Each library's non-empty items as ID and tags only, newest first: enough to
+   * pick combinations without reading any content. Missing libraries are left out.
+   */
+  async getLibraryItemRefs(userId: string, libraryIds: string[]): Promise<LibraryItemRefs[]> {
+    if (libraryIds.length === 0) return [];
+    const libraries = await this.prisma.library.findMany({
+      where: { id: { in: libraryIds }, userId },
+      select: { id: true, name: true, type: true },
+    });
+    const items = await this.prisma.libraryItem.findMany({
+      where: { libraryId: { in: libraries.map((lib) => lib.id) }, NOT: { content: '' } },
+      select: { id: true, libraryId: true, tags: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    });
+
+    const byLibrary = new Map<string, LibraryItemRefs>(
+      libraries.map((lib) => [lib.id, { id: lib.id, name: lib.name, type: lib.type as LibraryType, items: [] }])
+    );
+    for (const item of items) {
+      byLibrary.get(item.libraryId)?.items.push({ id: item.id, tags: (item.tags as string[]) ?? [] });
+    }
+    return Array.from(byLibrary.values());
+  }
+
+  /** The content and title of these items, from any of the user's libraries. */
+  async getLibraryItemContents(userId: string, itemIds: string[]): Promise<Map<string, { content: string; title?: string }>> {
+    const result = new Map<string, { content: string; title?: string }>();
+    // Stay well under the database's limit on bound parameters per query.
+    for (let start = 0; start < itemIds.length; start += ITEM_ID_BATCH_SIZE) {
+      const items = await this.prisma.libraryItem.findMany({
+        where: { id: { in: itemIds.slice(start, start + ITEM_ID_BATCH_SIZE) }, library: { userId } },
+        select: { id: true, content: true, title: true },
+      });
+      for (const item of items) {
+        result.set(item.id, { content: item.content, title: item.title ?? undefined });
+      }
+    }
+    return result;
+  }
+
   async getLibrary(userId: string, libraryId: string): Promise<Library | null> {
     const lib = await this.prisma.library.findFirst({
       where: { id: libraryId, userId },
@@ -98,6 +166,44 @@ export class LibraryRepository {
       items: lib.items.map((item) => this.mapItem(item)),
       createdAt: lib.createdAt instanceof Date ? lib.createdAt.getTime() : lib.createdAt,
       updatedAt: lib.updatedAt instanceof Date ? lib.updatedAt.getTime() : lib.updatedAt,
+      pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
+    };
+  }
+
+  /** The library's type, or null when the user has no such library; reads none of its items. */
+  async getLibraryType(userId: string, libraryId: string): Promise<LibraryType | null> {
+    const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId }, select: { type: true } });
+    return lib ? (lib.type as LibraryType) : null;
+  }
+
+  /** The library without its items, or null when the user has no such library; itemCount is filled only on request. */
+  async getLibrarySummary(userId: string, libraryId: string, includeItemCount: boolean = false): Promise<Omit<Library, 'items'> | null> {
+    const lib = await this.prisma.library.findFirst({
+      where: { id: libraryId, userId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        type: true,
+        createdAt: true,
+        updatedAt: true,
+        pinnedAt: true,
+      },
+    });
+    if (!lib) return null;
+
+    const itemCount = includeItemCount
+      ? await this.prisma.libraryItem.count({ where: { libraryId } })
+      : undefined;
+
+    return {
+      id: lib.id,
+      name: lib.name,
+      description: lib.description ?? undefined,
+      type: lib.type as LibraryType,
+      ...(itemCount !== undefined ? { itemCount } : {}),
+      createdAt: lib.createdAt.getTime(),
+      updatedAt: lib.updatedAt.getTime(),
       pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
     };
   }

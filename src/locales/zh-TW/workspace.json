@@ -406,6 +406,8 @@
     "reconnecting": "正在重新連線至助理...",
     "turnBusy": "助理仍在此對話中作業，未送出任何內容。",
     "reconnectFailed": "與助理失去連線，正在重新載入對話。",
+    "stopping": "正在停止...",
+    "stopFailed": "無法停止助理。",
     "attachImage": "附加圖片",
     "dropImagesHere": "將圖片拖放至此",
     "maxImagesReached": "每條訊息最多5張圖片",

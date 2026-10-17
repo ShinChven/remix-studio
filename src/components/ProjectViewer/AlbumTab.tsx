@@ -1,22 +1,26 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon, Stamp } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon, Stamp, WandSparkles } from 'lucide-react';
 import { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../types';
-import { imageDisplayUrl, startAlbumExport } from '../../api';
+import { imageDisplayUrl, startAlbumExport, startAutoTag } from '../../api';
 import type { AlbumExportVersion } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
 import { ExportPackageDialog } from './ExportPackageDialog';
 import { TextAlbumCompareDialog } from './TextAlbumCompareDialog';
 import { TextAlbumDetailDialog } from './TextAlbumDetailDialog';
-import { CopyToLibraryDialog } from './CopyToLibraryDialog';
 import { AlbumActionsMenu, AlbumSearch, type AlbumAction } from './AlbumToolbarControls';
-import { AlbumMoveToProjectDialog } from './AlbumMoveToProjectDialog';
+import { AlbumTransferDialog, type AlbumTransferAction } from './AlbumTransferDialog';
+import type { ProjectMediaType } from '../../lib/project-media';
 import { SelectionToolbar } from './SelectionToolbar';
 import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
 import { TagModal } from '../TagModal';
+import { AutoTagDialog } from '../AutoTagDialog';
+import { AutoTagProgress } from '../AutoTagProgress';
 import { EmptyState } from './EmptyState';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './PaginationBar';
+import { CopyRefButton } from '../CopyRefButton';
+import { resourceRef } from '../../lib/resource-ref';
 
 import { toast } from 'sonner';
 
@@ -38,7 +42,12 @@ interface AlbumTabProps {
   /** Id of the item whose configuration is currently being loaded. */
   reusingAlbumItemId?: string | null;
   onExportStarted: () => void;
+  /** Items copied or moved out of the album have left it; take them off the page. */
+  onAlbumItemsMoved?: (items: AlbumItem[]) => void;
+  /** What the album holds: image, video, text or audio. */
   projectType?: ProjectType;
+  /** The project's own type, which a destination project has to share. */
+  sourceProjectType?: ProjectType;
   page: number;
   pageSize: number | 'all';
   total: number;
@@ -351,7 +360,9 @@ export function AlbumTab({
   onReuseWorkflow,
   reusingAlbumItemId,
   onExportStarted,
+  onAlbumItemsMoved,
   projectType = 'image',
+  sourceProjectType,
   page,
   pageSize,
   total,
@@ -375,7 +386,7 @@ export function AlbumTab({
   onUpdateAlbumItemTags,
   onBatchUpdateAlbumTags,
 }: AlbumTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const getDefaultExportPackageName = (name: string) => {
     const safeName = (name || t('projectViewer.tabs.album')).replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -385,21 +396,25 @@ export function AlbumTab({
   const isTextProject = projectType === 'text';
   const isVideoProject = projectType === 'video';
   const isAudioProject = projectType === 'audio';
+  const mediaType: ProjectMediaType = isTextProject ? 'text' : isVideoProject ? 'video' : isAudioProject ? 'audio' : 'image';
+  // Video and audio would need frames or a transcript first.
+  const canAutoTag = mediaType === 'image' || mediaType === 'text';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [showCompareDialog, setShowCompareDialog] = useState(false);
   const [pendingExportItemIds, setPendingExportItemIds] = useState<string[] | undefined>();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [showCopyDialog, setShowCopyDialog] = useState(false);
+  const [transferAction, setTransferAction] = useState<AlbumTransferAction | null>(null);
   const [videoPlayerItem, setVideoPlayerItem] = useState<AlbumItem | null>(null);
   const [expandedAudioIds, setExpandedAudioIds] = useState<Set<string>>(new Set());
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const [renameItem, setRenameItem] = useState<AlbumItem | null>(null);
-  const [moveItems, setMoveItems] = useState<AlbumItem[] | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [isRenaming, setIsRenaming] = useState(false);
   const [tagItem, setTagItem] = useState<AlbumItem | null>(null);
   const [showBatchTagModal, setShowBatchTagModal] = useState(false);
+  const [showAutoTagDialog, setShowAutoTagDialog] = useState(false);
+  const [autoTagRunKey, setAutoTagRunKey] = useState(0);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
   const getAlbumFilename = (item: AlbumItem) => {
@@ -498,6 +513,28 @@ export function AlbumTab({
     }
   };
 
+  const startAlbumAutoTag = async ({ onlyUntagged }: { onlyUntagged: boolean }) => {
+    try {
+      // Same scope as batch tagging: the selection, or everything the filters select.
+      const scope = hasVisibleSelection
+        ? { itemIds: selectedDisplayItemIds }
+        : {
+          allAlbumItems: true,
+          aspectRatios: hasAspectRatioFilter ? selectedAspectRatios : undefined,
+          filterTags: hasTagFilter ? selectedTags : undefined,
+          tagMatch,
+          q: search,
+        };
+      const { queued } = await startAutoTag({ kind: 'album', projectId }, { ...scope, onlyUntagged, language: i18n.language });
+      if (queued === 0) toast.info(t('autoTag.nothingToTag'));
+      else toast.success(t('autoTag.started', { count: queued }));
+      setAutoTagRunKey((key) => key + 1);
+    } catch (err: any) {
+      toast.error(err.message || t('autoTag.startFailed'));
+      throw err;
+    }
+  };
+
   const renderTagButton = (item: AlbumItem, variant: 'title' | 'inline') => {
     const iconClass = variant === 'title' ? 'w-[1em] h-[1em]' : 'w-3.5 h-3.5';
     return (
@@ -514,6 +551,16 @@ export function AlbumTab({
       </button>
     );
   };
+
+  const renderRefButton = (item: AlbumItem, variant: 'title' | 'inline') => (
+    <CopyRefButton
+      reference={resourceRef.albumItem(projectId, item.id)}
+      className={variant === 'title'
+        ? 'flex-shrink-0 inline-flex items-center justify-center rounded-sm text-[13px] leading-none text-neutral-500 hover:text-blue-500 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60'
+        : 'flex-shrink-0 p-1.5 text-neutral-500 dark:text-neutral-500 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition-colors'}
+      iconClassName={variant === 'title' ? 'w-[1em] h-[1em]' : 'w-3.5 h-3.5'}
+    />
+  );
 
   const aspectRatioOptions = aspectRatioCounts;
   const hasAspectRatioFilter = selectedAspectRatios.length > 0;
@@ -587,9 +634,7 @@ export function AlbumTab({
       minute: '2-digit',
     });
   };
-  const selectedTextItems = displayItems.filter((item) => selectedAlbumIds.has(item.id));
-  const copyItemIds = bulkItemIds;
-  const copyUseAllScope = useAllAlbumScope;
+  const selectedItems = displayItems.filter((item) => selectedAlbumIds.has(item.id));
 
   const openExportDialog = (isAll: boolean) => {
     setPendingExportItemIds(isAll && useAllAlbumScope ? undefined : bulkItemIds);
@@ -629,11 +674,6 @@ export function AlbumTab({
     navigate(`/project/${projectId}/export-watermark?${params.toString()}`, { state });
   };
 
-  const openMoveToProject = () => {
-    if (selectedDisplayItemIds.length === 0) return;
-    setMoveItems(displayItems.filter((item) => selectedAlbumIds.has(item.id)));
-  };
-
   const albumActions: AlbumAction[] = [
     {
       label: hasVisibleSelection ? t('projectViewer.album.exportSelected') : useAllAlbumScope ? t('projectViewer.album.exportAll') : t('projectViewer.album.exportPage'),
@@ -645,21 +685,27 @@ export function AlbumTab({
       icon: <TagIcon className="w-4 h-4 shrink-0" />,
       onClick: () => setShowBatchTagModal(true),
     },
+    ...(canAutoTag ? [{
+      label: hasVisibleSelection ? t('projectViewer.album.autoTagSelected') : useAllAlbumScope ? t('projectViewer.album.autoTagAll') : t('projectViewer.album.autoTagResults'),
+      icon: <WandSparkles className="w-4 h-4 shrink-0" />,
+      onClick: () => setShowAutoTagDialog(true),
+    }] : []),
     {
-      label: hasVisibleSelection ? t('projectViewer.common.copyToLibrary') : useAllAlbumScope ? t('projectViewer.album.copyAllToLibrary') : t('projectViewer.album.copyPageToLibrary'),
+      label: hasVisibleSelection ? t('projectViewer.transfer.copyTo') : useAllAlbumScope ? t('projectViewer.transfer.copyAllTo') : t('projectViewer.transfer.copyPageTo'),
       icon: <Copy className="w-4 h-4 shrink-0" />,
-      onClick: () => setShowCopyDialog(true),
+      onClick: () => setTransferAction('copy'),
     },
+    ...(hasVisibleSelection ? [{
+      label: t('projectViewer.transfer.moveTo'),
+      icon: <FolderInput className="w-4 h-4 shrink-0" />,
+      onClick: () => setTransferAction('move'),
+    }] : []),
     ...(isTextProject && selectedDisplayItemIds.length > 1 ? [{
       label: t('projectViewer.album.compareSelected'),
       icon: <Layers className="w-4 h-4 shrink-0" />,
       onClick: () => setShowCompareDialog(true),
     }] : []),
     ...(hasVisibleSelection ? [{
-      label: t('projectViewer.moveToProject.moveSelected'),
-      icon: <FolderInput className="w-4 h-4 shrink-0" />,
-      onClick: openMoveToProject,
-    }, {
       label: t('projectViewer.common.deleteSelected'),
       icon: <Trash2 className="w-4 h-4 shrink-0" />,
       destructive: true,
@@ -751,6 +797,8 @@ export function AlbumTab({
             }
           />
 
+        {canAutoTag && <AutoTagProgress scope={{ kind: 'album', projectId }} runKey={autoTagRunKey} />}
+
         {total === 0 && !hasAspectRatioFilter && !hasTagFilter && !hasSearchFilter ? (
           <EmptyState
             Icon={isTextProject ? FileText : isVideoProject ? VideoIcon : isAudioProject ? Music : ImageIcon}
@@ -803,6 +851,7 @@ export function AlbumTab({
                     <AlbumTagChips tags={item.tags} onTagClick={toggleTagFilter} limit={2} />
                   </div>
 
+                  {renderRefButton(item, 'inline')}
                   {renderTagButton(item, 'inline')}
                   {renderReuseButton(item, 'inline')}
 
@@ -866,6 +915,7 @@ export function AlbumTab({
                       {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
                     </button>
 
+                    {renderRefButton(item, 'inline')}
                     {renderTagButton(item, 'inline')}
                     {renderReuseButton(item, 'inline')}
 
@@ -1006,18 +1056,17 @@ export function AlbumTab({
                       </a>
 
                       {!isVideoProject && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/project/${projectId}/album/${item.id}/watermark`);
-                          }}
+                        <a
+                          href={`/project/${projectId}/album/${item.id}/watermark`}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => e.stopPropagation()}
                           className="w-6 h-6 @min-[16rem]/card:w-7 @min-[16rem]/card:h-7 rounded-lg @min-[16rem]/card:rounded-xl bg-white/25 border border-white/20 flex items-center justify-center text-neutral-900 dark:text-white hover:bg-white/40 transition-ui shadow-lg"
                           title={t('projectViewer.album.quickWatermark')}
                           aria-label={t('projectViewer.album.quickWatermark')}
                         >
                           <Stamp className="w-3.5 h-3.5 @min-[16rem]/card:w-4 @min-[16rem]/card:h-4" />
-                        </button>
+                        </a>
                       )}
                     </div>
 
@@ -1120,6 +1169,7 @@ export function AlbumTab({
                       >
                         <Pencil className="w-[1em] h-[1em]" />
                       </button>
+                      {renderRefButton(item, 'title')}
                       {renderTagButton(item, 'title')}
                       {renderReuseButton(item, 'title')}
                     </div>
@@ -1286,7 +1336,7 @@ export function AlbumTab({
           </div>
         </div>
       )}
-      {showCompareDialog && <TextAlbumCompareDialog items={selectedTextItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
+      {showCompareDialog && <TextAlbumCompareDialog items={selectedItems} setLightboxData={setLightboxData} onClose={() => setShowCompareDialog(false)} />}
       <TextAlbumDetailDialog items={displayItems} startIndex={detailIndex} setLightboxData={setLightboxData} onClose={() => setDetailIndex(null)} />
       <ExportPackageDialog
         isOpen={isExportDialogOpen}
@@ -1296,17 +1346,25 @@ export function AlbumTab({
         onSubmit={handleExport}
         onWatermark={!isTextProject && !isVideoProject && !isAudioProject ? handleWatermarkExport : undefined}
       />
-      <CopyToLibraryDialog
-        isOpen={showCopyDialog}
-        projectId={projectId}
-        projectName={projectName}
-        projectType={projectType}
-        itemIds={copyItemIds}
-        useAllAlbumScope={copyUseAllScope}
-        allAlbumItemCount={total}
-        onClose={() => setShowCopyDialog(false)}
-        onSuccess={() => {}}
-      />
+      {transferAction && (
+        <AlbumTransferDialog
+          projectId={projectId}
+          projectName={projectName}
+          mediaType={mediaType}
+          projectType={sourceProjectType || projectType}
+          initialAction={transferAction}
+          items={hasVisibleSelection ? selectedItems : displayItems}
+          useAllAlbumScope={!hasVisibleSelection && useAllAlbumScope}
+          itemCount={hasVisibleSelection ? selectedItems.length : useAllAlbumScope ? total : displayItems.length}
+          totalSize={!hasVisibleSelection && useAllAlbumScope ? totalSize : undefined}
+          canMove={hasVisibleSelection}
+          onClose={() => setTransferAction(null)}
+          onDone={(_action, movedItems) => {
+            setTransferAction(null);
+            if (movedItems.length > 0) onAlbumItemsMoved?.(movedItems);
+          }}
+        />
+      )}
       <TagModal
         isOpen={tagItem !== null}
         initialTags={tagItem?.tags || []}
@@ -1323,19 +1381,12 @@ export function AlbumTab({
         onClose={() => setShowBatchTagModal(false)}
         onApply={applyBatchTags}
       />
-      {moveItems && moveItems.length > 0 && (
-        <AlbumMoveToProjectDialog
-          projectId={projectId}
-          projectName={projectName}
-          projectType={projectType}
-          items={moveItems}
-          onClose={() => setMoveItems(null)}
-          onMoved={(destinationProjectId) => {
-            setMoveItems(null);
-            navigate(`/project/${destinationProjectId}?tab=album`);
-          }}
-        />
-      )}
+      <AutoTagDialog
+        isOpen={showAutoTagDialog}
+        itemCount={hasVisibleSelection ? selectedDisplayItemIds.length : total}
+        onClose={() => setShowAutoTagDialog(false)}
+        onStart={startAlbumAutoTag}
+      />
     </section>
   );
 }

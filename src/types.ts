@@ -1,4 +1,4 @@
-export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio';
+export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio' | 'model';
 
 export interface WorkflowItem {
   id: string;
@@ -12,7 +12,22 @@ export interface WorkflowItem {
   selectedTags?: string[];
   tagMatchMode?: 'and' | 'or';
   /** ComfyUI projects only: the workflow input this item feeds. */
-  comfyTarget?: ComfyInputTarget;
+  comfyTarget?: ComfyBinding;
+  /** Civitai projects only: the part of the generation this item feeds. */
+  civitai?: CivitaiBinding;
+}
+
+/**
+ * What a workflow item feeds in a Civitai project. Text and library items feed
+ * the prompt, or with `slot: 'negative'` the negative prompt, joined in
+ * workflow order. A `model` item is a checkpoint or LoRA slot holding one or
+ * more `options`; like a library, each job takes one of them, so options
+ * multiply the combinations. Every enabled LoRA slot applies to a job.
+ */
+export interface CivitaiBinding {
+  slot: 'negative' | 'checkpoint' | 'lora';
+  /** Model items: the resources to choose between, LoRAs with their strength. */
+  options?: CivitaiResource[];
 }
 
 /** One input of a node in a ComfyUI API-format workflow. */
@@ -22,12 +37,117 @@ export interface ComfyInputTarget {
 }
 
 /**
+ * The input a workflow item feeds. `remix` marks the items of a remixed text
+ * input — typed text and libraries joined in order, like a regular project's
+ * workflow — so a remix of a single text item still reads as one.
+ */
+export interface ComfyBinding extends ComfyInputTarget {
+  remix?: boolean;
+}
+
+/**
  * A value resolved for one ComfyUI input when a job is drafted. Media kinds
  * carry a storage key (or URL) that is uploaded to ComfyUI at run time.
  */
 export interface ComfyJobInput extends ComfyInputTarget {
   kind: 'text' | 'image' | 'video' | 'audio';
   value: string;
+}
+
+/**
+ * A Civitai resource — the checkpoint a Civitai project generates with, or a
+ * LoRA or embedding layered on it — addressed by its AIR
+ * (`urn:air:sdxl:checkpoint:civitai:101055@128078`). Everything besides the
+ * AIR is what Civitai reported when it was added, kept so the project can show
+ * it without asking again.
+ */
+export interface CivitaiResource {
+  air: string;
+  name?: string;
+  versionName?: string;
+  /** Civitai's model type: Checkpoint, LORA, LoCon, DoRA, TextualInversion… */
+  type?: string;
+  /** Civitai's base model name, e.g. `SDXL 1.0`, `Pony`, `Illustrious`. */
+  baseModel?: string;
+  trainedWords?: string[];
+  previewUrl?: string;
+  /** Additional resources only: how strongly the network applies. */
+  strength?: number;
+}
+
+/** A model found by searching Civitai's catalog, before it is resolved to a resource. */
+export interface CivitaiSearchResult {
+  modelId: number;
+  versionId: number;
+  name: string;
+  versionName?: string;
+  type?: string;
+  baseModel?: string;
+  previewUrl?: string;
+}
+
+/** The samplers Civitai's text-to-image step accepts. */
+export type CivitaiScheduler =
+  | 'eulerA' | 'euler' | 'lms' | 'heun' | 'dpM2' | 'dpM2A' | 'dpM2SA' | 'dpM2M' | 'dpmsde'
+  | 'dpmFast' | 'dpmAdaptive' | 'lmsKarras' | 'dpM2Karras' | 'dpM2AKarras' | 'dpM2SAKarras'
+  | 'dpM2MKarras' | 'dpmsdeKarras' | 'ddim' | 'plms' | 'uniPC' | 'lcm' | 'ddpm' | 'deis' | 'dpM3MSDE';
+
+/**
+ * What a Civitai job generates with. A project keeps the sampling settings
+ * here; its checkpoint, LoRAs and negative prompt come from workflow items.
+ * Each job carries a full copy taken when it was drafted — the checkpoint and
+ * LoRAs its combination picked, the defaults filled in and the seed it ran
+ * with — so it can be reproduced.
+ */
+export interface CivitaiGenerationConfig {
+  /** What the project makes. Unset means images; it is fixed once a project has jobs or results. */
+  mediaType?: CivitaiMediaType;
+  /** Video projects: the engine and its settings. Image settings below stay as they were. */
+  video?: CivitaiVideoSettings;
+  model?: CivitaiResource;
+  /** LoRAs, LyCORIS, DoRAs and embeddings applied on top of the checkpoint. */
+  resources?: CivitaiResource[];
+  negativePrompt?: string;
+  scheduler?: CivitaiScheduler;
+  steps?: number;
+  cfgScale?: number;
+  width?: number;
+  height?: number;
+  clipSkip?: number;
+  /** A fixed seed. Left unset, every job rolls its own. */
+  seed?: number;
+  /** Let Civitai return mature results instead of blocking them. */
+  allowMatureContent?: boolean;
+  /** Image-to-image: how far the result may move away from the source image (0–1). */
+  denoise?: number;
+}
+
+export type CivitaiMediaType = 'image' | 'video';
+
+/** The video models Civitai runs, by the version Civitai's own generator names them. */
+export type CivitaiVideoEngine = 'wan-2.1' | 'wan-2.2' | 'wan-2.2-5b' | 'wan-2.5' | 'wan-2.7' | 'wan-3.0' | 'hunyuan';
+
+/**
+ * A Civitai video project's settings. Which ones apply depends on the engine
+ * (see `CIVITAI_VIDEO_ENGINES`); the rest are kept but not sent. On a job,
+ * `width`/`height` are the frame size for engines that take one.
+ */
+export interface CivitaiVideoSettings {
+  engine?: CivitaiVideoEngine;
+  resolution?: string;
+  aspectRatio?: string;
+  /** Seconds. */
+  duration?: number;
+  cfgScale?: number;
+  steps?: number;
+  shift?: number;
+  interpolator?: 'none' | 'film' | 'rife';
+  /** Let the engine rewrite the prompt before generating. */
+  promptExpansion?: boolean;
+  /** Wan 3.0: the faster, pricier "prime" tier. */
+  usePrime?: boolean;
+  width?: number;
+  height?: number;
 }
 
 /** A ComfyUI workflow in API format: node id -> node. */
@@ -60,20 +180,22 @@ export interface Library {
   type: LibraryType;
   items: LibraryItem[];
   itemCount?: number;
+  /** Picture of the newest item, sent with library lists that skip the items. */
+  coverUrl?: string;
   createdAt?: number;
   updatedAt?: number;
   pinnedAt?: string | null;
 }
 
-export type ProjectType = 'image' | 'text' | 'video' | 'audio' | 'comfyui';
+export type ProjectType = 'image' | 'text' | 'video' | 'audio' | 'comfyui' | 'civitai';
 export type ProjectStatus = 'active' | 'archived';
 
 export interface ModelConfig {
   id: string; // Local UUID
-  name: string; // Display name e.g. "nano banana 2"
+  name: string; // Display name e.g. "nano banana 2.1"
   generatorId: ProviderType; // Which generator type to use
-  modelId: string; // The actual API model string (e.g. 'gemini-3.1-flash-image')
-  category: Exclude<ProjectType, 'comfyui'>; // 'image' | 'text' | 'video' | 'audio'
+  modelId: string; // The actual API model string (e.g. 'gemini-nano-banana-2.1')
+  category: Exclude<ProjectType, 'comfyui' | 'civitai'>; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
   options: {
@@ -272,10 +394,13 @@ export function formatPromptLimit(limit?: PromptLimitMeta): string {
 export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   GoogleAI: [
     {
+      // `id` stays on the nano banana 2 name so projects pinned to the retired
+      // gemini-3.1-flash-image land on 2.1 — same request shape, so only the
+      // model ID moves.
       id: 'google-nano-banana-2',
-      name: 'nano banana 2',
+      name: 'nano banana 2.1',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3.1-flash-image',
+      modelId: 'gemini-nano-banana-2.1',
       category: 'image',
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {
@@ -498,10 +623,13 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   VertexAI: [
     {
+      // `id` stays on the nano banana 2 name so projects pinned to the retired
+      // gemini-3.1-flash-image land on 2.1 — same request shape, so only the
+      // model ID moves.
       id: 'vertex-nano-banana-2',
-      name: 'nano banana 2',
+      name: 'nano banana 2.1',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3.1-flash-image',
+      modelId: 'gemini-nano-banana-2.1',
       category: 'image',
       promptLimit: { value: 131072, unit: 'tokens' },
       options: {
@@ -856,8 +984,10 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      // Named the way RunningHub lists it, which also keeps it apart from
+      // `seedream-v5-pro` below — a separate RunningHub listing.
       id: 'runninghub-seedream-5-0-pro',
-      name: 'Seedream 5.0 Pro',
+      name: 'Dola Seedream 5.0 Pro',
       generatorId: 'RunningHub',
       modelId: 'dola-Seedream-5.0-pro',
       category: 'image',
@@ -865,6 +995,22 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
         qualities: ['1K', '2K'],
+      },
+    },
+    {
+      // Splits one source image into a base image plus up to 16 transparent
+      // PNG layers, each saved as its own album item. The endpoint is part of
+      // the model ID, and the request has no size: the output follows the
+      // source, at the resolution tier picked here.
+      id: 'runninghub-seedream-5-0-pro-layer-decomposition',
+      name: 'Dola Seedream 5.0 Pro Layer Decomposition',
+      generatorId: 'RunningHub',
+      modelId: 'dola-Seedream-5.0-pro/layer-decomposition',
+      category: 'image',
+      promptLimit: { value: 2000, unit: 'characters' },
+      options: {
+        aspectRatios: ['auto'],
+        qualities: ['Auto', '1K', '1.5K', '2K'],
       },
     },
     {
@@ -1924,6 +2070,9 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
   ],
+  // Civitai projects pick their checkpoint from Civitai's catalog rather than a
+  // fixed list, so the provider only holds the API token.
+  Civitai: [],
 };
 
 /**
@@ -1931,6 +2080,44 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
  */
 export function getTextModelsForProvider(providerType: ProviderType): ModelConfig[] {
   return (PROVIDER_MODELS_MAP[providerType] || []).filter((m) => m.category === 'text');
+}
+
+/**
+ * Provider types whose text generator sends `refImagesBase64` to the model, so
+ * their text models can read an image. Keep in step with
+ * `server/generators/*-text-generator.ts`.
+ */
+export const IMAGE_INPUT_TEXT_PROVIDER_TYPES: readonly ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'MiniMax'];
+
+export function providerAcceptsImageInput(providerType: ProviderType): boolean {
+  return IMAGE_INPUT_TEXT_PROVIDER_TYPES.includes(providerType);
+}
+
+/** Bounds of the auto-tagging concurrency limit: tagging requests in flight at once, per user. */
+export const AUTO_TAG_CONCURRENCY_LIMIT = { min: 1, max: 16, default: 2 } as const;
+
+/** A user's auto-tagging settings. No provider means auto-tagging is off. */
+export interface AutoTagSettings {
+  providerId: string | null;
+  modelConfigId: string | null;
+  concurrencyLimit: number;
+}
+
+/** Where an auto-tagging run works: one project's album, or one library. */
+export type AutoTagScope = { kind: 'album'; projectId: string } | { kind: 'library'; libraryId: string };
+
+/**
+ * Progress of the auto-tagging run in one album or library. A run starts when
+ * items are queued while none are, and its failures stay listed until they
+ * are retried or dismissed.
+ */
+export interface AutoTagRunStatus {
+  active: boolean;
+  total: number;
+  completed: number;
+  pending: number;
+  running: number;
+  failures: { itemId: string; error: string }[];
 }
 
 /**
@@ -1955,6 +2142,13 @@ export function resolveCustomModels(
       };
     })
     .filter((m): m is ModelConfig => m !== null);
+}
+
+/** A provider record's bundled models plus the custom variants saved on it. */
+export function getProviderRecordModels(providerRecord: { type: string; models?: unknown }): ModelConfig[] {
+  const providerType = providerRecord.type as ProviderType;
+  const customAliases = Array.isArray(providerRecord.models) ? providerRecord.models : [];
+  return [...(PROVIDER_MODELS_MAP[providerType] || []), ...resolveCustomModels(providerType, customAliases)];
 }
 
 /**
@@ -2043,6 +2237,8 @@ export interface Job {
   format?: 'png' | 'jpeg' | 'webp' | 'mp4' | 'wav' | 'mp3' | 'm4a' | 'aac' | 'ogg' | 'webm';
   taskId?: string; // For long-running remote tasks (e.g. RunningHub)
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
+  /** The tags of the library items this job was drafted from, which its album items start with. */
+  tags?: string[];
   // Video generation
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p', '4k'
@@ -2052,6 +2248,8 @@ export interface Job {
   workflowSnapshot?: WorkflowItem[];
   /** ComfyUI projects only: the input values this job submits. */
   comfyInputs?: ComfyJobInput[];
+  /** Civitai projects only: the model, resources and parameters this job runs with. */
+  civitaiParams?: CivitaiGenerationConfig;
 }
 
 /**
@@ -2061,7 +2259,7 @@ export interface Job {
  */
 export type JobConfiguration = Pick<
   Job,
-  'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound'
+  'workflowSnapshot' | 'providerId' | 'modelConfigId' | 'aspectRatio' | 'quality' | 'background' | 'format' | 'duration' | 'resolution' | 'sound' | 'civitaiParams'
 > & {
   /**
    * True when no snapshot was stored and the workflow was rebuilt from the
@@ -2096,6 +2294,8 @@ export interface AlbumItem {
   // Video-specific
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p'
+  /** Civitai projects: what the result was generated with, kept with it so it outlives its job. */
+  civitaiParams?: CivitaiGenerationConfig;
 }
 
 export interface TrashItem extends AlbumItem {
@@ -2148,9 +2348,12 @@ export interface Project {
    * login password, or the API token it prints at startup. Stored as given.
    */
   comfyPassword?: string;
+  // Civitai projects: the checkpoint, resources and parameters drafted jobs
+  // run with. The API token lives on the Civitai provider (`providerId`).
+  civitaiConfig?: CivitaiGenerationConfig;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax' | 'Civitai';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

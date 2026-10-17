@@ -181,7 +181,7 @@ export function MainLayout() {
     : 0;
 
   return (
-    <div className="flex h-screen w-screen bg-transparent text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
+    <div className="flex h-dvh w-screen bg-transparent text-neutral-900 dark:text-neutral-200 font-sans overflow-hidden">
       {/* Mobile Header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white/80 dark:bg-black/40 backdrop-blur-3xl border-b border-neutral-200/50 dark:border-white/5 px-4 flex items-center gap-2 z-[100] shadow-sm">
         <button

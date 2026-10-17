@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchProvider, createProvider, updateProvider } from '../api';
 import { ProviderType, PROVIDER_MODELS_MAP } from '../types';
@@ -7,7 +7,7 @@ import { Save, Eye, EyeOff, Loader2, MessageSquare, Image as ImageIcon, Video, M
 import { ProviderIcon } from '../components/ProviderIcon';
 import { NumberInput } from '../components/NumberInput';
 
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'Kimi', 'MiniMax', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs'];
+const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'Kimi', 'MiniMax', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs', 'Civitai'];
 
 
 
@@ -27,9 +27,12 @@ export function ProviderForm() {
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
+  // `?type=` preselects a type, e.g. from a Civitai project that has no account yet.
+  const [searchParams] = useSearchParams();
+  const requestedType = searchParams.get('type') as ProviderType | null;
 
   const [name, setName] = useState('');
-  const [type, setType] = useState<ProviderType>('GoogleAI');
+  const [type, setType] = useState<ProviderType>(requestedType && PROVIDER_TYPES.includes(requestedType) ? requestedType : 'GoogleAI');
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [apiUrl, setApiUrl] = useState('');
@@ -393,8 +396,10 @@ export function ProviderForm() {
                        })}
                        {currentModels.length === 0 && (
                          <tr>
-                           <td colSpan={3} className="px-8 py-12 text-center text-xs font-bold text-neutral-400 dark:text-neutral-600 italic">
-                             No models listed for this provider yet.
+                           <td colSpan={3} className={`px-8 py-12 text-center text-xs font-bold text-neutral-400 dark:text-neutral-600 ${type === 'Civitai' ? '' : 'italic'}`}>
+                             {type === 'Civitai'
+                               ? <span className="block max-w-md mx-auto leading-6 not-italic">{t('providerForm.civitaiModelsNote')}</span>
+                               : 'No models listed for this provider yet.'}
                            </td>
                          </tr>
                        )}

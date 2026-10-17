@@ -1,5 +1,5 @@
 import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
-import { AlbumItem, AppData, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, AutoTagRunStatus, AutoTagScope, AutoTagSettings, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, PromptLimitMeta, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -417,13 +417,14 @@ export async function loadData(): Promise<AppData> {
 
 // ========== Library CRUD ==========
 
-export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
+export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false, cover: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
   if (q) params.set('q', q);
   if (includeItems) params.set('includeItems', 'true');
   if (nameOnly) params.set('nameOnly', 'true');
+  if (cover) params.set('cover', 'true');
 
   const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');
@@ -432,6 +433,26 @@ export async function fetchLibraries(page: number = 1, limit: number = 50, q?: s
 export async function fetchLibrary(id: string): Promise<Library> {
   const res = await apiFetch(`/api/libraries/${id}`, { headers: getHeaders(false) });
   return handleResponse<Library>(res, 'Failed to get library');
+}
+
+export interface LibraryTagFilter {
+  libraryId: string;
+  tags?: string[];
+  tagMatchMode?: 'and' | 'or';
+}
+
+/**
+ * Summaries of the filtered libraries, without their items, and how many items
+ * each filter keeps (counts line up with `filters`). Missing libraries are left
+ * out of `libraries` and count 0.
+ */
+export async function fetchLibraryMatchCounts(filters: LibraryTagFilter[]): Promise<{ libraries: Library[]; counts: number[] }> {
+  const res = await apiFetch('/api/libraries/match-counts', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ filters }),
+  });
+  return handleResponse<{ libraries: Library[]; counts: number[] }>(res, 'Failed to count library items');
 }
 
 export async function createLibrary(library: { id: string; name: string; description?: string; type: string }): Promise<void> {
@@ -611,7 +632,9 @@ export async function fetchProjects(
   limit: number = 50,
   q?: string,
   status?: 'active' | 'archived' | 'all',
-  nameOnly: boolean = false
+  nameOnly: boolean = false,
+  /** Leave out each project's cover and storage total. */
+  summary: boolean = false,
 ): Promise<import('./types').PaginatedResult<Project>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
@@ -619,6 +642,7 @@ export async function fetchProjects(
   if (q) params.set('q', q);
   if (status) params.set('status', status);
   if (nameOnly) params.set('nameOnly', 'true');
+  if (summary) params.set('summary', 'true');
 
   const res = await apiFetch(`/api/projects?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Project>>(res, 'Failed to list projects');
@@ -683,6 +707,40 @@ export async function deleteProjectJob(id: string, jobId: string): Promise<void>
     headers: getHeaders(false),
   });
   await handleResponse<{ success: boolean }>(res, 'Failed to delete job');
+}
+
+export interface PromptLimitOverflow {
+  limit: PromptLimitMeta;
+  affectedCount: number;
+  longestPromptLength: number;
+}
+
+/** Why a workflow's combinations cannot become drafts. */
+export type DraftProblem =
+  | { code: 'civitai_prompt_required' }
+  | { code: 'civitai_text_only'; engine: string };
+
+/**
+ * Build drafts on the server from the project's saved workflow and settings.
+ * When prompts run past the model's limit and no decision was sent, nothing is
+ * created and the overflow comes back instead; send the same seed again with a
+ * decision to get the same drafts. A workflow that cannot be drafted comes
+ * back as a problem, with nothing created.
+ */
+export async function generateProjectDrafts(
+  id: string,
+  request: { count: number; seed: number; promptLimitDecision?: 'truncate' | 'keep' },
+): Promise<{ created: number } | { promptLimit: PromptLimitOverflow } | { problem: DraftProblem }> {
+  const res = await apiFetch(`/api/projects/${id}/jobs/generate`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 409 && data?.promptLimit) return { promptLimit: data.promptLimit };
+  if (res.status === 422 && data?.problem) return { problem: data.problem };
+  if (!res.ok) throw new Error(data?.error || 'Failed to add drafts');
+  return { created: data.created ?? 0 };
 }
 
 export async function deleteProjectJobs(id: string, jobIds: string[]): Promise<{ deleted: number }> {
@@ -783,6 +841,29 @@ export async function testComfyConnection(url: string, password?: string): Promi
     body: JSON.stringify({ url, password }),
   });
   return handleResponse<ComfyConnectionResult>(res, 'Failed to test the ComfyUI connection');
+}
+
+/**
+ * Look up a Civitai model by its page link or AIR, with the token of one of the
+ * user's Civitai providers.
+ */
+export async function resolveCivitaiResource(providerId: string, value: string): Promise<CivitaiResource> {
+  const res = await apiFetch('/api/civitai/resolve', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ providerId, value }),
+  });
+  return handleResponse<CivitaiResource>(res, 'Failed to look up the Civitai model');
+}
+
+/** Search Civitai's catalog for checkpoints, or for LoRAs and embeddings. */
+export async function searchCivitaiModels(providerId: string, query: string, slot: 'checkpoint' | 'lora', baseModels?: string[]): Promise<CivitaiSearchResult[]> {
+  const res = await apiFetch('/api/civitai/search', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ providerId, query, slot, ...(baseModels?.length ? { baseModels } : {}) }),
+  });
+  return handleResponse<CivitaiSearchResult[]>(res, 'Failed to search Civitai');
 }
 
 export type StartProjectJobsRequest =
@@ -1305,6 +1386,11 @@ export async function startAlbumExport(
   return handleResponse<{ taskId: string }>(res, 'Failed to start export');
 }
 
+/**
+ * Copy album items into a library of the matching type. With `move` the items
+ * then leave the album for the recycle bin; a move takes an explicit
+ * `itemIds` list only.
+ */
 export async function copyAlbumToLibrary(
   projectId: string,
   params: {
@@ -1313,14 +1399,43 @@ export async function copyAlbumToLibrary(
     version?: 'raw' | 'optimized';
     destinationLibraryId?: string;
     newLibraryName?: string;
+    move?: boolean;
   }
-): Promise<{ libraryId: string }> {
+): Promise<{ libraryId: string; libraryName: string; copiedItems: number; movedItems: number }> {
   const res = await apiFetch(`/api/projects/${projectId}/album/copy-to-library`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(params),
   });
-  return handleResponse<{ libraryId: string }>(res, 'Failed to copy to library');
+  return handleResponse<{ libraryId: string; libraryName: string; copiedItems: number; movedItems: number }>(
+    res,
+    'Failed to copy to library',
+  );
+}
+
+/**
+ * Copy album items into another project of the same type, with the jobs and
+ * files behind them, under new ids. Pass `destinationProjectId` for an
+ * existing project or `newProjectName` to create one.
+ */
+export async function copyAlbumItemsToProject(
+  projectId: string,
+  params: {
+    itemIds?: string[];
+    allAlbumItems?: boolean;
+    destinationProjectId?: string;
+    newProjectName?: string;
+  }
+): Promise<{ projectId: string; projectName: string; createdProject: boolean; copiedItems: number; copiedJobs: number }> {
+  const res = await apiFetch(`/api/projects/${projectId}/album/copy-to-project`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(params),
+  });
+  return handleResponse<{ projectId: string; projectName: string; createdProject: boolean; copiedItems: number; copiedJobs: number }>(
+    res,
+    'Failed to copy album items',
+  );
 }
 
 /**
@@ -1339,6 +1454,7 @@ export async function moveAlbumItemsToProject(
   }
 ): Promise<{
   projectId: string;
+  projectName: string;
   createdProject: boolean;
   movedItems: number;
   movedJobs: number;
@@ -1351,6 +1467,7 @@ export async function moveAlbumItemsToProject(
   });
   return handleResponse<{
     projectId: string;
+    projectName: string;
     createdProject: boolean;
     movedItems: number;
     movedJobs: number;
@@ -1744,6 +1861,8 @@ export interface AssistantActiveTurn {
   /** Sequence number of the last frame the turn has emitted so far. */
   lastSeq: number;
   lastEvent: AssistantStatusEvent | null;
+  /** The user pressed Stop and the turn is winding down. */
+  stopping: boolean;
 }
 
 export interface AssistantToolMetadata {
@@ -1763,7 +1882,8 @@ export interface AssistantStatusEvent {
 export type AssistantTurnResult =
   | { kind: 'final'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] }
   | { kind: 'awaiting_confirmation'; message: AssistantMessage; confirmation: AssistantPendingConfirmation; statusEvents: AssistantStatusEvent[] }
-  | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] };
+  | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] }
+  | { kind: 'stopped'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] };
 
 export async function fetchAssistantConversations(cursor?: string, limit?: number): Promise<{ conversations: AssistantConversation[] }> {
   const params = new URLSearchParams();
@@ -1941,6 +2061,19 @@ export async function streamAssistantTurn(
     { headers: getHeaders(false), signal },
   );
   return handleAssistantTurnStream(res, onStatusEvent, since);
+}
+
+/**
+ * Ask the conversation's running turn to stop. The turn's own stream carries
+ * on to a `stopped` result, so keep following it. `stopping` is false when
+ * nothing was running.
+ */
+export async function cancelAssistantTurn(conversationId: string): Promise<{ stopping: boolean }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/turn/cancel`, {
+    method: 'POST',
+    headers: getHeaders(),
+  });
+  return handleResponse<{ stopping: boolean }>(res, 'Failed to stop the assistant');
 }
 
 export async function fetchAssistantProviders(): Promise<{ providers: Provider[] }> {
@@ -2209,6 +2342,70 @@ export async function updatePostWatermarkSettings(settings: Partial<PostWatermar
     body: JSON.stringify(settings),
   });
   return handleResponse<PostWatermarkSettings>(res, 'Failed to update watermark settings');
+}
+
+export async function fetchAutoTagSettings(): Promise<AutoTagSettings> {
+  const res = await apiFetch('/api/settings/auto-tag', { headers: getHeaders(false) });
+  return handleResponse<AutoTagSettings>(res, 'Failed to load auto-tagging settings');
+}
+
+export async function updateAutoTagSettings(settings: AutoTagSettings): Promise<AutoTagSettings> {
+  const res = await apiFetch('/api/settings/auto-tag', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(settings),
+  });
+  return handleResponse<AutoTagSettings>(res, 'Failed to save auto-tagging settings');
+}
+
+function autoTagPath(scope: AutoTagScope) {
+  return scope.kind === 'album'
+    ? `/api/projects/${encodeURIComponent(scope.projectId)}/album/auto-tag`
+    : `/api/libraries/${encodeURIComponent(scope.libraryId)}/auto-tag`;
+}
+
+export interface AutoTagRunRequest {
+  /** Leave items that already carry tags alone. */
+  onlyUntagged?: boolean;
+  /** UI language code; tags are written in it. */
+  language?: string;
+  itemIds?: string[];
+  /** Album: every item the current filters select. */
+  allAlbumItems?: boolean;
+  aspectRatios?: string[];
+  filterTags?: string[];
+  tagMatch?: 'all' | 'any';
+  q?: string;
+  /** Library: every item its current search and tag filter select. */
+  all?: boolean;
+}
+
+export async function startAutoTag(scope: AutoTagScope, request: AutoTagRunRequest): Promise<{ queued: number; skipped: number; status: AutoTagRunStatus }> {
+  const res = await apiFetch(autoTagPath(scope), {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  return handleResponse(res, 'Failed to start auto-tagging');
+}
+
+export async function fetchAutoTagStatus(scope: AutoTagScope): Promise<AutoTagRunStatus> {
+  const res = await apiFetch(autoTagPath(scope), { headers: getHeaders(false) });
+  return handleResponse<AutoTagRunStatus>(res, 'Failed to load auto-tagging progress');
+}
+
+export async function retryAutoTag(scope: AutoTagScope, language: string): Promise<AutoTagRunStatus> {
+  const res = await apiFetch(`${autoTagPath(scope)}/retry`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ language }),
+  });
+  return handleResponse<AutoTagRunStatus>(res, 'Failed to retry auto-tagging');
+}
+
+export async function cancelAutoTag(scope: AutoTagScope): Promise<AutoTagRunStatus> {
+  const res = await apiFetch(`${autoTagPath(scope)}/cancel`, { method: 'POST', headers: getHeaders() });
+  return handleResponse<AutoTagRunStatus>(res, 'Failed to stop auto-tagging');
 }
 
 /** An album or library image to watermark on its own. */

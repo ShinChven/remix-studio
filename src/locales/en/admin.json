@@ -131,6 +131,23 @@
         "needsInstall": "On iPhone and iPad, add Remix Studio to your Home Screen (Share → Add to Home Screen) and open it from there to enable notifications.",
         "testSent": "Test notification sent.",
         "testFailed": "No device received the test notification."
+      },
+      "autoTag": {
+        "title": "Auto-tagging",
+        "description": "Choose the vision model that looks at your images and writes their tags in project albums and libraries.",
+        "provider": "Provider",
+        "off": "Off",
+        "model": "Model",
+        "selectModel": "Select a model",
+        "concurrencyLimit": "Concurrency limit",
+        "concurrencyLimitDescription": "The most tagging requests sent to the provider at the same time ({{min}}–{{max}}). Lower it if the provider starts rejecting requests for exceeding its rate limit.",
+        "noVisionProviders": "None of your providers has a model that can read images. Add one, such as Google AI, OpenAI or Claude, to turn on auto-tagging.",
+        "manageProviders": "Manage providers",
+        "save": "Save",
+        "saved": "Auto-tagging settings saved.",
+        "saveFailed": "Could not save auto-tagging settings.",
+        "loadFailed": "Could not load auto-tagging settings.",
+        "retry": "Retry"
       }
     },
     "confirm": {

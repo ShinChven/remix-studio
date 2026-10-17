@@ -41,7 +41,7 @@
   "apiKeyCheck": {
     "loading": "加载中...",
     "title": "需要 API 密钥",
-    "description": "此应用程序使用 Nano Banana 2 (Gemini 3.1 Flash Image) ，需要付费的 Google Cloud API 密钥。",
+    "description": "此应用程序使用 Nano Banana 2.1，需要付费的 Google Cloud API 密钥。",
     "learnMore": "了解更多关于计费的信息",
     "selectApiKey": "选择 API 密钥"
   },
@@ -120,5 +120,38 @@
     "matchMode": "匹配",
     "matchAny": "任一",
     "matchAll": "全部"
+  },
+  "resourceRef": {
+    "copy": "复制 ID 给 AI",
+    "copied": "已复制引用",
+    "copyFailed": "无法复制引用"
+  },
+  "autoTag": {
+    "dialogTitle_one": "为 {{count}} 个项目自动打标签",
+    "dialogTitle_other": "为 {{count}} 个项目自动打标签",
+    "dialogMessage": "每个项目都会发送给下面的模型，每次同时处理 {{limit}} 个。新标签会添加到项目已有的标签中。",
+    "model": "模型",
+    "loading": "正在检查自动标签设置…",
+    "loadFailed": "无法加载自动标签设置。",
+    "off": "自动标签已关闭。请先在“账户 → 偏好设置”中选择视觉模型。",
+    "openPreferences": "打开偏好设置",
+    "onlyUntagged": "跳过已有标签的项目",
+    "start": "开始",
+    "started_one": "正在为 {{count}} 个项目自动打标签",
+    "started_other": "正在为 {{count}} 个项目自动打标签",
+    "nothingToTag": "没有需要打标签的项目：这些项目都已有标签，或无法自动打标签。",
+    "startFailed": "无法开始自动打标签。",
+    "progress": "自动打标签 {{done}} / {{total}}",
+    "failedCount_one": "{{count}} 个失败",
+    "failedCount_other": "{{count}} 个失败",
+    "stop": "停止",
+    "stopFailed": "无法停止自动打标签。",
+    "finished_one": "已为 {{count}} 个项目自动打标签",
+    "finished_other": "已为 {{count}} 个项目自动打标签",
+    "summary": "自动打标签完成：{{completed}} 个成功，{{failed}} 个失败",
+    "details": "详情",
+    "retry": "重试失败项",
+    "retryFailed": "无法重试自动打标签。",
+    "dismiss": "关闭"
   }
 }

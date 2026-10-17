@@ -110,7 +110,8 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
 
       // Also mark names for projects that were fetched
       if (includeProjects) {
-        const allProjectsRes = await repository.getUserProjects(userId, 1, 100000);
+        // Names only: the summary list skips every project's cover and size scan.
+        const allProjectsRes = await repository.getUserProjects(userId, 1, 100000, undefined, 'all', false, true);
         for (const p of allProjectsRes.items) {
           if (projectBreakdown[p.id]) {
             projectBreakdown[p.id].name = p.name;

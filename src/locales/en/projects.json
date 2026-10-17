@@ -57,6 +57,7 @@
     "typeVideo": "Video",
     "typeAudio": "Audio",
     "typeComfyui": "ComfyUI Workflow",
+    "typeCivitai": "Civitai",
     "nameLabel": "Project Name",
     "namePlaceholderText": "e.g. Product Description Generator...",
     "namePlaceholderImage": "e.g. Cyberpunk Character Series...",
@@ -78,7 +79,12 @@
     "submitCreate": "Start Project",
     "submitSave": "Save Changes",
     "saveFailed": "Failed to save the project",
-    "loadFailed": "Failed to load the project"
+    "loadFailed": "Failed to load the project",
+    "civitaiMakes": "Makes",
+    "civitaiImages": "Images",
+    "civitaiVideos": "Videos",
+    "civitaiImagesHint": "Any checkpoint and LoRA",
+    "civitaiVideosHint": "Wan or Hunyuan, with LoRAs"
   },
   "projectOrphans": {
     "title": "Orphan Files Management",
