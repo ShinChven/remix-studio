@@ -11,7 +11,7 @@ In Docker deployments, the application container runs `prisma migrate deploy` au
 ## Pinning Versions
 
 - For default-branch tracking, use the `latest` image tag.
-- For stable production deployments, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:1.5.0`.
+- For stable production deployments, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:1.25.0`, or to `:1.25` to take patch releases automatically.
 
 See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 
@@ -20,6 +20,22 @@ See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 - Normal upgrades do not automatically invalidate every current session. Individual security migrations or releases can change token/session behavior; read the release notes between your current and target versions.
 - Reference URLs can use HTTP or HTTPS, but server-side provider and media fetches reject unsafe private/internal network targets.
 - Database migrations are forward operations. Restore the pre-upgrade database and matching object-storage snapshot if a rollback requires an older schema.
+
+## Version Notes
+
+### 1.25.0
+
+Eight migrations apply on startup: Civitai album records, the saved tag-match mode of workflow steps, tags on jobs, the auto-tagging settings table, a new export-task column, and new indexes.
+
+- The export migration copies the item list of pending and processing exports into the new `payload` column, then strips it from every export task's `data`, so the first startup takes longer when there are many large exports. Exports in progress carry on after the upgrade.
+- The index migration builds composite indexes on `AlbumItem`, `ExportTask`, `TrashItem`, `Post`, `PostExecution` and `DeliveryTask` with a plain `CREATE INDEX`, which blocks writes to each table while its index builds. With a very large album table, upgrade at a quiet time.
+- Auto-tagging stays off for each user until they pick a model under **Account → Preferences**.
+
+### 1.24.0
+
+- Browser notifications need no setup: the server generates its VAPID key pair on first use and stores it in the database, with the private key encrypted by `PROVIDER_ENCRYPTION_KEY`. Set `VAPID_SUBJECT` to a contact address you own. To pin the keys instead, see [Configuration](/guide/configuration#web-push-notifications).
+- TV mode and WebDAV are available at once; DLNA stays off unless `DLNA_ENABLED` is set and the app runs on the host network. See [TV, WebDAV & DLNA](/integrations/tv-and-devices).
+- ComfyUI project passwords are stored with the project and left out of project bundles.
 
 ## Keep PROVIDER_ENCRYPTION_KEY Stable
 

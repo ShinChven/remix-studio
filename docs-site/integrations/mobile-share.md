@@ -32,12 +32,14 @@ Installability requires the app to be served over **HTTPS** (or `localhost`). A 
 Under the hood, the flow is:
 
 1. The system posts the shared data to Remix Studio's `/share-target` endpoint.
-2. The app's **service worker** intercepts that request, stashes the files and metadata (title, text, URL) in a temporary cache, and redirects to the in-app **`/share`** screen.
+2. The app's **service worker** intercepts that request, stashes the files and metadata (title, text, URL) in a temporary cache, and redirects to the in-app **`/share`** screen. Every posted field is read, whatever the sending app names it; a photo handed over as `application/octet-stream` takes its type from the file name; and when the browser's own form parser yields nothing — as it does on some Pixel phones — the worker parses the multipart body itself.
 3. The Share screen reads the cached payload and presents the available destinations.
 4. Choose **Save to Library or Project** to open the Import view (`/import`, the same destination used by the [browser extension](/integrations/chrome-extension)), or **Start a Chat** to place the content in the assistant composer.
 5. The Import view offers only destinations matching the handoff type. Saving to a project appends a direct workflow input; it does not create an album result.
 
-Because the hand-off goes through a one-shot cache that is cleared on each new share, only the most recent share is held. The Share screen consumes and deletes the cached entries as soon as it loads, then stores one selected handoff in session storage for Import or Chat.
+Only the most recent share is held. The Share screen reads it without deleting it, so a refresh, a back navigation or a second load while sign-in resolves still finds the image; the share is cleared once it has been used or cancelled, or after fifteen minutes. One Android share can reach the service worker more than once, and an empty repeat never replaces a usable share from the same launch. The hand-off to Import or Chat goes through the Cache API rather than session storage, whose ~5 MB quota a gallery photo can exceed.
+
+When a share really is empty, the screen says what arrived — zero bytes from the sending app, or a file the browser could not open — and suggests sharing from the gallery, or saving the image first and sharing the saved copy.
 
 ::: warning Multiple images
 Although Android may send several image files, Remix Studio currently previews and forwards only the first. Import the remaining images separately.

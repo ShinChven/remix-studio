@@ -13,13 +13,14 @@ Available MCP capabilities include:
 - **Update** a single text prompt's content, title, or tags with `update_prompt`.
 - **Delete** a single text prompt from a text library with `delete_prompt`.
 - **Inspect** storage usage, albums, libraries, library items, and usable model/provider pairings.
-- **Browse** the items inside a project album with `get_album_items`, including each item's prompt, tags, format, aspect ratio, size, and storage keys, plus a `tagCounts` roll-up of every tag in the album. Filter with `tags` and `tag_match`.
+- **Browse** the items inside a project album with `get_album_items`, including each item's filename, prompt, tags, format, aspect ratio, size, and storage keys, plus a `tagCounts` roll-up of every tag in the album. Filter with `tags` and `tag_match`.
+- **Read one item by ID** with `get_album_item` (its full prompt and, for a text project, the full generated text, with the project's name and link) or `get_library_item` (the full text, or the storage key of a media item, with the library's name, type and link). Both take the IDs from a reference the user copied with **Copy ID for AI** — see [item references](#item-references).
 - **Tag album items** with `tag_album_items` — `add`, `remove`, or `replace` tags on the ids given in `item_ids`, or on every item in the album with `all_items`, optionally narrowed by `filter_tags` and `aspect_ratios`.
 - **Rename album items** with `rename_album_items` — rename specific items with `updates`, or batch-replace / prepend / strip filename prefixes across `item_ids` or `all_items` with `old_prefix` and `new_prefix` while keeping storage keys, thumbnails, optimized files, and originating job records in sync.
 - **Download** stored files with `get_file_urls`, which converts internal storage keys into temporary presigned URLs (optionally as save-as download links).
 - **Upload** image, video and audio files with `create_upload`, then add them to a library (`add_files_to_library`), pin them in a project workflow (`uploadId` on `update_project` / `create_project_with_workflow` items), or post them to a campaign (`create_posts_from_files`, `add_media_to_post`). See [file uploads](#file-uploads).
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
-- **Create and update** workflow-backed projects.
+- **Create and update** workflow-backed projects, including [Civitai projects](#civitai-projects).
 - **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
 - **Monitor the queue** across every project with `get_queue_status`, which returns the counts behind the [queue monitor](/concepts/queue) page — running, queued, failed, and provider slots — with `breakdown` reproducing either tab of that page (`providers` for each provider queue's slots, limit, and depth; `projects` for each project holding jobs), and never the job list itself.
 - **Clear failed jobs** with `clear_failed_jobs`, the same action as the queue monitor's clear buttons — scoped to one project (`projectId`), one provider queue (`providerId`), or the whole account when neither is given.
@@ -68,6 +69,32 @@ Rules the server enforces:
 - `get_upload` reports each upload's status: `awaiting_upload`, `processing`, `ready`, or `failed` with an `error`.
 
 These tools are offered to external MCP clients only. The in-app assistant has no way to send file bytes, so it does not see them.
+
+### Civitai projects
+
+`create_project_with_workflow` and `update_project` take type `civitai`. Set `providerId` to a Civitai provider — `list_available_models` lists them under `civitaiAccounts` — leave `modelConfigId` out, and put the shared settings in `civitaiSettings`, including `mediaType: "video"` and `video` (engine, resolution, length…) for a video project. The workflow also takes:
+
+| Item type | Holds |
+| :--- | :--- |
+| `checkpoint` | Images only; exactly one item, whose `models` lists one or more checkpoints by Civitai link or AIR — one per job |
+| `lora` | Any number; each lists one or more LoRAs, LyCORIS, DoRAs or embeddings with their strengths — one per job |
+| `negative_text`, `negative_text_library` | Text or a text library that feeds the negative prompt |
+
+Models are resolved with the project's Civitai account and reused as they are when carried forward from `get_project`. `draft_jobs` drafts Civitai combinations like any other.
+
+[ComfyUI projects](/concepts/projects#comfyui-projects) are set up in the app, since they start from an exported workflow graph; an agent can read them, draft their jobs and start them.
+
+### Item references
+
+**Copy ID for AI** in the app copies a reference that names the item and its parent, because every tool that acts on an item needs both:
+
+| Reference | Tools it fills |
+| :--- | :--- |
+| `library:<libraryId>/item:<itemId>` | `get_library_item`, `update_library_item`, `update_prompt`, `delete_prompt` |
+| `project:<projectId>/album-item:<itemId>` | `get_album_item`, `tag_album_items`, `rename_album_items`, `export_project_album` (`item_ids`) |
+| `campaign:<campaignId>/post:<postId>` | `get_post`, `get_post_text`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |
+
+The server's instructions describe these shapes to the client, so a user can paste one into the chat and the agent reads or changes exactly that item.
 
 ### Live page updates
 

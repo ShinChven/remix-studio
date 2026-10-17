@@ -73,6 +73,18 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 :::
 
+## Web Push Notifications
+
+Browsers subscribe to **Notifications** (**Account → Preferences**) through the standard Push API with the server's own VAPID key pair, so no third-party account or API key is needed. All three variables are optional.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `VAPID_PUBLIC_KEY` | generated | Public half of the VAPID key pair. Leave both keys blank and the server generates a pair on first use and stores it in the database, with the private key encrypted. |
+| `VAPID_PRIVATE_KEY` | generated | Private half. Set both keys or neither; generate a pair with `npx web-push generate-vapid-keys`. |
+| `VAPID_SUBJECT` | `mailto:admin@localhost` | Contact address the browser push services see, as a `mailto:` or `https:` URL. |
+
+Changing the key pair invalidates every existing browser subscription; each device has to switch notifications on again.
+
 ## Google OAuth (Login + Invite Registration)
 
 | Variable | Default | Description |
@@ -115,6 +127,15 @@ Google Drive reuses the Google OAuth application configured above; add `${APP_UR
 
 The OneDrive app needs the delegated scopes `offline_access`, `User.Read`, and `Files.ReadWrite`.
 
+## Civitai
+
+Civitai projects use the API key saved on a **Civitai** provider in the app; nothing has to be configured on the server. These overrides exist for testing against a mock or a proxy.
+
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `CIVITAI_ORCHESTRATION_URL` | `https://orchestration.civitai.com` | Civitai generation (orchestrator) API used to submit, poll and cancel jobs and upload source images. A provider's own API URL takes precedence. |
+| `CIVITAI_WEB_URL` | `https://civitai.com` | Civitai site whose REST API resolves model links and AIRs and searches models. |
+
 ## TV & Devices (DLNA)
 
 TV mode and WebDAV need no configuration. The DLNA media server is off unless enabled, and needs the app on the host network. See [TV, WebDAV & DLNA](/integrations/tv-and-devices).
@@ -150,7 +171,7 @@ These variables are consumed by the supplied compose files and helper scripts ra
 
 | Variable | Description |
 | :--- | :--- |
-| `REMIX_STUDIO_IMAGE` | Override the image tag in compose templates, e.g. `ghcr.io/shinchven/remix-studio:1.5.0`. Defaults to `:latest`. |
+| `REMIX_STUDIO_IMAGE` | Override the image tag in compose templates, e.g. `ghcr.io/shinchven/remix-studio:1.25.0`, or `:1.25` to follow patch releases. Defaults to `:latest`, which tracks `main`. |
 
 ## Notes
 

@@ -9,12 +9,12 @@ From a project's final-results tab:
 1. Select specific items, or leave the selection empty to target the full album.
 2. Enter a package name.
 3. Choose the **raw** or **optimized** asset version where the modality supports both.
-4. For an image project, optionally open the watermark screen.
+4. For a project that makes images — an image project, a ComfyUI project with image output, or a Civitai image project — optionally open the watermark screen.
 5. Queue the export and follow it on **Exports**.
 
 The server verifies project ownership and resolves the selected album records. Before creating a task it estimates the ZIP size from the chosen asset versions and checks the user's storage quota.
 
-Watermarking is currently restricted to image projects. When enabled with non-empty text, each selected image is processed and stored in the ZIP as JPEG.
+Watermarking is restricted to projects that make images; the server refuses a watermarked export of a video, text or audio album. When enabled with non-empty text, each selected image is processed and stored in the ZIP as JPEG, stood upright first if the photo carries an EXIF orientation.
 
 ## Export Task Lifecycle
 
@@ -26,6 +26,8 @@ Watermarking is currently restricted to image projects. When enabled with non-em
 | `failed` | Task stopped with an error |
 
 Workers claim tasks in the database, heartbeat while processing, and can reclaim abandoned work after a stale claim. Progress records the number of album items appended.
+
+The list of items a task archives is stored apart from its status and read only by the worker that claims it, so the Exports page, its status polls and the MCP export tools stay small however large an export is. That list is dropped once the task completes or fails.
 
 The final archive is stored in `S3_EXPORT_BUCKET`, separate from project/library objects in `S3_BUCKET`. Its size counts toward the user's archive quota category.
 
@@ -42,7 +44,7 @@ The global page lists exports across projects and shows:
 - Queue/archiving progress.
 - Completed size and a download action.
 - Failure messages.
-- Active drive or storefront release progress.
+- Active drive or storefront release progress, and the upload history of each export.
 - Delete, drive release, and sell actions when eligible.
 
 Download URLs are presigned when the task is read and expire after 24 hours. Reload the page to obtain a new URL; the archive itself is not deleted merely because a link expires.

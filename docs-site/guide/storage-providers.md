@@ -1,9 +1,11 @@
 # Storage Providers
 
-Remix Studio writes generated images and export archives to two S3-compatible buckets:
+Remix Studio writes generated media and export archives to two S3-compatible buckets:
 
-- `S3_BUCKET` — project images, workflow assets, and library media
+- `S3_BUCKET` — generated results (with their `.thumb` and `.opt` variants), workflow assets, library media, campaign media, and files an MCP client has staged under `staging/` before attaching them
 - `S3_EXPORT_BUCKET` — completed ZIP export archives
+
+Renaming, moving and copying files uses the provider's server-side copy (`CopyObject`), so the credentials need it alongside read, write, list and delete. Object keys can contain non-ASCII characters, such as an album file renamed to a Chinese name.
 
 For managed object stores, the safest production default is:
 

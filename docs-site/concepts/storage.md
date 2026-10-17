@@ -28,17 +28,23 @@ Deleting a visible record therefore may involve several keys. Orphan analysis co
 
 Each user has a byte limit (5 GB by default for a newly created database record, unless changed by an admin). Account storage analysis reports:
 
-- **Projects** — project workflow assets, jobs, and album media.
+- **Projects** — album media, workflow assets, and orphaned objects under the project prefix, each shown separately.
 - **Libraries** — reusable media items.
+- **Campaigns** — post media uploaded to or processed for campaigns.
 - **Archives** — ZIPs in the export bucket.
 - **Recycle bin** — soft-deleted project album media.
+
+Files an MCP client has staged with `create_upload` but not yet attached also count toward the limit until they expire 24 hours later; `get_storage_usage` lists them under `staging`.
 
 The sidebar periodically refreshes total usage; the Account storage view provides the detailed analysis.
 
 Quota guards currently use estimates:
 
-- Starting generation reserves an estimate of about 25 MB for every job that will be pending.
+- Adding drafts, and starting generation, each check an estimate of about 25 MB per job.
 - Creating an export estimates from the selected source asset sizes before adding the archive.
+- Copying results to a library, or copying or moving them to another project, checks the size of the files being copied.
+- Importing a project bundle checks the unpacked media before writing anything.
+- Staging an upload over MCP refuses a file that would not fit.
 
 The checks reduce accidental overage but do not make the object store itself enforce a hard quota. Provider output sizes and concurrent operations can differ from estimates.
 

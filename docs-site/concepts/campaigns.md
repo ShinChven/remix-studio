@@ -19,7 +19,7 @@ A post contains optional text, ordered media, a status, an optional schedule, an
 The editor:
 
 - Requires at least text or media.
-- Accepts image and video uploads.
+- Accepts image and video uploads, and media picked from libraries and project albums — including the image and video results of ComfyUI and Civitai projects.
 - Lets you remove and drag to reorder media.
 - Supports up to four media items in the current post editor.
 - Saves without a time as a draft.
@@ -74,6 +74,8 @@ The media batch screen queues uploads or owned media from libraries/albums and c
 
 Optional per-user watermark settings are applied to image media during processing. Thumbnail previews show the queued source and the resulting draft posts remain editable.
 
+An external MCP client can do the same with `create_posts_from_files`: it uploads the files, then creates one draft post per image or video, with the watermark applied as on this screen. See [file uploads](/integrations/mcp#file-uploads).
+
 ### Batch AI Text Generation
 
 Select posts, then choose an assistant-capable provider/model and a reusable prompt from a text library or enter instructions directly. The task can optionally include each post's images as model context.
@@ -115,7 +117,7 @@ Watermarking creates a processed post asset; it does not overwrite the original 
 
 - **Scheduled Posts** lists and searches upcoming posts across campaigns.
 - **Campaign History** shows completed/failed posts and channel errors.
-- **Post Detail** shows media, schedule controls, generated text actions, and every channel execution.
+- **Post Detail** shows media, schedule controls, generated text actions, and every channel execution. **Copy ID for AI** in its header, and on each post row, copies `campaign:<campaignId>/post:<postId>` for the [assistant](/concepts/assistant) or an MCP client to act on.
 - Campaign cards summarize total, completed, and scheduled ranges.
 
 These pages, the campaigns list and the campaign page refresh on their own when posts change elsewhere: when the scheduler publishes them, when their media finishes processing, and when another tab, the assistant or an MCP client edits them.

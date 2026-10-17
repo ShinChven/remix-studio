@@ -10,7 +10,9 @@ Workflow steps can be:
 - **Direct image, video, or audio** — a fixed media context added to every generated draft, when the project/model accepts that modality.
 - **Library reference** — one eligible item is chosen from a text, image, video, or audio library.
 
-Direct steps contribute one fixed choice. A library step contributes all of its non-empty, tag-matching items. Disabled steps are skipped entirely without being deleted.
+Direct steps contribute one fixed choice. A library step contributes all of its non-empty, tag-matching items. Disabled steps are skipped entirely without being deleted. An empty direct text step stops **Add to Draft** with a "missing info" error rather than drafting a blank part, and a workflow whose steps are all disabled drafts nothing.
+
+[ComfyUI and Civitai projects](/concepts/projects#project-types) use the same steps with a few additions: a ComfyUI step is bound to one input of the workflow graph, and a Civitai workflow adds **Checkpoint** and **LoRA** steps whose options combine like library items, plus text steps that feed the negative prompt.
 
 The same library can be referenced by more than one step. Each reference is an independent choice group with its own tag filter, so a library of 12 subjects added twice yields 12 × 12 combinations and, in shuffle mode, two independently drawn items per draft.
 
@@ -24,7 +26,7 @@ A library step can select tags and choose an **OR** or **AND** match mode:
 - **AND** includes only items containing every selected tag.
 - No selected tags means every non-empty item is eligible.
 
-If filtering leaves a library step with no eligible items, that step contributes no choice. Use the library preview from the workflow to check the effective item set before creating drafts.
+The match mode is saved with the step, so an **AND** filter survives a reload and applies when the server builds the drafts. If filtering leaves a library step with no eligible items, that step contributes no choice. Use the library preview from the workflow to check the effective item set before creating drafts.
 
 ## Combination Mode
 
@@ -53,6 +55,8 @@ Sampling is with replacement, so the same combination can appear more than once.
 
 ## Draft Composition and Filenames
 
+**Add to Draft** asks the server to build the drafts: it picks the combinations from the workflow's item IDs and tag filters, reads only the picked items' content, and saves up to 10,000 drafts in one transaction. The browser never downloads the libraries, and MCP's `draft_jobs` uses the same builder. A storage estimate is checked before the drafts are saved.
+
 Creating drafts stores the resolved values, not only a pointer to the workflow:
 
 - Composed prompt text.
@@ -60,6 +64,9 @@ Creating drafts stores the resolved values, not only a pointer to the workflow:
 - Provider and model selection.
 - Output options such as aspect ratio, quality, format, duration, resolution, or sound.
 - A workflow snapshot for later inspection and reuse.
+- The tags of the library items that were picked, which the results start with in the album. Tags are trimmed and de-duplicated regardless of case, keeping the first spelling.
+
+Output options are resolved against the selected model when a job is sent, so a value the model does not offer — a pixel size carried over from another provider's model, say — is replaced by the closest one it does offer, keeping the picture's shape.
 
 Library item titles and tags become filename parts. The project filename prefix is prepended when configured, and a short unique suffix prevents collisions.
 
@@ -74,7 +81,7 @@ The project separates preparation from execution:
 3. **Done** — completed job records, including the configuration that produced each result.
 4. **Album / Texts / Audios** — durable output items used for viewing, copying, exporting, or campaign media.
 
-Starting a draft changes it into a pending server-side job. A storage estimate is checked before this transition. See [Queue & Concurrency](/concepts/queue) for dispatch and recovery behavior.
+Starting a draft changes it into a pending server-side job. A storage estimate is checked again before this transition. See [Queue & Concurrency](/concepts/queue) for dispatch and recovery behavior.
 
 ## Editing Workflow Steps
 
@@ -87,12 +94,13 @@ The workflow editor supports:
 - Dragging files into the workflow or pasting text/media with `Cmd+V` / `Ctrl+V`.
 - Cropping or drawing on direct workflow images, with reset support.
 - Saving direct inputs into compatible libraries.
+- Importing the whole workflow and settings from a result in another project of the same type — see [Reusing Configuration](/concepts/projects#reusing-configuration).
 
 Project updates replace the stored workflow with the submitted ordered list. The UI serializes rapid saves, and assistant/MCP callers must fetch the latest project immediately before replacing a workflow so that unchanged steps are deliberately carried forward.
 
 ## Output Type and Model Compatibility
 
-The project type determines the output processor: text, image, video, or audio. Input support is then constrained by the selected model's declared capabilities. For example, an audio project accepts text and only offers reference images when that audio model declares image support.
+The project type determines the output processor: text, image, video, or audio. ComfyUI projects produce whatever their workflow outputs, images or video, and a Civitai project makes images or videos as chosen when it is created. Input support is then constrained by the selected model's declared capabilities. For example, an audio project accepts text and only offers reference images when that audio model declares image support.
 
 The presence of an input control does not make every provider/model combination valid. Select the provider and model first, then use the options the project editor exposes for that model. See [Supported Workflows](/concepts/supported-workflows).
 

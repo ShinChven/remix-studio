@@ -27,8 +27,8 @@ features:
     linkText: How workflows work
   - icon: 🤖
     title: Assistant-First Orchestration
-    details: A built-in assistant (powered by Gemini models) can inspect libraries, albums, model availability, and storage, then prepare project mutations behind explicit confirmation.
-    link: /guide/introduction
+    details: A built-in assistant, running on your own OpenAI, Claude, Google AI, Alibaba Cloud, Kimi or MiniMax provider, can inspect libraries, albums, model availability, and storage, then prepare project mutations behind explicit confirmation.
+    link: /concepts/assistant
     linkText: Learn more
   - icon: 📚
     title: Reusable Libraries
@@ -45,6 +45,16 @@ features:
     details: The same shared tool layer powers an MCP server at /mcp, so clients like Claude and Codex can create libraries, inspect albums and models, and assemble projects.
     link: /integrations/mcp
     linkText: MCP integration
+  - icon: 🖥️
+    title: ComfyUI & Civitai
+    details: Batch an API-format ComfyUI workflow on a GPU you host, or generate images and Wan or Hunyuan videos with any checkpoint and LoRA on Civitai — every input combines and shuffles like a regular workflow step.
+    link: /concepts/projects#comfyui-projects
+    linkText: Project types
+  - icon: 📺
+    title: Albums on Your TV
+    details: Browse albums on the living-room TV with a remote-friendly viewer, in Finder or Explorer over WebDAV, or in a TV's own media app over DLNA — read-only, per device.
+    link: /integrations/tv-and-devices
+    linkText: TV, WebDAV & DLNA
   - icon: 🏠
     title: Self-Hosted Control
     details: Providers, storage, exports, auth, and automation all stay in your own deployment — backed by PostgreSQL, S3-compatible storage, and Docker.
@@ -54,7 +64,7 @@ features:
 
 ## Multimodal by design
 
-Remix Studio runs text, image, video, and audio generation projects from one workspace. It combines four layers in one product:
+Remix Studio runs text, image, video, and audio generation projects — plus ComfyUI workflows you host and Civitai models — from one workspace. It combines four layers in one product:
 
 - An **in-app assistant** for planning and operating workflows
 - A **project system** for composing workflows from library-backed and direct inputs

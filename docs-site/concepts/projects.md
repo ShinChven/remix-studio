@@ -13,7 +13,7 @@ Choose the type according to the output you want:
 | **Video** | Generated video | Duration, resolution, sound, format |
 | **Audio** | Speech or music, depending on model | Voice/speaker or music mode, output format |
 | **ComfyUI Workflow** | Images or video from your own ComfyUI | ComfyUI address, API-format workflow, input mappings, output format |
-| **Civitai** | Images from Civitai checkpoints and LoRAs | Civitai account, checkpoint, LoRAs and embeddings, negative prompt, size, sampler, steps, CFG, seed |
+| **Civitai** | Images from Civitai checkpoints and LoRAs, or videos from Civitai's Wan and Hunyuan engines | Civitai account, checkpoint, LoRAs and embeddings, negative prompt, size, sampler, steps, CFG, seed |
 
 Available controls come from the selected model profile. A project also stores a default provider/model, description, filename prefix, shuffle setting, and workflow.
 
@@ -88,7 +88,7 @@ A video project uses one of the engines Civitai's own generator offers. The engi
 
 The Projects screen supports search, pagination, and active/archived/all filters. You can:
 
-- Create, edit, and permanently delete projects.
+- Create, edit, and permanently delete projects. Creating and editing open a dialog over the page you are on — full screen on a phone — so you stay on the list or in the project.
 - Archive a project to remove it from the default active view, then restore it later.
 - Duplicate a project by starting a new project with an existing workflow as the source.
 - Rename project folders from the project list.
@@ -117,7 +117,13 @@ The final tab is named for the project modality. It contains durable `AlbumItem`
 - Text projects show generated text and its prompt/context; multiple text results can be compared.
 - Audio projects provide audio result controls.
 
-The collection supports selection, page-size choices, filename changes, tagging, export, copying and moving to a library or another project, workflow reuse, and recycle-bin deletion. The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view.
+The collection supports selection, page-size choices, filename changes, tagging, export, copying and moving to a library or another project, workflow reuse, and recycle-bin deletion. With items selected, these live in one **Actions** menu. The search box matches an item's name and its prompt across the whole album, not just the page on screen.
+
+The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view. The album opens at 500 items per page; a page size you pick (25 to 500, or all) is remembered for that project in this browser, and an `albumSize` parameter in a shared link still takes precedence.
+
+Each card or row has a **Copy ID for AI** button. It copies `project:<projectId>/album-item:<itemId>`, a reference the [assistant](/concepts/assistant) or an [MCP](/integrations/mcp) client can act on directly — paste it into a chat to say exactly which result you mean.
+
+Album files are renamed one at a time from the album; an MCP client can rename many at once with `rename_album_items`, replacing, adding or stripping a filename prefix, and the job record and file variants are kept in sync either way. Filenames cannot contain `%`, `?` or `#`.
 
 ## Tagging Album Items
 
@@ -136,6 +142,22 @@ The toolbar's tag filter lists every tag in the album with how many items carry 
 Tags follow the item: they survive a move to the recycle bin and a restore, they are written into project bundles and read back on import, and they are copied onto the resulting library items when album items are copied to a library.
 
 Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item — so a stray space or a difference in capitalisation cannot split one tag into two entries in the filter list.
+
+### Tags From Library Items
+
+A result starts with the tags of the library items it was drafted from. If a draft picked a subject tagged `portrait` and a style tagged `film`, the result arrives in the album with both, so the album can be filtered by the same tags as its sources without tagging anything by hand. This applies to drafts made in the app and over MCP, in every project type.
+
+### Auto-Tagging
+
+A vision model can write tags for you. Choose it once under **Account → Preferences → Auto-tagging**: a provider whose models can read images (Google AI, Vertex AI, OpenAI, Claude, Grok or MiniMax), one of its models — custom aliases included — and a **concurrency limit**, the most tagging requests sent to the provider at once (1–16, default 2). Lower the limit if the provider starts rejecting requests for exceeding its rate limit. Choosing no provider turns auto-tagging off.
+
+Then start a run from an album's **Actions** menu — **Auto-tag Selected**, **Auto-tag All**, or **Auto-tag matching items** while a filter or search is active — or from the wand button in an image or text library, which covers the selection, the matching items or the whole library. The dialog names the model and skips items that already have tags unless you clear **Skip items that already have tags**.
+
+- Each item gets 5–10 tags in your interface language. The model is shown the collection's most-used tags and reuses them where they fit, so a library does not end up with `portrait`, `Portrait` and `portraits`.
+- New tags are added to the ones the item already has, including any you added while the model was working.
+- Images and text are tagged; video and audio are not yet. An image is sent as a small PNG made from its thumbnail.
+- A progress bar shows the run, with **Stop**. Failures stay listed with their reasons until you retry or dismiss them, and a request that hangs for two minutes counts as failed.
+- Runs are held in memory, so a server restart drops a run in progress. Start it again with **Skip items that already have tags** on to pick up where it stopped.
 
 ## Copying and Moving Results
 
@@ -208,6 +230,12 @@ Orphan cleanup deletes directly from object storage and cannot be undone. It doe
 
 Use orphan cleanup when project usage is unexpectedly high after many uploads, retries, or edits. It is not a routine replacement for deleting visible album items through Trash.
 
+## Finish Notifications
+
+Turn on **Notifications** under **Account → Preferences** and the browser notifies this device when a project that was running jobs has none left pending or processing — even with Remix Studio closed. The notification says how it went (**All 12 jobs finished.**, **9 of 12 jobs finished, 3 failed.**), and tapping it opens the project. A job that failed and then succeeded on retry counts as finished.
+
+Notifications are switched on per device, and the same card sends a test notification. On iPhone and iPad, Safari offers notifications only to a site added to the Home Screen, so [install the app](/guide/install-pwa) first and turn notifications on from there. The server signs notifications with its own key pair, so no third-party account is needed; see [Configuration](/guide/configuration#web-push-notifications).
+
 ## Live Updates
 
 An authenticated WebSocket project hub publishes job, album, trash, and project changes. The viewer refreshes the relevant data when events arrive and falls back to periodic refresh while work is processing if a live connection is unavailable.
@@ -222,4 +250,5 @@ The projects list, the libraries list and pages, the campaigns list and pages, t
 
 - [Workflows & Combinations](/concepts/workflows) — how drafts are composed.
 - [Recycle Bin](/concepts/trash) — recoverable album deletion.
+- [TV, WebDAV & DLNA](/integrations/tv-and-devices) — watch albums on a TV or open them in a file manager.
 - [Libraries & Prompts](/concepts/libraries) — reusable inputs and result copying.

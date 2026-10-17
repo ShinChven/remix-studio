@@ -33,7 +33,7 @@ flowchart LR
     T --> W
     W --> E["Combination / Shuffle Engine"]
     E --> Q["Recoverable Provider Queues"]
-    Q --> O["Text · Image · Video · Audio"]
+    Q --> O["Text · Image · Video · Audio · ComfyUI · Civitai"]
     O --> D["Albums · Exports · Campaigns · Releases"]
 ```
 
@@ -43,9 +43,12 @@ flowchart LR
 - **Direct the system in natural language** — Ask the assistant or an MCP agent to inspect what already exists, create or refine libraries, assemble multimodal projects, and prepare campaign posts.
 - **Compose at scale** — Mix fixed inputs with library-backed choices. Run the Cartesian product for exhaustive coverage or use shuffle mode for bounded exploration: 3 subjects × 4 styles × 2 references becomes 24 reviewable drafts.
 - **Review before execution** — Remix Studio separates composition from provider calls. Inspect resolved prompts, media contexts, model settings, and workflow snapshots, then queue only the drafts worth running.
-- **Run resiliently across providers** — Model profiles drive valid controls for text, image, video, audio, and music workflows. Database-backed jobs, per-provider concurrency, detached polling, restart recovery, retries, and live project updates keep batches moving.
+- **Run resiliently across providers** — Model profiles drive valid controls for text, image, video, audio, and music workflows. Database-backed jobs, per-provider concurrency, detached polling, restart recovery, retries, and live project updates keep batches moving, and a browser notification says when a project's queue is done.
+- **Bring your own pipeline** — Batch an API-format ComfyUI workflow on a GPU you host, or generate images and videos with any checkpoint and LoRA on Civitai; every input combines and shuffles like a regular workflow step.
+- **Organise results** — Results inherit the tags of the library items they came from, a vision model can tag albums and libraries for you, and **Copy ID for AI** hands the assistant or an agent the exact item you mean.
 - **Turn output into operations** — Keep results in durable albums, reuse prior configurations, edit and export assets, add watermarks, release archives to connected drives such as Google Drive and OneDrive, publish products to storefronts, or schedule campaigns for X and Threads.
 - **Move whole projects around** — Package a project's settings, workflow, album, and media into a single ZIP, then import it back as a new project on any deployment.
+- **Watch it anywhere** — Browse albums on the living-room TV, in a file manager over WebDAV, or in a TV's own media app over DLNA, read-only and per device.
 
 ## Human Control Where It Matters
 
@@ -65,7 +68,10 @@ Find detailed setup, configuration, and operations guidance on the [documentatio
 - [Built-in assistant](https://shinchven.github.io/remix-studio/concepts/assistant) and [MCP integration](https://shinchven.github.io/remix-studio/integrations/mcp)
 - [Workflows and combinations](https://shinchven.github.io/remix-studio/concepts/workflows) and [supported AI workflows](https://shinchven.github.io/remix-studio/concepts/supported-workflows)
 - [Providers and models](https://shinchven.github.io/remix-studio/concepts/providers), [campaigns](https://shinchven.github.io/remix-studio/concepts/campaigns), and [exports](https://shinchven.github.io/remix-studio/concepts/exports)
+- [Projects and albums](https://shinchven.github.io/remix-studio/concepts/projects), including ComfyUI and Civitai projects, auto-tagging and notifications
+- [TV, WebDAV & DLNA](https://shinchven.github.io/remix-studio/integrations/tv-and-devices)
 - [Local development](https://shinchven.github.io/remix-studio/guide/local-development) or [Docker deployment](https://shinchven.github.io/remix-studio/guide/docker-deployment)
+- [What's new](https://shinchven.github.io/remix-studio/whats-new) in each release
 
 ## Community and License
 

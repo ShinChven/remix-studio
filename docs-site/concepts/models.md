@@ -23,6 +23,9 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Kling AI** | - | ✅ | ✅ | - |
 | **Black Forest Labs** | - | ✅ | - | - |
 | **Replicate** | - | ✅ | ✅ | - |
+| **Civitai** | - | ✅ | ✅ | - |
+
+**Civitai** has no bundled profiles. A [Civitai project](/concepts/projects#civitai-projects) picks its checkpoint, LoRAs and embeddings from Civitai's catalog, or for video one of Civitai's engines (Wan 2.1, 2.2, 2.2 5B, 2.5, 2.7, 3.0 and Hunyuan). [ComfyUI projects](/concepts/projects#comfyui-projects) need no provider or profile at all: they run whatever models your own ComfyUI workflow loads.
 
 ## 2. Text Generation (LLMs)
 

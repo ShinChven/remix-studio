@@ -43,7 +43,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 docker compose -f docker/compose.minio.yml --env-file .env.docker up -d
 ```
 
-The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks successful builds from the default branch and may be newer than the latest tagged release. For stable deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a SemVer tag such as `ghcr.io/shinchven/remix-studio:1.5.0`.
+The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks successful builds from the default branch and may be newer than the latest tagged release. For stable deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a SemVer tag such as `ghcr.io/shinchven/remix-studio:1.25.0`, or `:1.25` to pick up patch releases.
 
 This starts:
 
@@ -57,12 +57,22 @@ The application container runs `prisma migrate deploy` on startup before launchi
 ## 4. View Logs
 
 ```bash
-docker compose --profile app --env-file .env.docker logs -f app
+docker compose -f docker/compose.minio.yml --env-file .env.docker logs -f app
 ```
 
 ## 5. Stop the Stack
 
 ```bash
+docker compose -f docker/compose.minio.yml --env-file .env.docker down
+```
+
+### Building From Source Instead
+
+The root `docker-compose.yml` runs the same stack, with the app behind the `app` profile so `docker compose up -d postgres minio` starts only the services [local development](/guide/local-development) needs. With the profile it builds the image from the checkout:
+
+```bash
+docker compose --profile app --env-file .env.docker up -d --build
+docker compose --profile app --env-file .env.docker logs -f app
 docker compose --profile app --env-file .env.docker down
 ```
 
@@ -78,6 +88,16 @@ The `docker/` directory ships several layouts. Pick the one that matches where y
 
 Additional env examples are provided for `cloudflare-r2`, `gcs`, and `aliyun-oss`. See [Storage Providers](/guide/storage-providers) for per-provider configuration.
 
+### DLNA on the Host Network
+
+TV mode and WebDAV work in every layout. DLNA discovery is UDP multicast, which Docker's bridge network does not forward, so DLNA needs the app on the host network. `docker-compose.dlna.yml` is an override for the root compose file that does that and sets `DLNA_ENABLED`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dlna.yml --profile app --env-file .env.docker up -d
+```
+
+On the host network the app reaches PostgreSQL and MinIO through their host-published ports rather than by service name. It is Linux only: Docker Desktop on macOS and Windows does not share the host's LAN interfaces. See [TV, WebDAV & DLNA](/integrations/tv-and-devices).
+
 ### Example: AWS S3 layout
 
 ```bash
@@ -91,6 +111,10 @@ If you use passkeys:
 
 - Set `WEBAUTHN_RP_ID` to the **public site domain only**, without protocol or port. Example: `app.example.com`.
 - If TLS terminates at a reverse proxy or load balancer, set `WEBAUTHN_ORIGIN` to the exact external origin, including `https://`. Example: `https://app.example.com`.
+
+## Push Notifications
+
+Browser notifications work without configuration: the server generates its VAPID key pair on first use and keeps it in the database. Set `VAPID_SUBJECT` to a contact address you own, and serve the app over HTTPS, which browsers require for push. See [Configuration](/guide/configuration#web-push-notifications).
 
 ## Health Checks
 
@@ -108,12 +132,22 @@ All templates expose:
 
 ## Cutting a Release
 
-```bash
-npm version 1.0.0
-git push origin main --tags
-```
+1. On `main`, bump the version in `package.json` and `package-lock.json` without tagging, date the release section in `CHANGELOG.md`, and add the release entry to `docs-site/whats-new.md`:
 
-This triggers the GHCR image build from `.github/workflows/docker.yml`.
+   ```bash
+   npm version 1.25.0 --no-git-tag-version
+   git commit -am "chore(release): v1.25.0"
+   git push origin main
+   ```
+
+2. Tag the release commit and push the tag:
+
+   ```bash
+   git tag -a v1.25.0 -m "Release v1.25.0"
+   git push origin v1.25.0
+   ```
+
+The push to `main` rebuilds `latest` and redeploys the docs site. The tag push runs `.github/workflows/docker.yml` again, which publishes the `1.25.0`, `1.25` and `1` image tags and creates the GitHub Release with generated notes and the browser extension as `remix-studio-chrome-extension.zip`.
 
 ## Related
 
