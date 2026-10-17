@@ -106,6 +106,8 @@ export function normalizeAlbumTags(values: unknown): string[] {
   return tags;
 }
 
+type AlbumCover = Pick<Prisma.AlbumItemGetPayload<{}>, 'id' | 'thumbnailUrl' | 'optimizedUrl' | 'imageUrl'>;
+
 export class ProjectRepository {
   constructor(private prisma: PrismaClient) {}
 
@@ -156,13 +158,6 @@ export class ProjectRepository {
         take: limit,
         include: {
           _count: { select: { jobs: true, albumItems: true } },
-          ...(summary ? {} : {
-            albumItems: {
-              orderBy: { createdAt: 'desc' as const },
-              take: 1,
-              select: { id: true, thumbnailUrl: true, optimizedUrl: true, imageUrl: true }
-            }
-          }),
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
@@ -170,15 +165,18 @@ export class ProjectRepository {
 
     const projectIds = projects.map((p) => p.id);
     const projectSizes: Record<string, number> = {};
+    let covers = new Map<string, AlbumCover>();
 
     if (projectIds.length > 0 && !summary) {
       const where = { userId, projectId: { in: projectIds } };
       const mediaSum = { size: true, optimizedSize: true, thumbnailSize: true } as const;
-      const [albumSums, trashSums, exportSums] = await Promise.all([
+      const [albumSums, trashSums, exportSums, latestItems] = await Promise.all([
         this.prisma.albumItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
         this.prisma.trashItem.groupBy({ by: ['projectId'], where, _sum: mediaSum }),
         this.prisma.exportTask.groupBy({ by: ['projectId'], where, _sum: { size: true } }),
+        this.getAlbumCovers(projectIds),
       ]);
+      covers = latestItems;
 
       const add = (projectId: string | null, ...sizes: (bigint | null)[]) => {
         if (!projectId) return;
@@ -199,7 +197,7 @@ export class ProjectRepository {
       createdAt: p.createdAt.getTime(),
       workflow: [],
       jobs: [],
-      album: (p as any).albumItems || [],
+      album: covers.has(p.id) ? [covers.get(p.id) as any] : [],
       jobCount: p._count.jobs,
       albumCount: p._count.albumItems,
       totalSize: projectSizes[p.id] || 0,
@@ -223,6 +221,26 @@ export class ProjectRepository {
       page,
       pages: Math.max(1, Math.ceil(total / limit)),
     };
+  }
+
+  /**
+   * Each project's newest album item, keyed by project. A nested `take: 1`
+   * include would do this too, but Prisma pages nested relations in memory:
+   * it reads every album item of every listed project to keep one each.
+   */
+  private async getAlbumCovers(projectIds: string[]): Promise<Map<string, AlbumCover>> {
+    const rows = await this.prisma.$queryRaw<Array<AlbumCover & { projectId: string }>>`
+      SELECT p.id AS "projectId", a."id", a."thumbnailUrl", a."optimizedUrl", a."imageUrl"
+      FROM unnest(${projectIds}::text[]) AS p(id)
+      CROSS JOIN LATERAL (
+        SELECT "id", "thumbnailUrl", "optimizedUrl", "imageUrl"
+        FROM "AlbumItem"
+        WHERE "projectId" = p.id
+        ORDER BY "createdAt" DESC, "id" DESC
+        LIMIT 1
+      ) a
+    `;
+    return new Map(rows.map(({ projectId, ...cover }) => [projectId, cover]));
   }
 
   async getProject(userId: string, projectId: string): Promise<Project | null> {
@@ -1178,6 +1196,7 @@ export class ProjectRepository {
     const tasks = await this.prisma.exportTask.findMany({
       where: { userId, projectId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      omit: { payload: true },
     });
     return tasks.map((t) => this.mapExportTask(t));
   }
@@ -1191,6 +1210,7 @@ export class ProjectRepository {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limit,
+        omit: { payload: true },
       }),
     ]);
 
@@ -1218,13 +1238,22 @@ export class ProjectRepository {
   }
 
   async getExportTask(userId: string, taskId: string): Promise<any | undefined> {
-    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId } });
+    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId }, omit: { payload: true } });
     if (!t) return undefined;
     return this.mapExportTask(t);
   }
 
+  /**
+   * `items` and `bundleManifest` are written to the `payload` column, which no
+   * read except the worker's claim returns. Leaving them out of an update
+   * keeps the stored payload; settling the task drops it.
+   */
   async saveExportTask(userId: string, taskId: string, data: any): Promise<void> {
-    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, ...rest } = data;
+    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, items, bundleManifest, ...rest } = data;
+    const payload = items !== undefined || bundleManifest !== undefined
+      ? { ...(items !== undefined ? { items } : {}), ...(bundleManifest !== undefined ? { bundleManifest } : {}) }
+      : undefined;
+    const settled = status === 'completed' || status === 'failed';
     await this.prisma.exportTask.upsert({
       where: { id: taskId },
       create: {
@@ -1236,6 +1265,7 @@ export class ProjectRepository {
         error: error ?? null,
         size: size != null ? BigInt(size) : null,
         data: Object.keys(rest).length > 0 ? rest : undefined,
+        payload: settled ? undefined : payload,
         createdAt: createdAt ? new Date(createdAt) : new Date(),
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
@@ -1246,6 +1276,7 @@ export class ProjectRepository {
         error: error ?? null,
         size: size != null ? BigInt(size) : null,
         data: Object.keys(rest).length > 0 ? rest : undefined,
+        payload: settled ? Prisma.DbNull : payload,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
     });
@@ -1296,6 +1327,7 @@ export class ProjectRepository {
       UPDATE "ExportTask"
       SET    status      = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'pending' END,
              error       = CASE WHEN attempts >= 3 THEN 'worker timeout' ELSE error END,
+             payload     = CASE WHEN attempts >= 3 THEN NULL ELSE payload END,
              "claimedAt"  = NULL,
              "workerId"   = NULL
       WHERE  status = 'processing'
@@ -1638,10 +1670,10 @@ export class ProjectRepository {
 
   async getAllUserItems(userId: string): Promise<any[]> {
     const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems, postMedia] = await Promise.all([
-      this.prisma.job.findMany({ where: { userId } }),
+      this.prisma.job.findMany({ where: { userId }, omit: { workflowSnapshot: true } }),
       this.prisma.albumItem.findMany({ where: { userId } }),
       this.prisma.trashItem.findMany({ where: { userId } }),
-      this.prisma.exportTask.findMany({ where: { userId } }),
+      this.prisma.exportTask.findMany({ where: { userId }, omit: { payload: true } }),
       this.prisma.libraryItem.findMany({ where: { library: { userId } } }),
       this.prisma.workflowItem.findMany({ where: { project: { userId } } }),
       this.prisma.postMedia.findMany({
@@ -2093,6 +2125,8 @@ export class ProjectRepository {
       createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
       expiresAt: t.expiresAt ? (t.expiresAt instanceof Date ? t.expiresAt.getTime() : t.expiresAt) : undefined,
       ...extra,
+      // Only the worker's claim selects the payload.
+      ...((t.payload as any) ?? {}),
     };
   }
 }

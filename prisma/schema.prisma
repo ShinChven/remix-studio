@@ -327,7 +327,7 @@ model AlbumItem {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@index([projectId])
+  @@index([projectId, createdAt])
   @@index([userId])
 }
 
@@ -362,7 +362,7 @@ model TrashItem {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId, deletedAt])
 }
 
 model ExportTask {
@@ -374,6 +374,11 @@ model ExportTask {
   error       String?   @db.Text
   size        BigInt?
   data        Json? // Flexible blob for any extra fields
+  // What the worker archives: `items` and, for project bundles, the
+  // `bundleManifest`. These run to megabytes on a large album, so they stay
+  // out of `data` (which every list and status poll reads) and are cleared
+  // once the task settles.
+  payload     Json?
   createdAt   DateTime  @default(now())
   expiresAt   DateTime?
   // Queue fields
@@ -386,7 +391,7 @@ model ExportTask {
   project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
   deliveryTasks DeliveryTask[]
 
-  @@index([userId])
+  @@index([userId, createdAt])
   @@index([userId, projectId])
   @@index([status, createdAt])
 }
@@ -456,6 +461,7 @@ model DeliveryTask {
   @@index([userId])
   @@index([status, createdAt])
   @@index([driveConnectionId])
+  @@index([exportTaskId])
 }
 
 model Product {
@@ -841,6 +847,8 @@ model Post {
 
   // High-frequency index for the polling engine looking for due posts
   @@index([status, scheduledAt])
+  @@index([campaignId])
+  @@index([userId, status])
 }
 
 model PostMedia {
@@ -889,6 +897,8 @@ model PostExecution {
 
   // Critical index for the execution worker loop
   @@index([status, nextAttemptAt])
+  @@index([postId])
+  @@index([socialAccountId])
 }
 
 // A browser's Web Push subscription. One user can have several (one per
