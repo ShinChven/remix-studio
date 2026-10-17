@@ -24,6 +24,7 @@ export class PrismaRepository implements IRepository {
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems, type, nameOnly); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
   getLibraryType(userId: string, libraryId: string) { return this.libraries.getLibraryType(userId, libraryId); }
+  getLibrarySummary(userId: string, libraryId: string, includeItemCount?: boolean) { return this.libraries.getLibrarySummary(userId, libraryId, includeItemCount); }
   getLibraryCoverItems(userId: string, libraryIds: string[]) { return this.libraries.getLibraryCoverItems(userId, libraryIds); }
   getLibraryItemRefs(userId: string, libraryIds: string[]) { return this.libraries.getLibraryItemRefs(userId, libraryIds); }
   getLibraryItemContents(userId: string, itemIds: string[]) { return this.libraries.getLibraryItemContents(userId, itemIds); }

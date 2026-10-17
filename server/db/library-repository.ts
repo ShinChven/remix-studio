@@ -176,6 +176,38 @@ export class LibraryRepository {
     return lib ? (lib.type as LibraryType) : null;
   }
 
+  /** The library without its items, or null when the user has no such library; itemCount is filled only on request. */
+  async getLibrarySummary(userId: string, libraryId: string, includeItemCount: boolean = false): Promise<Omit<Library, 'items'> | null> {
+    const lib = await this.prisma.library.findFirst({
+      where: { id: libraryId, userId },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        type: true,
+        createdAt: true,
+        updatedAt: true,
+        pinnedAt: true,
+      },
+    });
+    if (!lib) return null;
+
+    const itemCount = includeItemCount
+      ? await this.prisma.libraryItem.count({ where: { libraryId } })
+      : undefined;
+
+    return {
+      id: lib.id,
+      name: lib.name,
+      description: lib.description ?? undefined,
+      type: lib.type as LibraryType,
+      ...(itemCount !== undefined ? { itemCount } : {}),
+      createdAt: lib.createdAt.getTime(),
+      updatedAt: lib.updatedAt.getTime(),
+      pinnedAt: lib.pinnedAt ? lib.pinnedAt.toISOString() : null,
+    };
+  }
+
   async createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void> {
     await this.prisma.library.create({
       data: { id: library.id, userId, name: library.name, description: library.description ?? null, type: library.type } as any,

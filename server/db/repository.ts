@@ -6,6 +6,7 @@ export interface IRepository {
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean): Promise<{ items: Library[], total: number, page: number, pages: number }>;
   getLibrary(userId: string, libraryId: string): Promise<Library | null>;
   getLibraryType(userId: string, libraryId: string): Promise<LibraryType | null>;
+  getLibrarySummary(userId: string, libraryId: string, includeItemCount?: boolean): Promise<Omit<Library, 'items'> | null>;
   getLibraryCoverItems(userId: string, libraryIds: string[]): Promise<Map<string, LibraryItem>>;
   getLibraryItemRefs(userId: string, libraryIds: string[]): Promise<import('./library-repository').LibraryItemRefs[]>;
   getLibraryItemContents(userId: string, itemIds: string[]): Promise<Map<string, { content: string; title?: string }>>;

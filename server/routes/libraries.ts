@@ -376,7 +376,7 @@ export function createLibraryRouter(
       const pinned = body?.pinned !== false;
 
       if (pinned) {
-        const existing = await repository.getLibrary(user.userId, libraryId);
+        const existing = await repository.getLibrarySummary(user.userId, libraryId);
         if (!existing) return c.json({ error: 'Not found' }, 404);
         if (!existing.pinnedAt) {
           const count = await repository.countPinnedLibraries(user.userId);
@@ -656,14 +656,14 @@ export function createLibraryRouter(
         return c.json({ error: 'Destination library must be different' }, 400);
       }
 
-      const sourceLibrary = await repository.getLibrary(user.userId, libId);
-      const destinationLibrary = await repository.getLibrary(user.userId, destinationLibraryId);
+      const sourceLibraryType = await repository.getLibraryType(user.userId, libId);
+      const destinationLibraryType = await repository.getLibraryType(user.userId, destinationLibraryId);
 
-      if (!sourceLibrary || !destinationLibrary) {
+      if (!sourceLibraryType || !destinationLibraryType) {
         return c.json({ error: 'Source or destination library not found' }, 404);
       }
 
-      if (sourceLibrary.type !== destinationLibrary.type) {
+      if (sourceLibraryType !== destinationLibraryType) {
         return c.json({ error: 'Libraries must be of the same type' }, 400);
       }
 
@@ -673,7 +673,7 @@ export function createLibraryRouter(
       }
 
       // Check storage limits for copied media assets
-      if (sourceLibrary.type === 'image' || sourceLibrary.type === 'video' || sourceLibrary.type === 'audio') {
+      if (sourceLibraryType === 'image' || sourceLibraryType === 'video' || sourceLibraryType === 'audio') {
         const copySize = itemsToCopy.reduce((acc, item) => acc + (item.size || 0), 0);
         if (copySize > 0) {
           const { allowed, currentUsage, limit } = await checkStorageLimit(
@@ -702,7 +702,7 @@ export function createLibraryRouter(
             id: randomUUID(),
           };
 
-          if (sourceLibrary.type === 'image' || sourceLibrary.type === 'video' || sourceLibrary.type === 'audio') {
+          if (sourceLibraryType === 'image' || sourceLibraryType === 'video' || sourceLibraryType === 'audio') {
             const keyFields: Array<'content' | 'thumbnailUrl' | 'optimizedUrl'> = ['content', 'thumbnailUrl', 'optimizedUrl'];
             for (const field of keyFields) {
               const sourceKey = clonedItem[field];
@@ -742,14 +742,14 @@ export function createLibraryRouter(
         return c.json({ error: 'Destination library must be different' }, 400);
       }
 
-      const sourceLibrary = await repository.getLibrary(user.userId, libId);
-      const destinationLibrary = await repository.getLibrary(user.userId, destinationLibraryId);
+      const sourceLibraryType = await repository.getLibraryType(user.userId, libId);
+      const destinationLibraryType = await repository.getLibraryType(user.userId, destinationLibraryId);
 
-      if (!sourceLibrary || !destinationLibrary) {
+      if (!sourceLibraryType || !destinationLibraryType) {
         return c.json({ error: 'Source or destination library not found' }, 404);
       }
 
-      if (sourceLibrary.type !== destinationLibrary.type) {
+      if (sourceLibraryType !== destinationLibraryType) {
         return c.json({ error: 'Libraries must be of the same type' }, 400);
       }
 
@@ -799,12 +799,12 @@ export function createLibraryRouter(
   });
 
   const findLibraryWatermarkSource = async (userId: string, libId: string, itemId: string): Promise<QuickWatermarkSource> => {
-    const library = await repository.getLibrary(userId, libId);
+    const library = await repository.getLibrarySummary(userId, libId);
     if (!library) throw new QuickWatermarkError('Library not found', 404);
     if (library.type !== 'image') {
       throw new QuickWatermarkError('Watermarking is only available for image libraries', 400);
     }
-    const item = library.items.find((entry) => entry.id === itemId);
+    const [item] = await repository.getLibraryItemsByIds(userId, libId, [itemId]);
     if (!item) throw new QuickWatermarkError('Library item not found', 404);
     const rawKey = toStorageKey(item.content, storage);
     return {

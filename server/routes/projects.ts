@@ -1455,7 +1455,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
           type: targetLibraryType
         });
       } else {
-        const lib = await repository.getLibrary(user.userId, libraryId);
+        const lib = await repository.getLibrarySummary(user.userId, libraryId);
         if (!lib) {
           return c.json({ error: 'Destination library not found' }, 404);
         }

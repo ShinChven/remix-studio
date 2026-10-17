@@ -974,7 +974,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       const nextName = name?.trim();
       const hasDescription = description !== undefined;
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -1021,7 +1021,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         title?: string;
         tags?: string[];
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -1054,7 +1054,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         library_id: string;
         items: { content: string; title?: string; tags?: string[] }[];
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id, true);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -1068,7 +1068,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
       // libraryTotal lets the model compare progress against the requested
       // count and decide whether another batch is still owed.
-      const libraryTotal = (library.items?.length ?? 0) + libraryItems.length;
+      const libraryTotal = (library.itemCount ?? 0) + libraryItems.length;
       return {
         text: JSON.stringify({
           library_id,
@@ -1106,7 +1106,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         tags?: string[];
       };
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -1114,7 +1114,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
       }
 
-      const existingItem = library.items.find((item) => item.id === item_id);
+      const [existingItem] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
       if (!existingItem) {
         return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
       }
@@ -1165,7 +1165,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         item_id: string;
       };
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
@@ -1173,7 +1173,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
         return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
       }
 
-      const existingItem = library.items.find((item) => item.id === item_id);
+      const [existingItem] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
       if (!existingItem) {
         return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
       }
@@ -1989,7 +1989,7 @@ Staged files are kept for 24 hours and count toward the storage quota until then
         library_id: string;
         files: { uploadId: string; title?: string; tags?: string[] }[];
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id, true);
       if (!library) return errorResult(`Library "${library_id}" not found.`);
       if (library.type !== 'image' && library.type !== 'video' && library.type !== 'audio') {
         return errorResult(`Library "${library.name}" is a ${library.type} library. Files go into image, video or audio libraries; add text with create_prompt.`);
@@ -2026,7 +2026,7 @@ Staged files are kept for 24 hours and count toward the storage quota until then
       await repository.createLibraryItemsBatch(userId, library_id, items);
       publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
 
-      const libraryTotal = (library.items?.length ?? 0) + items.length;
+      const libraryTotal = (library.itemCount ?? 0) + items.length;
       const payload = {
         library_id,
         libraryUrl: appUrls.library(library_id),
@@ -2356,7 +2356,7 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         page: number;
         limit: number;
       };
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return {
           text: JSON.stringify({ error: 'Library not found' }),
@@ -3584,8 +3584,8 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         content?: string;
       };
 
-      const library = await repository.getLibrary(userId, library_id);
-      if (!library) {
+      const libraryType = await repository.getLibraryType(userId, library_id);
+      if (!libraryType) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
 
@@ -3638,7 +3638,7 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         updates: { item_id: string; title?: string; tags?: string[]; content?: string }[];
       };
 
-      const library = await repository.getLibrary(userId, library_id);
+      const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
