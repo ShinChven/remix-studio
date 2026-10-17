@@ -23,6 +23,7 @@ export class PrismaRepository implements IRepository {
   // === Library CRUD ===
   getUserLibraries(userId: string, page?: number, limit?: number, q?: string, includeItems?: boolean, type?: LibraryType, nameOnly?: boolean) { return this.libraries.getUserLibraries(userId, page, limit, q, includeItems, type, nameOnly); }
   getLibrary(userId: string, libraryId: string) { return this.libraries.getLibrary(userId, libraryId); }
+  getLibraryType(userId: string, libraryId: string) { return this.libraries.getLibraryType(userId, libraryId); }
   getLibraryCoverItems(userId: string, libraryIds: string[]) { return this.libraries.getLibraryCoverItems(userId, libraryIds); }
   getLibraryItemRefs(userId: string, libraryIds: string[]) { return this.libraries.getLibraryItemRefs(userId, libraryIds); }
   getLibraryItemContents(userId: string, itemIds: string[]) { return this.libraries.getLibraryItemContents(userId, itemIds); }
@@ -45,8 +46,8 @@ export class PrismaRepository implements IRepository {
   deleteLibraryItem(userId: string, libraryId: string, itemId: string) { return this.libraries.deleteLibraryItem(userId, libraryId, itemId); }
 
   // === Project CRUD ===
-  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean) {
-    return this.projects.getUserProjects(userId, page, limit, q, status, nameOnly);
+  getUserProjects(userId: string, page?: number, limit?: number, q?: string, status?: ProjectStatus | 'all', nameOnly?: boolean, summary?: boolean) {
+    return this.projects.getUserProjects(userId, page, limit, q, status, nameOnly, summary);
   }
   getProject(userId: string, projectId: string) { return this.projects.getProject(userId, projectId); }
   getProjectWorkflow(userId: string, projectId: string) { return this.projects.getProjectWorkflow(userId, projectId); }

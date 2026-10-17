@@ -554,11 +554,11 @@ export function createLibraryRouter(
       const sortBy = c.req.query('sortBy') as 'time' | 'name' || 'time';
       const sortOrder = c.req.query('sortOrder') as 'asc' | 'desc' || 'desc';
 
-      const library = await repository.getLibrary(user.userId, libId);
-      if (!library) return c.json({ error: 'Not found' }, 404);
+      const libraryType = await repository.getLibraryType(user.userId, libId);
+      if (!libraryType) return c.json({ error: 'Not found' }, 404);
 
       const result = await repository.getLibraryItemsPaginated(user.userId, libId, page, limit, q, tags, sortBy, sortOrder);
-      const signedItems = await signLibraryImages(result.items, storage, library.type);
+      const signedItems = await signLibraryImages(result.items, storage, libraryType);
       storeRecoveredSizes(user.userId, libId, result.items, signedItems);
 
       return c.json({

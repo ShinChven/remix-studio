@@ -557,8 +557,10 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       const status: 'active' | 'archived' | 'all' | undefined =
         rawStatus === 'archived' || rawStatus === 'all' || rawStatus === 'active' ? rawStatus : undefined;
       const nameOnly = c.req.query('nameOnly') === 'true';
+      const summary = c.req.query('summary') === 'true';
 
-      const result = await repository.getUserProjects(user.userId, page, limit, q, status, nameOnly);
+      const result = await repository.getUserProjects(user.userId, page, limit, q, status, nameOnly, summary);
+      if (summary) return c.json(result);
       const signedItems = await Promise.all(
         result.items.map(async (p) => ({
           ...p,

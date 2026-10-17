@@ -170,6 +170,12 @@ export class LibraryRepository {
     };
   }
 
+  /** The library's type, or null when the user has no such library; reads none of its items. */
+  async getLibraryType(userId: string, libraryId: string): Promise<LibraryType | null> {
+    const lib = await this.prisma.library.findFirst({ where: { id: libraryId, userId }, select: { type: true } });
+    return lib ? (lib.type as LibraryType) : null;
+  }
+
   async createLibrary(userId: string, library: Omit<Library, 'items'>): Promise<void> {
     await this.prisma.library.create({
       data: { id: library.id, userId, name: library.name, description: library.description ?? null, type: library.type } as any,
