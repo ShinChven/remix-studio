@@ -25,6 +25,7 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 - **Split an image into layers** — **Dola Seedream 5.0 Pro Layer Decomposition** on RunningHub takes one image from the workflow and returns a base image plus up to 16 transparent PNG layers, one per element, each saved to the album on its own. A prompt is optional: name what to separate, or leave it out to split every major element.
 - **Model explanations** — Every model now explains itself: what it is for, how it differs from its neighbours, and limits worth knowing, like a prompt cap or a required source image. The explanation shows under the model in the project settings and on each card in the model selector, whose search now finds models by it too. In all six languages.
+- **Import a workflow from another project** — **Import Workflow** in the workflow panel's menu opens your albums across projects of the same type — Civitai with Civitai, regular with regular; pick a result and its workflow and settings replace this project's after you confirm. See [reusing configuration](/concepts/projects#reusing-configuration).
 
 **Improved**
 
