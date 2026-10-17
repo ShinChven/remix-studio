@@ -417,7 +417,10 @@
       "tagBatchHintReplace": "対象のすべてのアイテムのタグをこの内容に置き換えます。空のままにするとすべてのタグが消去されます。",
       "tagBatchClearAll": "タグなし — 対象のすべてのアイテムのタグが消去されます",
       "tagBatchApply": "適用",
-      "deleteShort": "削除"
+      "deleteShort": "削除",
+      "autoTagSelected": "選択項目を自動タグ付け",
+      "autoTagAll": "すべてを自動タグ付け",
+      "autoTagResults": "一致する項目を自動タグ付け"
     },
     "compare": {
       "title": "テキストを比較",

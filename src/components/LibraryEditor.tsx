@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Library, LibraryItem } from '../types';
-import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check, Rows3, Stamp } from 'lucide-react';
+import { Trash2, Plus, Image as ImageIcon, Edit3, Settings, Search, ArrowRight, Loader2, X, AlertCircle, Play, UploadCloud, Tag as TagIcon, CheckSquare, Square, ChevronDown, Copy, Music, Video, FileArchive, FileText, Stars, Filter, ArrowDownNarrowWide, Check, Rows3, Stamp, WandSparkles } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 import { PageNav } from './PageNav';
 import { TagModal } from './TagModal';
+import { AutoTagDialog } from './AutoTagDialog';
+import { AutoTagProgress } from './AutoTagProgress';
 import { PageHeader } from './PageHeader';
-import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems, fetchLibraryReferences } from '../api';
+import { saveImage, saveVideo, saveAudio, createLibraryItem, deleteLibraryItem as apiDeleteLibraryItem, updateLibraryItem, duplicateLibrary, fetchLibraryItems, imageDisplayUrl, exportMediaLibraryZip, copyLibraryItems, moveLibraryItems, fetchLibraryReferences, startAutoTag } from '../api';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { DuplicateLibraryDialog } from './DuplicateLibraryDialog';
 import { CopyMoveItemsDialog } from './CopyMoveItemsDialog';
@@ -53,7 +55,7 @@ function formatLibraryItemDateTime(value?: number): string {
 }
 
 export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -72,6 +74,8 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
   const [showBatchTagModal, setShowBatchTagModal] = useState(false);
   const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
   const [tagModalItemId, setTagModalItemId] = useState<string | null>(null);
+  const [autoTagTarget, setAutoTagTarget] = useState<'selected' | 'all' | null>(null);
+  const [autoTagRunKey, setAutoTagRunKey] = useState(0);
   const [viewingItemId, setViewingItemId] = useState<string | null>(null);
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [showTagFilterDropdown, setShowTagFilterDropdown] = useState(false);
@@ -249,6 +253,25 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
     } catch (e) {
       console.error('Failed to delete items:', e);
       throw e;
+    }
+  };
+
+  // Video and audio would need frames or a transcript first.
+  const canAutoTag = library.type === 'image' || library.type === 'text';
+  const hasItemFilter = Boolean(searchTerm) || selectedFilterTags.length > 0;
+
+  const startLibraryAutoTag = async ({ onlyUntagged }: { onlyUntagged: boolean }) => {
+    try {
+      const scope = autoTagTarget === 'selected'
+        ? { itemIds: Array.from(selectedItemIds) }
+        : { all: true, q: searchTerm || undefined, filterTags: selectedFilterTags.length > 0 ? selectedFilterTags : undefined };
+      const { queued } = await startAutoTag({ kind: 'library', libraryId: library.id }, { ...scope, onlyUntagged, language: i18n.language });
+      if (queued === 0) toast.info(t('autoTag.nothingToTag'));
+      else toast.success(t('autoTag.started', { count: queued }));
+      setAutoTagRunKey((key) => key + 1);
+    } catch (err: any) {
+      toast.error(err.message || t('autoTag.startFailed'));
+      throw err;
     }
   };
 
@@ -533,6 +556,18 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 <Stars className="w-5 h-5" />
               </button>
 
+              {canAutoTag && (
+                <button
+                  onClick={() => setAutoTagTarget('all')}
+                  disabled={totalItems === 0}
+                  className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-violet-500 hover:bg-violet-500/10 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-violet-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                  title={hasItemFilter ? t('libraryEditor.autoTagResults') : t('libraryEditor.autoTagLibrary')}
+                  aria-label={hasItemFilter ? t('libraryEditor.autoTagResults') : t('libraryEditor.autoTagLibrary')}
+                >
+                  <WandSparkles className="w-5 h-5" />
+                </button>
+              )}
+
               <button
                 onClick={() => setShowDuplicateDialog(true)}
                 className="p-2.5 text-neutral-600 dark:text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-xl transition-all border border-neutral-200/50 dark:border-neutral-800/50 hover:border-blue-400/20 active:scale-95"
@@ -727,6 +762,16 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
                 >
                   <TagIcon className="w-3.5 h-3.5" /> <span className="hidden xs:inline">{t('libraryEditor.batchTag')}</span>
                 </button>
+                {canAutoTag && (
+                  <button
+                    onClick={() => setAutoTagTarget('selected')}
+                    title={t('libraryEditor.autoTag')}
+                    aria-label={t('libraryEditor.autoTag')}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/20 hover:bg-white/30 text-white transition-colors font-medium text-xs border border-white/20"
+                  >
+                    <WandSparkles className="w-3.5 h-3.5" /> <span className="hidden xs:inline">{t('libraryEditor.autoTag')}</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setShowDeleteSelectedModal(true)}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 bg-red-600 text-white hover:bg-red-700 transition-colors font-medium text-xs border border-red-700"
@@ -743,6 +788,14 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
               </div>
             )}
           </div>
+        )}
+
+        {canAutoTag && (
+          <AutoTagProgress
+            scope={{ kind: 'library', libraryId: library.id }}
+            runKey={autoTagRunKey}
+            className="border"
+          />
         )}
 
         {loadingItems && (
@@ -1155,6 +1208,13 @@ export function LibraryEditor({ library, onUpdate, onDelete }: Props) {
         title={t('libraryEditor.tagModal.batchTitle')}
         description={t('libraryEditor.tagModal.batchDescription', { count: selectedItemIds.size })}
         saveButtonText={t('libraryEditor.tagModal.addTags')}
+      />
+
+      <AutoTagDialog
+        isOpen={autoTagTarget !== null}
+        itemCount={autoTagTarget === 'selected' ? selectedItemIds.size : totalItems}
+        onClose={() => setAutoTagTarget(null)}
+        onStart={startLibraryAutoTag}
       />
 
       <TagModal

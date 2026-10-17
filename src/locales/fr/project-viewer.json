@@ -417,7 +417,10 @@
       "tagBatchHintReplace": "Chaque élément concerné se retrouve avec exactement ces étiquettes. Laissez la liste vide pour tout effacer.",
       "tagBatchClearAll": "Aucune étiquette — toutes celles des éléments concernés seront effacées",
       "tagBatchApply": "Appliquer",
-      "deleteShort": "Supprimer"
+      "deleteShort": "Supprimer",
+      "autoTagSelected": "Étiqueter automatiquement la sélection",
+      "autoTagAll": "Tout étiqueter automatiquement",
+      "autoTagResults": "Étiqueter automatiquement les résultats"
     },
     "compare": {
       "title": "Comparer les textes",

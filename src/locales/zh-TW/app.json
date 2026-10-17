@@ -125,5 +125,33 @@
     "copy": "複製 ID 給 AI",
     "copied": "已複製引用",
     "copyFailed": "無法複製引用"
+  },
+  "autoTag": {
+    "dialogTitle_one": "為 {{count}} 個項目自動加上標籤",
+    "dialogTitle_other": "為 {{count}} 個項目自動加上標籤",
+    "dialogMessage": "每個項目都會傳送給下方的模型，每次同時處理 {{limit}} 個。新標籤會加到項目既有的標籤中。",
+    "model": "模型",
+    "loading": "正在檢查自動標籤設定…",
+    "loadFailed": "無法載入自動標籤設定。",
+    "off": "自動標籤已關閉。請先在「帳戶 → 偏好設定」中選擇視覺模型。",
+    "openPreferences": "開啟偏好設定",
+    "onlyUntagged": "略過已有標籤的項目",
+    "start": "開始",
+    "started_one": "正在為 {{count}} 個項目自動加上標籤",
+    "started_other": "正在為 {{count}} 個項目自動加上標籤",
+    "nothingToTag": "沒有需要加上標籤的項目：這些項目都已有標籤，或無法自動加上標籤。",
+    "startFailed": "無法開始自動加上標籤。",
+    "progress": "自動加上標籤 {{done}} / {{total}}",
+    "failedCount_one": "{{count}} 個失敗",
+    "failedCount_other": "{{count}} 個失敗",
+    "stop": "停止",
+    "stopFailed": "無法停止自動加上標籤。",
+    "finished_one": "已為 {{count}} 個項目自動加上標籤",
+    "finished_other": "已為 {{count}} 個項目自動加上標籤",
+    "summary": "自動加上標籤完成：{{completed}} 個成功，{{failed}} 個失敗",
+    "details": "詳細資料",
+    "retry": "重試失敗項目",
+    "retryFailed": "無法重試自動加上標籤。",
+    "dismiss": "關閉"
   }
 }

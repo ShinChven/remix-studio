@@ -44,6 +44,7 @@ model User {
   campaigns               Campaign[]
   posts                   Post[]
   postWatermarkSetting    PostWatermarkSetting?
+  autoTagSetting          AutoTagSetting?
   stores                  Store[]
   driveConnections        DriveConnection[]
   products                Product[]
@@ -150,7 +151,8 @@ model Provider {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  jobs Job[]
+  jobs            Job[]
+  autoTagSettings AutoTagSetting[]
 
   @@index([userId])
 }
@@ -828,6 +830,24 @@ model PostWatermarkSetting {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// Which vision-capable text model tags a user's album and library media, and
+// how many tagging requests may run at once. Deleting the provider turns
+// auto-tagging off rather than deleting the setting.
+model AutoTagSetting {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  providerId       String?
+  modelConfigId    String?
+  concurrencyLimit Int      @default(2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  @@index([providerId])
 }
 
 model Post {

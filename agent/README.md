@@ -15,3 +15,4 @@ Suggested entry points:
 - `civitai-projects.md` for the Civitai project type and its generation flow
 - `glassmorphism-design-spec.md` for visual and UI design standards
 - `media-sharing.md` for TV mode, WebDAV and the DLNA media server
+- `auto-tagging.md` for the vision-model tagging of album and library items

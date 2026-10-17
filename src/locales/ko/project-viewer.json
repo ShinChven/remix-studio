@@ -417,7 +417,10 @@
       "tagBatchHintReplace": "대상 항목의 태그가 정확히 이 목록으로 바뀝니다. 비워 두면 모든 태그가 삭제됩니다.",
       "tagBatchClearAll": "태그 없음 — 대상 항목의 모든 태그가 삭제됩니다",
       "tagBatchApply": "적용",
-      "deleteShort": "삭제"
+      "deleteShort": "삭제",
+      "autoTagSelected": "선택 항목 자동 태그",
+      "autoTagAll": "전체 자동 태그",
+      "autoTagResults": "일치하는 항목 자동 태그"
     },
     "compare": {
       "title": "텍스트 비교",

@@ -116,7 +116,10 @@
       "nameDesc": "名前 Z-A"
     },
     "createdAt": "作成",
-    "updatedAt": "更新"
+    "updatedAt": "更新",
+    "autoTag": "自動タグ付け",
+    "autoTagLibrary": "ライブラリを自動タグ付け",
+    "autoTagResults": "一致する項目を自動タグ付け"
   },
   "libraryImportExport": {
     "badge": "テキストライブラリワークスペース",

@@ -125,5 +125,33 @@
     "copy": "AI 用に ID をコピー",
     "copied": "参照をコピーしました",
     "copyFailed": "参照をコピーできませんでした"
+  },
+  "autoTag": {
+    "dialogTitle_one": "{{count}} 件を自動タグ付け",
+    "dialogTitle_other": "{{count}} 件を自動タグ付け",
+    "dialogMessage": "各項目を下のモデルに送り、同時に {{limit}} 件ずつ処理します。新しいタグは既存のタグに追加されます。",
+    "model": "モデル",
+    "loading": "自動タグ付けの設定を確認しています…",
+    "loadFailed": "自動タグ付けの設定を読み込めませんでした。",
+    "off": "自動タグ付けはオフです。先にアカウント → 設定でビジョンモデルを選択してください。",
+    "openPreferences": "設定を開く",
+    "onlyUntagged": "すでにタグがある項目はスキップ",
+    "start": "開始",
+    "started_one": "{{count}} 件を自動タグ付けしています",
+    "started_other": "{{count}} 件を自動タグ付けしています",
+    "nothingToTag": "タグ付けする項目がありません。すべてタグ付け済みか、自動タグ付けできない項目です。",
+    "startFailed": "自動タグ付けを開始できませんでした。",
+    "progress": "自動タグ付け中 {{done}} / {{total}}",
+    "failedCount_one": "{{count}} 件失敗",
+    "failedCount_other": "{{count}} 件失敗",
+    "stop": "停止",
+    "stopFailed": "自動タグ付けを停止できませんでした。",
+    "finished_one": "{{count}} 件を自動タグ付けしました",
+    "finished_other": "{{count}} 件を自動タグ付けしました",
+    "summary": "自動タグ付け完了：{{completed}} 件成功、{{failed}} 件失敗",
+    "details": "詳細",
+    "retry": "失敗分を再試行",
+    "retryFailed": "自動タグ付けを再試行できませんでした。",
+    "dismiss": "閉じる"
   }
 }

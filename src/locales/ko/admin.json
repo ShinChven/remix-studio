@@ -131,6 +131,23 @@
         "needsInstall": "iPhone과 iPad에서는 Remix Studio를 홈 화면에 추가(공유 → 홈 화면에 추가)한 뒤 그곳에서 열어야 알림을 켤 수 있습니다.",
         "testSent": "테스트 알림을 보냈습니다.",
         "testFailed": "테스트 알림을 받은 기기가 없습니다."
+      },
+      "autoTag": {
+        "title": "자동 태그 지정",
+        "description": "프로젝트 앨범과 라이브러리에서 이미지를 보고 태그를 작성할 비전 모델을 선택합니다.",
+        "provider": "제공자",
+        "off": "끄기",
+        "model": "모델",
+        "selectModel": "모델 선택",
+        "concurrencyLimit": "동시성 제한",
+        "concurrencyLimitDescription": "제공자에 동시에 보내는 태그 지정 요청의 최대 수입니다({{min}}–{{max}}). 제공자가 속도 제한 초과로 요청을 거부하기 시작하면 낮추세요.",
+        "noVisionProviders": "이미지를 읽을 수 있는 모델을 가진 제공자가 없습니다. 자동 태그 지정을 켜려면 Google AI, OpenAI, Claude 같은 제공자를 추가하세요.",
+        "manageProviders": "제공자 관리",
+        "save": "저장",
+        "saved": "자동 태그 지정 설정을 저장했습니다.",
+        "saveFailed": "자동 태그 지정 설정을 저장하지 못했습니다.",
+        "loadFailed": "자동 태그 지정 설정을 불러오지 못했습니다.",
+        "retry": "다시 시도"
       }
     },
     "confirm": {

@@ -116,7 +116,10 @@
       "error": "导出媒体库失败"
     },
     "createdAt": "创建于",
-    "updatedAt": "更新于"
+    "updatedAt": "更新于",
+    "autoTag": "自动标签",
+    "autoTagLibrary": "自动标记素材库",
+    "autoTagResults": "自动标记匹配项目"
   },
   "libraryImportExport": {
     "badge": "文本资源库工作区",

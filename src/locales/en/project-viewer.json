@@ -417,7 +417,10 @@
       "tagBatchHintReplace": "Every item in scope ends up with exactly these tags. Leave the list empty to clear all tags.",
       "tagBatchClearAll": "No tags — every item in scope will be cleared",
       "tagBatchApply": "Apply",
-      "deleteShort": "Delete"
+      "deleteShort": "Delete",
+      "autoTagSelected": "Auto-tag Selected",
+      "autoTagAll": "Auto-tag All",
+      "autoTagResults": "Auto-tag matching items"
     },
     "compare": {
       "title": "Compare Texts",

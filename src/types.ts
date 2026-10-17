@@ -2083,6 +2083,44 @@ export function getTextModelsForProvider(providerType: ProviderType): ModelConfi
 }
 
 /**
+ * Provider types whose text generator sends `refImagesBase64` to the model, so
+ * their text models can read an image. Keep in step with
+ * `server/generators/*-text-generator.ts`.
+ */
+export const IMAGE_INPUT_TEXT_PROVIDER_TYPES: readonly ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'MiniMax'];
+
+export function providerAcceptsImageInput(providerType: ProviderType): boolean {
+  return IMAGE_INPUT_TEXT_PROVIDER_TYPES.includes(providerType);
+}
+
+/** Bounds of the auto-tagging concurrency limit: tagging requests in flight at once, per user. */
+export const AUTO_TAG_CONCURRENCY_LIMIT = { min: 1, max: 16, default: 2 } as const;
+
+/** A user's auto-tagging settings. No provider means auto-tagging is off. */
+export interface AutoTagSettings {
+  providerId: string | null;
+  modelConfigId: string | null;
+  concurrencyLimit: number;
+}
+
+/** Where an auto-tagging run works: one project's album, or one library. */
+export type AutoTagScope = { kind: 'album'; projectId: string } | { kind: 'library'; libraryId: string };
+
+/**
+ * Progress of the auto-tagging run in one album or library. A run starts when
+ * items are queued while none are, and its failures stay listed until they
+ * are retried or dismissed.
+ */
+export interface AutoTagRunStatus {
+  active: boolean;
+  total: number;
+  completed: number;
+  pending: number;
+  running: number;
+  failures: { itemId: string; error: string }[];
+}
+
+/**
  * Resolve custom model variants into full ModelConfig entries.
  * Each variant clones the base model's options but uses its own name and modelId.
  */
