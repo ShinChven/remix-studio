@@ -1670,7 +1670,7 @@ export class ProjectRepository {
 
   async getAllUserItems(userId: string): Promise<any[]> {
     const [jobs, albumItems, trashItems, exportTasks, libraryItems, workflowItems, postMedia] = await Promise.all([
-      this.prisma.job.findMany({ where: { userId } }),
+      this.prisma.job.findMany({ where: { userId }, omit: { workflowSnapshot: true } }),
       this.prisma.albumItem.findMany({ where: { userId } }),
       this.prisma.trashItem.findMany({ where: { userId } }),
       this.prisma.exportTask.findMany({ where: { userId }, omit: { payload: true } }),
