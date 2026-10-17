@@ -24,8 +24,10 @@ Inside a library you can:
 - Search items and filter them by tags.
 - Sort by newest/oldest or by name in ascending/descending order.
 - Edit an item's title and tags; text items can also be edited in the Prompt Editor.
+- Let a vision model tag image and text items with the wand button, for the selection, the matching items or the whole library. See [Auto-Tagging](/concepts/projects#auto-tagging).
 - Watermark a single image with the stamp button on its card and download the result, without saving a copy. See [Watermarking a Single Image](/concepts/projects#watermarking-a-single-image).
-- Select several items for batch tagging, copying, moving, or deletion.
+- Copy an item's reference for the assistant or another AI chat with **Copy ID for AI**. The copied text, `library:<libraryId>/item:<itemId>`, names both the library and the item, which is what every tool that acts on an item needs.
+- Select items with the checkbox on each card — Shift-click a second checkbox to select the range between — for batch tagging, copying, moving, or deletion.
 - Copy or move items only to a library of the same media type.
 - Duplicate a whole library, including its items.
 - Export media libraries as ZIP archives.
@@ -38,22 +40,23 @@ Titles make long prompts and opaque media keys easier to recognize. Tags serve t
 
 1. The library editor can filter the items you see.
 2. A workflow library step can select tags to restrict which items participate in generation.
+3. Results drafted from an item start with its tags in the album, so the album can be filtered by the same tags as the libraries behind it.
 
 Workflow tag matching can use:
 
 - **OR** — an item is eligible when it has any selected tag.
 - **AND** — an item is eligible only when it has every selected tag.
 
-Matching is case-insensitive. Items without any selected tag are excluded. When a library item becomes a draft, its title and tags are also used as candidate filename parts; the project prefix and a short random suffix complete the filename.
+Matching is case-insensitive. Items without any selected tag are excluded. The filter in a workflow step's library preview leads with the current selection and the most-used tags; **All tags (N)** opens a panel with search, a most-used / A–Z sort and a count beside each tag, which is a bottom sheet on a phone. When a library item becomes a draft, its title and tags are also used as candidate filename parts; the project prefix and a short random suffix complete the filename.
 
 ## Adding and Reusing Items
 
-Text items can be created in the library editor, imported in batches, or created through the assistant/MCP tool layer. Media files can be uploaded directly.
+Text items can be created in the library editor, imported in batches, or created through the assistant/MCP tool layer. Media files can be uploaded directly, and an external MCP client can upload images, videos and audio into a library too (see [file uploads](/integrations/mcp#file-uploads)).
 
 From a project you can also:
 
 - Save a direct workflow input into a compatible library.
-- Copy selected album results—or the whole album—into a new or existing compatible library.
+- Copy or move selected album results — or the whole album, for a copy — into a new or existing compatible library with **Copy to…** or **Move to…**. A move sends the results to the recycle bin once the library has its copies.
 - Choose the raw or optimized asset version when copying generated media.
 
 Changing a library later changes the choices available to workflows that reference it. Drafts already created keep their resolved prompt, contexts, provider/model settings, and workflow snapshot; they are not silently regenerated.
@@ -101,7 +104,7 @@ Removing a reference changes the affected project's workflow. Deleting the libra
 
 ## Assistant and MCP Access
 
-The shared tool layer can list and search libraries, browse their items, create and update libraries, create prompts individually or in batches, and update item metadata. Text prompts can also be deleted through the explicitly confirmed destructive tool.
+The shared tool layer can list and search libraries, browse their items or read one item by ID (`get_library_item`, which takes the reference **Copy ID for AI** copies), create and update libraries, create prompts individually or in batches, and update item metadata one item or many at a time. Text prompts can also be deleted through the explicitly confirmed destructive tool. External MCP clients can also upload media files into a library.
 
 See [The Assistant](/concepts/assistant) for the in-app approval flow and [MCP Support](/integrations/mcp) for external clients.
 

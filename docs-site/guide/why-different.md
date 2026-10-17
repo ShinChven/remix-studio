@@ -6,7 +6,7 @@ Most AI generation tools optimize a single prompt box. Remix Studio separates re
 
 The built-in [assistant](/concepts/assistant) reads current libraries, project workflows, album summaries, model availability, storage, campaigns, and posts through the same account-scoped tools exposed over MCP. It can prepare changes, but write/destructive operations stop for review.
 
-This makes the assistant an alternative control surface over real workspace objects, not a separate chat that merely suggests text for you to copy.
+This makes the assistant an alternative control surface over real workspace objects, not a separate chat that merely suggests text for you to copy. What it changes shows up on the pages you have open without a reload, and so does what an external MCP client changes.
 
 ## Combination Engine
 
@@ -20,7 +20,7 @@ Project output does not have to end as a downloaded file. Campaigns reuse genera
 
 ## Batch Execution
 
-Generation runs through a recoverable [queue](/concepts/queue) with concurrency per provider connection. Synchronous calls and remote async tasks share the same job history; detached tasks are polled without occupying a browser tab, and pending/interrupted work is reconciled after restart.
+Generation runs through a recoverable [queue](/concepts/queue) with concurrency per provider connection. Synchronous calls, remote async tasks, ComfyUI instances you host and Civitai's generation service all share the same job history; detached tasks are polled without occupying a browser tab, and pending/interrupted work is reconciled after restart. Turn on notifications and the browser tells you when a project's queue is done, even with the app closed.
 
 Exports, external deliveries, campaign media, and social posting use their own worker loops so a slow archive upload does not become a generation job.
 

@@ -4,7 +4,7 @@ Trash provides recoverable deletion for project album results. It is user-scoped
 
 ## What Uses Trash
 
-Deleting one or several album items from a project moves them to Trash. A trash record keeps:
+Deleting one or several album items from a project moves them to Trash, and so does **Move to…** a library, once the library has its copies. A trash record keeps:
 
 - Original project ID and name.
 - Prompt or generated text.
@@ -13,6 +13,7 @@ Deleting one or several album items from a project moves them to Trash. A trash 
 - Original, optimized, and thumbnail storage keys.
 - Provider/model and output metadata.
 - Size, duration, and resolution where applicable.
+- For a Civitai result, the record of what it was made with — checkpoint or video engine, LoRAs, negative prompt, seed and settings.
 
 Deleting a library, an entire project, an export, a job record, or a project orphan follows a different path and is not recoverable here.
 

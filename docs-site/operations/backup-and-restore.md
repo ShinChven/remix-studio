@@ -14,6 +14,8 @@ For a recoverable deployment, back up:
 4. Environment/deployment secrets, especially `PROVIDER_ENCRYPTION_KEY` and `JWT_SECRET`.
 5. The application version or image tag used at backup time.
 
+The database also holds the server's push-notification key pair, with its private half encrypted by `PROVIDER_ENCRYPTION_KEY`, and ComfyUI projects' access passwords, which are stored as typed. Treat database dumps as secrets. Files under `staging/` in the main bucket are uploads an MCP client has not attached yet; they expire within a day and need no backup.
+
 ## Database Backup Architecture
 
 Backup files are generated inside the application container and saved to `/app/backups`. To ensure these backups persist across container restarts and updates, this path must be mounted as a host volume.

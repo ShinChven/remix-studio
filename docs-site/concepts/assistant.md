@@ -23,14 +23,16 @@ The selected provider and model are stored on the conversation. The most recent 
 
 The assistant can read account-scoped workspace data through tools rather than relying on a stale copy in the prompt. Read capabilities include:
 
-- Libraries and paginated/searchable library items.
+- Libraries and paginated/searchable library items, or one item by ID.
 - Storage totals and category breakdowns.
-- Project workflows and album summaries.
-- Per-project job counts: drafts staged, queue depth, completed and failed runs, and album totals.
+- Project workflows, album summaries, album items with their tags and filenames, or one album item by ID with its full prompt or generated text.
+- Per-project job counts: drafts staged, queue depth, completed and failed runs, and album totals — and the queue monitor's counts across every project and provider.
 - Usable provider/model pairings.
 - Social accounts, campaigns, posts, post text, and post media metadata.
 
-The composer can bind workspace context and attach supported images. With a Google AI provider selected, the microphone control records audio in the browser and transcribes it through the configured Google provider before sending the resulting text.
+The composer can bind workspace context: type `@` to mention a library, project, campaign or post, or paste a reference copied with **Copy ID for AI** from a library item, album item or post — `library:<libraryId>/item:<itemId>`, `project:<projectId>/album-item:<itemId>` or `campaign:<campaignId>/post:<postId>`. The assistant's instructions describe these shapes, so it reads the exact item instead of searching for it.
+
+The composer also takes images: attach or paste them, and on Android pick a copied image, GIF or sticker in Gboard, in versions of Chrome that let a keyboard insert images. With a Google AI provider selected, the microphone control records audio in the browser and transcribes it through the configured Google provider before sending the resulting text.
 
 ## Skills
 
@@ -45,9 +47,16 @@ The assistant can:
 - Create and describe libraries.
 - Create prompts individually or in batches.
 - Update prompt text, titles, and tags, including batch metadata updates.
-- Create projects with complete workflows and update existing projects.
+- Create projects with complete workflows — regular and Civitai; ComfyUI projects are set up in the app — and update existing projects.
+- Tag album items and rename album files, one at a time or in bulk.
 - Stage draft jobs from a project's workflow, and start all of them or a chosen number. Starting queues real generation and spends provider credits, so it is a confirmation-gated write like any other.
+- Clear failed jobs from the queue.
+- Export a project's album or a whole project bundle.
 - Create and update campaigns and posts, attach owned media, and schedule posts.
+
+What it changes shows up on the pages you have open without a reload — see [Live Updates](/concepts/projects#live-updates).
+
+The file-upload tools are offered only to external MCP clients, since the in-app assistant has no way to send a file's bytes; attach media you already have in libraries or albums instead.
 
 The tool catalog is visible under **Assistant Settings → Tools**, including each tool's input schema, category, and whether approval is required.
 
@@ -66,6 +75,20 @@ Pending confirmations expire. Cancelling one records the cancellation and lets t
 ::: warning
 Approving a tool means later calls to that named write tool in the same conversation can execute without another prompt. Review the approved-tools list when a conversation's purpose changes.
 :::
+
+## Turns Survive a Refresh
+
+A turn runs on the server, independent of the page that started it. Reload the page, lock your phone or lose the connection mid-run, and the conversation reattaches when you come back: it replays what you missed, puts the progress line on what the assistant is doing now, and follows the turn to its result. While it reconnects the chat shows **Reconnecting to the assistant...**. A pending confirmation is part of the conversation too, so the confirm/cancel card is there in any tab or browser.
+
+Sending a message to a conversation that is already running a turn attaches to that turn instead of starting a second one.
+
+**Stop**, which replaces **Send** while the assistant works, ends the turn at its next safe point: a model call in flight is abandoned at once, a tool that is already running finishes so its result is on record, and later tool calls in that step are recorded as cancelled. The transcript ends with **Stopped at your request.**, and the conversation takes a new message straight away. Deleting a conversation also stops its running turn.
+
+Turns are held by the server process, so a server restart still ends a turn in progress; the conversation then shows what was saved before the restart.
+
+## Resources
+
+The right-hand sidebar lists what a conversation has **changed**: one compact row per library, project, campaign or post it created or modified, with the tool behind its latest change underneath (**Create Prompt**, **Tag Album Items**, **Update Post Text**), most recent first. Read-only lookups never add a row. Each row links into the app; hover it to drop the record into the composer as an `@` mention, or to remove the row. The list is stored with the conversation, so it is there after a reload and in any browser.
 
 ## Conversation History
 

@@ -34,6 +34,8 @@ The Queue Monitor additionally derives operational states:
 
 Before execution, the queue resolves the effective provider and writes the final provider/model and output parameters to the job. This snapshot prevents a later project edit from changing an in-flight job.
 
+Aspect ratio, quality and resolution are resolved against the job's model at the same point. A value the model does not offer — `1024x1024` from an OpenAI entry sent to a RunningHub model that takes ratios, say — is replaced by the allowed value closest in shape (`1:1`), so jobs drafted before a model switch, through the API or by an agent still run. A model that publishes no list, such as a custom alias, gets the value unchanged.
+
 Text, audio, and synchronous image/video calls finish within the worker execution path. Providers that return a remote task ID hand the job to the detached poller.
 
 ## Per-Provider Concurrency
@@ -46,11 +48,25 @@ Changing a provider's configured concurrency affects subsequent scheduling; it d
 
 ## Detached Polling and Timeouts
 
-Remote async jobs are checked every 30 seconds. A remote task reaching a terminal state is passed to the image/video processor and then releases its provider slot.
+Remote async jobs are checked every 30 seconds; Civitai jobs, which finish in seconds, are also checked every 5 seconds so a result shows up promptly. Every check re-reads the job first, so the two cycles never act on a job the other has finished. A remote task reaching a terminal state is passed to the image/video processor and then releases its provider slot.
+
+A task can return more than one image. A layer-decomposition model, for example, returns a base image and up to 16 transparent layers; each becomes its own album item, and a retried job overwrites its layers instead of adding a second set.
 
 If a task never reaches a terminal state, it is marked failed after `JOB_PROCESSING_TIMEOUT_MS` (two hours by default). The first-observed timeout window resets on a server restart.
 
 Transient polling errors do not immediately fail a task; polling continues until the provider reports failure or the stuck timeout is reached.
+
+## ComfyUI Projects
+
+[ComfyUI projects](/concepts/projects#comfyui-projects) have no provider record, so they do not use provider queues. A runner sends each project's jobs to its own ComfyUI instance, keeping at most two prompts waiting or running there at a time — one generating, the next ready — and polls ComfyUI's queue and history every two seconds.
+
+- A prompt stops counting once ComfyUI has finished it, so the next job is sent while the result downloads.
+- A download is abandoned only when no data arrives for a minute, within 30 minutes overall.
+- A check that fails three times in a row fails the job with the reason and keeps its prompt ID, so retrying it downloads the finished result instead of generating it again.
+- An instance that stays unreachable for ten minutes fails its in-flight jobs.
+- Reference files are named by their content, and one ComfyUI already holds is not uploaded again.
+
+ComfyUI jobs carry on after a server restart, and a retry reuses a result ComfyUI has already produced.
 
 ## Recovery After Restart
 
@@ -81,7 +97,11 @@ Open **Projects → Queue Monitor** to see:
 - Provider/model and output metadata for individual jobs.
 - Scoped controls for clearing failures.
 
-The monitor polls for current server state. Project pages additionally receive live WebSocket events.
+The monitor polls for current server state. Project pages additionally receive live WebSocket events. MCP clients and the assistant read the same counts with `get_queue_status` and clear failures with `clear_failed_jobs`.
+
+## Finish Notifications
+
+When a project that was running jobs has none left pending or processing, every device that switched on **Notifications** under **Account → Preferences** gets a browser notification with how many jobs finished and how many failed. See [Finish Notifications](/concepts/projects#finish-notifications).
 
 ## Related
 

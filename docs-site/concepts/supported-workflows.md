@@ -10,6 +10,8 @@ Remix Studio does not hard-code a single input-to-output pipeline. A project cho
 | **Image** | Images | Text, reference images, and provider-specific media context |
 | **Video** | Video | Text, source/reference images, video, or audio when the selected video model supports them |
 | **Audio** | Speech or music | Text; reference images only for audio models that explicitly declare image support |
+| **ComfyUI Workflow** | Images or video | Whatever inputs your API-format ComfyUI workflow exposes: numbers, toggles, seeds, text, and image/video/audio files, each fixed, typed, imported or drawn from a library |
+| **Civitai** | Images or video | Checkpoint and LoRA items, prompt and negative-prompt text, and a source image for image-to-image; for video, a start frame and, on Wan 2.7 and 3.0, an end frame |
 
 This capability-based model covers common workflows such as text-to-text, image analysis, text-to-image, image-to-image, text/image-to-video, video transformation, audio-conditioned video, text-to-speech, text-to-music, and image-conditioned music.
 
@@ -20,6 +22,8 @@ A workflow is usable only when all three layers agree:
 1. **Project type** selects the text, image, video, or audio execution path.
 2. **Provider family** must implement that output generator.
 3. **Model profile** must advertise the required input contexts and options.
+
+ComfyUI and Civitai projects are the exceptions: a ComfyUI project's capabilities are those of its own workflow graph, and a Civitai project's those of the checkpoint or video engine it uses (see [Projects & Albums](/concepts/projects#project-types)).
 
 The project editor uses the selected model profile to show settings such as supported aspect ratios, qualities, backgrounds, durations, resolutions, sound modes, audio formats, prompt limits, and reference-image support.
 

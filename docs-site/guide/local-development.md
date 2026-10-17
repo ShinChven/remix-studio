@@ -4,7 +4,7 @@ Run Remix Studio on your own machine with `npm run dev`, backed by local Postgre
 
 ## Requirements
 
-- **Node.js 20+**
+- **Node.js 22.12 or later** (the Docker image uses Node 22; 20.19 is the oldest version Vite and Prisma accept)
 - **Docker** with Docker Compose, for running local PostgreSQL and MinIO
 - At least one **provider API key**
 
@@ -84,7 +84,7 @@ npx prisma migrate dev
 If the database already exists and you only want to apply committed migrations safely, run:
 
 ```bash
-npx prisma migrate deploy
+npm run db:migrate   # same as npx prisma migrate deploy
 ```
 
 Use `migrate deploy` when pulling new changes into an existing environment. `migrate dev` is intended for development workflows that create or reconcile migrations and may prompt for a reset when the database history has drifted.
@@ -102,11 +102,16 @@ The app runs at [http://localhost:3000](http://localhost:3000).
 | Script | Purpose |
 | :--- | :--- |
 | `npm run dev` | Start the development server |
-| `npm run build` | Build frontend and server bundles |
+| `npm run build` | Build the frontend, the TV-mode bundle and the server |
+| `npm run build:tv` | Rebuild only the TV-mode bundle served at `/tv` |
 | `npm run start` | Run the production server from the built output |
 | `npm run lint` | Run TypeScript type checking |
 | `npm run i18n:check` | Compare translation completeness across locales |
+| `npm run db:migrate` | Apply committed Prisma migrations (`prisma migrate deploy`) |
 | `npm run mcp:inspect` | Launch the MCP inspector against `http://localhost:3000/mcp` |
+| `npm run docs:install` | Install the documentation site's dependencies |
+| `npm run docs:dev` | Serve this documentation site locally with live reload |
+| `npm run docs:build` / `docs:preview` | Build the documentation site and preview the build |
 
 ## Next Steps
 

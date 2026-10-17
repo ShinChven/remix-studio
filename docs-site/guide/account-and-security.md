@@ -1,6 +1,6 @@
 # Accounts & Security
 
-Remix Studio is a multi-user application even when deployed for one person. Libraries, projects, providers, campaigns, exports, trash, assistant conversations, and automation tokens are scoped to the authenticated user.
+Remix Studio is a multi-user application even when deployed for one person. Libraries, projects, providers, campaigns, exports, trash, assistant conversations, automation tokens, linked TVs and devices, notification subscriptions, and preferences such as the auto-tagging model are scoped to the authenticated user.
 
 ## Account Status and Roles
 
@@ -13,7 +13,7 @@ Admins can:
 - Reset passwords.
 - Set per-user storage limits.
 
-A disabled user cannot sign in or open a project live connection. Existing access tokens are also checked against current account state.
+A disabled user cannot sign in or open a live connection (a project page's job feed or the account-wide change feed). Existing access tokens are also checked against current account state, and open live connections re-check it every five minutes.
 
 ## Registration and Invites
 
@@ -68,6 +68,8 @@ Access tokens include the user's session version. Security-sensitive admin/passw
 
 Signing out deletes the current refresh-token chain on a best-effort basis and clears both cookies. Expired sessions and old rotation tombstones are cleaned periodically.
 
+When a session has expired, the sign-in page remembers the page you were opening — a project link or a TV link code — and returns you to it after you sign in.
+
 ## Rate Limiting and Proxies
 
 Login, 2FA, and related authentication flows use an in-memory rate limiter keyed partly by client address. Behind a reverse proxy, enable `TRUST_PROXY` only when the proxy is trusted and overwrites forwarding headers.
@@ -76,13 +78,19 @@ Rate-limit state is per server process. For a multi-instance public deployment, 
 
 ## Provider and External Tokens
 
-Provider credentials, social/store access tokens, and connected-service refresh tokens are encrypted at rest. Their recoverability depends on `PROVIDER_ENCRYPTION_KEY`, which must remain stable and be backed up separately from PostgreSQL.
+Provider credentials, social/store access tokens, connected-service refresh tokens, and the private key the server signs push notifications with are encrypted at rest. Their recoverability depends on `PROVIDER_ENCRYPTION_KEY`, which must remain stable and be backed up separately from PostgreSQL.
+
+A ComfyUI project's optional access password is the exception: it is stored on the project as typed, masked in the form but not encrypted, and is left out of project bundles. Use a password you use nowhere else.
 
 MCP personal access tokens are stored as hashes and displayed only at creation. OAuth/PAT access is scoped to `mcp:tools`; revoke unused tokens and clients from **Assistant Settings → MCP**.
 
+## TV and Device Tokens
+
+TVs, WebDAV clients and DLNA servers are managed under **Account → TV & devices**. Each device gets its own token, limited to every active project or a fixed list, and the token only opens the protocol it was issued for: a TV-mode token cannot sign in to WebDAV, and neither opens the web app. Only a hash of each token is stored, removing a device revokes it at once, and a disabled account's devices stop working. Access is read-only. DLNA has no authentication at all, so it is off unless `DLNA_ENABLED` is set; see [TV, WebDAV & DLNA](/integrations/tv-and-devices) before enabling it.
+
 ## Storage Limits
 
-Every user has a byte limit. Storage analysis includes projects, libraries, export archives, and trash. Generation and export routes perform preflight estimates before accepting work, while admins can change the underlying limit.
+Every user has a byte limit. Storage analysis includes projects, campaigns, libraries, export archives, trash, and files an MCP client has staged for upload but not yet attached. Generation and export routes perform preflight estimates before accepting work, while admins can change the underlying limit.
 
 See [Storage](/concepts/storage) for what is counted and where estimates can differ from final output size.
 
@@ -94,4 +102,5 @@ See [Storage](/concepts/storage) for what is counted and where estimates can dif
 - Configure exact public `APP_URL`, WebAuthn origin/RP ID, and OAuth callbacks.
 - Restrict `/api/internal/*` at the proxy if the deployment is public.
 - Enable `TRUST_PROXY` only behind a controlled proxy.
+- Leave `DLNA_ENABLED` off unless every device on the LAN may browse the albums it publishes, and never forward `DLNA_HTTP_PORT`.
 - Disable unused accounts and revoke unused passkeys, MCP tokens, social channels, and store connections.

@@ -11,7 +11,7 @@ A **provider** is a user-owned connection to an AI service. It stores credential
 | API key | Primary credential, encrypted before database storage |
 | API secret | Optional second credential used by providers such as Kling AI |
 | API URL | Optional safe endpoint override for a compatible proxy |
-| Concurrency | Maximum generation jobs this provider record may run at once |
+| Parallel Tasks | Maximum generation jobs this provider record may run at once (its concurrency limit) |
 | Custom models | Alias definitions merged with the bundled model profiles |
 
 Credentials are entered and changed in the provider screens. They are decrypted only on the server when a job or assistant call needs them.
@@ -43,8 +43,11 @@ Bundled profiles describe:
 - Supported aspect ratios, formats, qualities, backgrounds, durations, resolutions, or audio formats.
 - Prompt limits and supported input contexts where applicable.
 - Whether a model is eligible for assistant chat.
+- A short explanation of what the model is for and what sets it apart — its tier, its inputs, its limits — shown under the model in the project settings and on each card in the model selector, whose search also matches it.
 
-Custom aliases let you add a compatible model ID without waiting for a release. An alias uses the selected provider generator; it does not install a new protocol adapter. Configure its capabilities accurately, because the project editor relies on them to expose valid controls.
+The option lists are enforced, not only displayed: the queue resolves a job's aspect ratio, quality and resolution against its model before sending it, and MCP tools reject a setting the model does not offer. See [Provider Resolution and Snapshots](/concepts/queue#provider-resolution-and-snapshots).
+
+Custom aliases let you add a compatible model ID without waiting for a release. They have no explanation and, when they publish no option lists, pass stored values through unchanged. An alias uses the selected provider generator; it does not install a new protocol adapter. Configure its capabilities accurately, because the project editor relies on them to expose valid controls.
 
 See [Model Profiles](/concepts/models) for the bundled matrix.
 
@@ -75,7 +78,11 @@ URL validation rejects unsafe endpoint forms, including attempts to direct provi
 
 The repository includes generation adapters and bundled profiles across Google AI, Vertex AI, OpenAI, Grok, Claude, Alibaba Cloud, Kimi, MiniMax, RunningHub, BytePlus, Kling AI, Black Forest Labs, and Replicate. Supported modalities differ by family and model; consult [Model Profiles](/concepts/models) rather than assuming every family supports text, image, video, and audio.
 
-A **Civitai** provider holds a Civitai API key and has no bundled models: it is used by [Civitai projects](/concepts/projects#civitai-projects), which choose their checkpoint and LoRAs from Civitai's catalog, or for video, one of Civitai's video engines.
+A **Civitai** provider holds a Civitai API key and has no bundled models: it is used by [Civitai projects](/concepts/projects#civitai-projects), which choose their checkpoint and LoRAs from Civitai's catalog, or for video, one of Civitai's video engines. Its **Parallel Tasks** setting caps how many generations run on Civitai at once.
+
+[ComfyUI projects](/concepts/projects#comfyui-projects) need no provider at all: the instance address and optional access password live on the project.
+
+Providers whose text models can read images — Google AI, Vertex AI, OpenAI, Claude, Grok and MiniMax — can also be chosen for [auto-tagging](/concepts/projects#auto-tagging) under **Account → Preferences**. Deleting that provider turns auto-tagging off.
 
 ## Credential Encryption
 
