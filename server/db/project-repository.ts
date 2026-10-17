@@ -1178,6 +1178,7 @@ export class ProjectRepository {
     const tasks = await this.prisma.exportTask.findMany({
       where: { userId, projectId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      omit: { payload: true },
     });
     return tasks.map((t) => this.mapExportTask(t));
   }
@@ -1191,6 +1192,7 @@ export class ProjectRepository {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limit,
+        omit: { payload: true },
       }),
     ]);
 
@@ -1218,13 +1220,22 @@ export class ProjectRepository {
   }
 
   async getExportTask(userId: string, taskId: string): Promise<any | undefined> {
-    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId } });
+    const t = await this.prisma.exportTask.findFirst({ where: { id: taskId, userId }, omit: { payload: true } });
     if (!t) return undefined;
     return this.mapExportTask(t);
   }
 
+  /**
+   * `items` and `bundleManifest` are written to the `payload` column, which no
+   * read except the worker's claim returns. Leaving them out of an update
+   * keeps the stored payload; settling the task drops it.
+   */
   async saveExportTask(userId: string, taskId: string, data: any): Promise<void> {
-    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, ...rest } = data;
+    const { projectId, status, downloadUrl, error, size, createdAt, expiresAt, items, bundleManifest, ...rest } = data;
+    const payload = items !== undefined || bundleManifest !== undefined
+      ? { ...(items !== undefined ? { items } : {}), ...(bundleManifest !== undefined ? { bundleManifest } : {}) }
+      : undefined;
+    const settled = status === 'completed' || status === 'failed';
     await this.prisma.exportTask.upsert({
       where: { id: taskId },
       create: {
@@ -1236,6 +1247,7 @@ export class ProjectRepository {
         error: error ?? null,
         size: size != null ? BigInt(size) : null,
         data: Object.keys(rest).length > 0 ? rest : undefined,
+        payload: settled ? undefined : payload,
         createdAt: createdAt ? new Date(createdAt) : new Date(),
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
@@ -1246,6 +1258,7 @@ export class ProjectRepository {
         error: error ?? null,
         size: size != null ? BigInt(size) : null,
         data: Object.keys(rest).length > 0 ? rest : undefined,
+        payload: settled ? Prisma.DbNull : payload,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
       },
     });
@@ -1296,6 +1309,7 @@ export class ProjectRepository {
       UPDATE "ExportTask"
       SET    status      = CASE WHEN attempts >= 3 THEN 'failed' ELSE 'pending' END,
              error       = CASE WHEN attempts >= 3 THEN 'worker timeout' ELSE error END,
+             payload     = CASE WHEN attempts >= 3 THEN NULL ELSE payload END,
              "claimedAt"  = NULL,
              "workerId"   = NULL
       WHERE  status = 'processing'
@@ -1641,7 +1655,7 @@ export class ProjectRepository {
       this.prisma.job.findMany({ where: { userId } }),
       this.prisma.albumItem.findMany({ where: { userId } }),
       this.prisma.trashItem.findMany({ where: { userId } }),
-      this.prisma.exportTask.findMany({ where: { userId } }),
+      this.prisma.exportTask.findMany({ where: { userId }, omit: { payload: true } }),
       this.prisma.libraryItem.findMany({ where: { library: { userId } } }),
       this.prisma.workflowItem.findMany({ where: { project: { userId } } }),
       this.prisma.postMedia.findMany({
@@ -2093,6 +2107,8 @@ export class ProjectRepository {
       createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
       expiresAt: t.expiresAt ? (t.expiresAt instanceof Date ? t.expiresAt.getTime() : t.expiresAt) : undefined,
       ...extra,
+      // Only the worker's claim selects the payload.
+      ...((t.payload as any) ?? {}),
     };
   }
 }

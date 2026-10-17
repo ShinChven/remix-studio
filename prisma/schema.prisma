@@ -374,6 +374,11 @@ model ExportTask {
   error       String?   @db.Text
   size        BigInt?
   data        Json? // Flexible blob for any extra fields
+  // What the worker archives: `items` and, for project bundles, the
+  // `bundleManifest`. These run to megabytes on a large album, so they stay
+  // out of `data` (which every list and status poll reads) and are cleared
+  // once the task settles.
+  payload     Json?
   createdAt   DateTime  @default(now())
   expiresAt   DateTime?
   // Queue fields
