@@ -89,11 +89,15 @@
 }
 
 /*
- * The app shell (MainLayout) is `h-screen overflow-hidden` and scrolls in an
+ * The app shell (MainLayout) is `h-dvh overflow-hidden` and scrolls in an
  * inner container, so the body never scrolls and `background-attachment: fixed`
  * bought us nothing visually. It did cost a lot: a fixed-attachment background
  * cannot be cached by the compositor, so every backdrop-filter layer above it
  * had to re-read and re-blur it from the main thread on each repaint.
+ *
+ * The shell uses `dvh`, not `vh`: on iPad Chrome `100vh` is the height with the
+ * toolbar collapsed, and since the body never scrolls the toolbar never
+ * collapses, so a `100vh` shell overflows the visible area by the toolbar.
  */
 html, body {
   overflow-x: hidden;
