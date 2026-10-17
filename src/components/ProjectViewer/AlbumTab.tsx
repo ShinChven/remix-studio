@@ -1,9 +1,9 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon, Stamp } from 'lucide-react';
+import { Layers, CheckSquare, Square, Trash2, ImageIcon, CheckCircle2, ExternalLink, FileArchive, FileText, Play, Pause, Video as VideoIcon, Music, Copy, FolderInput, ArrowDownWideNarrow, ArrowUpWideNarrow, ChevronDown, Pencil, X, Filter, List, RefreshCw, Loader2, Tag as TagIcon, Stamp, WandSparkles } from 'lucide-react';
 import { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../types';
-import { imageDisplayUrl, startAlbumExport } from '../../api';
+import { imageDisplayUrl, startAlbumExport, startAutoTag } from '../../api';
 import type { AlbumExportVersion } from '../../api';
 import { AlbumPromptModal } from './AlbumPromptModal';
 import { ExportPackageDialog } from './ExportPackageDialog';
@@ -15,6 +15,8 @@ import type { ProjectMediaType } from '../../lib/project-media';
 import { SelectionToolbar } from './SelectionToolbar';
 import { AlbumBatchTagModal, AlbumBatchTagMode } from './AlbumBatchTagModal';
 import { TagModal } from '../TagModal';
+import { AutoTagDialog } from '../AutoTagDialog';
+import { AutoTagProgress } from '../AutoTagProgress';
 import { EmptyState } from './EmptyState';
 import { PaginationBar, PAGE_SIZE_OPTIONS } from './PaginationBar';
 
@@ -382,7 +384,7 @@ export function AlbumTab({
   onUpdateAlbumItemTags,
   onBatchUpdateAlbumTags,
 }: AlbumTabProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const getDefaultExportPackageName = (name: string) => {
     const safeName = (name || t('projectViewer.tabs.album')).replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -393,6 +395,8 @@ export function AlbumTab({
   const isVideoProject = projectType === 'video';
   const isAudioProject = projectType === 'audio';
   const mediaType: ProjectMediaType = isTextProject ? 'text' : isVideoProject ? 'video' : isAudioProject ? 'audio' : 'image';
+  // Video and audio would need frames or a transcript first.
+  const canAutoTag = mediaType === 'image' || mediaType === 'text';
   const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [showCompareDialog, setShowCompareDialog] = useState(false);
@@ -407,6 +411,8 @@ export function AlbumTab({
   const [isRenaming, setIsRenaming] = useState(false);
   const [tagItem, setTagItem] = useState<AlbumItem | null>(null);
   const [showBatchTagModal, setShowBatchTagModal] = useState(false);
+  const [showAutoTagDialog, setShowAutoTagDialog] = useState(false);
+  const [autoTagRunKey, setAutoTagRunKey] = useState(0);
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
   const getAlbumFilename = (item: AlbumItem) => {
@@ -501,6 +507,28 @@ export function AlbumTab({
       toast.success(t('projectViewer.album.tagsBatchUpdated', { count: updated }));
     } catch (err: any) {
       toast.error(err.message || t('projectViewer.album.tagsUpdateFailed'));
+      throw err;
+    }
+  };
+
+  const startAlbumAutoTag = async ({ onlyUntagged }: { onlyUntagged: boolean }) => {
+    try {
+      // Same scope as batch tagging: the selection, or everything the filters select.
+      const scope = hasVisibleSelection
+        ? { itemIds: selectedDisplayItemIds }
+        : {
+          allAlbumItems: true,
+          aspectRatios: hasAspectRatioFilter ? selectedAspectRatios : undefined,
+          filterTags: hasTagFilter ? selectedTags : undefined,
+          tagMatch,
+          q: search,
+        };
+      const { queued } = await startAutoTag({ kind: 'album', projectId }, { ...scope, onlyUntagged, language: i18n.language });
+      if (queued === 0) toast.info(t('autoTag.nothingToTag'));
+      else toast.success(t('autoTag.started', { count: queued }));
+      setAutoTagRunKey((key) => key + 1);
+    } catch (err: any) {
+      toast.error(err.message || t('autoTag.startFailed'));
       throw err;
     }
   };
@@ -645,6 +673,11 @@ export function AlbumTab({
       icon: <TagIcon className="w-4 h-4 shrink-0" />,
       onClick: () => setShowBatchTagModal(true),
     },
+    ...(canAutoTag ? [{
+      label: hasVisibleSelection ? t('projectViewer.album.autoTagSelected') : useAllAlbumScope ? t('projectViewer.album.autoTagAll') : t('projectViewer.album.autoTagResults'),
+      icon: <WandSparkles className="w-4 h-4 shrink-0" />,
+      onClick: () => setShowAutoTagDialog(true),
+    }] : []),
     {
       label: hasVisibleSelection ? t('projectViewer.transfer.copyTo') : useAllAlbumScope ? t('projectViewer.transfer.copyAllTo') : t('projectViewer.transfer.copyPageTo'),
       icon: <Copy className="w-4 h-4 shrink-0" />,
@@ -751,6 +784,8 @@ export function AlbumTab({
               </>
             }
           />
+
+        {canAutoTag && <AutoTagProgress scope={{ kind: 'album', projectId }} runKey={autoTagRunKey} />}
 
         {total === 0 && !hasAspectRatioFilter && !hasTagFilter && !hasSearchFilter ? (
           <EmptyState
@@ -1331,6 +1366,12 @@ export function AlbumTab({
         suggestions={tagCounts}
         onClose={() => setShowBatchTagModal(false)}
         onApply={applyBatchTags}
+      />
+      <AutoTagDialog
+        isOpen={showAutoTagDialog}
+        itemCount={hasVisibleSelection ? selectedDisplayItemIds.length : total}
+        onClose={() => setShowAutoTagDialog(false)}
+        onStart={startAlbumAutoTag}
       />
     </section>
   );

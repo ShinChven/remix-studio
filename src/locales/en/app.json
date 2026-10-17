@@ -120,5 +120,33 @@
     "matchMode": "Match",
     "matchAny": "Any",
     "matchAll": "All"
+  },
+  "autoTag": {
+    "dialogTitle_one": "Auto-tag {{count}} item",
+    "dialogTitle_other": "Auto-tag {{count}} items",
+    "dialogMessage": "Each item is sent to the model below, {{limit}} at a time. New tags are added to the ones an item already has.",
+    "model": "Model",
+    "loading": "Checking your auto-tagging settings…",
+    "loadFailed": "Could not load your auto-tagging settings.",
+    "off": "Auto-tagging is off. Choose a vision model in Account → Preferences first.",
+    "openPreferences": "Open Preferences",
+    "onlyUntagged": "Skip items that already have tags",
+    "start": "Start",
+    "started_one": "Auto-tagging {{count}} item",
+    "started_other": "Auto-tagging {{count}} items",
+    "nothingToTag": "Nothing to tag: these items already have tags or can't be auto-tagged.",
+    "startFailed": "Could not start auto-tagging.",
+    "progress": "Auto-tagging {{done}} / {{total}}",
+    "failedCount_one": "{{count}} failed",
+    "failedCount_other": "{{count}} failed",
+    "stop": "Stop",
+    "stopFailed": "Could not stop auto-tagging.",
+    "finished_one": "Auto-tagged {{count}} item",
+    "finished_other": "Auto-tagged {{count}} items",
+    "summary": "Auto-tagging finished: {{completed}} tagged, {{failed}} failed",
+    "details": "Details",
+    "retry": "Retry failed",
+    "retryFailed": "Could not retry auto-tagging.",
+    "dismiss": "Dismiss"
   }
 }

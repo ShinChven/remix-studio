@@ -120,5 +120,33 @@
     "matchMode": "조건",
     "matchAny": "하나라도",
     "matchAll": "모두"
+  },
+  "autoTag": {
+    "dialogTitle_one": "{{count}}개 항목 자동 태그 지정",
+    "dialogTitle_other": "{{count}}개 항목 자동 태그 지정",
+    "dialogMessage": "각 항목을 아래 모델로 보내며, 한 번에 {{limit}}개씩 처리합니다. 새 태그는 항목에 이미 있는 태그에 추가됩니다.",
+    "model": "모델",
+    "loading": "자동 태그 지정 설정을 확인하는 중…",
+    "loadFailed": "자동 태그 지정 설정을 불러오지 못했습니다.",
+    "off": "자동 태그 지정이 꺼져 있습니다. 먼저 계정 → 환경설정에서 비전 모델을 선택하세요.",
+    "openPreferences": "환경설정 열기",
+    "onlyUntagged": "이미 태그가 있는 항목 건너뛰기",
+    "start": "시작",
+    "started_one": "{{count}}개 항목 자동 태그 지정 중",
+    "started_other": "{{count}}개 항목 자동 태그 지정 중",
+    "nothingToTag": "태그를 지정할 항목이 없습니다. 모두 이미 태그가 있거나 자동 태그 지정을 할 수 없는 항목입니다.",
+    "startFailed": "자동 태그 지정을 시작하지 못했습니다.",
+    "progress": "자동 태그 지정 중 {{done}} / {{total}}",
+    "failedCount_one": "{{count}}개 실패",
+    "failedCount_other": "{{count}}개 실패",
+    "stop": "중지",
+    "stopFailed": "자동 태그 지정을 중지하지 못했습니다.",
+    "finished_one": "{{count}}개 항목에 자동으로 태그를 지정했습니다",
+    "finished_other": "{{count}}개 항목에 자동으로 태그를 지정했습니다",
+    "summary": "자동 태그 지정 완료: {{completed}}개 성공, {{failed}}개 실패",
+    "details": "자세히",
+    "retry": "실패 항목 다시 시도",
+    "retryFailed": "자동 태그 지정을 다시 시도하지 못했습니다.",
+    "dismiss": "닫기"
   }
 }

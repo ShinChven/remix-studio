@@ -115,7 +115,10 @@
       "nameDesc": "Nom Z-A"
     },
     "createdAt": "Créé",
-    "updatedAt": "Modifié"
+    "updatedAt": "Modifié",
+    "autoTag": "Étiquetage auto",
+    "autoTagLibrary": "Étiqueter automatiquement la bibliothèque",
+    "autoTagResults": "Étiqueter automatiquement les résultats"
   },
   "libraryImportExport": {
     "badge": "Espace de travail de la bibliothèque de texte",

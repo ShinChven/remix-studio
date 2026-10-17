@@ -115,7 +115,10 @@
       "error": "Failed to export library"
     },
     "createdAt": "Created",
-    "updatedAt": "Updated"
+    "updatedAt": "Updated",
+    "autoTag": "Auto-tag",
+    "autoTagLibrary": "Auto-tag library",
+    "autoTagResults": "Auto-tag matching items"
   },
   "libraryImportExport": {
     "badge": "Prompt Library Workspace",

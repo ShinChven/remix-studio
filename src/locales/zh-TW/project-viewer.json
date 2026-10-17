@@ -417,7 +417,10 @@
       "tagBatchHintReplace": "範圍內每一項最終只保留這些標籤。留空則清除全部標籤。",
       "tagBatchClearAll": "未填寫標籤 —— 範圍內每一項的標籤都會被清空",
       "tagBatchApply": "套用",
-      "deleteShort": "刪除"
+      "deleteShort": "刪除",
+      "autoTagSelected": "自動標記所選",
+      "autoTagAll": "自動標記全部",
+      "autoTagResults": "自動標記符合的項目"
     },
     "compare": {
       "title": "比較文字",

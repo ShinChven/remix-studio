@@ -120,5 +120,33 @@
     "matchMode": "Filtre",
     "matchAny": "Au moins un",
     "matchAll": "Tous"
+  },
+  "autoTag": {
+    "dialogTitle_one": "Étiqueter automatiquement {{count}} élément",
+    "dialogTitle_other": "Étiqueter automatiquement {{count}} éléments",
+    "dialogMessage": "Chaque élément est envoyé au modèle ci-dessous, {{limit}} à la fois. Les nouvelles étiquettes s'ajoutent à celles que l'élément a déjà.",
+    "model": "Modèle",
+    "loading": "Vérification de vos paramètres d'étiquetage automatique…",
+    "loadFailed": "Impossible de charger vos paramètres d'étiquetage automatique.",
+    "off": "L'étiquetage automatique est désactivé. Choisissez d'abord un modèle de vision dans Compte → Préférences.",
+    "openPreferences": "Ouvrir les préférences",
+    "onlyUntagged": "Ignorer les éléments qui ont déjà des étiquettes",
+    "start": "Démarrer",
+    "started_one": "Étiquetage automatique de {{count}} élément",
+    "started_other": "Étiquetage automatique de {{count}} éléments",
+    "nothingToTag": "Rien à étiqueter : ces éléments ont déjà des étiquettes ou ne peuvent pas être étiquetés automatiquement.",
+    "startFailed": "Impossible de démarrer l'étiquetage automatique.",
+    "progress": "Étiquetage automatique {{done}} / {{total}}",
+    "failedCount_one": "{{count}} échec",
+    "failedCount_other": "{{count}} échecs",
+    "stop": "Arrêter",
+    "stopFailed": "Impossible d'arrêter l'étiquetage automatique.",
+    "finished_one": "{{count}} élément étiqueté automatiquement",
+    "finished_other": "{{count}} éléments étiquetés automatiquement",
+    "summary": "Étiquetage automatique terminé : {{completed}} étiquetés, {{failed}} en échec",
+    "details": "Détails",
+    "retry": "Réessayer les échecs",
+    "retryFailed": "Impossible de relancer l'étiquetage automatique.",
+    "dismiss": "Fermer"
   }
 }

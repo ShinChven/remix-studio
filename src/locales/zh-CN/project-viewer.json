@@ -417,7 +417,10 @@
       "tagBatchHintReplace": "范围内每一项最终只保留这些标签。留空则清除全部标签。",
       "tagBatchClearAll": "未填写标签 —— 范围内每一项的标签都会被清空",
       "tagBatchApply": "应用",
-      "deleteShort": "删除"
+      "deleteShort": "删除",
+      "autoTagSelected": "自动标记所选",
+      "autoTagAll": "自动标记全部",
+      "autoTagResults": "自动标记匹配项目"
     },
     "compare": {
       "title": "比较文本",

@@ -2103,6 +2103,23 @@ export interface AutoTagSettings {
   concurrencyLimit: number;
 }
 
+/** Where an auto-tagging run works: one project's album, or one library. */
+export type AutoTagScope = { kind: 'album'; projectId: string } | { kind: 'library'; libraryId: string };
+
+/**
+ * Progress of the auto-tagging run in one album or library. A run starts when
+ * items are queued while none are, and its failures stay listed until they
+ * are retried or dismissed.
+ */
+export interface AutoTagRunStatus {
+  active: boolean;
+  total: number;
+  completed: number;
+  pending: number;
+  running: number;
+  failures: { itemId: string; error: string }[];
+}
+
 /**
  * Resolve custom model variants into full ModelConfig entries.
  * Each variant clones the base model's options but uses its own name and modelId.

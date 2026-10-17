@@ -1,5 +1,5 @@
 import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
-import { AlbumItem, AppData, AutoTagSettings, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, PromptLimitMeta, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, AutoTagRunStatus, AutoTagScope, AutoTagSettings, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, PromptLimitMeta, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -2337,6 +2337,56 @@ export async function updateAutoTagSettings(settings: AutoTagSettings): Promise<
     body: JSON.stringify(settings),
   });
   return handleResponse<AutoTagSettings>(res, 'Failed to save auto-tagging settings');
+}
+
+function autoTagPath(scope: AutoTagScope) {
+  return scope.kind === 'album'
+    ? `/api/projects/${encodeURIComponent(scope.projectId)}/album/auto-tag`
+    : `/api/libraries/${encodeURIComponent(scope.libraryId)}/auto-tag`;
+}
+
+export interface AutoTagRunRequest {
+  /** Leave items that already carry tags alone. */
+  onlyUntagged?: boolean;
+  /** UI language code; tags are written in it. */
+  language?: string;
+  itemIds?: string[];
+  /** Album: every item the current filters select. */
+  allAlbumItems?: boolean;
+  aspectRatios?: string[];
+  filterTags?: string[];
+  tagMatch?: 'all' | 'any';
+  q?: string;
+  /** Library: every item its current search and tag filter select. */
+  all?: boolean;
+}
+
+export async function startAutoTag(scope: AutoTagScope, request: AutoTagRunRequest): Promise<{ queued: number; skipped: number; status: AutoTagRunStatus }> {
+  const res = await apiFetch(autoTagPath(scope), {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  return handleResponse(res, 'Failed to start auto-tagging');
+}
+
+export async function fetchAutoTagStatus(scope: AutoTagScope): Promise<AutoTagRunStatus> {
+  const res = await apiFetch(autoTagPath(scope), { headers: getHeaders(false) });
+  return handleResponse<AutoTagRunStatus>(res, 'Failed to load auto-tagging progress');
+}
+
+export async function retryAutoTag(scope: AutoTagScope, language: string): Promise<AutoTagRunStatus> {
+  const res = await apiFetch(`${autoTagPath(scope)}/retry`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ language }),
+  });
+  return handleResponse<AutoTagRunStatus>(res, 'Failed to retry auto-tagging');
+}
+
+export async function cancelAutoTag(scope: AutoTagScope): Promise<AutoTagRunStatus> {
+  const res = await apiFetch(`${autoTagPath(scope)}/cancel`, { method: 'POST', headers: getHeaders() });
+  return handleResponse<AutoTagRunStatus>(res, 'Failed to stop auto-tagging');
 }
 
 /** An album or library image to watermark on its own. */

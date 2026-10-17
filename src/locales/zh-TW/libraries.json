@@ -115,7 +115,10 @@
       "error": "素材庫匯出失敗"
     },
     "createdAt": "建立於",
-    "updatedAt": "更新於"
+    "updatedAt": "更新於",
+    "autoTag": "自動標籤",
+    "autoTagLibrary": "自動標記素材庫",
+    "autoTagResults": "自動標記符合的項目"
   },
   "libraryImportExport": {
     "badge": "文字資源庫工作區",
