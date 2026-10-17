@@ -131,6 +131,23 @@
         "needsInstall": "iPhone と iPad では、Remix Studio をホーム画面に追加し（共有 → ホーム画面に追加）、そこから開くと通知を有効にできます。",
         "testSent": "テスト通知を送信しました。",
         "testFailed": "テスト通知を受信したデバイスはありません。"
+      },
+      "autoTag": {
+        "title": "自動タグ付け",
+        "description": "プロジェクトのアルバムとライブラリで、画像を読み取ってタグを付けるビジョンモデルを選択します。",
+        "provider": "プロバイダー",
+        "off": "オフ",
+        "model": "モデル",
+        "selectModel": "モデルを選択",
+        "concurrencyLimit": "同時実行制限",
+        "concurrencyLimitDescription": "プロバイダーへ同時に送信するタグ付けリクエストの最大数です（{{min}}〜{{max}}）。プロバイダーがレート制限超過でリクエストを拒否し始めたら下げてください。",
+        "noVisionProviders": "画像を読み取れるモデルを持つプロバイダーがありません。自動タグ付けを有効にするには、Google AI、OpenAI、Claude などのプロバイダーを追加してください。",
+        "manageProviders": "プロバイダーを管理",
+        "save": "保存",
+        "saved": "自動タグ付けの設定を保存しました。",
+        "saveFailed": "自動タグ付けの設定を保存できませんでした。",
+        "loadFailed": "自動タグ付けの設定を読み込めませんでした。",
+        "retry": "再試行"
       }
     },
     "confirm": {

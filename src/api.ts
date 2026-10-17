@@ -1,5 +1,5 @@
 import { LIVE_CLIENT_HEADER, LIVE_CLIENT_ID } from './lib/live';
-import { AlbumItem, AppData, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, PromptLimitMeta, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
+import { AlbumItem, AppData, AutoTagSettings, CivitaiResource, CivitaiSearchResult, InviteCode, Library, LibraryItem, PasskeySummary, Project, ProjectImportTask, Provider, ProviderType, SecuritySettings, User, UserDetail, UserRole, UserStatus, UserSummary, TrashItem, ExportTask, StorageAnalysis, PaginatedResult, PromptLimitMeta, CustomModelAlias, QueueMonitorStatus, QueueMonitorView } from './types';
 
 function getHeaders(isJson = true): HeadersInit {
   const headers: Record<string, string> = {};
@@ -2323,6 +2323,20 @@ export async function updatePostWatermarkSettings(settings: Partial<PostWatermar
     body: JSON.stringify(settings),
   });
   return handleResponse<PostWatermarkSettings>(res, 'Failed to update watermark settings');
+}
+
+export async function fetchAutoTagSettings(): Promise<AutoTagSettings> {
+  const res = await apiFetch('/api/settings/auto-tag', { headers: getHeaders(false) });
+  return handleResponse<AutoTagSettings>(res, 'Failed to load auto-tagging settings');
+}
+
+export async function updateAutoTagSettings(settings: AutoTagSettings): Promise<AutoTagSettings> {
+  const res = await apiFetch('/api/settings/auto-tag', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(settings),
+  });
+  return handleResponse<AutoTagSettings>(res, 'Failed to save auto-tagging settings');
 }
 
 /** An album or library image to watermark on its own. */

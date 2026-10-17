@@ -1,12 +1,13 @@
-import { FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Bell, Send, Tv } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Database, FileArchive, Fingerprint, Folder, Globe, HardDrive, KeyRound, Loader2, LogOut, Play, Shield, Trash2, User as UserIcon, Zap, Sun, Moon, Monitor, Share2, Bell, Send, Tags, Tv } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { beginPasskeyRegistration, disableTwoFactor, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, sendTestPushNotification, updatePassword, fetchPushSubscriptionStatus } from '../api';
+import { beginPasskeyRegistration, disableTwoFactor, fetchAutoTagSettings, fetchCurrentUser, fetchLibraries, fetchProjects, fetchProviders, fetchSecuritySettings, fetchStorageAnalysis, finishPasskeyRegistration, removePasskey, removePassword, sendTestPushNotification, updateAutoTagSettings, updatePassword, fetchPushSubscriptionStatus } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { NumberInput } from '../components/NumberInput';
 import { MediaDevicesPanel } from '../components/media-share/MediaDevicesPanel';
-import { SecuritySettings, StorageAnalysis, User } from '../types';
+import { AUTO_TAG_CONCURRENCY_LIMIT, AutoTagSettings, Provider, SecuritySettings, StorageAnalysis, User, providerAcceptsImageInput } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
@@ -192,6 +193,199 @@ function NotificationPreferences() {
           </button>
         )}
       </div>
+    </section>
+  );
+}
+
+function PreferenceSelect({ label, value, onChange, disabled, children }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-3 block text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">{label}</span>
+      <span className="relative block">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          className="w-full appearance-none rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-5 py-4 text-sm font-bold text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50 shadow-sm pr-12 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {children}
+        </select>
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-neutral-500 dark:text-neutral-500">
+          <ChevronRight className="h-4 w-4 rotate-90" />
+        </span>
+      </span>
+    </label>
+  );
+}
+
+const textModelsOf = (provider: Provider) => provider.models.filter((model) => model.category === 'text');
+
+function AutoTagPreferences() {
+  const { t } = useTranslation();
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [saved, setSaved] = useState<AutoTagSettings | null>(null);
+  const [draft, setDraft] = useState<AutoTagSettings | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const [settings, allProviders] = await Promise.all([fetchAutoTagSettings(), fetchProviders()]);
+      setProviders(allProviders.filter((provider) => providerAcceptsImageInput(provider.type) && textModelsOf(provider).length > 0));
+      setSaved(settings);
+      setDraft(settings);
+    } catch (error: any) {
+      setLoadError(error?.message || t('account.preferences.autoTag.loadFailed'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const selectedProvider = providers.find((provider) => provider.id === draft?.providerId) || null;
+  const models = selectedProvider ? textModelsOf(selectedProvider) : [];
+  const dirty = Boolean(draft && saved && (
+    draft.providerId !== saved.providerId
+    || draft.modelConfigId !== saved.modelConfigId
+    || draft.concurrencyLimit !== saved.concurrencyLimit
+  ));
+  const canSave = dirty && !saving && Boolean(draft && (!draft.providerId || draft.modelConfigId));
+
+  const handleProviderChange = (providerId: string) => {
+    const provider = providers.find((item) => item.id === providerId);
+    setDraft((current) => current && {
+      ...current,
+      providerId: provider?.id ?? null,
+      modelConfigId: provider ? textModelsOf(provider)[0]?.id ?? null : null,
+    });
+  };
+
+  const handleSave = async () => {
+    if (!draft || !canSave) return;
+    setSaving(true);
+    try {
+      const next = await updateAutoTagSettings(draft);
+      setSaved(next);
+      setDraft(next);
+      toast.success(t('account.preferences.autoTag.saved'));
+    } catch (error: any) {
+      toast.error(error?.message || t('account.preferences.autoTag.saveFailed'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-3xl p-6">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-card bg-violet-500/10 text-violet-400">
+          <Tags className="h-5 w-5" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-neutral-900 dark:text-white">{t('account.preferences.autoTag.title')}</h2>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{t('account.preferences.autoTag.description')}</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="mt-8 flex justify-center py-6">
+          <Loader2 className="h-6 w-6 animate-spin text-neutral-500" />
+        </div>
+      ) : loadError || !draft ? (
+        <div className="mt-8 flex items-start justify-between gap-4 rounded-card border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span>{loadError || t('account.preferences.autoTag.loadFailed')}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-xl border border-amber-400/20 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-amber-400/10"
+          >
+            {t('account.preferences.autoTag.retry')}
+          </button>
+        </div>
+      ) : (
+        <div className="mt-8 space-y-6">
+          {providers.length === 0 && (
+            <div className="flex flex-col gap-3 rounded-card border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <span>{t('account.preferences.autoTag.noVisionProviders')}</span>
+              </div>
+              <Link to="/providers" className="flex-shrink-0 font-bold underline-offset-4 hover:underline">
+                {t('account.preferences.autoTag.manageProviders')}
+              </Link>
+            </div>
+          )}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <PreferenceSelect
+              label={t('account.preferences.autoTag.provider')}
+              value={draft.providerId ?? ''}
+              onChange={handleProviderChange}
+              disabled={providers.length === 0}
+            >
+              <option value="">{t('account.preferences.autoTag.off')}</option>
+              {providers.map((provider) => (
+                <option key={provider.id} value={provider.id}>{provider.name}</option>
+              ))}
+            </PreferenceSelect>
+
+            <PreferenceSelect
+              label={t('account.preferences.autoTag.model')}
+              value={draft.modelConfigId ?? ''}
+              onChange={(modelConfigId) => setDraft((current) => current && { ...current, modelConfigId: modelConfigId || null })}
+              disabled={!selectedProvider}
+            >
+              {!draft.modelConfigId && <option value="">{t('account.preferences.autoTag.selectModel')}</option>}
+              {models.map((model) => (
+                <option key={model.id} value={model.id}>{model.name}</option>
+              ))}
+            </PreferenceSelect>
+          </div>
+
+          <div>
+            <label htmlFor="auto-tag-concurrency" className="mb-3 block text-[10px] font-black uppercase tracking-widest text-neutral-500 dark:text-neutral-500">
+              {t('account.preferences.autoTag.concurrencyLimit')}
+            </label>
+            <NumberInput
+              id="auto-tag-concurrency"
+              value={draft.concurrencyLimit}
+              onValueChange={(concurrencyLimit) => setDraft((current) => current && { ...current, concurrencyLimit })}
+              min={AUTO_TAG_CONCURRENCY_LIMIT.min}
+              max={AUTO_TAG_CONCURRENCY_LIMIT.max}
+              integer
+              className="w-full max-w-xs rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-5 py-4 text-sm font-bold text-neutral-900 dark:text-neutral-100 outline-none transition focus:border-blue-500/50 shadow-sm"
+            />
+            <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+              {t('account.preferences.autoTag.concurrencyLimitDescription', { min: AUTO_TAG_CONCURRENCY_LIMIT.min, max: AUTO_TAG_CONCURRENCY_LIMIT.max })}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={!canSave}
+            className="inline-flex items-center justify-center gap-2 rounded-card bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 px-6 py-3 text-sm font-bold transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+            {t('account.preferences.autoTag.save')}
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -1252,6 +1446,8 @@ export function Account() {
                 />
               </div>
             </section>
+
+            <AutoTagPreferences />
 
             <NotificationPreferences />
           </div>

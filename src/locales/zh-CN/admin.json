@@ -131,6 +131,23 @@
         "needsInstall": "在 iPhone 和 iPad 上，请先将 Remix Studio 添加到主屏幕（分享 → 添加到主屏幕），并从主屏幕打开后再开启通知。",
         "testSent": "测试通知已发送。",
         "testFailed": "没有设备收到测试通知。"
+      },
+      "autoTag": {
+        "title": "自动标签",
+        "description": "选择用于识别图片并为项目相册和素材库中的内容生成标签的视觉模型。",
+        "provider": "供应商",
+        "off": "关闭",
+        "model": "模型",
+        "selectModel": "选择模型",
+        "concurrencyLimit": "并发限制",
+        "concurrencyLimitDescription": "同时发送给供应商的打标签请求的最大数量（{{min}}–{{max}}）。如果供应商开始因超出速率限制而拒绝请求，请调低此值。",
+        "noVisionProviders": "您的供应商中没有能识别图片的模型。请添加 Google AI、OpenAI 或 Claude 等供应商以启用自动标签。",
+        "manageProviders": "管理供应商",
+        "save": "保存",
+        "saved": "自动标签设置已保存。",
+        "saveFailed": "无法保存自动标签设置。",
+        "loadFailed": "无法加载自动标签设置。",
+        "retry": "重试"
       }
     },
     "confirm": {

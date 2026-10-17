@@ -58,6 +58,7 @@ import { UserLiveHub } from './server/live/user-live-hub';
 import { liveOriginMiddleware } from './server/live/live-origin';
 import { PushService } from './server/services/push/push-service';
 import { createPushRouter } from './server/routes/push';
+import { createAutoTagRouter } from './server/routes/auto-tag';
 import { MediaCatalog } from './server/media-share/catalog';
 import { MediaDeviceAuth } from './server/media-share/device-auth';
 import { createMediaRouter } from './server/media-share/media-router';
@@ -294,6 +295,7 @@ async function startServer() {
   app.route('/', createReleaseRouter(prisma));
   app.route('/', createProductsRouter(prisma, deliveryManager));
   app.route('/', createPushRouter(pushService));
+  app.route('/', createAutoTagRouter(prisma));
 
   // === Media sharing: TV mode, WebDAV and DLNA ===
   const mediaCatalog = new MediaCatalog(prisma);
