@@ -222,6 +222,15 @@ export class S3Storage implements IStorage {
     return getSignedUrl(this.publicClient, command, { expiresIn });
   }
 
+  /**
+   * The x-amz-copy-source header for one object. S3 expects it URL-encoded and
+   * the SDK sends it as given, so a key with spaces or non-ASCII characters
+   * (a file renamed to a Chinese name) would otherwise fail to copy.
+   */
+  private copySource(key: string): string {
+    return `${this.bucket}/${key.split('/').map(encodeURIComponent).join('/')}`;
+  }
+
   async rename(oldPrefix: string, newPrefix: string): Promise<void> {
     const listed = await this.client.send(
       new ListObjectsV2Command({
@@ -235,7 +244,7 @@ export class S3Storage implements IStorage {
       await this.client.send(
         new CopyObjectCommand({
           Bucket: this.bucket,
-          CopySource: `${this.bucket}/${obj.Key}`,
+          CopySource: this.copySource(obj.Key!),
           Key: newKey,
         })
       );
@@ -249,7 +258,7 @@ export class S3Storage implements IStorage {
     await this.client.send(
       new CopyObjectCommand({
         Bucket: this.bucket,
-        CopySource: `${this.bucket}/${sourceKey}`,
+        CopySource: this.copySource(sourceKey),
         Key: destinationKey,
       })
     );
