@@ -1981,11 +1981,20 @@ export class ProjectRepository {
 
       if (!normalizedWorkflow.length) return;
 
+      // Item ids are unique across projects. A workflow brought in from
+      // another project — a reused job snapshot after its results were moved
+      // or copied here — still carries that project's ids, so those items get
+      // new ones rather than colliding with the rows they came from.
+      const takenIds = new Set((await tx.workflowItem.findMany({
+        where: { id: { in: normalizedWorkflow.map((item) => item.id) } },
+        select: { id: true },
+      })).map((item) => item.id));
+
       await tx.workflowItem.createMany({
         data: normalizedWorkflow.map((item) => {
           const civitai = sanitizeCivitaiBinding(item.civitai, item.type);
           return {
-          id: item.id,
+          id: takenIds.has(item.id) ? crypto.randomUUID() : item.id,
           projectId,
           type: item.type,
           // A model item's value is its options' AIRs, kept in step with them.
