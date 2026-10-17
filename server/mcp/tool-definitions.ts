@@ -52,7 +52,7 @@ import {
   resolveSupportedAspectRatio,
   resolveSupportedOption,
 } from '../../src/types';
-import type { CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiVideoEngine, CivitaiVideoSettings, ModelConfig, Project, WorkflowItem } from '../../src/types';
+import type { AlbumItem, CivitaiBinding, CivitaiGenerationConfig, CivitaiResource, CivitaiVideoEngine, CivitaiVideoSettings, ModelConfig, Project, WorkflowItem } from '../../src/types';
 import { VISUAL_PROJECT_TYPES } from '../../src/lib/project-media';
 
 const MODEL_CATEGORY_VALUES = ['text', 'image', 'audio', 'video'] as const;
@@ -630,6 +630,33 @@ function toToolWorkflowItem(item: {
     disabled: item.disabled ?? false,
     thumbnailUrl: item.thumbnailUrl,
     optimizedUrl: item.optimizedUrl,
+  };
+}
+
+/**
+ * One album item as get_album_items and get_album_item report it. The prompt
+ * fields come from the caller: the paged listing truncates them, the
+ * single-item read returns them in full.
+ */
+function toToolAlbumItem<Text extends object>(item: AlbumItem, text: Text) {
+  return {
+    id: item.id,
+    jobId: item.jobId ?? null,
+    filename: item.imageUrl ? (basenameFromKey(item.imageUrl) || null) : null,
+    ...text,
+    tags: item.tags ?? [],
+    storageKey: item.imageUrl || null,
+    thumbnailKey: item.thumbnailUrl ?? null,
+    optimizedKey: item.optimizedUrl ?? null,
+    format: item.format ?? null,
+    aspectRatio: item.aspectRatio ?? null,
+    ...(item.duration != null ? { duration: item.duration } : {}),
+    ...(item.resolution ? { resolution: item.resolution } : {}),
+    size: item.size ?? null,
+    sizeFormatted: item.size ? formatSize(item.size) : null,
+    // What a Civitai result was generated with: checkpoint or video engine, LoRAs, negative prompt, seed and settings.
+    ...(item.civitaiParams ? { civitaiParams: item.civitaiParams } : {}),
+    createdAt: item.createdAt,
   };
 }
 
@@ -1387,26 +1414,7 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
 
       const items = album.items.map((item) => {
         const preview = truncateContent(item.prompt ?? '');
-        return {
-          id: item.id,
-          jobId: item.jobId ?? null,
-          filename: item.imageUrl ? (basenameFromKey(item.imageUrl) || null) : null,
-          prompt: preview.text,
-          promptTruncated: preview.truncated,
-          tags: item.tags ?? [],
-          storageKey: item.imageUrl || null,
-          thumbnailKey: item.thumbnailUrl ?? null,
-          optimizedKey: item.optimizedUrl ?? null,
-          format: item.format ?? null,
-          aspectRatio: item.aspectRatio ?? null,
-          ...(item.duration != null ? { duration: item.duration } : {}),
-          ...(item.resolution ? { resolution: item.resolution } : {}),
-          size: item.size ?? null,
-          sizeFormatted: item.size ? formatSize(item.size) : null,
-          // What a Civitai result was generated with: checkpoint or video engine, LoRAs, negative prompt, seed and settings.
-          ...(item.civitaiParams ? { civitaiParams: item.civitaiParams } : {}),
-          createdAt: item.createdAt,
-        };
+        return toToolAlbumItem(item, { prompt: preview.text, promptTruncated: preview.truncated });
       });
 
       const response = {
@@ -1423,6 +1431,47 @@ Storage keys are internal references, not fetchable URLs — pass them to get_fi
         aspectRatioCounts: album.aspectRatioCounts,
         tagCounts: album.tagCounts,
         ...paginationHints(album.page, album.pages),
+        hint: 'Pass storageKey / thumbnailKey / optimizedKey to get_file_urls to download or view a file.',
+      };
+
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── get_album_item ───
+  tools.push({
+    name: 'get_album_item',
+    title: 'Get Album Item',
+    description: `Read one album item by id, with its full prompt and, for text projects, the full generated text — nothing is truncated. Returns the same fields as an item from get_album_items (id, jobId, filename, tags, storage keys, format, aspect ratio, size, Civitai parameters, createdAt), plus the project's id, name and "projectUrl".
+
+Use this when you already have the item id, such as from a pasted \`project:<projectId>/album-item:<itemId>\` reference, instead of paging through get_album_items. Storage keys are internal references, not fetchable URLs — pass them to get_file_urls to obtain a temporary download URL.`,
+    inputSchema: {
+      project_id: z.string().min(1).describe('The project whose album holds the item'),
+      item_id: z.string().min(1).describe('The album item to read'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { project_id, item_id } = input as { project_id: string; item_id: string };
+
+      const project = await repository.getProject(userId, project_id);
+      if (!project) return errorResult(`Project "${project_id}" not found.`);
+
+      const item = await repository.getAlbumItem(userId, project_id, item_id);
+      if (!item) return errorResult(`Album item "${item_id}" not found in project "${project_id}".`);
+
+      const response = {
+        projectId: project.id,
+        projectUrl: appUrls.project(project.id),
+        projectName: project.name,
+        projectType: project.type,
+        item: toToolAlbumItem(item, {
+          prompt: item.prompt ?? '',
+          ...(item.textContent != null ? { textContent: item.textContent } : {}),
+        }),
         hint: 'Pass storageKey / thumbnailKey / optimizedKey to get_file_urls to download or view a file.',
       };
 
@@ -2400,6 +2449,63 @@ Use this tool to find an item by name/title before composing a workflow. Combine
         page: result.page,
         pages: result.pages,
         ...paginationHints(result.page, result.pages),
+        hint: isText
+          ? 'Use item.text as the "value" of a "text" workflow item.'
+          : `Use item.storageKey as the "value" of an "${library.type}" workflow item to pin this specific file.`,
+      };
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── get_library_item ───
+  tools.push({
+    name: 'get_library_item',
+    title: 'Get Library Item',
+    description: `Read one library item by id. Returns the same fields as an item from get_library_items — id, title, tags, and either the full "text" (text libraries, never truncated) or "storageKey" (image/audio/video libraries) — plus the library's id, name, type and "libraryUrl".
+
+Use this when you already have the item id, such as from a pasted \`library:<libraryId>/item:<itemId>\` reference, instead of paging through get_library_items or searching.`,
+    inputSchema: {
+      library_id: z.string().min(1).describe('The library that holds the item'),
+      item_id: z.string().min(1).describe('The library item to read'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { library_id, item_id } = input as { library_id: string; item_id: string };
+
+      const library = await repository.getLibrarySummary(userId, library_id);
+      if (!library) return errorResult(`Library "${library_id}" not found.`);
+
+      const [item] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
+      if (!item) return errorResult(`Library item "${item_id}" not found in library "${library_id}".`);
+
+      const isText = library.type === 'text';
+      const rawContent = item.content ?? '';
+      const response = {
+        libraryId: library_id,
+        libraryUrl: appUrls.library(library_id),
+        libraryName: library.name,
+        libraryDescription: library.description ?? null,
+        libraryType: library.type,
+        item: isText
+          ? {
+            id: item.id,
+            title: item.title ?? null,
+            text: rawContent,
+            textLength: rawContent.length,
+            tags: item.tags ?? [],
+            thumbnailUrl: item.thumbnailUrl ?? null,
+          }
+          : {
+            id: item.id,
+            title: item.title ?? null,
+            storageKey: rawContent,
+            tags: item.tags ?? [],
+            thumbnailUrl: item.thumbnailUrl ?? null,
+          },
         hint: isText
           ? 'Use item.text as the "value" of a "text" workflow item.'
           : `Use item.storageKey as the "value" of an "${library.type}" workflow item to pin this specific file.`,
