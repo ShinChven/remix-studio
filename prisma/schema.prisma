@@ -256,6 +256,7 @@ model Job {
   resultText       String?  @db.Text
   taskId           String?
   filename         String?
+  tags             Json? // String[]: the library item tags its album items start with
   size             BigInt?
   optimizedSize    BigInt?
   thumbnailSize    BigInt?

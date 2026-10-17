@@ -8,6 +8,8 @@ export interface Combination {
   videoContexts?: string[];
   audioContexts?: string[];
   filenameParts: string[];
+  /** The tags of the library items picked, each once whatever its case, for the results to carry. */
+  tags?: string[];
   /** ComfyUI projects: the value each bound workflow input takes. */
   comfyInputs?: ComfyJobInput[];
   /** Civitai projects: the checkpoint, LoRAs and negative prompt this combination picked. */
@@ -154,6 +156,7 @@ export function choicesToCombination(combo: Choice[]): Combination {
   const videos: string[] = [];
   const audios: string[] = [];
   const stepParts: string[] = [];
+  const tags = new Map<string, string>();
   const comfyInputs: ComfyJobInput[] = [];
   const negatives: string[] = [];
   let checkpoint: CivitaiResource | undefined;
@@ -175,6 +178,10 @@ export function choicesToCombination(combo: Choice[]): Combination {
 
     if (c.tags && c.tags.length > 0) stepParts.push(...c.tags);
     if (c.title) stepParts.push(c.title);
+    for (const tag of c.tags || []) {
+      const trimmed = tag.trim();
+      if (trimmed && !tags.has(trimmed.toLowerCase())) tags.set(trimmed.toLowerCase(), trimmed);
+    }
 
     const comfyInput = toComfyInput(c);
     if (comfyInput) comfyInputs.push(comfyInput);
@@ -186,6 +193,7 @@ export function choicesToCombination(combo: Choice[]): Combination {
     videoContexts: videos.length > 0 ? videos : undefined,
     audioContexts: audios.length > 0 ? audios : undefined,
     filenameParts: stepParts,
+    tags: tags.size > 0 ? Array.from(tags.values()) : undefined,
     comfyInputs: comfyInputs.length > 0 ? mergeComfyTextInputs(comfyInputs) : undefined,
     civitai: checkpoint || loras.length > 0 || negatives.length > 0
       ? { model: checkpoint, resources: loras, negativePrompt: negatives.join('\n\n') || undefined }

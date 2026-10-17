@@ -383,6 +383,7 @@ export class ProjectRepository {
       sound: job.sound ?? null,
       background: (job as any).background ?? null,
       filename: job.filename ?? null,
+      tags: job.tags ?? null,
       providerId: job.providerId ?? null,
       workflowSnapshot: job.workflowSnapshot ?? null,
       comfyInputs: job.comfyInputs ?? null,
@@ -1023,6 +1024,7 @@ export class ProjectRepository {
       workflowSnapshot: remapSnapshot(job.workflowSnapshot),
       comfyInputs: copyJsonColumn(job.comfyInputs),
       civitaiParams: copyJsonColumn(job.civitaiParams),
+      tags: copyJsonColumn(job.tags),
     }));
 
     const itemRows: Prisma.AlbumItemCreateManyInput[] = items.map(({ id, ...item }) => ({
@@ -1783,6 +1785,9 @@ export class ProjectRepository {
         if (job.comfyInputs !== undefined) {
           updateData.comfyInputs = job.comfyInputs;
         }
+        if (job.tags !== undefined) {
+          updateData.tags = job.tags;
+        }
         // Once a Civitai job has run, its params carry the seed the server
         // rolled; a client copy taken before that must not drop it.
         if (job.civitaiParams !== undefined && dbStatus === 'draft') {
@@ -1832,6 +1837,7 @@ export class ProjectRepository {
           background: (job as any).background ?? null,
           taskId: job.taskId ?? null,
           filename: job.filename ?? null,
+          tags: job.tags ?? null,
           size: job.size != null ? BigInt(job.size) : null,
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
           providerId: job.providerId ?? null,
@@ -2005,6 +2011,9 @@ export class ProjectRepository {
     }
     if (j.civitaiParams && typeof j.civitaiParams === 'object') {
       job.civitaiParams = j.civitaiParams as CivitaiGenerationConfig;
+    }
+    if (Array.isArray(j.tags)) {
+      job.tags = j.tags as string[];
     }
     return job;
   }
