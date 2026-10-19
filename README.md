@@ -6,7 +6,7 @@
 [![MCP](https://img.shields.io/badge/MCP-agent%20ready-2563eb?style=flat-square)](https://shinchven.github.io/remix-studio/integrations/mcp)
 [![License: MIT](https://img.shields.io/badge/license-MIT-7c3aed?style=flat-square)](LICENSE)
 
-Remix Studio gives creators, teams, and AI agents a shared, self-hosted environment for multimodal generation and social campaigns. Operate the same live workspace through the visual studio, the built-in tool-using assistant, or external MCP clients such as Claude and Codex.
+Remix Studio gives creators, teams, and AI agents a shared, self-hosted environment for multimodal generation and social campaigns. Operate the same live workspace through the project studio, the built-in tool-using assistant, or external MCP clients such as Claude and Codex.
 
 One account-scoped tool layer powers both AI control surfaces. The assistant and connected agents can work directly with libraries, projects, workflows, albums, models, storage, campaigns, and posts.
 
@@ -16,7 +16,7 @@ One account-scoped tool layer powers both AI control surfaces. The assistant and
 
 | Control surface | Role |
 | --- | --- |
-| **Visual Studio** | Precise hands-on control over libraries, workflows, drafts, queues, results, exports, and campaigns |
+| **Project Studio** | Precise hands-on control over libraries, workflows, drafts, queues, results, exports, and campaigns |
 | **Built-in Assistant** | Persistent, multimodal chat that can inspect the workspace and take confirmed actions using your chosen AI provider and model |
 | **MCP Server** | The same core tools exposed to external agents over streamable HTTP, authenticated with OAuth 2.0 + PKCE or personal access tokens |
 
@@ -24,7 +24,7 @@ The assistant can bind projects and libraries as context, work with images and v
 
 ```mermaid
 flowchart LR
-    H["Human"] --> UI["Visual Studio"]
+    H["Human"] --> UI["Project Studio"]
     H --> A["Built-in Assistant"]
     G["Claude · Codex · Other Agents"] --> M["MCP"]
     A --> T["Shared account-scoped tools"]
