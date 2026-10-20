@@ -30,6 +30,7 @@ import { BatchSetTextModal } from '../components/BatchSetTextModal';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
 import { PageNav } from '../components/PageNav';
+import { PostMediaLightbox } from '../components/PostMediaLightbox';
 
 interface BatchPost {
   id: string;
@@ -99,7 +100,7 @@ export function CampaignBatchActions() {
   const [aiTask, setAiTask] = useState<BatchGenerateTextResult | null>(null);
   const [setTextOpen, setSetTextOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [previewMedia, setPreviewMedia] = useState<string[] | null>(null);
+  const [lightbox, setLightbox] = useState<{ media: NonNullable<BatchPost['media']>; index: number } | null>(null);
 
   const searchQuery = searchParams.get('q') || '';
   const statusFilter = searchParams.get('status') || 'all';
@@ -534,7 +535,7 @@ export function CampaignBatchActions() {
                         {mediaUrls.length > 0 ? (
                           <button
                             type="button"
-                            onClick={() => setPreviewMedia(mediaUrls)}
+                            onClick={() => setLightbox({ media: post.media || [], index: 0 })}
                             title={`View ${mediaUrls.length} media item${mediaUrls.length === 1 ? '' : 's'}`}
                             className="group/thumb relative h-14 w-14 overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 shadow-sm transition hover:ring-2 hover:ring-indigo-500/50 dark:border-white/10 dark:bg-neutral-800"
                           >
@@ -589,22 +590,13 @@ export function CampaignBatchActions() {
         </section>
       </div>
 
-      {previewMedia && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md" onClick={() => setPreviewMedia(null)}>
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-card border border-neutral-200/50 bg-white p-6 shadow-2xl backdrop-blur-xl dark:border-white/10 dark:bg-neutral-900" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-neutral-950 dark:text-white">Post Media</h2>
-              <button className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-950 dark:hover:bg-white/10 dark:hover:text-white" onClick={() => setPreviewMedia(null)}><X className="h-5 w-5" /></button>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-              {previewMedia.map((url, index) => (
-                <div key={`${url}-${index}`} className="aspect-square overflow-hidden rounded-card bg-neutral-900">
-                  <img src={url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+      {lightbox && (
+        <PostMediaLightbox
+          media={lightbox.media}
+          index={lightbox.index}
+          onIndexChange={(index) => setLightbox((current) => current ? { ...current, index } : current)}
+          onClose={() => setLightbox(null)}
+        />
       )}
 
       {unscheduleOpen && (
