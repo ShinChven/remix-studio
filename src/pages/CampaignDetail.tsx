@@ -3,8 +3,6 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   ExternalLink,
   Image as ImageIcon,
@@ -46,6 +44,7 @@ import { cn } from '../lib/utils';
 import { applyAvatarFallback, defaultAvatar } from '../lib/avatar';
 import { getPlatformIcon } from '../lib/platform';
 import { PageNav } from '../components/PageNav';
+import { mediaFullUrl, PostMediaLightbox } from '../components/PostMediaLightbox';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 
 type StatusFilter = 'all' | 'draft' | 'scheduled' | 'queued' | 'completed' | 'failed';
@@ -132,13 +131,6 @@ function mediaUrl(media: PostMedia) {
 
 function mediaPosterUrl(media: PostMedia) {
   const value = media.thumbnailUrl || '';
-  if (!value) return '';
-  if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
-  return `/api/storage/${value}`;
-}
-
-function mediaFullUrl(media: PostMedia) {
-  const value = media.processedUrl || media.sourceUrl || media.thumbnailUrl || '';
   if (!value) return '';
   if (/^https?:\/\//i.test(value) || value.startsWith('/')) return value;
   return `/api/storage/${value}`;
@@ -413,32 +405,6 @@ export function CampaignDetail() {
   const active = campaign?.status === 'active';
   const targetAccountCount = connectedAccounts.length;
   const counts = statusCounts;
-
-  useEffect(() => {
-    if (!lightbox) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setLightbox(null);
-        return;
-      }
-      if (event.key === 'ArrowRight') {
-        setLightbox((current) => {
-          if (!current) return current;
-          return { ...current, index: (current.index + 1) % current.media.length };
-        });
-      }
-      if (event.key === 'ArrowLeft') {
-        setLightbox((current) => {
-          if (!current) return current;
-          return { ...current, index: (current.index - 1 + current.media.length) % current.media.length };
-        });
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [lightbox]);
 
   const openEditPostModal = (post: CampaignPost) => {
     navigate(`/campaigns/${id}/posts/edit/${post.id}`);
@@ -1034,63 +1000,12 @@ export function CampaignDetail() {
       </div>
 
       {lightbox && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/95 p-4 backdrop-blur-md" onClick={() => setLightbox(null)}>
-          <button
-            type="button"
-            className="absolute right-5 top-5 z-[122] flex h-11 w-11 items-center justify-center rounded-full text-white transition hover:bg-white/10"
-            onClick={() => setLightbox(null)}
-            aria-label="Close media viewer"
-          >
-            <X className="h-6 w-6" />
-          </button>
-
-          {lightbox.media.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="absolute left-4 top-1/2 z-[122] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:flex"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setLightbox((current) => current ? { ...current, index: (current.index - 1 + current.media.length) % current.media.length } : current);
-                }}
-                aria-label="Previous media"
-              >
-                <ChevronLeft className="h-8 w-8" />
-              </button>
-              <button
-                type="button"
-                className="absolute right-4 top-1/2 z-[122] hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full text-white transition hover:bg-white/10 md:flex"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setLightbox((current) => current ? { ...current, index: (current.index + 1) % current.media.length } : current);
-                }}
-                aria-label="Next media"
-              >
-                <ChevronRight className="h-8 w-8" />
-              </button>
-            </>
-          )}
-
-          <div className="flex h-full w-full items-center justify-center" onClick={(event) => event.stopPropagation()}>
-            {(() => {
-              const item = lightbox.media[lightbox.index];
-              const url = item ? mediaFullUrl(item) : '';
-              if (!url) {
-                return <div className="text-sm font-medium text-white/70">Media is not available</div>;
-              }
-              if (item.type === 'video') {
-                return <video src={url} className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" controls autoPlay playsInline />;
-              }
-              return <img src={url} alt="" referrerPolicy="no-referrer" className="max-h-full max-w-full rounded-lg object-contain shadow-2xl" />;
-            })()}
-          </div>
-
-          {lightbox.media.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 z-[122] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/40 px-3 py-2 text-xs font-bold text-white/80 backdrop-blur">
-              {lightbox.index + 1} / {lightbox.media.length}
-            </div>
-          )}
-        </div>
+        <PostMediaLightbox
+          media={lightbox.media}
+          index={lightbox.index}
+          onIndexChange={(index) => setLightbox((current) => current ? { ...current, index } : current)}
+          onClose={() => setLightbox(null)}
+        />
       )}
 
       {composerOpen && (
