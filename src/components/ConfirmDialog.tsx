@@ -89,11 +89,11 @@ export function ConfirmDialog({
             onClick={() => void handleConfirm()}
             disabled={isBusy}
             className={cn(
-              "rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60",
+              "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-60",
               variant === 'danger' ? "bg-red-600 hover:bg-red-700" : "bg-indigo-600 hover:bg-indigo-700"
             )}
           >
-            {isBusy && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isBusy && <Loader2 className="h-4 w-4 shrink-0 animate-spin" />}
             {confirmLabel}
           </button>
         </div>
