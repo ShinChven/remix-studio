@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Outlet, Link } from 'react-router-dom';
-import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search, ArrowUpCircle } from 'lucide-react';
+import { Folder, Play, User as UserIcon, Shield, LayoutGrid, PanelLeftClose, PanelLeftOpen, Menu, X, Key, Trash2, FileArchive, Sparkles, Sun, Moon, Monitor, Send, Compass, Search, ArrowUpCircle, ArrowRightLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { fetchStorageAnalysis } from '../api';
@@ -80,6 +80,17 @@ function ThemeSwitcher({ isCollapsed }: { isCollapsed: boolean }) {
       })}
     </div>
   );
+}
+
+/** Opens the current page in the Material 3 interface under `/v2` and remembers the choice. */
+function openNewUi() {
+  try {
+    localStorage.setItem('ui-version', 'v2');
+  } catch {
+    // Without storage the choice only lasts for this visit.
+  }
+  const { pathname, search, hash } = window.location;
+  window.location.href = `/v2${pathname === '/' ? '' : pathname}${search}${hash}`;
 }
 
 export function MainLayout() {
@@ -335,8 +346,18 @@ export function MainLayout() {
 
         {/* User Profile */}
         <div className="p-4 border-t border-neutral-200/20 dark:border-white/5 bg-transparent flex-shrink-0">
-          <div className="mb-3">
+          <div className="mb-3 flex flex-col gap-2">
             <ThemeSwitcher isCollapsed={isCollapsed} />
+            <button
+              type="button"
+              onClick={openNewUi}
+              title={t('mainLayout.newInterfaceHint')}
+              aria-label={t('mainLayout.newInterface')}
+              className={`flex h-9 w-full items-center rounded-xl text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 hover:bg-neutral-200/60 dark:hover:bg-neutral-800 transition-colors ${isCollapsed ? 'lg:justify-center' : 'gap-3 px-3'}`}
+            >
+              <ArrowRightLeft className="h-4 w-4 flex-shrink-0" />
+              <span className={isCollapsed ? 'lg:hidden' : ''}>{t('mainLayout.newInterface')}</span>
+            </button>
           </div>
           <Link
             to="/account"

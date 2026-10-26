@@ -30,6 +30,8 @@
     "storageUnavailable": "스토리지 사용 불가",
     "toggleMenu": "메뉴 토글",
     "expandSidebar": "사이드바 확장",
+    "newInterface": "새 인터페이스",
+    "newInterfaceHint": "Material 3 인터페이스로 전환",
     "collapseSidebar": "사이드바 축소",
     "version": "버전",
     "commit": "커밋"

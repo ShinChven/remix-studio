@@ -30,6 +30,8 @@
     "storageUnavailable": "Storage unavailable",
     "toggleMenu": "Toggle Menu",
     "expandSidebar": "Expand Sidebar",
+    "newInterface": "New interface",
+    "newInterfaceHint": "Switch to the Material 3 interface",
     "collapseSidebar": "Collapse Sidebar",
     "version": "Version",
     "commit": "Commit"

@@ -106,6 +106,7 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
       {/* Collapsed rail */}
       <div className="v2-rail-footer" data-variant="collapsed">
         <IconButton icon="palette" label={t('v2.theme.open')} tooltip onClick={onOpenTheme} />
+        <IconButton icon="swap_horiz" label={t('v2.shell.classicUiHint')} tooltip onClick={openClassicUi} />
         {isAdmin && (
           <IconButton
             icon="shield_person"
@@ -149,7 +150,10 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
               />
             ))}
           </ButtonGroup>
-          <IconButton icon="palette" label={t('v2.theme.open')} tooltip variant="tonal" size="xs" onClick={onOpenTheme} />
+          <div className="flex items-center gap-1">
+            <IconButton icon="swap_horiz" label={t('v2.shell.classicUiHint')} tooltip variant="tonal" size="xs" onClick={openClassicUi} />
+            <IconButton icon="palette" label={t('v2.theme.open')} tooltip variant="tonal" size="xs" onClick={onOpenTheme} />
+          </div>
         </div>
 
         <Link to="/account?tab=storage" className="v2-storage-card m3-focus-ring">
