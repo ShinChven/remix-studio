@@ -31,7 +31,7 @@ export function AssistantHero({ className, interval = 8000, ...composer }: Compo
       <h2 className="v2-hero__greeting m3-typescale-emphasized-headline-medium">
         <ScrambleText texts={greetings} interval={interval} />
       </h2>
-      <Composer {...composer} variant="hero" />
+      <Composer {...composer} />
     </div>
   );
 }
