@@ -30,6 +30,8 @@
     "storageUnavailable": "存儲不可用",
     "toggleMenu": "切換選單",
     "expandSidebar": "展開側邊欄",
+    "newInterface": "新介面",
+    "newInterfaceHint": "切換到 Material 3 介面",
     "collapseSidebar": "收起側邊欄",
     "version": "版本",
     "commit": "提交"

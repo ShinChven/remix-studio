@@ -1,0 +1,418 @@
+/* ---------- Calendar (date pickers) ---------- */
+.m3-calendar {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--md-sys-color-on-surface);
+}
+.m3-calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 4px 0 12px;
+}
+.m3-calendar__header[data-docked] {
+  padding: 0 4px;
+  gap: 8px;
+}
+.m3-calendar__segment {
+  display: inline-flex;
+  align-items: center;
+}
+.m3-calendar__period {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-title-small);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+  cursor: pointer;
+}
+.m3-calendar__period:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 8%, transparent);
+}
+.m3-calendar__drop {
+  transition: rotate var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-calendar__drop[data-open] {
+  rotate: 180deg;
+}
+.m3-calendar__nav {
+  display: inline-flex;
+}
+.m3-calendar__grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 0;
+  padding: 0 12px 8px;
+  border-spacing: 0;
+}
+.m3-calendar__grid th {
+  height: 48px;
+  padding: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  text-align: center;
+}
+.m3-calendar__grid td {
+  position: relative;
+  height: 48px;
+  padding: 0;
+  text-align: center;
+}
+.m3-calendar__grid td[data-in-range]::before,
+.m3-calendar__grid td[data-range-start]::before,
+.m3-calendar__grid td[data-range-end]::before {
+  content: "";
+  position: absolute;
+  inset: 4px 0;
+  background: var(--md-sys-color-secondary-container);
+}
+.m3-calendar__grid td[data-range-start]::before {
+  inset-inline-start: 50%;
+}
+.m3-calendar__grid td[data-range-end]::before {
+  inset-inline-end: 50%;
+}
+.m3-calendar__day {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  cursor: pointer;
+  outline: none;
+}
+.m3-calendar__day:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+.m3-calendar__day:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: 0;
+}
+.m3-calendar__day[data-today] {
+  border: 1px solid var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
+}
+.m3-calendar__grid td[data-in-range] .m3-calendar__day {
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-calendar__day[data-selected] {
+  border: none;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-calendar__day:disabled {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  background: none;
+  cursor: default;
+}
+.m3-calendar__years {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px 0;
+  height: 288px;
+  padding: 8px 12px;
+  overflow-y: auto;
+  justify-items: center;
+}
+.m3-calendar[data-variant="docked"] .m3-calendar__years,
+.m3-calendar__months {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  height: 288px;
+  padding: 8px 0;
+  overflow-y: auto;
+}
+.m3-calendar__year {
+  width: 72px;
+  height: 36px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  cursor: pointer;
+}
+.m3-calendar__year:hover,
+.m3-calendar__month-option:hover {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface-variant) 8%, transparent);
+}
+.m3-calendar__year[data-this-year] {
+  border: 1px solid var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
+}
+.m3-calendar__year[data-current] {
+  border: none;
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+.m3-calendar[data-variant="docked"] .m3-calendar__year {
+  width: 100%;
+  height: 48px;
+  border-radius: 0;
+  text-align: start;
+  padding-inline: 56px 16px;
+}
+.m3-calendar__month-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 48px;
+  padding: 0 16px 0 56px;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  text-align: start;
+  cursor: pointer;
+}
+.m3-calendar__month-option[data-current] {
+  padding-inline-start: 16px;
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-calendar-standalone {
+  width: 360px;
+  max-width: 100%;
+}
+
+/* Modal date picker header */
+.m3-date-dialog {
+  padding-top: 0;
+}
+.m3-date-dialog .m3-dialog__content {
+  padding: 0;
+  overflow: visible;
+}
+.m3-date-dialog__header {
+  padding: 16px 12px 12px 24px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.m3-date-dialog__title {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+.m3-date-dialog__headline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 36px;
+}
+.m3-date-dialog__headline {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-headline-large);
+  letter-spacing: var(--md-sys-typescale-headline-large-tracking);
+}
+.m3-date-dialog__inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 24px 0;
+}
+.m3-date-dialog .m3-dialog__actions {
+  padding: 8px 12px 12px;
+}
+
+/* Docked date picker */
+.m3-date-field {
+  display: inline-flex;
+  flex-direction: column;
+}
+.m3-date-field[data-full-width] {
+  display: flex;
+}
+.m3-date-popover {
+  z-index: var(--m3-z-menu);
+  width: 360px;
+  max-width: calc(100vw - 16px);
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-level3);
+  transform-origin: top;
+  transition:
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    transform var(--md-sys-motion-duration-medium1)
+    var(--md-sys-motion-easing-emphasized-decelerate);
+}
+.m3-date-popover[data-state="closed"] {
+  opacity: 0;
+  transform: scaleY(0.9);
+}
+@starting-style {
+  .m3-date-popover[data-state="open"] {
+    opacity: 0;
+    transform: scaleY(0.9);
+  }
+}
+
+/* ---------- Time picker ---------- */
+.m3-time-dialog {
+  padding-top: 24px;
+}
+.m3-time-dialog .m3-dialog__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: visible;
+}
+.m3-time-dialog .m3-dialog__actions {
+  align-items: center;
+  padding: 16px 12px 12px;
+}
+.m3-time__mode {
+  margin-inline-end: auto;
+}
+.m3-time__title {
+  align-self: flex-start;
+  margin-bottom: 20px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+}
+.m3-time__selectors {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  margin-bottom: 36px;
+}
+.m3-time__box {
+  width: 96px;
+  height: 80px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-display-large);
+  letter-spacing: var(--md-sys-typescale-display-large-tracking);
+  cursor: pointer;
+}
+.m3-time__box[data-selected] {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+.m3-time__colon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 80px;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-display-large);
+}
+.m3-time__input {
+  width: 96px;
+}
+.m3-time__input .m3-field {
+  min-width: 0;
+}
+.m3-time__input .m3-field__container {
+  min-height: 72px;
+  border-radius: var(--md-sys-shape-corner-small);
+}
+.m3-time__input .m3-field__input {
+  height: auto;
+  font: var(--md-sys-typescale-display-medium);
+  text-align: center;
+}
+.m3-time__input .m3-field__indicator {
+  display: none;
+}
+.m3-time__period {
+  display: flex;
+  flex-direction: column;
+  height: 80px;
+  margin-inline-start: 12px;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-small);
+}
+.m3-time__period > button {
+  flex: 1 1 0;
+  width: 52px;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-title-medium);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+  cursor: pointer;
+}
+.m3-time__period > button + button {
+  border-top: 1px solid var(--md-sys-color-outline);
+}
+.m3-time__period > button[data-selected] {
+  background: var(--md-sys-color-tertiary-container);
+  color: var(--md-sys-color-on-tertiary-container);
+}
+.m3-clock {
+  width: 256px;
+  height: 256px;
+  max-width: 100%;
+  border-radius: 50%;
+  touch-action: none;
+  cursor: pointer;
+  user-select: none;
+}
+.m3-clock svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.m3-clock__face {
+  fill: var(--md-sys-color-surface-container-highest);
+}
+.m3-clock__hand {
+  stroke: var(--md-sys-color-primary);
+  stroke-width: 2px;
+}
+.m3-clock__center,
+.m3-clock__selector {
+  fill: var(--md-sys-color-primary);
+}
+.m3-clock__dot {
+  fill: var(--md-sys-color-on-primary);
+}
+.m3-clock__number {
+  fill: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.m3-clock__number[data-inner] {
+  font: var(--md-sys-typescale-body-medium);
+  fill: var(--md-sys-color-on-surface-variant);
+}
+.m3-clock__number[data-active] {
+  fill: var(--md-sys-color-on-primary);
+}
+.m3-time-field {
+  display: inline-flex;
+  flex-direction: column;
+}
+.m3-time-field .m3-field__input {
+  cursor: pointer;
+}

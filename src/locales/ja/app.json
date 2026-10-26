@@ -30,6 +30,8 @@
     "storageUnavailable": "ストレージ利用不可",
     "toggleMenu": "メニュー切り替え",
     "expandSidebar": "サイドバーを展開",
+    "newInterface": "新しいインターフェース",
+    "newInterfaceHint": "Material 3 インターフェースに切り替える",
     "collapseSidebar": "サイドバーを折りたたむ",
     "version": "バージョン",
     "commit": "コミット"

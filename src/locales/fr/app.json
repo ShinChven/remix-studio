@@ -30,6 +30,8 @@
     "storageUnavailable": "Stockage indisponible",
     "toggleMenu": "Basculer le menu",
     "expandSidebar": "Développer la barre latérale",
+    "newInterface": "Nouvelle interface",
+    "newInterfaceHint": "Passer à l'interface Material 3",
     "collapseSidebar": "Réduire la barre latérale",
     "version": "Version",
     "commit": "Commit"

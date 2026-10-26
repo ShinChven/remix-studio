@@ -1,0 +1,18 @@
+/*
+ * Styles of the Material 3 Expressive UI, in cascade layers: element resets, the M3 component library, then the
+ * app's own components, then Tailwind utilities (layout only, no preflight). Every color, corner and
+ * type family resolves to an M3 token through theme-map.css.
+ */
+@layer theme, base, m3, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "./base.css" layer(base);
+@import "../../m3/styles/index.css" layer(m3);
+@import "./density.css" layer(components);
+@import "./app.css" layer(components);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "./theme-map.css";
+
+@source "../";
+
+@custom-variant dark (&:where([data-m3-theme="dark"], [data-m3-theme="dark"] *));

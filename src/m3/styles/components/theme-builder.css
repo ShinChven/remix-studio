@@ -1,0 +1,149 @@
+/* ---------- Theme Builder ---------- */
+.m3-theme-builder {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.m3-theme-builder[data-variant="card"] {
+  padding: 24px 24px 12px;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+}
+.m3-theme-builder[data-variant="plain"] {
+  padding: 0;
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+}
+.m3-theme-builder__groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px 40px;
+}
+.m3-theme-builder__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.m3-theme-builder__group--wide {
+  flex-basis: 100%;
+}
+.m3-theme-builder__label {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+.m3-theme-builder__control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  min-height: 56px;
+}
+/*
+ * Groups with a button group take a share of the row (side by side on wide layouts, full width
+ * on narrow ones); the buttons share the control's width and drop their icons when it is narrow.
+ */
+.m3-theme-builder__group:has(.m3-button-group) {
+  flex: 1 1 320px;
+}
+.m3-theme-builder__control:has(> .m3-button-group) {
+  container-type: inline-size;
+}
+.m3-theme-builder__control > .m3-button-group {
+  max-width: 420px;
+}
+@container (max-width: 380px) {
+  .m3-theme-builder__control > .m3-button-group .m3-button__icon {
+    display: none;
+  }
+}
+.m3-theme-builder__seeds {
+  align-items: flex-start;
+}
+.m3-theme-builder__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 0;
+  border: none;
+}
+.m3-theme-builder__seed {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  transition: transform var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-theme-builder__seed:hover {
+  transform: scale(1.08);
+}
+.m3-theme-builder__seed:is([aria-pressed="true"], [data-selected]) {
+  box-shadow:
+    0 0 0 2px var(--md-sys-color-surface-container-low),
+    0 0 0 4px var(--md-sys-color-on-surface);
+}
+.m3-theme-builder__seed--custom {
+  background: conic-gradient(#e53935, #fdd835, #43a047, #00acc1, #3949ab, #8e24aa, #e53935);
+}
+.m3-theme-builder__seed-badge {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  pointer-events: none;
+}
+.m3-theme-builder__seed--custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  opacity: 0;
+  cursor: pointer;
+}
+.m3-theme-builder__seed--custom:has(input:focus-visible) {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: 2px;
+}
+.m3-theme-builder__hex.m3-field {
+  width: 168px;
+  min-width: 0;
+}
+.m3-theme-builder__variant.m3-field {
+  width: 220px;
+  min-width: 0;
+}
+.m3-theme-builder__contrast.m3-slider {
+  width: min(320px, 100%);
+}
+.m3-theme-builder__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+@media (max-width: 599px) {
+  .m3-theme-builder[data-variant="card"] {
+    padding: 16px 16px 8px;
+  }
+}

@@ -1,0 +1,149 @@
+/* ---------- Chips ---------- */
+.m3-chip-set {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.m3-chip-set[data-scroll] {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-block: 4px;
+}
+.m3-chip {
+  --_container: transparent;
+  --_outline: var(--md-sys-color-outline-variant);
+  --_label: var(--md-sys-color-on-surface-variant);
+  --_icon: var(--md-sys-color-primary);
+  --_elevation: none;
+  --_radius: var(--md-sys-shape-corner-small);
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 32px;
+  border: 1px solid var(--_outline);
+  border-radius: var(--_radius);
+  background: var(--_container);
+  color: var(--_label);
+  box-shadow: var(--_elevation);
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  vertical-align: middle;
+  transition:
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-chip[data-variant="assist"] {
+  --_label: var(--md-sys-color-on-surface);
+}
+.m3-chip[data-elevated] {
+  --_outline: transparent;
+  --_container: var(--md-sys-color-surface-container-low);
+  --_elevation: var(--md-sys-elevation-level1);
+}
+.m3-chip[data-elevated]:hover {
+  --_elevation: var(--md-sys-elevation-level2);
+}
+.m3-chip[data-selected] {
+  --_outline: transparent;
+  --_container: var(--md-sys-color-secondary-container);
+  --_label: var(--md-sys-color-on-secondary-container);
+  --_icon: var(--md-sys-color-on-secondary-container);
+}
+.m3-chip[data-variant="input"] {
+  --_icon: var(--md-sys-color-on-surface-variant);
+}
+.m3-chip[data-avatar] {
+  --_radius: var(--md-sys-shape-corner-full);
+}
+.m3-chip__action {
+  position: relative;
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0 16px;
+  border: none;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+span.m3-chip__action:not(:focus-visible) {
+  cursor: default;
+}
+.m3-chip[data-leading] .m3-chip__action {
+  padding-inline-start: 8px;
+}
+.m3-chip[data-avatar] .m3-chip__action {
+  padding-inline-start: 4px;
+}
+.m3-chip[data-trailing] .m3-chip__action {
+  padding-inline-end: 8px;
+}
+.m3-chip__icon,
+.m3-chip__label,
+.m3-chip__avatar {
+  position: relative;
+  display: inline-flex;
+}
+.m3-chip__icon {
+  color: var(--_icon);
+}
+.m3-chip__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3-chip__avatar {
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 50%;
+}
+.m3-chip__avatar > * {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.m3-chip__remove {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-inline-end: 2px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--_label);
+  cursor: pointer;
+  outline: none;
+}
+.m3-chip__remove .m3-icon {
+  position: relative;
+}
+.m3-chip[data-disabled] {
+  --_outline: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  --_label: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_icon: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_elevation: none;
+}
+.m3-chip[data-disabled]:is([data-elevated], [data-selected]) {
+  --_container: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+.m3-chip[data-disabled] :is(.m3-chip__action, .m3-chip__remove) {
+  cursor: default;
+}

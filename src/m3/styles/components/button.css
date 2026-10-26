@@ -1,0 +1,843 @@
+/* ---------- Common buttons (M3 Expressive: sizes XS–XL, round or square, shape morph) ---------- */
+.m3-button {
+  --_height: 40px;
+  --_padding: var(--md-sys-measurement-space200);
+  --_padding-icon: var(--md-sys-measurement-space200);
+  --_gap: var(--md-sys-measurement-space100);
+  --_outline-width: 1px;
+  --_radius-round: calc(var(--_height) / 2);
+  --_radius-square: var(--md-sys-shape-corner-medium);
+  --_radius-pressed: var(--md-sys-shape-corner-small);
+  --_radius: var(--_radius-round);
+  --_font: var(--md-sys-typescale-label-large);
+  --_tracking: var(--md-sys-typescale-label-large-tracking);
+  --_container: transparent;
+  --_label: var(--md-sys-color-primary);
+  --_outline: transparent;
+  --_elevation: var(--md-sys-elevation-level0);
+  --_elevation-hover: var(--_elevation);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--_gap);
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: var(--_height);
+  min-width: 48px;
+  margin: 0;
+  padding-block: 0;
+  padding-inline: var(--_padding);
+  border: var(--_outline-width) solid var(--_outline);
+  border-radius: var(--_radius);
+  background: var(--_container);
+  color: var(--_label);
+  box-shadow: var(--_elevation);
+  font: var(--_font);
+  letter-spacing: var(--_tracking);
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+
+.m3-button:not([data-variant="outlined"]) {
+  border-color: transparent;
+}
+
+/* Minimum 48dp touch target */
+.m3-button::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: max(100%, 48px);
+  translate: 0 -50%;
+}
+
+.m3-button[data-leading] {
+  padding-inline-start: var(--_padding-icon);
+}
+.m3-button[data-trailing] {
+  padding-inline-end: var(--_padding-icon);
+}
+.m3-button[data-shape="square"],
+.m3-button[data-toggle][data-selected][data-shape="round"] {
+  --_radius: var(--_radius-square);
+}
+.m3-button[data-toggle][data-selected][data-shape="square"] {
+  --_radius: var(--_radius-round);
+}
+/* Shape morph (on by default): smaller corners while pressed, excluding toggle buttons that morph to square. */
+.m3-button[data-morph]:active:not(:disabled, [aria-disabled="true"], [data-toggle]) {
+  border-radius: var(--_radius-pressed);
+}
+.m3-button[data-emphasized] {
+  --_font: var(--md-sys-typescale-emphasized-label-large);
+  --_tracking: var(--md-sys-typescale-emphasized-label-large-tracking);
+}
+.m3-button[data-full-width] {
+  display: flex;
+  width: 100%;
+}
+.m3-button:hover:not(:disabled, [aria-disabled="true"]) {
+  box-shadow: var(--_elevation-hover);
+}
+
+.m3-button__label,
+.m3-button__icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.m3-button__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sizes (md.comp.button.<size>) */
+.m3-button[data-size="xs"] {
+  --_height: 32px;
+  --_padding: 12px;
+  --_padding-icon: 12px;
+  --_gap: var(--md-sys-measurement-space50);
+  --_radius-square: var(--md-sys-shape-corner-medium);
+  --_radius-pressed: var(--md-sys-shape-corner-small);
+}
+.m3-button[data-size="md"] {
+  --_height: 56px;
+  --_padding: var(--md-sys-measurement-space300);
+  --_padding-icon: var(--md-sys-measurement-space300);
+  --_gap: var(--md-sys-measurement-space100);
+  --_radius-square: var(--md-sys-shape-corner-large);
+  --_radius-pressed: var(--md-sys-shape-corner-medium);
+  --_font: var(--md-sys-typescale-title-medium);
+  --_tracking: var(--md-sys-typescale-title-medium-tracking);
+}
+.m3-button[data-size="lg"] {
+  --_height: 96px;
+  --_padding: var(--md-sys-measurement-space600);
+  --_padding-icon: var(--md-sys-measurement-space600);
+  --_gap: var(--md-sys-measurement-space150);
+  --_outline-width: 2px;
+  --_radius-square: var(--md-sys-shape-corner-extra-large);
+  --_radius-pressed: var(--md-sys-shape-corner-large);
+  --_font: var(--md-sys-typescale-headline-small);
+  --_tracking: var(--md-sys-typescale-headline-small-tracking);
+}
+.m3-button[data-size="xl"] {
+  --_height: 136px;
+  --_padding: var(--md-sys-measurement-space800);
+  --_padding-icon: var(--md-sys-measurement-space800);
+  --_gap: var(--md-sys-measurement-space200);
+  --_outline-width: 3px;
+  --_radius-square: var(--md-sys-shape-corner-extra-large);
+  --_radius-pressed: var(--md-sys-shape-corner-large);
+  --_font: var(--md-sys-typescale-headline-large);
+  --_tracking: var(--md-sys-typescale-headline-large-tracking);
+}
+.m3-button[data-emphasized][data-size="md"] {
+  --_font: var(--md-sys-typescale-emphasized-title-medium);
+  --_tracking: var(--md-sys-typescale-emphasized-title-medium-tracking);
+}
+.m3-button[data-emphasized][data-size="lg"] {
+  --_font: var(--md-sys-typescale-emphasized-headline-small);
+  --_tracking: var(--md-sys-typescale-emphasized-headline-small-tracking);
+}
+.m3-button[data-emphasized][data-size="xl"] {
+  --_font: var(--md-sys-typescale-emphasized-headline-large);
+  --_tracking: var(--md-sys-typescale-emphasized-headline-large-tracking);
+}
+
+/* Variants */
+.m3-button[data-variant="filled"] {
+  --_container: var(--md-sys-color-primary);
+  --_label: var(--md-sys-color-on-primary);
+  --_elevation-hover: var(--md-sys-elevation-level1);
+}
+.m3-button[data-variant="tonal"] {
+  --_container: var(--md-sys-color-secondary-container);
+  --_label: var(--md-sys-color-on-secondary-container);
+  --_elevation-hover: var(--md-sys-elevation-level1);
+}
+.m3-button[data-variant="elevated"] {
+  --_container: var(--md-sys-color-surface-container-low);
+  --_label: var(--md-sys-color-primary);
+  --_elevation: var(--md-sys-elevation-level1);
+  --_elevation-hover: var(--md-sys-elevation-level2);
+}
+.m3-button[data-variant="outlined"] {
+  --_outline: var(--md-sys-color-outline-variant);
+  --_label: var(--md-sys-color-on-surface-variant);
+}
+
+/* Toggle buttons (M3 Expressive): unselected / selected colors */
+.m3-button[data-toggle][data-variant="filled"]:not([data-selected]) {
+  --_container: var(--md-sys-color-surface-container);
+  --_label: var(--md-sys-color-on-surface-variant);
+}
+.m3-button[data-toggle][data-variant="tonal"][data-selected] {
+  --_container: var(--md-sys-color-secondary);
+  --_label: var(--md-sys-color-on-secondary);
+}
+.m3-button[data-toggle][data-variant="elevated"][data-selected] {
+  --_container: var(--md-sys-color-primary);
+  --_label: var(--md-sys-color-on-primary);
+}
+.m3-button[data-toggle][data-variant="outlined"][data-selected] {
+  --_container: var(--md-sys-color-inverse-surface);
+  --_label: var(--md-sys-color-inverse-on-surface);
+  --_outline: transparent;
+}
+
+/* Disabled */
+.m3-button:disabled,
+.m3-button[data-disabled] {
+  --_label: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_elevation: none;
+  --_elevation-hover: none;
+  cursor: default;
+  pointer-events: none;
+}
+.m3-button:is(:disabled, [data-disabled]):is(
+  [data-variant="filled"],
+  [data-variant="tonal"],
+  [data-variant="elevated"]
+) {
+  --_container: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+.m3-button:is(:disabled, [data-disabled])[data-variant="outlined"] {
+  --_outline: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+.m3-button[aria-busy="true"] {
+  cursor: progress;
+}
+
+/* ---------- Icon buttons ---------- */
+.m3-icon-button {
+  --_size: 40px;
+  --_width: 40px;
+  --_radius-round: calc(var(--_size) / 2);
+  --_radius-square: var(--md-sys-shape-corner-medium);
+  --_radius-pressed: var(--md-sys-shape-corner-small);
+  --_radius: var(--_radius-round);
+  --_container: transparent;
+  --_icon: var(--md-sys-color-on-surface-variant);
+  --_outline: transparent;
+  --_outline-width: 1px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: var(--_width);
+  height: var(--_size);
+  margin: 0;
+  padding: 0;
+  border: var(--_outline-width) solid var(--_outline);
+  border-radius: var(--_radius);
+  background: var(--_container);
+  color: var(--_icon);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.m3-icon-button::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 48px);
+  height: max(100%, 48px);
+  translate: -50% -50%;
+}
+.m3-icon-button > .m3-icon {
+  position: relative;
+}
+.m3-icon-button > .m3-badge {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 4px;
+}
+.m3-icon-button[data-shape="square"],
+.m3-icon-button[data-toggle][data-selected][data-shape="round"] {
+  --_radius: var(--_radius-square);
+}
+.m3-icon-button[data-toggle][data-selected][data-shape="square"] {
+  --_radius: var(--_radius-round);
+}
+/* Shape morph (on by default): smaller corners while pressed, excluding toggle buttons that morph to square. */
+.m3-icon-button[data-morph]:active:not(:disabled, [aria-disabled="true"], [data-toggle]) {
+  border-radius: var(--_radius-pressed);
+}
+
+.m3-icon-button[data-size="xs"] {
+  --_size: 32px;
+  --_width: 32px;
+}
+.m3-icon-button[data-size="xs"][data-width="narrow"] {
+  --_width: 28px;
+}
+.m3-icon-button[data-size="xs"][data-width="wide"] {
+  --_width: 40px;
+}
+.m3-icon-button[data-size="sm"][data-width="narrow"] {
+  --_width: 32px;
+}
+.m3-icon-button[data-size="sm"][data-width="wide"] {
+  --_width: 52px;
+}
+.m3-icon-button[data-size="md"] {
+  --_size: 56px;
+  --_width: 56px;
+  --_radius-square: var(--md-sys-shape-corner-large);
+  --_radius-pressed: var(--md-sys-shape-corner-medium);
+}
+.m3-icon-button[data-size="md"][data-width="narrow"] {
+  --_width: 48px;
+}
+.m3-icon-button[data-size="md"][data-width="wide"] {
+  --_width: 72px;
+}
+.m3-icon-button[data-size="lg"] {
+  --_size: 96px;
+  --_width: 96px;
+  --_outline-width: 2px;
+  --_radius-square: var(--md-sys-shape-corner-extra-large);
+  --_radius-pressed: var(--md-sys-shape-corner-large);
+}
+.m3-icon-button[data-size="lg"][data-width="narrow"] {
+  --_width: 64px;
+}
+.m3-icon-button[data-size="lg"][data-width="wide"] {
+  --_width: 128px;
+}
+.m3-icon-button[data-size="xl"] {
+  --_size: 136px;
+  --_width: 136px;
+  --_outline-width: 3px;
+  --_radius-square: var(--md-sys-shape-corner-extra-large);
+  --_radius-pressed: var(--md-sys-shape-corner-large);
+}
+.m3-icon-button[data-size="xl"][data-width="narrow"] {
+  --_width: 104px;
+}
+.m3-icon-button[data-size="xl"][data-width="wide"] {
+  --_width: 184px;
+}
+
+.m3-icon-button[data-variant="standard"][data-selected] {
+  --_icon: var(--md-sys-color-primary);
+}
+.m3-icon-button[data-variant="filled"] {
+  --_container: var(--md-sys-color-primary);
+  --_icon: var(--md-sys-color-on-primary);
+}
+.m3-icon-button[data-variant="filled"][data-toggle]:not([data-selected]) {
+  --_container: var(--md-sys-color-surface-container);
+  --_icon: var(--md-sys-color-on-surface-variant);
+}
+.m3-icon-button[data-variant="tonal"] {
+  --_container: var(--md-sys-color-secondary-container);
+  --_icon: var(--md-sys-color-on-secondary-container);
+}
+.m3-icon-button[data-variant="tonal"][data-toggle][data-selected] {
+  --_container: var(--md-sys-color-secondary);
+  --_icon: var(--md-sys-color-on-secondary);
+}
+.m3-icon-button[data-variant="outlined"] {
+  --_outline: var(--md-sys-color-outline-variant);
+  --_icon: var(--md-sys-color-on-surface-variant);
+}
+.m3-icon-button[data-variant="outlined"][data-selected] {
+  --_container: var(--md-sys-color-inverse-surface);
+  --_icon: var(--md-sys-color-inverse-on-surface);
+  --_outline: transparent;
+}
+
+.m3-icon-button:disabled,
+.m3-icon-button[data-disabled] {
+  --_icon: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  cursor: default;
+  pointer-events: none;
+}
+.m3-icon-button:is(:disabled, [data-disabled]):is([data-variant="filled"], [data-variant="tonal"]) {
+  --_container: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+.m3-icon-button:is(:disabled, [data-disabled])[data-variant="outlined"] {
+  --_outline: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+}
+
+/* ---------- FAB and extended FAB: regular (56dp), medium (80dp) and large (96dp) ---------- */
+.m3-fab {
+  --_size: 56px;
+  --_icon-size: 24px;
+  --_radius: var(--md-sys-shape-corner-large);
+  --_padding: var(--md-sys-measurement-space200);
+  --_gap: var(--md-sys-measurement-space100);
+  --_font: var(--md-sys-typescale-title-medium);
+  --_tracking: var(--md-sys-typescale-title-medium-tracking);
+  --_container: var(--md-sys-color-primary-container);
+  --_icon: var(--md-sys-color-on-primary-container);
+  --_elevation: var(--md-sys-elevation-level3);
+  --_elevation-hover: var(--md-sys-elevation-level4);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  min-width: var(--_size);
+  height: var(--_size);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--_radius);
+  background: var(--_container);
+  color: var(--_icon);
+  box-shadow: var(--_elevation);
+  font: var(--_font);
+  letter-spacing: var(--_tracking);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    padding var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-fab:hover {
+  box-shadow: var(--_elevation-hover);
+}
+.m3-fab > .m3-icon {
+  position: relative;
+}
+.m3-fab[data-lowered] {
+  --_elevation: var(--md-sys-elevation-level1);
+  --_elevation-hover: var(--md-sys-elevation-level2);
+}
+.m3-fab[data-size="medium"] {
+  --_size: 80px;
+  --_icon-size: 28px;
+  --_radius: var(--md-sys-shape-corner-large-increased);
+  --_padding: 26px;
+  --_gap: var(--md-sys-measurement-space150);
+  --_font: var(--md-sys-typescale-title-large);
+  --_tracking: var(--md-sys-typescale-title-large-tracking);
+}
+.m3-fab[data-size="large"] {
+  --_size: 96px;
+  --_icon-size: 36px;
+  --_radius: var(--md-sys-shape-corner-extra-large);
+  --_padding: 28px;
+  --_gap: var(--md-sys-measurement-space200);
+  --_font: var(--md-sys-typescale-headline-small);
+  --_tracking: var(--md-sys-typescale-headline-small-tracking);
+}
+.m3-fab[data-extended] {
+  padding-inline: var(--_padding);
+}
+.m3-fab[data-extended][data-collapsed] {
+  /* Square when collapsed: the icon centred in a size × size box. */
+  padding-inline: calc((var(--_size) - var(--_icon-size)) / 2);
+}
+.m3-fab__label {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    grid-template-columns var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial),
+    margin var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+  margin-inline-start: var(--_gap);
+}
+.m3-fab__label > span {
+  min-width: 0;
+}
+.m3-fab[data-collapsed] .m3-fab__label {
+  grid-template-columns: 0fr;
+  margin-inline-start: 0;
+  opacity: 0;
+}
+
+.m3-fab[data-color="secondary-container"] {
+  --_container: var(--md-sys-color-secondary-container);
+  --_icon: var(--md-sys-color-on-secondary-container);
+}
+.m3-fab[data-color="tertiary-container"] {
+  --_container: var(--md-sys-color-tertiary-container);
+  --_icon: var(--md-sys-color-on-tertiary-container);
+}
+.m3-fab[data-color="primary"] {
+  --_container: var(--md-sys-color-primary);
+  --_icon: var(--md-sys-color-on-primary);
+}
+.m3-fab[data-color="secondary"] {
+  --_container: var(--md-sys-color-secondary);
+  --_icon: var(--md-sys-color-on-secondary);
+}
+.m3-fab[data-color="tertiary"] {
+  --_container: var(--md-sys-color-tertiary);
+  --_icon: var(--md-sys-color-on-tertiary);
+}
+.m3-fab:disabled,
+.m3-fab[data-disabled] {
+  --_container: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  --_icon: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_elevation: none;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ---------- Button groups (M3 Expressive) ---------- */
+.m3-button-group {
+  --_gap: var(--md-sys-measurement-space150);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--_gap);
+  vertical-align: middle;
+}
+.m3-button-group[data-full-width] {
+  display: flex;
+  width: 100%;
+}
+.m3-button-group[data-full-width] > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Standard: spacing keeps a 48dp target; the pressed button grows into its neighbours. */
+.m3-button-group[data-variant="standard"][data-size="xs"] {
+  --_gap: 18px;
+}
+.m3-button-group[data-variant="standard"]:is([data-size="md"], [data-size="lg"], [data-size="xl"]) {
+  --_gap: var(--md-sys-measurement-space100);
+}
+.m3-button-group > [data-squeezing] {
+  min-width: 0;
+}
+/* While squeezed, content keeps its size and eats into the padding instead of truncating. */
+.m3-button-group > [data-squeezing] > .m3-button__label {
+  flex-shrink: 0;
+}
+
+/* Connected: 2dp gaps, small inner corners; the selected button becomes fully round. */
+.m3-button-group[data-variant="connected"] {
+  --_gap: var(--md-sys-measurement-space25);
+  --_inner: var(--md-sys-shape-corner-small);
+  --_inner-pressed: var(--md-sys-shape-corner-extra-small);
+}
+.m3-button-group[data-variant="connected"][data-size="lg"] {
+  --_inner: var(--md-sys-shape-corner-large);
+  --_inner-pressed: var(--md-sys-shape-corner-medium);
+}
+.m3-button-group[data-variant="connected"][data-size="xl"] {
+  --_inner: var(--md-sys-shape-corner-large-increased);
+  --_inner-pressed: var(--md-sys-shape-corner-large);
+}
+.m3-button-group[data-variant="connected"] > :is(.m3-button, .m3-icon-button) {
+  --_outer: var(--md-sys-shape-corner-full);
+  --_start: var(--_inner);
+  --_end: var(--_inner);
+  border-start-start-radius: var(--_start);
+  border-end-start-radius: var(--_start);
+  border-start-end-radius: var(--_end);
+  border-end-end-radius: var(--_end);
+}
+.m3-button-group[data-variant="connected"][data-shape="square"] > :is(.m3-button, .m3-icon-button) {
+  --_outer: var(--_inner);
+}
+.m3-button-group[data-variant="connected"] > :is(.m3-button, .m3-icon-button):first-child {
+  --_start: var(--_outer);
+}
+.m3-button-group[data-variant="connected"] > :is(.m3-button, .m3-icon-button):last-child {
+  --_end: var(--_outer);
+}
+.m3-button-group[data-variant="connected"]
+  > :is(.m3-button, .m3-icon-button):active:not(:disabled, [aria-disabled="true"]) {
+  --_inner: var(--_inner-pressed);
+  border-start-start-radius: var(--_start);
+  border-end-start-radius: var(--_start);
+  border-start-end-radius: var(--_end);
+  border-end-end-radius: var(--_end);
+}
+.m3-button-group[data-variant="connected"]
+  > :is(.m3-button, .m3-icon-button):is([data-selected], [aria-checked="true"]) {
+  --_start: var(--md-sys-shape-corner-full);
+  --_end: var(--md-sys-shape-corner-full);
+}
+.m3-button-group[data-variant="connected"] > .m3-button {
+  min-width: 48px;
+}
+
+/* ---------- Split button (M3 Expressive) ---------- */
+.m3-split-button {
+  --_inner: var(--md-sys-shape-corner-extra-small);
+  --_inner-active: var(--md-sys-shape-corner-medium);
+  --_lead-start: var(--md-sys-measurement-space200);
+  --_lead-end: var(--md-sys-measurement-space150);
+  --_trail: 13px;
+  --_chevron-offset: -1px;
+  display: inline-flex;
+  gap: var(--md-sys-measurement-space25);
+  vertical-align: middle;
+}
+.m3-split-button[data-size="xs"] {
+  --_inner-active: var(--md-sys-shape-corner-small);
+  --_lead-start: var(--md-sys-measurement-space150);
+  --_lead-end: var(--md-sys-measurement-space125);
+}
+.m3-split-button[data-size="md"] {
+  --_lead-start: var(--md-sys-measurement-space300);
+  --_lead-end: var(--md-sys-measurement-space300);
+  --_trail: 15px;
+  --_chevron-offset: -2px;
+}
+.m3-split-button[data-size="lg"] {
+  --_inner: var(--md-sys-shape-corner-small);
+  --_inner-active: var(--md-sys-shape-corner-large-increased);
+  --_lead-start: var(--md-sys-measurement-space600);
+  --_lead-end: var(--md-sys-measurement-space600);
+  --_trail: 29px;
+  --_chevron-offset: -3px;
+}
+.m3-split-button[data-size="xl"] {
+  --_inner: var(--md-sys-shape-corner-medium);
+  --_inner-active: var(--md-sys-shape-corner-large-increased);
+  --_lead-start: var(--md-sys-measurement-space800);
+  --_lead-end: var(--md-sys-measurement-space800);
+  --_trail: 43px;
+  --_chevron-offset: -6px;
+}
+.m3-split-button > .m3-button.m3-split-button__leading {
+  --_corner: var(--_inner);
+  padding-inline: var(--_lead-start) var(--_lead-end);
+  border-start-end-radius: var(--_corner);
+  border-end-end-radius: var(--_corner);
+}
+.m3-split-button > .m3-button.m3-split-button__trailing {
+  --_corner: var(--_inner);
+  min-width: 0;
+  padding-inline: var(--_trail);
+  border-start-start-radius: var(--_corner);
+  border-end-start-radius: var(--_corner);
+}
+.m3-split-button
+  > .m3-button:is(:hover, :focus-visible, :active):not(:disabled, [aria-disabled="true"]) {
+  --_corner: var(--_inner-active);
+}
+.m3-split-button[data-open] > .m3-button.m3-split-button__trailing {
+  --_corner: var(--md-sys-shape-corner-full);
+}
+.m3-split-button__chevron {
+  display: inline-flex;
+  translate: var(--_chevron-offset) 0;
+  transition:
+    rotate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial),
+    translate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-split-button:dir(rtl) .m3-split-button__chevron {
+  translate: calc(var(--_chevron-offset) * -1) 0;
+}
+.m3-split-button[data-open] .m3-split-button__chevron {
+  rotate: 180deg;
+  translate: 0 0;
+}
+
+/* ---------- FAB menu (M3 Expressive) ---------- */
+.m3-fab-menu {
+  --_fab-size: 56px;
+  --_fab-radius: var(--md-sys-shape-corner-large);
+  --_fab-icon: 24px;
+  --_close: var(--md-sys-color-primary);
+  --_on-close: var(--md-sys-color-on-primary);
+  --_item: var(--md-sys-color-primary-container);
+  --_on-item: var(--md-sys-color-on-primary-container);
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: var(--_fab-size);
+  height: var(--_fab-size);
+  vertical-align: bottom;
+}
+.m3-fab-menu[data-color="secondary"] {
+  --_close: var(--md-sys-color-secondary);
+  --_on-close: var(--md-sys-color-on-secondary);
+  --_item: var(--md-sys-color-secondary-container);
+  --_on-item: var(--md-sys-color-on-secondary-container);
+}
+.m3-fab-menu[data-color="tertiary"] {
+  --_close: var(--md-sys-color-tertiary);
+  --_on-close: var(--md-sys-color-on-tertiary);
+  --_item: var(--md-sys-color-tertiary-container);
+  --_on-item: var(--md-sys-color-on-tertiary-container);
+}
+.m3-fab-menu[data-size="medium"] {
+  --_fab-size: 80px;
+  --_fab-radius: var(--md-sys-shape-corner-large-increased);
+}
+.m3-fab-menu[data-size="large"] {
+  --_fab-size: 96px;
+  --_fab-radius: var(--md-sys-shape-corner-extra-large);
+}
+/* The FAB turns into the 56dp close button, anchored at the FAB's top trailing corner. */
+.m3-fab-menu__fab {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 0;
+  display: grid;
+  place-items: center;
+  width: var(--_fab-size);
+  height: var(--_fab-size);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--_fab-radius);
+  background: var(--_item);
+  color: var(--_on-item);
+  box-shadow: var(--md-sys-elevation-level3);
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    height var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-fab-menu__fab:hover {
+  box-shadow: var(--md-sys-elevation-level4);
+}
+.m3-fab-menu[data-open] .m3-fab-menu__fab {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: var(--_close);
+  color: var(--_on-close);
+}
+.m3-fab-menu__icon {
+  position: relative;
+  grid-area: 1 / 1;
+  display: inline-flex;
+  transition:
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    rotate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-fab-menu__icon[data-icon="close"],
+.m3-fab-menu[data-open] .m3-fab-menu__icon[data-icon="open"] {
+  opacity: 0;
+  rotate: -90deg;
+}
+.m3-fab-menu[data-open] .m3-fab-menu__icon[data-icon="close"] {
+  opacity: 1;
+  rotate: 0deg;
+}
+.m3-fab-menu__list {
+  position: absolute;
+  bottom: calc(100% + var(--md-sys-measurement-space100));
+  inset-inline-end: 0;
+  z-index: var(--m3-z-menu);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--md-sys-measurement-space50);
+}
+.m3-fab-menu__item {
+  --_delay: calc((var(--_count) - 1 - var(--_index)) * 40ms);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space100);
+  height: 56px;
+  margin: 0;
+  padding-inline: var(--md-sys-measurement-space300);
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--_item);
+  color: var(--_on-item);
+  font: var(--md-sys-typescale-title-medium);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  transform-origin: right bottom;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects) var(--_delay),
+    scale var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial) var(--_delay),
+    translate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial) var(--_delay),
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-fab-menu__item:dir(rtl) {
+  transform-origin: left bottom;
+}
+.m3-fab-menu__item:active {
+  box-shadow: var(--md-sys-elevation-level3);
+}
+.m3-fab-menu__item > .m3-icon {
+  position: relative;
+}
+.m3-fab-menu__label {
+  position: relative;
+}
+.m3-fab-menu__list[data-state="closed"] .m3-fab-menu__item {
+  --_delay: calc(var(--_index) * 20ms);
+  opacity: 0;
+  scale: 0.6;
+  translate: 0 16px;
+}
+@starting-style {
+  .m3-fab-menu__list[data-state="open"] .m3-fab-menu__item {
+    opacity: 0;
+    scale: 0.6;
+    translate: 0 16px;
+  }
+}
