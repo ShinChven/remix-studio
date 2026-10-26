@@ -313,7 +313,7 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
                   suffixText={t('projectViewer.imageLightbox.seconds')}
                 />
               </div>
-              <Button variant="tonal" size="xs" icon="auto_fix_high" onClick={cycleTransition} title={t('projectViewer.imageLightbox.transitionTitle')}>
+              <Button variant="tonal" icon="auto_fix_high" onClick={cycleTransition} title={t('projectViewer.imageLightbox.transitionTitle')}>
                 {t(`projectViewer.imageLightbox.transition.${transition}`)}
               </Button>
             </>
@@ -342,27 +342,29 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
 
         {images.length > 1 && (
           <div className="v2-lightbox__bottom v2-lightbox__chrome" onClick={stop}>
-            <Toolbar type="floating" aria-label={t('projectViewer.imageLightbox.slideshowInterval')}>
-              <IconButton icon="chevron_left" label={`${t('projectViewer.imageLightbox.previous')} (←)`} tooltip onClick={prev} className="m3-mirror-rtl" />
-              <span className="v2-lightbox__play">
-                {playing && <CircularProgress value={progress * 100} size={48} thickness={3} aria-hidden className="v2-lightbox__ring" />}
+            <div className="v2-lightbox__dock">
+              <IconButton icon="chevron_left" label={`${t('projectViewer.imageLightbox.previous')} (←)`} tooltip size="sm" onClick={prev} className="m3-mirror-rtl" />
+              <div className="v2-lightbox__play">
+                {playing && <CircularProgress value={progress * 100} size={40} thickness={2.5} aria-hidden className="v2-lightbox__ring" />}
                 <IconButton
                   icon={playing ? 'pause' : 'play_arrow'}
                   label={`${t(playing ? 'projectViewer.imageLightbox.stopSlideshow' : 'projectViewer.imageLightbox.startSlideshow')} (Space)`}
                   tooltip
-                  variant={playing ? 'tonal' : 'filled'}
-                  selected={playing}
+                  size="sm"
+                  variant="tonal"
+                  shape="round"
+                  shapeMorph={false}
                   onClick={(e) => {
                     e.stopPropagation();
                     setPlaying((p) => !p);
                   }}
                 />
-              </span>
-              <Text as="span" variant="label-large" className="v2-lightbox__counter">
+              </div>
+              <span className="v2-lightbox__counter">
                 {bounded + 1} / {images.length}
-              </Text>
-              <IconButton icon="chevron_right" label={`${t('projectViewer.imageLightbox.next')} (→)`} tooltip onClick={next} className="m3-mirror-rtl" />
-            </Toolbar>
+              </span>
+              <IconButton icon="chevron_right" label={`${t('projectViewer.imageLightbox.next')} (→)`} tooltip size="sm" onClick={next} className="m3-mirror-rtl" />
+            </div>
           </div>
         )}
       </div>

@@ -41,7 +41,7 @@ import { groupComfyBindings, isComfyRemix } from '../../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../../lib/live';
 import { projectMediaType } from '../../lib/project-media';
 import { countWorkflowCombinations } from '../../lib/remixEngine';
-import { Button, LoadingIndicator, Tab, Tabs } from '../../m3';
+import { Button, ButtonGroup, LoadingIndicator } from '../../m3';
 import {
   createDefaultAudioProjectConfig,
   formatPromptLimit,
@@ -2699,12 +2699,29 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       </aside>
 
       <section className="v2-project__results v2-pane">
-        <Tabs variant="secondary" value={activeTab} onChange={(v) => setActiveTab(v as typeof activeTab)} scrollable className="v2-project__tabs">
-          <Tab value="draft" icon="edit_note" inlineIcon label={tabLabel(t('projectViewer.tabs.draft'), draftJobs.length)} />
-          <Tab value="queue" icon="pending_actions" inlineIcon label={tabLabel(t('projectViewer.tabs.queue'), queueJobs.length)} />
-          <Tab value="completed" icon="task_alt" inlineIcon label={tabLabel(t('projectViewer.tabs.done'), completedTotal)} />
-          <Tab value="album" icon="photo_library" inlineIcon label={tabLabel(albumTabLabel, albumTotal)} />
-        </Tabs>
+        <div className="v2-project__head justify-center">
+          <ButtonGroup
+            variant="connected"
+            size="xs"
+            selection="single"
+            value={activeTab}
+            onChange={(val) => val && setActiveTab(val as typeof activeTab)}
+            aria-label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}
+          >
+            <Button value="draft" icon="edit_note">
+              {t('projectViewer.tabs.draft')} <span className="opacity-60 font-mono text-[11px]">({draftJobs.length})</span>
+            </Button>
+            <Button value="queue" icon="pending_actions">
+              {t('projectViewer.tabs.queue')} <span className="opacity-60 font-mono text-[11px]">({queueJobs.length})</span>
+            </Button>
+            <Button value="completed" icon="task_alt">
+              {t('projectViewer.tabs.done')} <span className="opacity-60 font-mono text-[11px]">({completedTotal})</span>
+            </Button>
+            <Button value="album" icon="photo_library">
+              {albumTabLabel} <span className="opacity-60 font-mono text-[11px]">({albumTotal})</span>
+            </Button>
+          </ButtonGroup>
+        </div>
         <div ref={tabContentRef} className="v2-project__scroll">
           {(activeTab === 'draft' || activeTab === 'queue') && isLoadingJobs && <LoadingState minHeight={240} />}
           {activeTab === 'draft' && !isLoadingJobs && (

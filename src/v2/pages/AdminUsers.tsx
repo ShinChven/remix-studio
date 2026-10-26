@@ -205,13 +205,14 @@ export function AdminUsers() {
         onRowClick={(u) => setActiveUserId(u.id)}
         toolbar={
           <div className="flex flex-wrap items-center gap-2 p-2">
-            <SearchField value={searchInput} onChange={setSearchInput} placeholder={t('adminUsers.searchPlaceholder')} className="flex-1" />
+            <SearchField value={searchInput} onChange={setSearchInput} placeholder={t('adminUsers.searchPlaceholder')} shape="pill" className="flex-1" />
             <Select
               variant="outlined"
               aria-label={t('adminUsers.table.role')}
               value={filters.role}
               onChange={(role) => setFilters((c) => ({ ...c, role: role as Filters['role'], page: 1 }))}
               options={[{ value: 'all', label: t('adminUsers.allRoles') }, ...roleOptions]}
+              className="v2-inline-select"
             />
             <Select
               variant="outlined"
@@ -223,6 +224,7 @@ export function AdminUsers() {
                 { value: 'active', label: t('adminUsers.active') },
                 { value: 'disabled', label: t('adminUsers.disabled') },
               ]}
+              className="v2-inline-select"
             />
           </div>
         }
@@ -314,7 +316,7 @@ export function AdminUsers() {
             value={String(filters.pageSize)}
             onChange={(size) => setFilters((c) => ({ ...c, pageSize: Number(size), page: 1 }))}
             options={[20, 50, 100].map((n) => ({ value: String(n), label: t('adminUsers.pageSize', { count: n }) }))}
-            className="v2-page-size"
+            className="v2-inline-select v2-inline-select--narrow v2-page-size"
           />
           <Text variant="label-medium" className="text-on-surface-variant">
             {t('adminUsers.pagination', { current: filters.page, total: pages })}

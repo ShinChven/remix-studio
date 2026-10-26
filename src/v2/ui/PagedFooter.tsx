@@ -14,7 +14,7 @@ export function PageSizeSelect({ value, onChange, className, 'aria-label': ariaL
       value={String(value)}
       onChange={(next) => onChange(next === 'all' ? 'all' : Number(next))}
       options={PAGE_SIZE_OPTIONS.map((option) => ({ value: String(option), label: option === 'all' ? t('pagination.all') : String(option) }))}
-      className={cx('v2-page-size', className)}
+      className={cx('v2-inline-select v2-inline-select--narrow v2-page-size', className)}
     />
   );
 }

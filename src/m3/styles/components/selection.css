@@ -98,6 +98,7 @@
   inset: -2px;
   width: 18px;
   height: 18px;
+  max-width: none;
   fill: none;
   stroke: var(--_on-selected);
   stroke-width: 2px;

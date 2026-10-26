@@ -16,7 +16,7 @@
   --_label: var(--md-sys-color-on-surface-variant);
   --_icon: var(--md-sys-color-primary);
   --_elevation: none;
-  --_radius: var(--md-sys-shape-corner-small);
+  --_radius: var(--md-sys-shape-corner-full);
   position: relative;
   display: inline-flex;
   flex-shrink: 0;

@@ -29,7 +29,7 @@ export function SelectionBar({ selected, total, onToggleAll, onClear, selectAllL
         <Text as="span" variant="label-large" emphasized={active} className="v2-selection-bar__label">
           {active ? selectedLabel : selectAllLabel}
         </Text>
-        {filters}
+        {!active && filters}
       </div>
       {active && (
         <div className="v2-selection-bar__actions">
