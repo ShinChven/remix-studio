@@ -558,7 +558,8 @@
   transition: border-radius var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
 .m3-card:hover .v2-kind-badge {
-  border-radius: var(--md-sys-shape-corner-full);
+  /* Exact half of 48px to form a circle without spring-overshoot clamping to 0px (square) on hover release */
+  border-radius: 24px;
 }
 
 /* ---------- Choice tiles ---------- */
