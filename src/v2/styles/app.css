@@ -730,12 +730,6 @@
     box-shadow var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects),
     border-radius var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
 }
-.v2-composer[data-variant="hero"] {
-  padding: var(--md-sys-measurement-space200);
-  border-radius: var(--md-sys-shape-corner-extra-extra-large);
-  background: var(--md-sys-color-surface-container-low);
-  box-shadow: var(--md-sys-elevation-level2), 0 0 0 1px var(--md-sys-color-outline-variant);
-}
 .v2-composer:focus-within {
   box-shadow: var(--md-sys-elevation-level3), 0 0 0 2px var(--md-sys-color-primary);
 }

@@ -77,8 +77,6 @@ export interface ComposerProps {
   onStop?: () => void;
   placeholder?: string;
   composerRef?: Ref<ComposerHandle>;
-  /** `hero` is the larger, elevated variant used on the start screen. */
-  variant?: 'hero' | 'docked';
 }
 
 const MAX_IMAGES = 5;
@@ -189,7 +187,6 @@ export function Composer({
   onStop,
   placeholder,
   composerRef,
-  variant = 'docked',
 }: ComposerProps) {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
@@ -671,7 +668,6 @@ export function Composer({
     <div
       ref={shellRef}
       className={cx('v2-composer', isDraggingOver && 'is-dragging')}
-      data-variant={variant}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}

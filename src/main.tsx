@@ -19,6 +19,7 @@ if (!isV2 && preferV2) {
   // Links into the app (OAuth callbacks, share targets, bookmarks) keep their path in the new UI.
   window.location.replace(`${V2_BASE}${pathname === '/' ? '' : pathname}${search}${hash}`);
 } else if (isV2) {
+  void import('./v2/styles/load');
   void import('./v2/main');
 } else {
   void import('./classic');
