@@ -1,0 +1,3063 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  clearFailedQueueJobs,
+  createLibraryItem,
+  deleteProject as apiDeleteProject,
+  deleteProjectJobs as apiDeleteProjectJobs,
+  fetchAlbumTagCounts,
+  fetchLibraries,
+  fetchLibrary,
+  fetchLibraryMatchCounts,
+  fetchProject,
+  fetchProjectAlbum,
+  fetchProjectAlbumItemConfiguration,
+  fetchProjectCompletedJobs,
+  fetchProjectJobConfiguration,
+  fetchProjectJobs,
+  fetchProjectWorkflow,
+  fetchProviders,
+  generateProjectDrafts,
+  imageDisplayUrl as apiImageDisplayUrl,
+  moveToTrash,
+  moveToTrashBatch,
+  renameAlbumItem as apiRenameAlbumItem,
+  renameProjectFolder,
+  saveAudio,
+  saveImage,
+  saveVideo,
+  startProjectJobs as apiStartProjectJobs,
+  updateAlbumItemTags as apiUpdateAlbumItemTags,
+  batchUpdateAlbumTags as apiBatchUpdateAlbumTags,
+  updateProject as apiUpdateProject,
+  type DraftProblem,
+  type LibraryTagFilter,
+} from '../../api';
+import { useLiveRefresh } from '../../hooks/useLiveRefresh';
+import { DEFAULT_ALBUM_PAGE_SIZE, getRememberedAlbumPageSize, parseAlbumPageSize, rememberAlbumPageSize, type AlbumPageSize } from '../../lib/album-page-size-memory';
+import { civitaiModelItems, civitaiResourceLabel, civitaiVideoEngineLabel, isCivitaiVideo, parseCivitaiAir } from '../../lib/civitai';
+import { groupComfyBindings, isComfyRemix } from '../../lib/comfyWorkflow';
+import { LIVE_CLIENT_ID } from '../../lib/live';
+import { projectMediaType } from '../../lib/project-media';
+import { countWorkflowCombinations } from '../../lib/remixEngine';
+import { Button, LoadingIndicator, Tab, Tabs } from '../../m3';
+import {
+  createDefaultAudioProjectConfig,
+  formatPromptLimit,
+  parseAudioProjectConfig,
+  resolveAudioGenerationKind,
+  serializeAudioProjectConfig,
+  type AlbumItem,
+  type AlbumTagCount,
+  type AlbumTagMatch,
+  type AspectRatioCount,
+  type CivitaiResource,
+  type Job,
+  type JobConfiguration,
+  type Library,
+  type LibraryType,
+  type Project,
+  type Provider,
+  type WorkflowItem as WorkflowItemType,
+  type WorkflowItemType as WorkflowItemTypeKind,
+} from '../../types';
+import type { BoundContext } from '../components/assistant/Composer';
+import { ImageEditorDialog } from '../components/ImageEditorDialog';
+import { Lightbox } from '../components/Lightbox';
+import { MediaPicker, type UniversalPickedItem } from '../components/MediaPicker';
+import { ProjectFormDialog } from '../components/ProjectFormDialog';
+import { AlbumTab } from '../components/project/AlbumTab';
+import { CompletedTab, DraftsTab, QueueTab } from '../components/project/JobTabs';
+import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
+import { LibrarySelectionDialog } from '../components/project/LibrarySelectionDialog';
+import { ModelSelectorDialog } from '../components/project/ModelSelectorDialog';
+import { PromptEditDialog } from '../components/project/PromptEditDialog';
+import { PromptLimitDialog } from '../components/project/PromptLimitDialog';
+import { WorkflowPanel } from '../components/project/WorkflowPanel';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EmptyState, LoadingState } from '../ui/Page';
+import { useToast } from '../ui/useToast';
+
+/** Loads the project for `/project/:id` and saves its edits, renaming its folder when its id changes. */
+export function ProjectViewerPage() {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    fetchProject(id)
+      .then(setProject)
+      .catch((e) => {
+        console.error(e);
+        setProject(null);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <LoadingState minHeight={400} />;
+  if (!project) return <EmptyState icon="folder_off" title={t('projectRoute.notFound')} />;
+
+  const onUpdate = async (updatedProject: Project) => {
+    const idChanged = updatedProject.id !== project.id;
+    if (idChanged) {
+      try {
+        await renameProjectFolder(project.id, updatedProject.id);
+      } catch (e) {
+        console.error('Failed to rename project folder:', e);
+        toast.error(t('projectRoute.renameFailed'));
+        updatedProject = { ...updatedProject, id: project.id };
+      }
+    }
+    try {
+      await apiUpdateProject(project.id, {
+        name: updatedProject.name,
+        description: updatedProject.description,
+        status: updatedProject.status,
+        workflow: updatedProject.workflow,
+        providerId: updatedProject.providerId,
+        modelConfigId: updatedProject.modelConfigId,
+        aspectRatio: updatedProject.aspectRatio,
+        quality: updatedProject.quality,
+        background: updatedProject.background,
+        format: updatedProject.format,
+        shuffle: updatedProject.shuffle,
+        systemPrompt: updatedProject.systemPrompt,
+        temperature: updatedProject.temperature,
+        maxTokens: updatedProject.maxTokens,
+        duration: updatedProject.duration,
+        resolution: updatedProject.resolution,
+        sound: updatedProject.sound,
+        prefix: updatedProject.prefix,
+        // The ComfyUI workflow can run to hundreds of kilobytes, so it and the address only travel when they changed.
+        ...(updatedProject.comfyUrl !== project.comfyUrl ? { comfyUrl: updatedProject.comfyUrl ?? '' } : {}),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...(updatedProject.comfyWorkflow !== project.comfyWorkflow ? { comfyWorkflow: updatedProject.comfyWorkflow ?? (null as any) } : {}),
+        ...(updatedProject.comfyPassword !== project.comfyPassword ? { comfyPassword: updatedProject.comfyPassword ?? '' } : {}),
+        civitaiConfig: updatedProject.civitaiConfig,
+      });
+      setProject(updatedProject);
+    } catch (e) {
+      console.error('Failed to update project:', e);
+    }
+    if (idChanged && updatedProject.id !== project.id) navigate(`/project/${updatedProject.id}`, { replace: true });
+  };
+
+  const onDelete = async () => {
+    if (!id) return;
+    try {
+      await apiDeleteProject(id);
+      navigate('/');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return <ProjectViewer project={project} onUpdate={onUpdate} onDelete={onDelete} />;
+}
+
+interface Props {
+  project: Project;
+  onUpdate: (project: Project) => void;
+  onDelete: () => void;
+}
+
+type PromptLimitDecision = 'truncate' | 'keep' | 'cancel';
+
+interface PromptLimitDialogState {
+  modelName: string;
+  affectedCount: number;
+  limitLabel: string;
+  longestPromptLabel: string;
+  resolve: (decision: PromptLimitDecision) => void;
+}
+
+interface LightboxData {
+  images: string[];
+  index: number;
+  albumItemIds?: string[];
+  onDelete?: (index: number) => void;
+  onIndexChange?: (index: number) => void;
+}
+
+const LIBRARY_SUMMARY_PAGE_SIZE = 500;
+const TAB_DATA_STALE_MS = 30_000;
+const LIVE_REFRESH_DEBOUNCE_MS = 250;
+const LIVE_REFRESH_MIN_INTERVAL_MS = 1_000;
+const RIGHT_PANEL_REFRESH_EVENT_REASONS = new Set([
+  'jobs.changed',
+  'job.updated',
+  'job.completed',
+  'job.failed',
+  'job.deleted',
+  'queue.started',
+  'queue.cleared',
+  'album.changed',
+  'album.deleted',
+  'album.renamed',
+  'album.restored',
+  'album.moved',
+  'album.tagged',
+]);
+// Changes to the project's own settings or workflow. This view saves its own
+// edits as it makes them, so only changes from elsewhere (another tab, the
+// assistant, an MCP client) are refetched.
+const PROJECT_DEFINITION_EVENT_REASONS = new Set([
+  'project.updated',
+  'workflow.updated',
+]);
+
+/** Every library without its items: what the library pickers list. */
+async function fetchLibrarySummaries(): Promise<Library[]> {
+  const firstPage = await fetchLibraries(1, LIBRARY_SUMMARY_PAGE_SIZE, undefined, false, false, true);
+  if (firstPage.pages <= 1) return firstPage.items;
+
+  const rest = await Promise.all(
+    Array.from({ length: firstPage.pages - 1 }, (_, index) =>
+      fetchLibraries(index + 2, LIBRARY_SUMMARY_PAGE_SIZE, undefined, false, false, true)
+    )
+  );
+
+  return [firstPage, ...rest].flatMap((page) => page.items);
+}
+
+type KeyedLibraryFilter = LibraryTagFilter & { key: string };
+
+/** Identifies a library step's tag filter, so steps filtering alike share one count. */
+function libraryFilterKey(item: Pick<WorkflowItemType, 'value' | 'selectedTags' | 'tagMatchMode'>): string {
+  const tags = Array.from(new Set((item.selectedTags || []).map((tag) => tag.toLowerCase()))).sort();
+  return [item.value, tags.length > 0 ? item.tagMatchMode || 'or' : '', ...tags].join('\u0000');
+}
+
+/** The distinct tag filters of a workflow's library steps. */
+function workflowLibraryFilters(workflow: WorkflowItemType[]): KeyedLibraryFilter[] {
+  const filters = new Map<string, KeyedLibraryFilter>();
+  for (const item of workflow) {
+    if (item.type !== 'library' || !item.value) continue;
+    const key = libraryFilterKey(item);
+    if (!filters.has(key)) {
+      filters.set(key, { key, libraryId: item.value, tags: item.selectedTags || [], tagMatchMode: item.tagMatchMode || 'or' });
+    }
+  }
+  return Array.from(filters.values());
+}
+
+function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawTab = searchParams.get('tab');
+  const activeTab = (rawTab as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
+  const setActiveTab = (tab: 'draft' | 'queue' | 'completed' | 'album') => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', tab);
+      return next;
+    }, { replace: true });
+    setMobileView('jobs');
+  };
+
+  const [localProject, setLocalProject] = useState<Project>(project);
+  const [localJobs, setLocalJobs] = useState<Job[]>((project.jobs || []).filter(j => j.status !== 'completed'));
+  const [localAlbum, setLocalAlbum] = useState<AlbumItem[]>(project.album || []);
+  const [albumPreviewItems, setAlbumPreviewItems] = useState<AlbumItem[]>(() => (project.album || []).slice(0, 5));
+  const [albumTotal, setAlbumTotal] = useState<number>(0);
+  const [albumPages, setAlbumPages] = useState<number>(1);
+  const [albumTotalSize, setAlbumTotalSize] = useState<number>(0);
+  const [albumAspectRatioCounts, setAlbumAspectRatioCounts] = useState<AspectRatioCount[]>([]);
+  const [albumTagCounts, setAlbumTagCounts] = useState<AlbumTagCount[]>([]);
+  // Album view state is URL-driven (subscribes to the search params) so it is
+  // shareable and survives back/forward, matching the `tab` param pattern.
+  const albumPage = Math.max(1, Math.floor(Number(searchParams.get('albumPage')) || 1));
+  // Without an `albumSize` param the album uses the page size last picked for
+  // this project in this browser. The viewer is reused across projects, so the
+  // remembered size is tied to the project it was read for.
+  const [rememberedAlbumPageSize, setRememberedAlbumPageSize] = useState(() => ({
+    projectId: project.id,
+    size: getRememberedAlbumPageSize(project.id),
+  }));
+  const albumDefaultPageSize = rememberedAlbumPageSize.projectId === project.id
+    ? rememberedAlbumPageSize.size
+    : getRememberedAlbumPageSize(project.id);
+  const albumPageSize: AlbumPageSize = parseAlbumPageSize(searchParams.get('albumSize')) ?? albumDefaultPageSize;
+  const albumSearch = searchParams.get('albumSearch') || '';
+  const albumSort: 'newest' | 'oldest' = searchParams.get('albumSort') === 'oldest' ? 'oldest' : 'newest';
+  const albumRatiosParam = searchParams.get('albumRatios') || '';
+  const albumSelectedRatios = React.useMemo(
+    () => (albumRatiosParam ? albumRatiosParam.split(',').filter(Boolean) : []),
+    [albumRatiosParam],
+  );
+  const albumTagsParam = searchParams.get('albumTags') || '';
+  const albumSelectedTags = React.useMemo(
+    () => (albumTagsParam ? albumTagsParam.split(',').filter(Boolean) : []),
+    [albumTagsParam],
+  );
+  const albumTagMatch: AlbumTagMatch = searchParams.get('albumTagMatch') === 'any' ? 'any' : 'all';
+
+  const updateAlbumParams = useCallback(
+    (updates: {
+      page?: number;
+      pageSize?: number | 'all';
+      sort?: 'newest' | 'oldest';
+      ratios?: string[];
+      tags?: string[];
+      tagMatch?: AlbumTagMatch;
+      search?: string;
+    }) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        // Any change other than the page number itself returns to page 1.
+        if (
+          updates.pageSize !== undefined
+          || updates.sort !== undefined
+          || updates.ratios !== undefined
+          || updates.tags !== undefined
+          || updates.tagMatch !== undefined
+          || updates.search !== undefined
+        ) {
+          next.delete('albumPage');
+        }
+        if (updates.page !== undefined) {
+          if (updates.page > 1) next.set('albumPage', String(updates.page));
+          else next.delete('albumPage');
+        }
+        if (updates.pageSize !== undefined) {
+          if (updates.pageSize !== DEFAULT_ALBUM_PAGE_SIZE) next.set('albumSize', String(updates.pageSize));
+          else next.delete('albumSize');
+        }
+        if (updates.sort !== undefined) {
+          if (updates.sort !== 'newest') next.set('albumSort', updates.sort);
+          else next.delete('albumSort');
+        }
+        if (updates.ratios !== undefined) {
+          if (updates.ratios.length > 0) next.set('albumRatios', updates.ratios.join(','));
+          else next.delete('albumRatios');
+        }
+        if (updates.tags !== undefined) {
+          if (updates.tags.length > 0) next.set('albumTags', updates.tags.join(','));
+          else next.delete('albumTags');
+        }
+        if (updates.tagMatch !== undefined) {
+          if (updates.tagMatch === 'any') next.set('albumTagMatch', 'any');
+          else next.delete('albumTagMatch');
+        }
+        if (updates.search !== undefined) {
+          if (updates.search) next.set('albumSearch', updates.search);
+          else next.delete('albumSearch');
+        }
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+
+  const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
+  const [completedTotal, setCompletedTotal] = useState<number>(0);
+  const [completedPages, setCompletedPages] = useState<number>(1);
+  const [completedPage, setCompletedPage] = useState<number>(1);
+  const [completedPageSize, setCompletedPageSize] = useState<number | 'all'>(500);
+  const [completedSort, setCompletedSort] = useState<'newest' | 'oldest'>('newest');
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
+  /** Which project form is open: the one editing this project, or the one duplicating it. */
+  const [projectFormMode, setProjectFormMode] = useState<'edit' | 'duplicate' | null>(null);
+  const [itemToRemoveId, setItemToRemoveId] = useState<string | null>(null);
+  const [jobToDeleteId, setJobToDeleteId] = useState<string | null>(null);
+  const [configToReuse, setConfigToReuse] = useState<JobConfiguration | null>(null);
+
+
+
+  const [showDeleteSelectedModal, setShowDeleteSelectedModal] = useState(false);
+  const [showDeleteAllDraftsModal, setShowDeleteAllDraftsModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<WorkflowItemType | null>(null);
+  const [editingImageItem, setEditingImageItem] = useState<WorkflowItemType | null>(null);
+  const [showLibrarySelector, setShowLibrarySelector] = useState(false);
+  const [previewingLibrary, setPreviewingLibrary] = useState<Library | null>(null);
+  const [previewingWorkflowItemId, setPreviewingWorkflowItemId] = useState<string | null>(null);
+  const [reuseConfigSourceId, setReuseConfigSourceId] = useState<string | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(project.providerId || '');
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
+  const [isSettingsCollapsed, setIsSettingsCollapsed] = useState(true);
+  const [queueCount, setQueueCount] = useState<number>(project.lastQueueCount ?? 1);
+  const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [uploadingItemIds, setUploadingItemIds] = useState<Set<string>>(new Set());
+  const [selectingLibraryForItemId, setSelectingLibraryForItemId] = useState<string | null>(null);
+  const [isImportingWorkflow, setIsImportingWorkflow] = useState(false);
+  const [changingLibraryItemId, setChangingLibraryItemId] = useState<string | null>(null);
+  const [savingLibraryItemId, setSavingLibraryItemId] = useState<string | null>(null);
+  const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
+  const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
+  const [lightboxData, setLightboxData] = useState<LightboxData | null>(null);
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
+  const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
+  const [isWorkflowExpanded, setIsWorkflowExpanded] = useState(false);
+  const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
+  const [selectedAlbumIds, setSelectedAlbumIds] = useState<Set<string>>(new Set());
+  const [lastSelectedAlbumId, setLastSelectedAlbumId] = useState<string | null>(null);
+  const [lastSelectedDraftId, setLastSelectedDraftId] = useState<string | null>(null);
+  const [lastSelectedQueueId, setLastSelectedQueueId] = useState<string | null>(null);
+  const [lastSelectedCompletedId, setLastSelectedCompletedId] = useState<string | null>(null);
+  const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
+  const [showDeleteCompletedSelectedModal, setShowDeleteCompletedSelectedModal] = useState(false);
+  const [showDeleteQueueSelectedModal, setShowDeleteQueueSelectedModal] = useState(false);
+  const [showClearAllFailedModal, setShowClearAllFailedModal] = useState(false);
+  const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
+  const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
+  const [isAddingDrafts, setIsAddingDrafts] = useState(false);
+  const [isStartingDraftBatch, setIsStartingDraftBatch] = useState(false);
+  const [startingDraftJobIds, setStartingDraftJobIds] = useState<Set<string>>(new Set());
+  const [isRetryingQueueBatch, setIsRetryingQueueBatch] = useState(false);
+  const [retryingQueueJobIds, setRetryingQueueJobIds] = useState<Set<string>>(new Set());
+  const [isTogglingArchive, setIsTogglingArchive] = useState(false);
+  const [draftsProgress, setDraftsProgress] = useState<{ current: number; total: number; stage: 'composing' | 'saving' } | null>(null);
+  const [promptLimitDialog, setPromptLimitDialog] = useState<PromptLimitDialogState | null>(null);
+  // Libraries are held as summaries, without their items: the pickers' list
+  // loads when a picker opens, and the workflow's own libraries come with how
+  // many items each step's tag filter keeps. Items load only for the library
+  // detail dialog.
+  const [librarySummaries, setLibrarySummaries] = useState<Library[]>([]);
+  const [workflowLibrarySummaries, setWorkflowLibrarySummaries] = useState<Library[]>([]);
+  const [libraryMatchCounts, setLibraryMatchCounts] = useState<Map<string, number>>(new Map());
+  const [isLoadingPreviewLibrary, setIsLoadingPreviewLibrary] = useState(false);
+  const liveLibraries = React.useMemo(() => {
+    const workflowOnes = new Map(workflowLibrarySummaries.map((library) => [library.id, library]));
+    const merged = librarySummaries.map((summary) => {
+      const library = workflowOnes.get(summary.id);
+      if (!library) return summary;
+      workflowOnes.delete(summary.id);
+      return library;
+    });
+    return [...merged, ...workflowOnes.values()];
+  }, [librarySummaries, workflowLibrarySummaries]);
+  const [isRefreshingLibraries, setIsRefreshingLibraries] = useState(false);
+  const [libraryRefreshError, setLibraryRefreshError] = useState<string | null>(null);
+
+  const workflowPickerType: Exclude<WorkflowItemTypeKind, 'library' | 'model'> = (() => {
+    const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === selectingLibraryForItemId);
+    return item && item.type !== 'library' && item.type !== 'model' ? item.type : 'text';
+  })();
+
+  const [isLoadingWorkflow, setIsLoadingWorkflow] = useState(true);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [isLoadingAlbum, setIsLoadingAlbum] = useState(true);
+  const [isLoadingCompleted, setIsLoadingCompleted] = useState(true);
+
+  const tabContentRef = useRef<HTMLDivElement | null>(null);
+  const scrollTabContentTop = useCallback(() => {
+    const el = tabContentRef.current;
+    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+  const albumFetchTokenRef = useRef(0);
+  const jobsFetchTokenRef = useRef(0);
+  const isClearingFailedJobsRef = useRef(false);
+  const isStartingDraftJobsRef = useRef(false);
+  const isMutatingJobsRef = useRef(false);
+  const isDeletingAlbumItemsRef = useRef(false);
+  const albumLoadedKeyRef = useRef<string | null>(null);
+  const albumFetchedAtRef = useRef<number>(0);
+  const prevAlbumProjectIdRef = useRef<string | null>(null);
+  const completedFetchTokenRef = useRef(0);
+  const completedLoadedKeyRef = useRef<string | null>(null);
+  const completedFetchedAtRef = useRef<number>(0);
+  const runProjectLiveRefreshRef = useRef<() => void>(() => {});
+  const projectDefinitionRefreshTimerRef = useRef<number | null>(null);
+  const projectDefinitionFetchTokenRef = useRef(0);
+  const refreshProjectDefinitionRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    const jobsFetchToken = ++jobsFetchTokenRef.current;
+    isClearingFailedJobsRef.current = false;
+    isStartingDraftJobsRef.current = false;
+    isMutatingJobsRef.current = false;
+    isDeletingAlbumItemsRef.current = false;
+    setIsStartingDraftBatch(false);
+    setStartingDraftJobIds(new Set());
+    setIsRetryingQueueBatch(false);
+    setRetryingQueueJobIds(new Set());
+    albumFetchTokenRef.current += 1;
+    albumLoadedKeyRef.current = null;
+    albumFetchedAtRef.current = 0;
+    completedFetchTokenRef.current += 1;
+    completedLoadedKeyRef.current = null;
+    completedFetchedAtRef.current = 0;
+    setIsLoadingWorkflow(true);
+    setIsLoadingJobs(true);
+    setIsLoadingAlbum(true);
+    setIsLoadingCompleted(true);
+    setLocalAlbum([]);
+    setAlbumPreviewItems([]);
+    setAlbumTotal(0);
+    setAlbumPages(1);
+    setAlbumTotalSize(0);
+    setAlbumAspectRatioCounts([]);
+    setAlbumTagCounts([]);
+    // Reset the URL-driven album view when switching to a different project, but
+    // preserve any deep-linked params on the initial mount.
+    if (prevAlbumProjectIdRef.current !== null && prevAlbumProjectIdRef.current !== project.id) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('albumPage');
+        next.delete('albumSize');
+        next.delete('albumSort');
+        next.delete('albumSearch');
+        next.delete('albumRatios');
+        next.delete('albumTags');
+        next.delete('albumTagMatch');
+        return next;
+      }, { replace: true });
+    }
+    prevAlbumProjectIdRef.current = project.id;
+    setCompletedJobs([]);
+    setCompletedTotal(0);
+    setCompletedPages(1);
+    setCompletedPage(1);
+    Promise.all([
+      fetchProjectWorkflow(project.id).then(w => setLocalProject(prev => ({ ...prev, workflow: w }))).catch(console.error),
+      fetchProjectJobs(project.id, { excludeStatus: ['completed'] }).then((jobs) => {
+        if (jobsFetchTokenRef.current === jobsFetchToken) setLocalJobs(jobs);
+      }).catch(console.error),
+      // Keep a small, independent newest-items cache for the Draft canvas.
+      // Album rows themselves are still loaded at their real page size only
+      // when the Album tab is opened.
+      fetchProjectAlbum(project.id, { page: 1, limit: 5, sort: 'newest' }).then(res => {
+        if (prevAlbumProjectIdRef.current !== project.id) return;
+        setAlbumPreviewItems(res.items);
+        if (albumLoadedKeyRef.current) return;
+        setAlbumTotal(res.total);
+        setAlbumTotalSize(res.totalSize);
+        setAlbumAspectRatioCounts(res.aspectRatioCounts);
+        setAlbumTagCounts(res.tagCounts || []);
+      }).catch(console.error),
+      fetchProjectCompletedJobs(project.id, { page: 1, limit: 1 }).then(res => {
+        setCompletedTotal(res.total);
+        setCompletedPages(res.pages);
+      }).catch(console.error),
+    ]).finally(() => {
+      setIsLoadingWorkflow(false);
+      setIsLoadingJobs(false);
+    });
+  }, [project.id]);
+
+  const albumQueryKey = React.useMemo(() => JSON.stringify({
+    projectId: project.id,
+    page: albumPage,
+    pageSize: albumPageSize,
+    sort: albumSort,
+    aspectRatios: albumSelectedRatios,
+    tags: albumSelectedTags,
+    tagMatch: albumTagMatch,
+    q: albumSearch,
+  }), [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch, albumSearch]);
+  const loadAlbumPage = useCallback(async (signalToken: number, showLoading = true) => {
+    if (showLoading) setIsLoadingAlbum(true);
+    try {
+      const res = await fetchProjectAlbum(project.id, {
+        page: albumPage,
+        limit: albumPageSize === 'all' ? 999999 : albumPageSize,
+        sort: albumSort,
+        aspectRatios: albumSelectedRatios.length > 0 ? albumSelectedRatios : undefined,
+        tags: albumSelectedTags.length > 0 ? albumSelectedTags : undefined,
+        tagMatch: albumTagMatch,
+        q: albumSearch,
+      });
+      if (albumFetchTokenRef.current !== signalToken || isDeletingAlbumItemsRef.current) return;
+      setLocalAlbum(res.items);
+      setAlbumTotal(res.total);
+      setAlbumPages(res.pages);
+      setAlbumTotalSize(res.totalSize);
+      setAlbumAspectRatioCounts(res.aspectRatioCounts);
+      setAlbumTagCounts(res.tagCounts || []);
+      if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0 && albumSelectedTags.length === 0 && !albumSearch.trim()) {
+        setAlbumPreviewItems(res.items.slice(0, 5));
+      }
+      albumLoadedKeyRef.current = albumQueryKey;
+      albumFetchedAtRef.current = Date.now();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (albumFetchTokenRef.current === signalToken) setIsLoadingAlbum(false);
+    }
+  }, [project.id, albumPage, albumPageSize, albumSort, albumSelectedRatios, albumSelectedTags, albumTagMatch, albumSearch, albumQueryKey]);
+
+  useEffect(() => {
+    if (activeTab !== 'album') return;
+    const hasLoadedCurrentQuery = albumLoadedKeyRef.current === albumQueryKey;
+    const isFresh = Date.now() - albumFetchedAtRef.current < TAB_DATA_STALE_MS;
+    if (hasLoadedCurrentQuery && isFresh) {
+      setIsLoadingAlbum(false);
+      return;
+    }
+    const token = ++albumFetchTokenRef.current;
+    void loadAlbumPage(token, !hasLoadedCurrentQuery);
+  }, [activeTab, albumQueryKey, loadAlbumPage]);
+
+  const completedQueryKey = React.useMemo(() => JSON.stringify({
+    projectId: project.id,
+    page: completedPage,
+    pageSize: completedPageSize,
+    sort: completedSort,
+  }), [project.id, completedPage, completedPageSize, completedSort]);
+  const loadCompletedPage = useCallback(async (signalToken: number, showLoading = true) => {
+    if (showLoading) setIsLoadingCompleted(true);
+    try {
+      const res = await fetchProjectCompletedJobs(project.id, {
+        page: completedPage,
+        limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+        sort: completedSort,
+      });
+      if (completedFetchTokenRef.current !== signalToken) return;
+      setCompletedJobs(res.items);
+      setCompletedTotal(res.total);
+      setCompletedPages(res.pages);
+      completedLoadedKeyRef.current = completedQueryKey;
+      completedFetchedAtRef.current = Date.now();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (completedFetchTokenRef.current === signalToken) setIsLoadingCompleted(false);
+    }
+  }, [project.id, completedPage, completedPageSize, completedSort, completedQueryKey]);
+
+  useEffect(() => {
+    if (activeTab !== 'completed') return;
+    const hasLoadedCurrentQuery = completedLoadedKeyRef.current === completedQueryKey;
+    const isFresh = Date.now() - completedFetchedAtRef.current < TAB_DATA_STALE_MS;
+    if (hasLoadedCurrentQuery && isFresh) {
+      setIsLoadingCompleted(false);
+      return;
+    }
+    const token = ++completedFetchTokenRef.current;
+    void loadCompletedPage(token, !hasLoadedCurrentQuery);
+  }, [activeTab, completedQueryKey, loadCompletedPage]);
+
+  const handleAlbumPageChange = useCallback((p: number) => {
+    updateAlbumParams({ page: p });
+    scrollTabContentTop();
+  }, [updateAlbumParams, scrollTabContentTop]);
+  const handleAlbumPageSizeChange = useCallback((size: number | 'all') => {
+    rememberAlbumPageSize(project.id, size);
+    setRememberedAlbumPageSize({ projectId: project.id, size });
+    updateAlbumParams({ pageSize: size });
+    scrollTabContentTop();
+  }, [project.id, updateAlbumParams, scrollTabContentTop]);
+  const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => {
+    updateAlbumParams({ sort });
+  }, [updateAlbumParams]);
+  const handleAlbumSelectedRatiosChange = useCallback((ratios: string[]) => {
+    updateAlbumParams({ ratios });
+  }, [updateAlbumParams]);
+  const handleAlbumSelectedTagsChange = useCallback((tags: string[]) => {
+    updateAlbumParams({ tags });
+  }, [updateAlbumParams]);
+  const handleAlbumSearchChange = useCallback((search: string) => {
+    updateAlbumParams({ search });
+  }, [updateAlbumParams]);
+  const handleAlbumTagMatchChange = useCallback((tagMatch: AlbumTagMatch) => {
+    updateAlbumParams({ tagMatch });
+  }, [updateAlbumParams]);
+
+  const handleCompletedPageChange = useCallback((p: number) => {
+    setCompletedPage(p);
+    scrollTabContentTop();
+  }, [scrollTabContentTop]);
+  const handleCompletedPageSizeChange = useCallback((size: number | 'all') => {
+    setCompletedPageSize(size);
+    setCompletedPage(1);
+    scrollTabContentTop();
+  }, [scrollTabContentTop]);
+  const handleCompletedSortChange = useCallback((sort: 'newest' | 'oldest') => {
+    setCompletedSort(sort);
+    setCompletedPage(1);
+  }, []);
+
+  /** Load a job's or album item's configuration, then ask for confirmation before applying it. */
+  const loadReuseConfiguration = async (
+    sourceId: string,
+    load: () => Promise<JobConfiguration>,
+    unavailableMessage: string,
+  ) => {
+    if (reuseConfigSourceId) return;
+
+    setReuseConfigSourceId(sourceId);
+    try {
+      const config = await load();
+      if (!config.workflowSnapshot || config.workflowSnapshot.length === 0) {
+        toast.error(unavailableMessage);
+        return;
+      }
+      setConfigToReuse(config);
+    } catch (e: any) {
+      toast.error(e?.message || unavailableMessage);
+    } finally {
+      setReuseConfigSourceId(null);
+    }
+  };
+
+  const handleReuseWorkflow = (job: Job) =>
+    loadReuseConfiguration(
+      job.id,
+      () => fetchProjectJobConfiguration(localProject.id, job.id),
+      t('projectViewer.common.reuseConfigurationUnavailable'),
+    );
+
+  const handleReuseAlbumWorkflow = (item: AlbumItem) =>
+    loadReuseConfiguration(
+      item.id,
+      () => fetchProjectAlbumItemConfiguration(localProject.id, item.id),
+      t('projectViewer.album.reuseWorkflowUnavailable'),
+    );
+
+  /** Reuse, but for an album item picked from any project rather than this one. */
+  const handleImportWorkflow = (items: UniversalPickedItem[]) => {
+    const picked = items[0];
+    setIsImportingWorkflow(false);
+    if (!picked) return;
+    void loadReuseConfiguration(
+      picked.itemId,
+      // Workflow item ids are unique across projects, and the snapshot still
+      // carries the source project's, so the copy gets fresh ones — as a
+      // duplicated project's workflow does.
+      () => fetchProjectAlbumItemConfiguration(picked.sourceId, picked.itemId).then((config) => ({
+        ...config,
+        workflowSnapshot: config.workflowSnapshot?.map((item) => ({ ...item, id: crypto.randomUUID() })),
+      })),
+      t('projectViewer.album.reuseWorkflowUnavailable'),
+    );
+  };
+
+  const confirmReuseWorkflow = () => {
+    if (!configToReuse || !configToReuse.workflowSnapshot) return;
+
+    const newProviderId = configToReuse.providerId || localProject.providerId;
+    const newModelConfigId = configToReuse.modelConfigId || localProject.modelConfigId;
+
+    const updated = {
+      ...localProject,
+      workflow: configToReuse.workflowSnapshot,
+      providerId: newProviderId,
+      modelConfigId: newModelConfigId,
+      aspectRatio: configToReuse.aspectRatio || localProject.aspectRatio,
+      quality: configToReuse.quality || localProject.quality,
+      format: configToReuse.format || localProject.format,
+      background: configToReuse.background || localProject.background,
+      duration: configToReuse.duration || localProject.duration,
+      resolution: configToReuse.resolution || localProject.resolution,
+      sound: configToReuse.sound || localProject.sound,
+      // A Civitai job's settings go back onto the project. The seed it ran
+      // with stays on the job: reusing the recipe should vary, not repeat.
+      // Its checkpoint, LoRAs and negative prompt come back with the workflow.
+      ...(isCivitaiProject && configToReuse.civitaiParams
+        ? { civitaiConfig: {
+            ...configToReuse.civitaiParams,
+            model: undefined, resources: undefined, negativePrompt: undefined, seed: undefined,
+            // The frame size follows the resolution and shape; it is not a setting.
+            ...(configToReuse.civitaiParams.video ? { video: { ...configToReuse.civitaiParams.video, width: undefined, height: undefined } } : {}),
+          } }
+        : {}),
+    };
+
+    setLocalProject(updated);
+    if (newProviderId) setSelectedProviderId(newProviderId);
+    if (newModelConfigId) setSelectedModelId(newModelConfigId);
+    onUpdate(updated);
+    setConfigToReuse(null);
+    // Reusing from the album is done from the lightbox too; close it so the
+    // restored workflow is what the user lands on.
+    setLightboxData(null);
+    toast.success(t('projectViewer.common.reuseConfiguration'));
+    setMobileView('workflow');
+  };
+
+  const projectRef = useRef(localProject);
+  const localJobsRef = useRef<Job[]>(localJobs);
+  const localAlbumRef = useRef<AlbumItem[]>(localAlbum);
+  const activeTabRef = useRef(activeTab);
+  const liveQueryRef = useRef({
+    albumPage,
+    albumPageSize,
+    albumSort,
+    albumSelectedRatios,
+    albumSelectedTags,
+    albumTagMatch,
+    albumSearch,
+    albumQueryKey,
+    completedPage,
+    completedPageSize,
+    completedSort,
+    completedQueryKey,
+  });
+  const liveRefreshTimerRef = useRef<number | null>(null);
+  const liveRefreshDueAtRef = useRef<number>(0);
+  const liveRefreshInFlightRef = useRef(false);
+  const liveRefreshQueuedRef = useRef(false);
+  const lastLiveRefreshAtRef = useRef(0);
+  const libraryRefreshPromiseRef = useRef<Promise<Library[]> | null>(null);
+  const requestedLibraryFilterKeysRef = useRef(new Set<string>());
+  const libraryPreviewRequestRef = useRef(0);
+  const skipProjectSyncRef = useRef(false);
+  const workflowListRef = useRef<HTMLDivElement | null>(null);
+  const [isProjectLiveConnected, setIsProjectLiveConnected] = useState(false);
+  const isProcessing = localJobs.some(j => j.status === 'pending' || j.status === 'processing');
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
+  useEffect(() => {
+    liveQueryRef.current = {
+      albumPage,
+      albumPageSize,
+      albumSort,
+      albumSelectedRatios,
+      albumSelectedTags,
+      albumTagMatch,
+      albumSearch,
+      albumQueryKey,
+      completedPage,
+      completedPageSize,
+      completedSort,
+      completedQueryKey,
+    };
+  }, [
+    albumPage,
+    albumPageSize,
+    albumSort,
+    albumSelectedRatios,
+    albumSelectedTags,
+    albumTagMatch,
+    albumSearch,
+    albumQueryKey,
+    completedPage,
+    completedPageSize,
+    completedSort,
+    completedQueryKey,
+  ]);
+
+  const onUpdate = useCallback((updated: Project) => {
+    onUpdateProp(updated);
+  }, [onUpdateProp]);
+
+  const scrollWorkflowToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      const container = workflowListRef.current;
+      if (!container) return;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth',
+      });
+    });
+  }, []);
+
+  const previousWorkflowLengthRef = useRef(localProject.workflow?.length || 0);
+
+  useEffect(() => {
+    const currentLength = localProject.workflow?.length || 0;
+    if (currentLength > previousWorkflowLengthRef.current) {
+      // Small timeout ensures the DOM has updated and rendered the new item
+      setTimeout(() => {
+        scrollWorkflowToBottom();
+      }, 50);
+    }
+    previousWorkflowLengthRef.current = currentLength;
+  }, [localProject.workflow?.length, scrollWorkflowToBottom]);
+
+  useEffect(() => {
+    if (skipProjectSyncRef.current) {
+      skipProjectSyncRef.current = false;
+      return;
+    }
+    setLocalProject(prev => ({
+      ...project,
+      workflow: project.workflow?.length ? project.workflow : prev.workflow,
+    }));
+  }, [project]);
+
+  useEffect(() => {
+    projectRef.current = localProject;
+  }, [localProject]);
+
+  useEffect(() => {
+    localJobsRef.current = localJobs;
+  }, [localJobs]);
+
+  useEffect(() => {
+    localAlbumRef.current = localAlbum;
+  }, [localAlbum]);
+
+  const refreshLibrarySummaries = useCallback(async () => {
+    if (libraryRefreshPromiseRef.current) return libraryRefreshPromiseRef.current;
+
+    setIsRefreshingLibraries(true);
+    const promise = fetchLibrarySummaries()
+      .then((summaries) => {
+        setLibrarySummaries(summaries);
+        setLibraryRefreshError(null);
+        return summaries;
+      })
+      .catch((error) => {
+        console.error('Failed to refresh libraries:', error);
+        setLibraryRefreshError(error instanceof Error ? error.message : 'Failed to refresh libraries');
+        throw error;
+      })
+      .finally(() => {
+        setIsRefreshingLibraries(false);
+        libraryRefreshPromiseRef.current = null;
+      });
+
+    libraryRefreshPromiseRef.current = promise;
+    return promise;
+  }, []);
+
+  /** Fetch the summaries and match counts behind these filters, replacing what was loaded for them. */
+  const loadWorkflowLibrarySummaries = useCallback(async (filters: KeyedLibraryFilter[]) => {
+    const { libraries, counts } = await fetchLibraryMatchCounts(
+      filters.map(({ libraryId, tags, tagMatchMode }) => ({ libraryId, tags, tagMatchMode })),
+    );
+    const requested = new Set(filters.map((filter) => filter.libraryId));
+    setWorkflowLibrarySummaries((current) => [...current.filter((library) => !requested.has(library.id)), ...libraries]);
+    setLibraryMatchCounts((current) => {
+      const next = new Map(current);
+      filters.forEach((filter, index) => next.set(filter.key, counts[index] ?? 0));
+      return next;
+    });
+  }, []);
+
+  const libraryFilters = React.useMemo(() => workflowLibraryFilters(localProject.workflow || []), [localProject.workflow]);
+  useEffect(() => {
+    const requested = requestedLibraryFilterKeysRef.current;
+    const missing = libraryFilters.filter((filter) => !requested.has(filter.key));
+    if (missing.length === 0) return;
+    missing.forEach((filter) => requested.add(filter.key));
+    void loadWorkflowLibrarySummaries(missing).catch((error) => {
+      missing.forEach((filter) => requested.delete(filter.key));
+      console.error('Failed to load workflow libraries:', error);
+    });
+  }, [libraryFilters, loadWorkflowLibrarySummaries]);
+
+  useEffect(() => {
+    if (rawTab) {
+      setMobileView('jobs');
+    }
+  }, [rawTab]);
+
+  const refreshProjectLiveData = useCallback(async () => {
+    try {
+      const tab = activeTabRef.current;
+      const query = liveQueryRef.current;
+      const jobsFetchToken = ++jobsFetchTokenRef.current;
+      const albumFetchToken = ++albumFetchTokenRef.current;
+      const completedFetchToken = ++completedFetchTokenRef.current;
+      const [updatedJobs, updatedAlbumRes, updatedCompletedRes] = await Promise.all([
+        fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }).catch(() => null),
+        tab === 'album'
+          ? fetchProjectAlbum(localProject.id, {
+              page: query.albumPage,
+              limit: query.albumPageSize === 'all' ? 999999 : query.albumPageSize,
+              sort: query.albumSort,
+              aspectRatios: query.albumSelectedRatios.length > 0 ? query.albumSelectedRatios : undefined,
+              tags: query.albumSelectedTags,
+              tagMatch: query.albumTagMatch,
+              q: query.albumSearch,
+            }).catch(() => null)
+          : fetchProjectAlbum(localProject.id, {
+              page: 1,
+              limit: 5,
+              sort: 'newest',
+            }).catch(() => null),
+        tab === 'completed'
+          ? fetchProjectCompletedJobs(localProject.id, {
+              page: query.completedPage,
+              limit: query.completedPageSize === 'all' ? 999999 : query.completedPageSize,
+              sort: query.completedSort,
+            }).catch(() => null)
+          : fetchProjectCompletedJobs(localProject.id, { page: 1, limit: 1 }).catch(() => null),
+      ]);
+
+      if (
+        updatedJobs
+        && jobsFetchTokenRef.current === jobsFetchToken
+        && !isClearingFailedJobsRef.current
+        && !isStartingDraftJobsRef.current
+        && !isMutatingJobsRef.current
+      ) {
+        if (JSON.stringify(updatedJobs) !== JSON.stringify(localJobsRef.current)) {
+          setLocalJobs(updatedJobs);
+        }
+      }
+
+      if (
+        updatedAlbumRes
+        && albumFetchTokenRef.current === albumFetchToken
+        && !isDeletingAlbumItemsRef.current
+      ) {
+        setAlbumTotal(updatedAlbumRes.total);
+        setAlbumTotalSize(updatedAlbumRes.totalSize);
+        setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
+        setAlbumTagCounts(updatedAlbumRes.tagCounts || []);
+        if (tab === 'album') {
+          if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
+            setLocalAlbum(updatedAlbumRes.items);
+          }
+          if (query.albumPage === 1 && query.albumSort === 'newest' && query.albumSelectedRatios.length === 0 && query.albumSelectedTags.length === 0 && !query.albumSearch.trim()) {
+            setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
+          }
+          setAlbumPages(updatedAlbumRes.pages);
+          albumLoadedKeyRef.current = query.albumQueryKey;
+          albumFetchedAtRef.current = Date.now();
+        } else {
+          setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
+          // Keep the cached rows intact while the user is on another tab. Mark
+          // them stale so returning to Album shows the cache immediately and
+          // revalidates it in the background.
+          albumFetchedAtRef.current = 0;
+        }
+      }
+
+      if (
+        updatedCompletedRes
+        && completedFetchTokenRef.current === completedFetchToken
+        && !isMutatingJobsRef.current
+      ) {
+        if (tab === 'completed') {
+          setCompletedJobs(updatedCompletedRes.items);
+          completedLoadedKeyRef.current = query.completedQueryKey;
+          completedFetchedAtRef.current = Date.now();
+        }
+        setCompletedTotal(updatedCompletedRes.total);
+        setCompletedPages(updatedCompletedRes.pages);
+      }
+    } catch (e) {
+      console.error('Refreshing project updates failed:', e);
+    }
+  }, [localProject.id]);
+
+  const scheduleProjectLiveRefresh = useCallback((delayMs = LIVE_REFRESH_DEBOUNCE_MS) => {
+    const now = Date.now();
+    const dueAt = Math.max(
+      now + delayMs,
+      lastLiveRefreshAtRef.current + LIVE_REFRESH_MIN_INTERVAL_MS
+    );
+
+    if (liveRefreshTimerRef.current !== null && liveRefreshDueAtRef.current <= dueAt) {
+      return;
+    }
+
+    if (liveRefreshTimerRef.current !== null) {
+      window.clearTimeout(liveRefreshTimerRef.current);
+    }
+
+    liveRefreshDueAtRef.current = dueAt;
+    liveRefreshTimerRef.current = window.setTimeout(() => {
+      liveRefreshTimerRef.current = null;
+      liveRefreshDueAtRef.current = 0;
+      runProjectLiveRefreshRef.current();
+    }, Math.max(0, dueAt - now));
+  }, []);
+
+  const runProjectLiveRefresh = useCallback(async () => {
+    if (liveRefreshInFlightRef.current) {
+      liveRefreshQueuedRef.current = true;
+      return;
+    }
+
+    liveRefreshInFlightRef.current = true;
+    try {
+      await refreshProjectLiveData();
+      lastLiveRefreshAtRef.current = Date.now();
+    } finally {
+      liveRefreshInFlightRef.current = false;
+      if (liveRefreshQueuedRef.current) {
+        liveRefreshQueuedRef.current = false;
+        scheduleProjectLiveRefresh();
+      }
+    }
+  }, [refreshProjectLiveData, scheduleProjectLiveRefresh]);
+
+  useEffect(() => {
+    runProjectLiveRefreshRef.current = () => {
+      void runProjectLiveRefresh();
+    };
+  }, [runProjectLiveRefresh]);
+
+  /** Reload the project's settings and workflow after they changed elsewhere. */
+  const refreshProjectDefinition = useCallback(async () => {
+    const projectId = localProject.id;
+    const fetchToken = ++projectDefinitionFetchTokenRef.current;
+    try {
+      const [freshProject, workflow] = await Promise.all([
+        fetchProject(projectId),
+        fetchProjectWorkflow(projectId),
+      ]);
+      if (projectDefinitionFetchTokenRef.current !== fetchToken || projectRef.current.id !== projectId) return;
+      setLocalProject({ ...freshProject, workflow });
+    } catch (error) {
+      console.error('Failed to refresh project settings:', error);
+    }
+  }, [localProject.id]);
+
+  useEffect(() => {
+    refreshProjectDefinitionRef.current = () => {
+      void refreshProjectDefinition();
+    };
+  }, [refreshProjectDefinition]);
+
+  const scheduleProjectDefinitionRefresh = useCallback(() => {
+    if (projectDefinitionRefreshTimerRef.current !== null) return;
+    projectDefinitionRefreshTimerRef.current = window.setTimeout(() => {
+      projectDefinitionRefreshTimerRef.current = null;
+      refreshProjectDefinitionRef.current();
+    }, LIVE_REFRESH_DEBOUNCE_MS);
+  }, []);
+
+  // Libraries the workflow draws from may gain or lose items elsewhere, which
+  // changes the combination count and the library pickers. No events means
+  // the feed reconnected, and a change without an ID spans several libraries,
+  // so both recount every library the workflow draws from.
+  useLiveRefresh((event) => event.resource === 'library', (events) => {
+    const changedIds = events.length === 0 || events.some((event) => !event.id)
+      ? null
+      : new Set(events.map((event) => event.id));
+    // Counts kept for a changed library's other tag filters are out of date
+    // too; forget them so switching back to one counts it again.
+    const requested = requestedLibraryFilterKeysRef.current;
+    for (const key of requested) {
+      if (!changedIds || changedIds.has(key.split('\u0000')[0])) requested.delete(key);
+    }
+    const filters = workflowLibraryFilters(projectRef.current.workflow || []);
+    const changed = changedIds ? filters.filter((filter) => changedIds.has(filter.libraryId)) : filters;
+    changed.forEach((filter) => requested.add(filter.key));
+    return Promise.all([
+      librarySummaries.length > 0 && refreshLibrarySummaries(),
+      changed.length > 0 && loadWorkflowLibrarySummaries(changed),
+    ]);
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof WebSocket === 'undefined') return;
+
+    let disposed = false;
+    let reconnectTimer: number | null = null;
+    let reconnectAttempt = 0;
+    let socket: WebSocket | null = null;
+    setIsProjectLiveConnected(false);
+
+    const clearReconnectTimer = () => {
+      if (reconnectTimer !== null) {
+        window.clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    };
+
+    const connect = () => {
+      if (disposed) return;
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const ws = new WebSocket(`${protocol}://${window.location.host}/api/projects/${encodeURIComponent(localProject.id)}/live`);
+      socket = ws;
+
+      ws.onopen = () => {
+        if (disposed || socket !== ws) return;
+        reconnectAttempt = 0;
+        setIsProjectLiveConnected(true);
+      };
+
+      ws.onmessage = (event) => {
+        if (disposed || socket !== ws) return;
+        try {
+          const data = JSON.parse(event.data);
+          if (data?.type !== 'project.changed' || data.projectId !== localProject.id) return;
+          if (PROJECT_DEFINITION_EVENT_REASONS.has(data.reason)) {
+            if (data.origin !== LIVE_CLIENT_ID) scheduleProjectDefinitionRefresh();
+            return;
+          }
+          if (!RIGHT_PANEL_REFRESH_EVENT_REASONS.has(data.reason)) return;
+          scheduleProjectLiveRefresh();
+        } catch (error) {
+          console.error('Failed to parse project live update:', error);
+        }
+      };
+
+      ws.onclose = () => {
+        if (socket !== ws) return;
+        setIsProjectLiveConnected(false);
+        socket = null;
+        if (disposed) return;
+        const delay = Math.min(1000 * 2 ** reconnectAttempt, 15_000);
+        reconnectAttempt += 1;
+        reconnectTimer = window.setTimeout(connect, delay);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      clearReconnectTimer();
+      if (liveRefreshTimerRef.current !== null) {
+        window.clearTimeout(liveRefreshTimerRef.current);
+        liveRefreshTimerRef.current = null;
+      }
+      liveRefreshDueAtRef.current = 0;
+      liveRefreshQueuedRef.current = false;
+      if (projectDefinitionRefreshTimerRef.current !== null) {
+        window.clearTimeout(projectDefinitionRefreshTimerRef.current);
+        projectDefinitionRefreshTimerRef.current = null;
+      }
+      if (socket) {
+        socket.onopen = null;
+        socket.onmessage = null;
+        socket.onclose = null;
+        socket.onerror = null;
+        socket.close();
+      }
+    };
+  }, [localProject.id, scheduleProjectLiveRefresh, scheduleProjectDefinitionRefresh]);
+
+  useEffect(() => {
+    if (!isProcessing || isProjectLiveConnected) return;
+    const interval = window.setInterval(() => {
+      void runProjectLiveRefresh();
+    }, 10000);
+    return () => window.clearInterval(interval);
+  }, [isProcessing, isProjectLiveConnected, runProjectLiveRefresh]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const p = await fetchProviders();
+        setProviders(p);
+        if (p.length > 0) {
+          const savedProvId = project.providerId;
+          const provExists = p.some(prov => prov.id === savedProvId);
+          if (provExists && savedProvId) {
+            setSelectedProviderId(savedProvId);
+            const prov = p.find(prov => prov.id === savedProvId)!;
+            if (prov.models.length > 0) {
+              const savedModelId = project.modelConfigId;
+              const modelExists = prov.models.some(m => m.id === savedModelId);
+              setSelectedModelId(modelExists ? savedModelId! : prov.models[0].id);
+            }
+          } else {
+            setSelectedProviderId('');
+            setSelectedModelId('');
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch providers:', e);
+      }
+    })();
+  }, []);
+
+  const selectedProvider = providers.find(p => p.id === selectedProviderId);
+  const selectedModel = selectedProvider?.models.find(m => m.id === selectedModelId);
+  const isAudioProject = localProject.type === 'audio';
+  const isComfyProject = localProject.type === 'comfyui';
+  const isCivitaiProject = localProject.type === 'civitai';
+  // ComfyUI and Civitai projects render their results as the image or video
+  // project they produce: ComfyUI's output format picks which, and a Civitai
+  // project's media type.
+  const mediaProjectType = isComfyProject || isCivitaiProject ? projectMediaType(localProject) : (localProject.type || 'image');
+  // Civitai images keep their checkpoint's AIR as the model id; its name comes
+  // from the workflow's checkpoints, the results and the jobs that ran with it,
+  // and the project's older single-checkpoint setting.
+  const civitaiModelNames = React.useMemo(() => {
+    const names = new Map<string, string>();
+    if (!isCivitaiProject) return names;
+    const add = (model?: CivitaiResource) => { if (model?.name && !names.has(model.air)) names.set(model.air, civitaiResourceLabel(model)); };
+    for (const item of civitaiModelItems(localProject.workflow || [], 'checkpoint')) item.civitai?.options?.forEach(add);
+    for (const item of localAlbum) add(item.civitaiParams?.model);
+    for (const job of localJobs) add(job.civitaiParams?.model);
+    add(localProject.civitaiConfig?.model);
+    return names;
+  }, [isCivitaiProject, localProject.workflow, localAlbum, localJobs, localProject.civitaiConfig?.model]);
+
+  const getProviderName = (id?: string) => {
+    if (isComfyProject && !id) return 'ComfyUI';
+    return id ? providers.find(p => p.id === id)?.name || id : t('projectViewer.common.unknownProvider');
+  };
+  const getModelName = (providerId?: string, modelId?: string) => {
+    if (isComfyProject && !modelId) return t('projectViewer.comfy.workflowLabel');
+    if (isCivitaiProject && modelId && parseCivitaiAir(modelId)) return civitaiModelNames.get(modelId) || modelId;
+    if (isCivitaiProject && civitaiVideoEngineLabel(modelId)) return civitaiVideoEngineLabel(modelId)!;
+    if (!modelId) return t('projectViewer.common.unknownModel');
+    const providerModels = providerId
+      ? providers.find(p => p.id === providerId)?.models
+      : undefined;
+
+    const matchedModel =
+      providerModels?.find(m => m.id === modelId || m.modelId === modelId) ||
+      providers.flatMap(p => p.models).find(m => m.id === modelId || m.modelId === modelId);
+
+    return matchedModel?.name || modelId;
+  };
+
+  useEffect(() => {
+    if (selectedModel) {
+      let needsUpdate = false;
+      const updated = { ...localProject };
+      if (selectedModel.category === 'text') {
+        // Sync text-specific defaults
+        if (selectedModel.options.temperatures && localProject.temperature === undefined) {
+          updated.temperature = 0.7;
+          needsUpdate = true;
+        }
+        if (selectedModel.options.maxTokenOptions && localProject.maxTokens === undefined) {
+          updated.maxTokens = 2048;
+          needsUpdate = true;
+        }
+      } else if (selectedModel.category === 'audio') {
+        const audioGenerationKind = resolveAudioGenerationKind(selectedModel);
+        const allowedFormats = selectedModel.options.audioFormats
+          || (audioGenerationKind === 'music' ? ['mp3'] : ['wav', 'mp3', 'aac']);
+        const defaultFormat = allowedFormats[0];
+
+        if (!localProject.format || !allowedFormats.includes(localProject.format as any)) {
+          updated.format = defaultFormat as Project['format'];
+          needsUpdate = true;
+        }
+        if (!localProject.systemPrompt) {
+          updated.systemPrompt = serializeAudioProjectConfig(createDefaultAudioProjectConfig(audioGenerationKind));
+          needsUpdate = true;
+        } else if (
+          audioGenerationKind !== (parseAudioProjectConfig(localProject.systemPrompt).kind === 'remix-audio-music' ? 'music' : 'tts')
+        ) {
+          updated.systemPrompt = serializeAudioProjectConfig(createDefaultAudioProjectConfig(audioGenerationKind));
+          needsUpdate = true;
+        }
+      } else {
+        // Sync image-specific defaults
+        if (selectedModel.options.aspectRatios && !selectedModel.options.aspectRatios.includes(localProject.aspectRatio || '')) {
+          updated.aspectRatio = selectedModel.options.aspectRatios[0];
+          needsUpdate = true;
+        }
+        if (selectedModel.options.qualities && !selectedModel.options.qualities.includes(localProject.quality || '')) {
+          updated.quality = selectedModel.options.qualities[0];
+          needsUpdate = true;
+        }
+        if (selectedModel.options.backgrounds && !selectedModel.options.backgrounds.includes(localProject.background || '')) {
+          updated.background = selectedModel.options.backgrounds[0];
+          needsUpdate = true;
+        }
+      }
+      if (needsUpdate) {
+        setLocalProject(updated);
+        onUpdate(updated);
+      }
+    }
+  }, [selectedModelId, selectedModel]);
+
+  const combinationsCount = React.useMemo(
+    () => countWorkflowCombinations(localProject.workflow || [], (item) => libraryMatchCounts.get(libraryFilterKey(item)) ?? 0),
+    [localProject.workflow, libraryMatchCounts]
+  );
+
+  /**
+   * Apply a workflow change on screen and save it. The saved copy is built from
+   * projectRef rather than captured inside a setLocalProject updater: once this
+   * view has re-rendered, React runs updaters lazily, so a copy captured that
+   * way is still unset when the save reads it and the change is never stored.
+   * `stored` is the change as the database keeps it, when that differs from
+   * what is shown — an upload is shown by its signed URL but stored by its key.
+   */
+  const commitWorkflowChange = (
+    change: (workflow: WorkflowItemType[]) => WorkflowItemType[],
+    stored: (workflow: WorkflowItemType[]) => WorkflowItemType[] = change,
+  ) => {
+    const latest = projectRef.current;
+    // Stay ahead of the render so back-to-back changes build on each other.
+    projectRef.current = { ...latest, workflow: change(latest.workflow || []) };
+    setLocalProject((prev) => ({ ...prev, workflow: change(prev.workflow || []) }));
+    skipProjectSyncRef.current = true;
+    onUpdate({ ...latest, workflow: stored(latest.workflow || []) });
+  };
+
+  /** Point a workflow item at its uploaded file, replacing the local preview. */
+  const commitUploadedFile = (id: string, shown: Partial<WorkflowItemType>, stored: Partial<WorkflowItemType>) => {
+    const preview = projectRef.current.workflow?.find((item) => item.id === id)?.value;
+    if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview);
+    commitWorkflowChange(
+      (workflow) => workflow.map((item) => (item.id === id ? { ...item, ...shown } : item)),
+      (workflow) => workflow.map((item) => (item.id === id ? { ...item, ...stored } : item)),
+    );
+  };
+
+  const addWorkflowItem = (type: WorkflowItemTypeKind, initialValue: string = '') => {
+    // A ComfyUI project's items are bindings, made from its input list.
+    if (isComfyProject) return;
+    // A Civitai generation takes no reference video or audio; checkpoints and
+    // LoRAs are added from the workflow panel as model items.
+    if (isCivitaiProject && type !== 'text' && type !== 'library' && type !== 'image') return;
+
+    if (isAudioProject && (type === 'video' || type === 'audio')) {
+      return;
+    }
+
+    if (isAudioProject && type === 'image' && selectedModel?.options.supportsReferenceImages !== true) {
+      return;
+    }
+
+    if (type === 'library') {
+      setShowLibrarySelector(true);
+      void refreshLibrarySummaries().catch(() => {
+        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+      });
+      return;
+    }
+    const newItem: WorkflowItemType = { id: crypto.randomUUID(), type, value: initialValue };
+    commitWorkflowChange((workflow) => [...workflow, newItem]);
+    scrollWorkflowToBottom();
+  };
+
+  const handleLibrarySelect = (libraryId: string) => {
+    const library = liveLibraries.find((item) => item.id === libraryId);
+    if (!library) {
+      setShowLibrarySelector(false);
+      return;
+    }
+    if (isAudioProject && library.type !== 'text') {
+      setShowLibrarySelector(false);
+      return;
+    }
+    if (isCivitaiProject && library.type !== 'text' && library.type !== 'image') {
+      setShowLibrarySelector(false);
+      return;
+    }
+    const newItem: WorkflowItemType = { id: crypto.randomUUID(), type: 'library', value: libraryId };
+    const updated = { ...localProject, workflow: [...(localProject.workflow || []), newItem] };
+    setLocalProject(updated);
+    onUpdate(updated);
+    setShowLibrarySelector(false);
+    scrollWorkflowToBottom();
+  };
+
+  const updateWorkflowItem = (id: string, value: string, thumbnailUrl?: string, optimizedUrl?: string, size?: number) => {
+    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, value, thumbnailUrl, optimizedUrl, size } : item) };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
+  const openWorkflowItemLibrarySelector = (workflowItemId: string) => {
+    setSelectingLibraryForItemId(workflowItemId);
+  };
+
+  const openWorkflowLibraryChangeSelector = (workflowItemId: string) => {
+    setChangingLibraryItemId(workflowItemId);
+    void refreshLibrarySummaries().catch(() => {
+      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+    });
+  };
+
+  const handleWorkflowLibraryChange = (workflowItemId: string, libraryId: string) => {
+    const library = liveLibraries.find((item) => item.id === libraryId);
+    const workflow = localProject.workflow || [];
+    const targetItem = workflow.find((item) => item.id === workflowItemId);
+
+    if (!library || !targetItem || targetItem.type !== 'library') {
+      setChangingLibraryItemId(null);
+      return;
+    }
+
+    if (isAudioProject && library.type !== 'text') {
+      setChangingLibraryItemId(null);
+      return;
+    }
+    if (isCivitaiProject && library.type !== 'text' && library.type !== 'image') {
+      setChangingLibraryItemId(null);
+      return;
+    }
+
+    if (targetItem.value === libraryId) {
+      setChangingLibraryItemId(null);
+      return;
+    }
+
+    const updated = {
+      ...localProject,
+      workflow: workflow.map((item) => item.id === workflowItemId ? { ...item, value: libraryId, selectedTags: [] } : item),
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
+    setChangingLibraryItemId(null);
+  };
+
+  const openSaveWorkflowItemToLibrary = (item: WorkflowItemType) => {
+    setSavingLibraryItemId(item.id);
+    void refreshLibrarySummaries().catch(() => {
+      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+    });
+  };
+
+  const handleSaveWorkflowItemToLibrary = async (libraryId: string) => {
+    const item = (localProject.workflow || []).find((workflowItem) => workflowItem.id === savingLibraryItemId);
+    if (!item) {
+      setSavingLibraryItemId(null);
+      return;
+    }
+
+    setIsSavingToLibrary(true);
+    try {
+      await createLibraryItem(libraryId, {
+        id: crypto.randomUUID(),
+        content: item.value,
+        thumbnailUrl: item.thumbnailUrl,
+        optimizedUrl: item.optimizedUrl,
+        size: item.size,
+      });
+      // This tab's own changes do not come back as live events, so recount here.
+      const affected = libraryFilters.filter((filter) => filter.libraryId === libraryId);
+      if (affected.length > 0) void loadWorkflowLibrarySummaries(affected).catch(() => {});
+      toast.success(t('projectViewer.toasts.savedToLibrary', { defaultValue: 'Saved to library' }));
+      setSavingLibraryItemId(null);
+    } catch (error) {
+      console.error('Failed to save workflow item to library:', error);
+      toast.error(t('projectViewer.toasts.saveToLibraryFailed', { defaultValue: 'Failed to save to library' }));
+    } finally {
+      setIsSavingToLibrary(false);
+    }
+  };
+
+  /** Open the library's detail dialog at once, loading its items into it. */
+  const openLibraryPreview = async (library: Library, workflowItemId: string) => {
+    const request = ++libraryPreviewRequestRef.current;
+    setPreviewingLibrary(library);
+    setPreviewingWorkflowItemId(workflowItemId);
+    setIsLoadingPreviewLibrary(true);
+
+    try {
+      const fullLibrary = await fetchLibrary(library.id);
+      if (libraryPreviewRequestRef.current !== request) return;
+      setPreviewingLibrary(fullLibrary);
+    } catch (error) {
+      console.error('Failed to load library preview:', error);
+      toast.error(t('projectViewer.toasts.refreshLibraryFailed', { defaultValue: 'Failed to refresh library' }));
+    } finally {
+      if (libraryPreviewRequestRef.current === request) setIsLoadingPreviewLibrary(false);
+    }
+  };
+
+  const updateWorkflowItemTags = (id: string, selectedTags: string[]) => {
+    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, selectedTags } : item) };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
+  const updateWorkflowItemTagMatchMode = (id: string, tagMatchMode: 'and' | 'or') => {
+    const updated = { ...localProject, workflow: localProject.workflow.map(item => item.id === id ? { ...item, tagMatchMode } : item) };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
+  const confirmRemoveWorkflowItem = () => {
+    if (itemToRemoveId) {
+      const updated = { ...localProject, workflow: localProject.workflow.filter(item => item.id !== itemToRemoveId) };
+      setLocalProject(updated);
+      onUpdate(updated);
+      setItemToRemoveId(null);
+    }
+  };
+
+  const handleFilesDrop = (files: File[]) => {
+    if (isComfyProject) return;
+    const newItems: WorkflowItemType[] = [];
+    const filesToUpload: { type: 'image' | 'video' | 'audio', file: File, id: string }[] = [];
+
+    files.forEach(file => {
+      let type: 'image' | 'video' | 'audio' | undefined;
+      if (file.type.startsWith('image/')) type = 'image';
+      else if (file.type.startsWith('video/')) type = 'video';
+      else if (file.type.startsWith('audio/')) type = 'audio';
+
+      if (isAudioProject && (type === 'video' || type === 'audio')) return;
+      if (isAudioProject && type === 'image' && selectedModel?.options.supportsReferenceImages !== true) return;
+      if (isCivitaiProject && (type === 'video' || type === 'audio')) return;
+
+      if (type) {
+        const id = crypto.randomUUID();
+        let value = '';
+        try {
+          if (type === 'image' || type === 'video' || type === 'audio') {
+            value = URL.createObjectURL(file);
+          }
+        } catch (e) {
+          // ignore
+        }
+        newItems.push({ id, type, value });
+        filesToUpload.push({ type, file, id });
+      }
+    });
+
+    if (newItems.length > 0) {
+      commitWorkflowChange((workflow) => [...workflow, ...newItems]);
+      scrollWorkflowToBottom();
+
+      filesToUpload.forEach(({ type, file, id }) => {
+        const fakeEvent = { target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>;
+        if (type === 'image') void handleImageUpload(fakeEvent, id);
+        else if (type === 'video') void handleVideoUpload(fakeEvent, id);
+        else if (type === 'audio') void handleAudioUpload(fakeEvent, id);
+      });
+    }
+  };
+
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept paste if user is typing in an input/textarea
+      const activeElement = document.activeElement as HTMLElement;
+      if (activeElement) {
+        const tagName = activeElement.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || activeElement.isContentEditable) {
+          return;
+        }
+      }
+
+      if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
+        e.preventDefault();
+        handleFilesDrop(Array.from(e.clipboardData.files));
+      } else {
+        const text = e.clipboardData?.getData('text/plain');
+        if (text) {
+          e.preventDefault();
+          addWorkflowItem('text', text);
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [handleFilesDrop, addWorkflowItem]);
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    if (e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    if (dragOverIndex !== index) setDragOverIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    if (e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const newWorkflow = [...(localProject.workflow || [])];
+    const [draggedItem] = newWorkflow.splice(draggedIndex, 1);
+    newWorkflow.splice(dropIndex, 0, draggedItem);
+    const reorderedWorkflow = newWorkflow.map((item, idx) => ({ ...item, order: idx }));
+    const updated = { ...localProject, workflow: reorderedWorkflow };
+    setLocalProject(updated);
+    onUpdate(updated);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target?.result as string);
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUploadingItemIds(prev => new Set(prev).add(id));
+      try {
+        const base64 = await readFileAsDataUrl(file);
+        const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
+        commitUploadedFile(
+          id,
+          { value: url, thumbnailUrl, optimizedUrl, size },
+          { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
+        );
+      } catch (err: any) {
+        console.error('Failed to upload image:', err);
+        toast.error(err.message || t('projectViewer.toasts.uploadImageFailed'));
+      } finally {
+        setUploadingItemIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingItemIds(prev => new Set(prev).add(id));
+    try {
+      const base64 = await readFileAsDataUrl(file);
+      const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveVideo(base64, localProject.id);
+      commitUploadedFile(
+        id,
+        { value: url, thumbnailUrl, optimizedUrl, size },
+        { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
+      );
+    } catch (err: any) {
+      console.error('Failed to upload video:', err);
+      toast.error(err.message || 'Failed to upload video');
+    } finally {
+      setUploadingItemIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingItemIds(prev => new Set(prev).add(id));
+    try {
+      const base64 = await readFileAsDataUrl(file);
+      const { key, url, size } = await saveAudio(base64, localProject.id);
+      commitUploadedFile(id, { value: url, size }, { value: key, size });
+    } catch (err: any) {
+      console.error('Failed to upload audio:', err);
+      toast.error(err.message || 'Failed to upload audio');
+    } finally {
+      setUploadingItemIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  /**
+   * ComfyUI drafts: each combination of the bound inputs becomes a job that
+   * carries the values it submits. With nothing bound the workflow still runs,
+   * once per job, each with fresh seeds.
+   */
+  const addComfyDraftsToQueue = async () => {
+    const comfyWorkflow = localProject.comfyWorkflow;
+    if (!comfyWorkflow) return;
+    const comfyItems = (localProject.workflow || []).filter((item) => item.comfyTarget);
+    const bindings = comfyItems.filter((item) => !item.disabled);
+    const remixes = Array.from(groupComfyBindings(comfyItems).values()).filter(isComfyRemix);
+    // A remix's items are workflow steps, so an empty text item holds the batch
+    // up as it does in a regular workflow. A typed input may be left empty.
+    const missing = [
+      ...bindings.filter((item) => item.type !== 'text' && !item.value.trim()),
+      ...remixes.flatMap((remix) => remix.filter((item) => item.type === 'text' && !item.value.trim())),
+    ];
+    if (missing.length > 0) {
+      setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: missing.length }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+    // With every item disabled a remix has nothing to join. A regular workflow
+    // in that state generates nothing, so stop here rather than quietly run the
+    // workflow's own value.
+    const disabledRemix = remixes.find((remix) => remix.every((item) => item.disabled));
+    if (disabledRemix) {
+      const target = disabledRemix[0].comfyTarget!;
+      setWorkflowError(t('projectViewer.comfy.remixAllDisabled', { input: target.input, node: target.nodeId }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+
+    setIsAddingDrafts(true);
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
+    try {
+      // The server builds drafts from the saved workflow, so save it first.
+      await apiUpdateProject(localProject.id, {
+        workflow: localProject.workflow,
+        format: localProject.format || 'png',
+        shuffle: localProject.shuffle,
+        lastQueueCount: queueCount,
+      });
+      setLocalProject({ ...localProject, lastQueueCount: queueCount });
+      const created = await generateDraftsOnServer();
+      if (created) await showNewDrafts();
+    } catch (error) {
+      console.error('Failed to add drafts:', error);
+      toast.error(t('projectViewer.toasts.addDraftsFailed'));
+    } finally {
+      setIsAddingDrafts(false);
+      setDraftsProgress(null);
+    }
+  };
+
+  /**
+   * Civitai drafts: each combination of the workflow becomes a job, as in an
+   * image project, and picks its checkpoint and LoRAs from the model items,
+   * its negative prompt from the items switched to it and its source image
+   * from the first image. The job keeps a copy of those and the project's
+   * sampling settings, so later changes leave drafted jobs alone.
+   */
+  const addCivitaiDraftsToQueue = async () => {
+    const providerId = localProject.providerId;
+    const workflow = localProject.workflow || [];
+    if (!providerId) return;
+    const showError = (message: string) => {
+      setWorkflowError(message);
+      setTimeout(() => setWorkflowError(null), 4000);
+    };
+    const emptyItems = workflow.filter((item) => !item.value.trim());
+    if (emptyItems.length > 0) {
+      showError(t('projectViewer.errors.missingWorkflowInfo', { count: emptyItems.length }));
+      return;
+    }
+    // A video engine brings its own model; an image needs a checkpoint.
+    const video = isCivitaiVideo(localProject.civitaiConfig);
+    if (!video && !civitaiModelItems(workflow, 'checkpoint').some((item) => !item.disabled && item.civitai?.options?.length)) {
+      showError(t('projectViewer.civitai.chooseCheckpointFirst'));
+      return;
+    }
+
+    setIsAddingDrafts(true);
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
+    try {
+      const format = video
+        ? 'mp4'
+        : localProject.format && ['png', 'jpeg', 'webp'].includes(localProject.format) ? localProject.format : 'png';
+      // The server builds drafts from the saved workflow, so save it first.
+      await apiUpdateProject(localProject.id, {
+        workflow,
+        providerId,
+        format,
+        shuffle: localProject.shuffle,
+        lastQueueCount: queueCount,
+      });
+      setLocalProject({ ...localProject, lastQueueCount: queueCount });
+      const created = await generateDraftsOnServer();
+      if (created) await showNewDrafts();
+    } catch (error) {
+      console.error('Failed to add drafts:', error);
+      toast.error(t('projectViewer.toasts.addDraftsFailed'));
+    } finally {
+      setIsAddingDrafts(false);
+      setDraftsProgress(null);
+    }
+  };
+
+  /** Explain why the server could not turn the workflow into drafts. */
+  const showDraftProblem = (problem: DraftProblem) => {
+    setWorkflowError(problem.code === 'civitai_text_only'
+      ? t('projectViewer.civitai.video.textOnlyHint', { engine: problem.engine })
+      : t('projectViewer.civitai.promptRequired'));
+    setTimeout(() => setWorkflowError(null), 4000);
+  };
+
+  /**
+   * Have the server build `queueCount` drafts from the saved project. Prompts
+   * past the model's limit are put to the user, and the same seed is sent
+   * again with their answer so the drafts stay the ones they were asked about.
+   * Returns how many drafts were created; 0 when cancelled or nothing to build.
+   */
+  const generateDraftsOnServer = async (): Promise<number> => {
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    const result = await generateProjectDrafts(localProject.id, { count: queueCount, seed });
+    if ('problem' in result) {
+      showDraftProblem(result.problem);
+      return 0;
+    }
+    if (!('promptLimit' in result)) return result.created;
+
+    const { limit, affectedCount, longestPromptLength } = result.promptLimit;
+    const decision = await new Promise<PromptLimitDecision>((resolve) => {
+      setPromptLimitDialog({
+        modelName: selectedModel?.name || t('projectViewer.settings.selectModel'),
+        affectedCount,
+        limitLabel: formatPromptLimit(limit),
+        longestPromptLabel: `${longestPromptLength.toLocaleString()} ${limit.unit}`,
+        resolve,
+      });
+    });
+    if (decision === 'cancel') return 0;
+
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'saving' });
+    const retried = await generateProjectDrafts(localProject.id, { count: queueCount, seed, promptLimitDecision: decision });
+    if ('problem' in retried) {
+      showDraftProblem(retried.problem);
+      return 0;
+    }
+    if ('promptLimit' in retried) throw new Error('Prompt limit decision was not applied');
+    return retried.created;
+  };
+
+  /** Read the jobs back and switch to the drafts. */
+  const showNewDrafts = async () => {
+    const jobsFetchToken = ++jobsFetchTokenRef.current;
+    const jobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+    if (jobsFetchTokenRef.current === jobsFetchToken) setLocalJobs(jobs);
+    setActiveTab('draft');
+    // Reveal the drafts we just created: mobile swaps to the jobs view, desktop
+    // leaves full screen (which keeps the jobs pane hidden).
+    setIsWorkflowExpanded(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setMobileView('jobs');
+    }
+  };
+
+  const addDraftsToQueue = async () => {
+    if (isComfyProject) {
+      await addComfyDraftsToQueue();
+      return;
+    }
+    if (isCivitaiProject) {
+      await addCivitaiDraftsToQueue();
+      return;
+    }
+    const emptyItems = (localProject.workflow || []).filter(item => !item.value.trim());
+    if (emptyItems.length > 0) {
+      setWorkflowError(t('projectViewer.errors.missingWorkflowInfo', { count: emptyItems.length }));
+      setTimeout(() => setWorkflowError(null), 4000);
+      return;
+    }
+    setIsAddingDrafts(true);
+    setDraftsProgress({ current: 0, total: queueCount, stage: 'composing' });
+
+    try {
+      // The server builds drafts from the saved project, so save it first.
+      await apiUpdateProject(localProject.id, {
+        workflow: localProject.workflow, providerId: selectedProviderId,
+        modelConfigId: selectedModelId,
+        aspectRatio: localProject.aspectRatio, quality: localProject.quality, background: localProject.background, format: localProject.format || 'png', shuffle: localProject.shuffle,
+        systemPrompt: localProject.systemPrompt, temperature: localProject.temperature, maxTokens: localProject.maxTokens,
+        duration: localProject.duration, resolution: localProject.resolution, sound: localProject.sound,
+        lastQueueCount: queueCount,
+      });
+      setLocalProject({ ...localProject, lastQueueCount: queueCount });
+      const created = await generateDraftsOnServer();
+      if (created) await showNewDrafts();
+    } catch (error) {
+      console.error('Failed to add drafts:', error);
+      toast.error(t('projectViewer.toasts.addDraftsFailed'));
+    } finally {
+      setIsAddingDrafts(false);
+      setDraftsProgress(null);
+    }
+  };
+
+  const toggleJobExpand = (jobId: string) => setExpandedJobId(prev => prev === jobId ? null : jobId);
+
+  const startDraftJobsAndOpenQueue = async (
+    request: { mode: 'allDrafts' } | { mode: 'selected'; jobIds: string[] },
+    expectedJobIds: string[],
+    errorLabel: string,
+  ) => {
+    isStartingDraftJobsRef.current = true;
+    try {
+      await apiStartProjectJobs(localProject.id, request);
+
+      // The start endpoint has committed the status transition and enqueued the
+      // work. Read it back before changing tabs so Queue never renders guessed
+      // client state.
+      ++jobsFetchTokenRef.current;
+      const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+      ++jobsFetchTokenRef.current;
+
+      const expectedJobIdSet = new Set(expectedJobIds);
+      const confirmedQueueJobIds = new Set(
+        confirmedJobs
+          .filter((job) => expectedJobIdSet.has(job.id) && ['pending', 'processing', 'failed'].includes(job.status))
+          .map((job) => job.id),
+      );
+
+      setLocalJobs(confirmedJobs);
+      setSelectedDraftIds((current) => {
+        const next = new Set(current);
+        for (const jobId of confirmedQueueJobIds) next.delete(jobId);
+        return next;
+      });
+
+      if (confirmedQueueJobIds.size !== expectedJobIdSet.size) {
+        toast.error(t('projectViewer.toasts.startedJobsNotVisible', {
+          defaultValue: 'Some submitted jobs are not visible in the queue yet.',
+        }));
+        return;
+      }
+
+      setActiveTab('queue');
+    } catch (error) {
+      console.error(errorLabel, error);
+      toast.error(error instanceof Error
+        ? error.message
+        : t('projectViewer.toasts.startJobsFailed', { defaultValue: 'Failed to start jobs' }));
+    } finally {
+      isStartingDraftJobsRef.current = false;
+    }
+  };
+
+  const runDraftJob = async (jobId: string) => {
+    const targetJob = localJobsRef.current.find((job) => job.id === jobId);
+    if (!targetJob || targetJob.status !== 'draft' || isStartingDraftJobsRef.current) return;
+
+    setStartingDraftJobIds((current) => new Set(current).add(jobId));
+    try {
+      await startDraftJobsAndOpenQueue(
+        { mode: 'selected', jobIds: [jobId] },
+        [jobId],
+        'Failed to run draft job:',
+      );
+    } finally {
+      setStartingDraftJobIds((current) => {
+        const next = new Set(current);
+        next.delete(jobId);
+        return next;
+      });
+    }
+  };
+
+  const runJob = async (jobId: string) => {
+    const targetJob = localJobsRef.current.find((job) => job.id === jobId);
+    if (!targetJob || !['failed', 'pending'].includes(targetJob.status) || isMutatingJobsRef.current) return;
+
+    isMutatingJobsRef.current = true;
+    setRetryingQueueJobIds((current) => new Set(current).add(jobId));
+    try {
+      await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds: [jobId] });
+      ++jobsFetchTokenRef.current;
+      const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+      ++jobsFetchTokenRef.current;
+      setLocalJobs(confirmedJobs);
+    } catch (e) {
+      console.error('Failed to retry job:', e);
+      toast.error(e instanceof Error ? e.message : t('projectViewer.toasts.startJobsFailed'));
+    } finally {
+      isMutatingJobsRef.current = false;
+      setRetryingQueueJobIds((current) => {
+        const next = new Set(current);
+        next.delete(jobId);
+        return next;
+      });
+    }
+  };
+
+  const runAllDrafts = async () => {
+    const previousJobs = localJobsRef.current;
+    const draftJobIds = previousJobs.filter((job) => job.status === 'draft').map((job) => job.id);
+    if (draftJobIds.length === 0 || isStartingDraftJobsRef.current) return;
+
+    setIsStartingDraftBatch(true);
+    try {
+      await startDraftJobsAndOpenQueue(
+        { mode: 'allDrafts' },
+        draftJobIds,
+        'Failed to run all drafts:',
+      );
+    } finally {
+      setIsStartingDraftBatch(false);
+    }
+  };
+
+  const runSelectedDrafts = async () => {
+    const previousJobs = localJobsRef.current;
+    const previousSelectedDraftIds = new Set(selectedDraftIds);
+    const jobIds = previousJobs
+      .filter(j => previousSelectedDraftIds.has(j.id) && j.status === 'draft')
+      .map(j => j.id);
+    if (jobIds.length === 0 || isStartingDraftJobsRef.current) return;
+
+    setIsStartingDraftBatch(true);
+    try {
+      await startDraftJobsAndOpenQueue(
+        { mode: 'selected', jobIds },
+        jobIds,
+        'Failed to run selected drafts:',
+      );
+    } finally {
+      setIsStartingDraftBatch(false);
+    }
+  };
+
+  const reconcileJobsAfterMutation = async (includeCompleted = false) => {
+    ++jobsFetchTokenRef.current;
+    if (includeCompleted) ++completedFetchTokenRef.current;
+
+    const [confirmedJobs, confirmedCompleted] = await Promise.all([
+      fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] }),
+      includeCompleted
+        ? fetchProjectCompletedJobs(localProject.id, {
+            page: completedPage,
+            limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+            sort: completedSort,
+          })
+        : Promise.resolve(null),
+    ]);
+
+    ++jobsFetchTokenRef.current;
+    setLocalJobs(confirmedJobs);
+
+    if (confirmedCompleted) {
+      ++completedFetchTokenRef.current;
+      let completedResult = confirmedCompleted;
+      if (completedPage > completedResult.pages) {
+        completedResult = await fetchProjectCompletedJobs(localProject.id, {
+          page: completedResult.pages,
+          limit: completedPageSize === 'all' ? 999999 : completedPageSize,
+          sort: completedSort,
+        });
+        setCompletedPage(completedResult.pages);
+      }
+      setCompletedJobs(completedResult.items);
+      setCompletedTotal(completedResult.total);
+      setCompletedPages(completedResult.pages);
+      completedLoadedKeyRef.current = null;
+      completedFetchedAtRef.current = Date.now();
+    }
+  };
+
+  const deleteJobsAndReconcile = async (jobIds: string[], includeCompleted = false) => {
+    if (jobIds.length === 0) return;
+    if (isMutatingJobsRef.current) {
+      const error = new Error(t('projectViewer.toasts.jobMutationInProgress', {
+        defaultValue: 'Another job update is still in progress.',
+      }));
+      toast.error(error.message);
+      throw error;
+    }
+    isMutatingJobsRef.current = true;
+    try {
+      await apiDeleteProjectJobs(localProject.id, jobIds);
+      await reconcileJobsAfterMutation(includeCompleted);
+    } catch (error) {
+      console.error('Failed to delete jobs:', error);
+      toast.error(error instanceof Error
+        ? error.message
+        : t('projectViewer.toasts.deleteJobsFailed', { defaultValue: 'Failed to delete jobs' }));
+      throw error;
+    } finally {
+      isMutatingJobsRef.current = false;
+    }
+  };
+
+  const deleteJob = async (jobId: string) => {
+    await deleteJobsAndReconcile([jobId], completedJobs.some((job) => job.id === jobId));
+  };
+
+  const deleteSelectedDrafts = async () => {
+    const jobIds = Array.from(selectedDraftIds);
+    await deleteJobsAndReconcile(jobIds);
+    setSelectedDraftIds(new Set());
+  };
+
+  const deleteAllDrafts = async () => {
+    const jobIds = localJobsRef.current.filter((job) => job.status === 'draft').map((job) => job.id);
+    await deleteJobsAndReconcile(jobIds);
+    setSelectedDraftIds(new Set());
+  };
+
+  const toggleDraftSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
+    setSelectedDraftIds(prev => {
+      const next = new Set(prev);
+      if (isShiftPressed && lastSelectedDraftId !== null) {
+        const lastIndex = scopeIds.indexOf(lastSelectedDraftId);
+        const currentIndex = scopeIds.indexOf(jobId);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          const shouldSelect = !prev.has(jobId);
+          for (let i = start; i <= end; i++) {
+            if (shouldSelect) next.add(scopeIds[i]);
+            else next.delete(scopeIds[i]);
+          }
+        }
+      } else {
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      }
+      return next;
+    });
+    setLastSelectedDraftId(jobId);
+  };
+
+  const toggleSelectAllDrafts = () => {
+    const draftIds = localJobs.filter(j => j.status === 'draft').map(j => j.id);
+    setSelectedDraftIds(selectedDraftIds.size === draftIds.length ? new Set() : new Set(draftIds));
+  };
+
+  const toggleQueueSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
+    setSelectedQueueIds(prev => {
+      const next = new Set(prev);
+      if (isShiftPressed && lastSelectedQueueId !== null) {
+        const lastIndex = scopeIds.indexOf(lastSelectedQueueId);
+        const currentIndex = scopeIds.indexOf(jobId);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          const shouldSelect = !prev.has(jobId);
+          for (let i = start; i <= end; i++) {
+            if (shouldSelect) next.add(scopeIds[i]);
+            else next.delete(scopeIds[i]);
+          }
+        }
+      } else {
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      }
+      return next;
+    });
+    setLastSelectedQueueId(jobId);
+  };
+
+  const toggleSelectAllQueue = () => {
+    const queueIds = localJobs.filter(j => j.status === 'pending' || j.status === 'processing' || j.status === 'failed').map(j => j.id);
+    setSelectedQueueIds(selectedQueueIds.size === queueIds.length ? new Set() : new Set(queueIds));
+  };
+
+  const retrySelectedQueue = async () => {
+    const jobIds = localJobsRef.current
+      .filter(j => selectedQueueIds.has(j.id) && (j.status === 'failed' || j.status === 'pending'))
+      .map(j => j.id);
+    if (jobIds.length === 0 || isMutatingJobsRef.current) return;
+
+    isMutatingJobsRef.current = true;
+    setIsRetryingQueueBatch(true);
+    try {
+      await apiStartProjectJobs(localProject.id, { mode: 'selected', jobIds });
+      ++jobsFetchTokenRef.current;
+      const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+      ++jobsFetchTokenRef.current;
+      setLocalJobs(confirmedJobs);
+      setSelectedQueueIds(new Set());
+    } catch (e) {
+      console.error('Failed to retry selected jobs:', e);
+      toast.error(e instanceof Error ? e.message : t('projectViewer.toasts.startJobsFailed'));
+    } finally {
+      isMutatingJobsRef.current = false;
+      setIsRetryingQueueBatch(false);
+    }
+  };
+
+  const deleteSelectedQueue = async () => {
+    const jobIds = Array.from(selectedQueueIds);
+    await deleteJobsAndReconcile(jobIds);
+    setSelectedQueueIds(new Set());
+  };
+
+  const clearAllFailed = async () => {
+    // Route through the dedicated server endpoint instead of the bulk
+    // PUT /api/projects/:id path. The bulk path forces saveJobs to consider
+    // every other job in localJobs, which is dangerous when localJobs is
+    // stale relative to in-flight jobs (it used to wipe taskId on
+    // 'processing' rows and strand them forever). The server endpoint deletes
+    // only failed rows and re-enqueues remaining pending jobs atomically.
+    if (!localJobsRef.current.some((job) => job.status === 'failed')) return;
+
+    isClearingFailedJobsRef.current = true;
+    let deleteCompleted = false;
+    try {
+      await clearFailedQueueJobs({ projectId: localProject.id });
+      deleteCompleted = true;
+
+      // Do not change the visible list until both the deletion and the
+      // authoritative follow-up read have completed. This intentionally favors
+      // correctness over an optimistic response for a destructive bulk action.
+      ++jobsFetchTokenRef.current;
+      const updatedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
+
+      // Make this confirmed read authoritative over any concurrent live refresh.
+      ++jobsFetchTokenRef.current;
+      setLocalJobs(updatedJobs);
+      setSelectedQueueIds(new Set());
+    } catch (e) {
+      if (deleteCompleted) {
+        console.error('Failed to refresh jobs after clearing failed jobs:', e);
+        toast.error(t('projectViewer.toasts.refreshAfterClearFailedJobsFailed', {
+          defaultValue: 'Failed jobs were cleared, but the list could not be refreshed.',
+        }));
+      } else {
+        console.error('Failed to clear failed jobs:', e);
+        toast.error(t('projectViewer.toasts.clearFailedJobsFailed', {
+          defaultValue: 'Failed to clear failed jobs. Please try again.',
+        }));
+      }
+      throw e;
+    } finally {
+      isClearingFailedJobsRef.current = false;
+    }
+  };
+
+  const toggleCompletedSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
+    setSelectedCompletedIds(prev => {
+      const next = new Set(prev);
+      if (isShiftPressed && lastSelectedCompletedId !== null) {
+        const lastIndex = scopeIds.indexOf(lastSelectedCompletedId);
+        const currentIndex = scopeIds.indexOf(jobId);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          const shouldSelect = !prev.has(jobId);
+          for (let i = start; i <= end; i++) {
+            if (shouldSelect) next.add(scopeIds[i]);
+            else next.delete(scopeIds[i]);
+          }
+        }
+      } else {
+        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+      }
+      return next;
+    });
+    setLastSelectedCompletedId(jobId);
+  };
+
+  const toggleSelectAllCompleted = () => {
+    const completedIds = completedJobs.map(j => j.id);
+    setSelectedCompletedIds(selectedCompletedIds.size === completedIds.length ? new Set() : new Set(completedIds));
+  };
+
+  const deleteSelectedCompleted = async () => {
+    const idsToDelete = Array.from(selectedCompletedIds);
+    if (idsToDelete.length === 0) return;
+    await deleteJobsAndReconcile(idsToDelete, true);
+    setSelectedCompletedIds(new Set());
+  };
+
+  const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => {
+    setSelectedAlbumIds(prev => {
+      const next = new Set(prev);
+      const scopedIds = scopeIds !== undefined ? scopeIds : localAlbum.map(item => item.id);
+      if (isShiftPressed && lastSelectedAlbumId && next.has(lastSelectedAlbumId)) {
+        const lastIndex = scopedIds.findIndex(itemId => itemId === lastSelectedAlbumId);
+        const currentIndex = scopedIds.findIndex(itemId => itemId === id);
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+          for (let i = start; i <= end; i++) next.add(scopedIds[i]);
+        }
+      } else {
+        if (next.has(id)) next.delete(id); else next.add(id);
+      }
+      return next;
+    });
+    setLastSelectedAlbumId(id);
+  };
+
+  const toggleSelectAllAlbum = (scopeIds?: string[]) => {
+    const albumIds = scopeIds !== undefined ? scopeIds : localAlbum.map(item => item.id);
+    const allSelected = albumIds.length > 0 && albumIds.every(id => selectedAlbumIds.has(id));
+    setSelectedAlbumIds(prev => {
+      const next = new Set(prev);
+      if (allSelected) {
+        albumIds.forEach(id => next.delete(id));
+      } else {
+        albumIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  /**
+   * Take items that have already left the album — deleted, or moved somewhere
+   * else — off the cached page, its counts and the selection, without waiting
+   * on a refetch (and a fresh round of signed image URLs).
+   */
+  const removeAlbumItemsLocally = (items: AlbumItem[]) => {
+    const itemIds = items.map(i => i.id);
+    const query = liveQueryRef.current;
+    const itemIdsSet = new Set(itemIds);
+
+    ++albumFetchTokenRef.current;
+    setLocalAlbum((current) => current.filter((item) => !itemIdsSet.has(item.id)));
+    setAlbumPreviewItems((current) => current.filter((item) => !itemIdsSet.has(item.id)));
+
+    const nextAlbumTotal = Math.max(0, albumTotal - itemIds.length);
+    const pageSize = query.albumPageSize === 'all' ? Math.max(nextAlbumTotal, 1) : query.albumPageSize;
+    const nextAlbumPages = Math.max(1, Math.ceil(nextAlbumTotal / pageSize));
+    setAlbumTotal(nextAlbumTotal);
+    setAlbumPages(nextAlbumPages);
+
+    const removedSize = items.reduce((total, item) => total + Number(item.size || 0), 0);
+    setAlbumTotalSize((current) => Math.max(0, current - removedSize));
+
+    const removedAspectRatios = items.reduce<Record<string, number>>((counts, item) => {
+      const ratio = item.aspectRatio?.trim();
+      if (ratio) counts[ratio] = (counts[ratio] || 0) + 1;
+      return counts;
+    }, {});
+    if (Object.keys(removedAspectRatios).length > 0) {
+      setAlbumAspectRatioCounts((current) => current
+        .map(({ ratio, count }) => ({
+          ratio,
+          count: Math.max(0, count - (removedAspectRatios[ratio] || 0)),
+        }))
+        .filter(({ count }) => count > 0));
+    }
+
+    albumLoadedKeyRef.current = query.albumQueryKey;
+    albumFetchedAtRef.current = Date.now();
+
+    setSelectedAlbumIds(prev => {
+      const next = new Set(prev);
+      itemIdsSet.forEach(id => next.delete(id));
+      return next;
+    });
+
+    if (query.albumPage > nextAlbumPages) {
+      albumLoadedKeyRef.current = null;
+      updateAlbumParams({ page: nextAlbumPages });
+    }
+  };
+
+  const deleteAlbumItems = async (items: AlbumItem[]) => {
+    if (items.length === 0) return;
+
+    isDeletingAlbumItemsRef.current = true;
+    try {
+      const itemIds = items.map(i => i.id);
+      if (itemIds.length === 1) await moveToTrash(localProject.id, itemIds[0]); else await moveToTrashBatch(localProject.id, itemIds);
+      removeAlbumItemsLocally(items);
+    } catch (e: any) {
+      console.error('Failed to move items to trash:', e);
+      toast.error(`Failed to move items to trash: ${e.message}`);
+      throw e;
+    } finally {
+      isDeletingAlbumItemsRef.current = false;
+    }
+  };
+
+  /**
+   * Items moved to a library or another project have left this album. They
+   * come off the page at once; the refresh behind it then brings the counts,
+   * the next page's items and the completed jobs that left with them in line.
+   */
+  const handleAlbumItemsMoved = (items: AlbumItem[]) => {
+    if (items.length === 0) return;
+    removeAlbumItemsLocally(items);
+    scheduleProjectLiveRefresh(0);
+  };
+
+  const updateLightboxAfterAlbumDelete = (deletedItems: AlbumItem[]) => {
+    const deletedItemIds = new Set(deletedItems.map((item) => item.id));
+    const deletedImageUrls = new Set(deletedItems.map((item) => apiImageDisplayUrl(item.optimizedUrl || item.imageUrl)));
+
+    setLightboxData((current) => {
+      if (!current) return current;
+
+      const nextEntries = current.images
+        .map((image, index) => ({ image, albumItemId: current.albumItemIds?.[index] }))
+        .filter(({ image, albumItemId }) => (
+          albumItemId
+            ? !deletedItemIds.has(albumItemId)
+            : !deletedImageUrls.has(image)
+        ));
+
+      if (nextEntries.length === current.images.length) return current;
+      if (nextEntries.length === 0) return null;
+
+      return {
+        ...current,
+        images: nextEntries.map((entry) => entry.image),
+        albumItemIds: current.albumItemIds ? nextEntries.map((entry) => entry.albumItemId || '') : undefined,
+        index: Math.min(current.index, nextEntries.length - 1),
+      };
+    });
+  };
+
+  const renameAlbumItem = async (itemId: string, filename: string) => {
+    const updatedItem = await apiRenameAlbumItem(localProject.id, itemId, filename);
+    setLocalAlbum((prev) => prev.map((item) => (item.id === itemId ? { ...item, ...updatedItem } : item)));
+    return updatedItem;
+  };
+
+  const updateAlbumItemTags = async (itemId: string, tags: string[]) => {
+    const updatedItem = await apiUpdateAlbumItemTags(localProject.id, itemId, tags);
+    setLocalAlbum((prev) => prev.map((item) => (item.id === itemId ? { ...item, ...updatedItem } : item)));
+    // The facet list is album-wide, so a single item's edit can add or retire a
+    // tag for the whole project — refresh it rather than recomputing locally.
+    void fetchAlbumTagCounts(localProject.id).then(setAlbumTagCounts).catch(console.error);
+    return updatedItem;
+  };
+
+  const batchUpdateAlbumItemTags = async (options: Parameters<typeof apiBatchUpdateAlbumTags>[1]) => {
+    const result = await apiBatchUpdateAlbumTags(localProject.id, options);
+    setAlbumTagCounts(result.tagCounts || []);
+    // A batch can move items in or out of an active tag filter, so reload the
+    // page rather than patching rows in place.
+    const token = ++albumFetchTokenRef.current;
+    await loadAlbumPage(token, false);
+    return result;
+  };
+
+  const draftJobs = localJobs.filter(j => j.status === 'draft');
+  const queueJobs = localJobs.filter(j => ['pending', 'processing', 'failed'].includes(j.status));
+  const albumItems = localAlbum;
+  const isArchived = localProject.status === 'archived';
+
+  const handleToggleArchive = async () => {
+    const nextStatus: 'active' | 'archived' = isArchived ? 'active' : 'archived';
+    const updated = { ...localProject, status: nextStatus };
+    setIsTogglingArchive(true);
+    try {
+      await apiUpdateProject(localProject.id, { status: nextStatus });
+      setLocalProject(updated);
+      toast.success(
+        nextStatus === 'archived'
+          ? t('projectViewer.toasts.archived', { name: localProject.name })
+          : t('projectViewer.toasts.unarchived', { name: localProject.name })
+      );
+      onUpdate(updated);
+    } catch (e) {
+      console.error('Failed to toggle archive status:', e);
+      toast.error(t('projectViewer.toasts.archiveFailed'));
+    } finally {
+      setIsTogglingArchive(false);
+    }
+  };
+
+  // Whether disabled workflow items are shown is a per-project preference stored on
+  // the project, so hiding them on one device carries over to the next. Missing means
+  // "show" — that was the behaviour before the preference was persisted.
+  const showDisabledItems = localProject.showDisabledItems ?? true;
+
+  const handleToggleShowDisabledItems = useCallback(async () => {
+    const previous = showDisabledItems;
+    const next = !previous;
+    // Applied optimistically: it only filters the list, so waiting on the write
+    // would make the menu feel unresponsive.
+    setLocalProject((prev) => ({ ...prev, showDisabledItems: next }));
+    try {
+      // Written on its own rather than through onUpdate, which re-sends the whole
+      // workflow — far too much traffic for flipping a view filter.
+      await apiUpdateProject(localProject.id, { showDisabledItems: next });
+    } catch (e) {
+      console.error('Failed to save disabled-item visibility:', e);
+      setLocalProject((prev) => ({ ...prev, showDisabledItems: previous }));
+      toast.error(t('projectViewer.toasts.disabledVisibilityFailed'));
+    }
+  }, [showDisabledItems, localProject.id, t]);
+
+  // Pressing H toggles the disabled-item filter, mirroring the workflow menu entry.
+  // Ignored while typing, while a modifier is held (so browser and OS shortcuts still
+  // work), and while a modal, lightbox, or drawer is open — those cover the workflow
+  // list and some carry single-letter shortcuts of their own.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'h' && e.key !== 'H') return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
+
+      const active = (e.target as HTMLElement | null) ?? (document.activeElement as HTMLElement | null);
+      if (active) {
+        const tagName = active.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || active.isContentEditable) return;
+      }
+
+      // Dialogs, sheets and the lightbox are modal layers; any one of them sits on top.
+      if (document.querySelector('[aria-modal="true"], .m3-dialog-root')) return;
+
+      // No-op with nothing to hide, matching the menu entry being disabled then.
+      if (!(localProject.workflow || []).some((item) => item.disabled)) return;
+
+      e.preventDefault();
+      void handleToggleShowDisabledItems();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [localProject.workflow, handleToggleShowDisabledItems]);
+
+  const handleToggleItemDisable = (id: string) => {
+    const updated = {
+      ...localProject,
+      workflow: (localProject.workflow || []).map(item =>
+        item.id === id ? { ...item, disabled: !item.disabled } : item
+      )
+    };
+    setLocalProject(updated);
+    onUpdate(updated);
+  };
+
+  const handleStartAssistantChat = () => {
+    const projectContext: BoundContext = {
+      id: localProject.id,
+      name: localProject.name,
+      type: 'project',
+      subType: localProject.type || 'image',
+    };
+
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', {
+      state: {
+        draftBoundContexts: [projectContext],
+      },
+    });
+  };
+
+  const albumTabLabel = localProject.type === 'text' ? t('projectViewer.tabs.texts') : localProject.type === 'audio' ? t('projectViewer.tabs.audios') : t('projectViewer.tabs.album');
+  const tabLabel = (label: string, count: number) => (
+    <span className="v2-tab-label">
+      {label}
+      <span className="v2-tab-label__count">{count}</span>
+    </span>
+  );
+  const workflowItem = (id: string | null) => (localProject.workflow || []).find((i) => i.id === id);
+
+  return (
+    <div className="v2-project" data-mobile-view={mobileView} data-expanded={isWorkflowExpanded ? '' : undefined} data-density="compact">
+      <ModelSelectorDialog
+        open={isModelSelectorOpen}
+        onClose={() => setIsModelSelectorOpen(false)}
+        providers={providers}
+        selectedProviderId={selectedProviderId}
+        selectedModelId={selectedModelId}
+        projectType={localProject.type || 'image'}
+        onSelect={(providerId, modelId) => {
+          setSelectedProviderId(providerId);
+          setSelectedModelId(modelId);
+          setIsModelSelectorOpen(false);
+          const updated = { ...localProject, providerId };
+          setLocalProject(updated);
+          onUpdate(updated);
+        }}
+      />
+
+      <Button variant="filled" size="sm" icon={mobileView === 'workflow' ? 'view_list' : 'account_tree'} className="v2-project__mobile-toggle" onClick={() => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow')}>
+        {mobileView === 'workflow' ? t('projectViewer.main.mobileJobs') : t('projectViewer.common.back')}
+      </Button>
+
+      <aside className="v2-project__workflow">
+        <WorkflowPanel
+          isLoading={isLoadingWorkflow}
+          // Whether a Civitai project is past switching between images and videos; counted as yes until its first load is in.
+          hasHistory={isLoadingJobs || localJobs.length > 0 || completedTotal > 0 || albumTotal > 0 || albumPreviewItems.length > 0}
+          project={project}
+          localProject={localProject}
+          libraries={liveLibraries}
+          providers={providers}
+          workflowListRef={workflowListRef}
+          draggedIndex={draggedIndex}
+          dragOverIndex={dragOverIndex}
+          selectedProviderId={selectedProviderId}
+          selectedModelId={selectedModelId}
+          isSettingsCollapsed={isSettingsCollapsed}
+          isExpanded={isWorkflowExpanded}
+          onToggleExpand={() => setIsWorkflowExpanded((prev) => !prev)}
+          queueCount={queueCount}
+          workflowError={workflowError}
+          uploadingItemIds={uploadingItemIds}
+          isAddingDrafts={isAddingDrafts}
+          draftsProgress={draftsProgress}
+          combinationsCount={combinationsCount}
+          onNavigateToEdit={() => setProjectFormMode('edit')}
+          onNavigateToOrphans={() => navigate(`/project/${project.id}/orphans`)}
+          onNavigateToDuplicate={() => setProjectFormMode('duplicate')}
+          // A ComfyUI workflow's items are bound to its own graph's nodes, so they mean nothing elsewhere.
+          onImportWorkflow={isComfyProject ? undefined : () => setIsImportingWorkflow(true)}
+          onStartAssistantChat={handleStartAssistantChat}
+          onShowDeleteProject={() => setShowDeleteProjectModal(true)}
+          onToggleArchive={handleToggleArchive}
+          isTogglingArchive={isTogglingArchive}
+          isArchived={isArchived}
+          onAddWorkflowItem={addWorkflowItem}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onDragEnd={() => {
+            setDraggedIndex(null);
+            setDragOverIndex(null);
+          }}
+          onRemoveItem={(id) => setItemToRemoveId(id)}
+          onEditItem={setEditingItem}
+          onEditImage={setEditingImageItem}
+          onPreviewLibrary={(lib, workflowItemId) => void openLibraryPreview(lib, workflowItemId)}
+          onImageUpload={handleImageUpload}
+          onVideoUpload={handleVideoUpload}
+          onAudioUpload={handleAudioUpload}
+          onLightbox={(images, index) => setLightboxData({ images, index })}
+          onUpdateTags={updateWorkflowItemTags}
+          onSelectFromLibrary={openWorkflowItemLibrarySelector}
+          onChangeLibrary={openWorkflowLibraryChangeSelector}
+          onSaveToLibrary={openSaveWorkflowItemToLibrary}
+          setLocalProject={setLocalProject}
+          onUpdate={onUpdate}
+          setIsSettingsCollapsed={setIsSettingsCollapsed}
+          setQueueCount={setQueueCount}
+          setIsModelSelectorOpen={setIsModelSelectorOpen}
+          onAddDraftsToQueue={addDraftsToQueue}
+          onToggleDisable={handleToggleItemDisable}
+          showDisabledItems={showDisabledItems}
+          onToggleShowDisabledItems={handleToggleShowDisabledItems}
+          onFilesDrop={handleFilesDrop}
+          isRefreshingLibraries={isRefreshingLibraries}
+          libraryRefreshError={libraryRefreshError}
+          onRefreshLibraries={refreshLibrarySummaries}
+        />
+      </aside>
+
+      <section className="v2-project__results v2-pane">
+        <Tabs variant="secondary" value={activeTab} onChange={(v) => setActiveTab(v as typeof activeTab)} scrollable className="v2-project__tabs">
+          <Tab value="draft" icon="edit_note" inlineIcon label={tabLabel(t('projectViewer.tabs.draft'), draftJobs.length)} />
+          <Tab value="queue" icon="pending_actions" inlineIcon label={tabLabel(t('projectViewer.tabs.queue'), queueJobs.length)} />
+          <Tab value="completed" icon="task_alt" inlineIcon label={tabLabel(t('projectViewer.tabs.done'), completedTotal)} />
+          <Tab value="album" icon="photo_library" inlineIcon label={tabLabel(albumTabLabel, albumTotal)} />
+        </Tabs>
+        <div ref={tabContentRef} className="v2-project__scroll">
+          {(activeTab === 'draft' || activeTab === 'queue') && isLoadingJobs && <LoadingState minHeight={240} />}
+          {activeTab === 'draft' && !isLoadingJobs && (
+            <DraftsTab
+              draftJobs={draftJobs}
+              selectedDraftIds={selectedDraftIds}
+              toggleSelectAllDrafts={toggleSelectAllDrafts}
+              setShowDeleteSelectedModal={setShowDeleteSelectedModal}
+              runSelectedDrafts={runSelectedDrafts}
+              setShowDeleteAllDraftsModal={setShowDeleteAllDraftsModal}
+              runAllDrafts={runAllDrafts}
+              isStartingDraftBatch={isStartingDraftBatch}
+              startingDraftJobIds={startingDraftJobIds}
+              expandedJobId={expandedJobId}
+              toggleJobExpand={toggleJobExpand}
+              toggleDraftSelection={toggleDraftSelection}
+              getProviderName={getProviderName}
+              getModelName={getModelName}
+              runJob={runDraftJob}
+              setJobToDeleteId={setJobToDeleteId}
+              setLightboxData={setLightboxData}
+              albumItems={albumPreviewItems}
+              onSwitchToAlbum={() => setActiveTab('album')}
+              projectType={mediaProjectType}
+              projectName={localProject.name}
+              onReuse={handleReuseWorkflow}
+            />
+          )}
+          {activeTab === 'queue' && !isLoadingJobs && (
+            <QueueTab
+              queueJobs={queueJobs}
+              selectedQueueIds={selectedQueueIds}
+              toggleSelectAllQueue={toggleSelectAllQueue}
+              toggleQueueSelection={toggleQueueSelection}
+              retrySelectedQueue={retrySelectedQueue}
+              deleteSelectedQueue={() => setShowDeleteQueueSelectedModal(true)}
+              isRetryingQueueBatch={isRetryingQueueBatch}
+              retryingQueueJobIds={retryingQueueJobIds}
+              clearAllFailed={() => setShowClearAllFailedModal(true)}
+              expandedJobId={expandedJobId}
+              toggleJobExpand={toggleJobExpand}
+              getProviderName={getProviderName}
+              getModelName={getModelName}
+              runJob={runJob}
+              setJobToDeleteId={setJobToDeleteId}
+              setLightboxData={setLightboxData}
+              onReuse={handleReuseWorkflow}
+            />
+          )}
+          {activeTab === 'completed' && isLoadingCompleted && <LoadingState minHeight={240} />}
+          {activeTab === 'completed' && !isLoadingCompleted && (
+            <CompletedTab
+              completedJobs={completedJobs}
+              expandedJobId={expandedJobId}
+              toggleJobExpand={toggleJobExpand}
+              selectedCompletedIds={selectedCompletedIds}
+              toggleCompletedSelection={toggleCompletedSelection}
+              toggleSelectAllCompleted={toggleSelectAllCompleted}
+              setShowDeleteSelectedModal={setShowDeleteCompletedSelectedModal}
+              getProviderName={getProviderName}
+              getModelName={getModelName}
+              setJobToDeleteId={setJobToDeleteId}
+              setLightboxData={setLightboxData}
+              projectType={mediaProjectType}
+              onReuse={handleReuseWorkflow}
+              page={completedPage}
+              pageSize={completedPageSize}
+              total={completedTotal}
+              pages={completedPages}
+              sort={completedSort}
+              onPageChange={handleCompletedPageChange}
+              onPageSizeChange={handleCompletedPageSizeChange}
+              onSortChange={handleCompletedSortChange}
+            />
+          )}
+          {/* The album stays mounted while it reloads; a spinner covers it only when nothing is underneath. */}
+          {activeTab === 'album' && isLoadingAlbum && albumItems.length === 0 && (
+            <div className="v2-project__overlay">
+              <LoadingIndicator />
+            </div>
+          )}
+          {activeTab === 'album' && (
+            <AlbumTab
+              projectId={localProject.id}
+              projectName={localProject.name}
+              albumItems={albumItems}
+              selectedAlbumIds={selectedAlbumIds}
+              toggleSelectAllAlbum={toggleSelectAllAlbum}
+              toggleAlbumSelection={toggleAlbumSelection}
+              setAlbumItemsToDelete={setAlbumItemsToDelete}
+              setShowDeleteAlbumModal={setShowDeleteAlbumModal}
+              getProviderName={getProviderName}
+              getModelName={getModelName}
+              setLightboxData={setLightboxData}
+              onRenameAlbumItem={renameAlbumItem}
+              onReuseWorkflow={handleReuseAlbumWorkflow}
+              reusingAlbumItemId={reuseConfigSourceId}
+              onExportStarted={() => navigate('/exports')}
+              onAlbumItemsMoved={handleAlbumItemsMoved}
+              projectType={mediaProjectType}
+              sourceProjectType={localProject.type || 'image'}
+              page={albumPage}
+              pageSize={albumPageSize}
+              total={albumTotal}
+              pages={albumPages}
+              totalSize={albumTotalSize}
+              aspectRatioCounts={albumAspectRatioCounts}
+              sort={albumSort}
+              selectedAspectRatios={albumSelectedRatios}
+              tagCounts={albumTagCounts}
+              selectedTags={albumSelectedTags}
+              tagMatch={albumTagMatch}
+              search={albumSearch}
+              isLoading={isLoadingAlbum}
+              onSearchChange={handleAlbumSearchChange}
+              onPageChange={handleAlbumPageChange}
+              onPageSizeChange={handleAlbumPageSizeChange}
+              onSortChange={handleAlbumSortChange}
+              onSelectedAspectRatiosChange={handleAlbumSelectedRatiosChange}
+              onSelectedTagsChange={handleAlbumSelectedTagsChange}
+              onTagMatchChange={handleAlbumTagMatchChange}
+              onUpdateAlbumItemTags={updateAlbumItemTags}
+              onBatchUpdateAlbumTags={batchUpdateAlbumItemTags}
+            />
+          )}
+        </div>
+      </section>
+
+      <ConfirmDialog
+        open={configToReuse !== null}
+        title={t('projectViewer.confirm.reuseConfiguration.title')}
+        message={t(configToReuse?.workflowReconstructed ? 'projectViewer.confirm.reuseConfiguration.messageReconstructed' : 'projectViewer.confirm.reuseConfiguration.message')}
+        confirmLabel={t('projectViewer.confirm.reuseConfiguration.confirm')}
+        onClose={() => setConfigToReuse(null)}
+        onConfirm={confirmReuseWorkflow}
+      />
+      <ConfirmDialog
+        open={itemToRemoveId !== null}
+        tone="danger"
+        title={t('projectViewer.confirm.removeWorkflowItem.title')}
+        message={t('projectViewer.confirm.removeWorkflowItem.message')}
+        confirmLabel={t('projectViewer.confirm.removeWorkflowItem.confirm')}
+        onClose={() => setItemToRemoveId(null)}
+        onConfirm={confirmRemoveWorkflowItem}
+      />
+      <PromptEditDialog
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSave={(value) => {
+          if (editingItem) updateWorkflowItem(editingItem.id, value);
+          setEditingItem(null);
+        }}
+      />
+      {editingImageItem && editingImageItem.value && (
+        <ImageEditorDialog
+          isOpen
+          onClose={() => setEditingImageItem(null)}
+          imageUrl={apiImageDisplayUrl(editingImageItem.value)}
+          onSave={async (base64) => {
+            const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
+            commitUploadedFile(editingImageItem.id, { value: url, thumbnailUrl, optimizedUrl, size }, { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size });
+            setEditingImageItem(null);
+          }}
+        />
+      )}
+      <PromptLimitDialog
+        open={promptLimitDialog !== null}
+        modelName={promptLimitDialog?.modelName || ''}
+        affectedCount={promptLimitDialog?.affectedCount || 0}
+        limitLabel={promptLimitDialog?.limitLabel || ''}
+        longestPromptLabel={promptLimitDialog?.longestPromptLabel || ''}
+        onCancel={() => {
+          promptLimitDialog?.resolve('cancel');
+          setPromptLimitDialog(null);
+        }}
+        onKeep={() => {
+          promptLimitDialog?.resolve('keep');
+          setPromptLimitDialog(null);
+        }}
+        onTruncate={() => {
+          promptLimitDialog?.resolve('truncate');
+          setPromptLimitDialog(null);
+        }}
+      />
+      <ConfirmDialog open={showDeleteSelectedModal} tone="danger" title={t('projectViewer.confirm.deleteSelectedDrafts.title')} message={t('projectViewer.confirm.deleteSelectedDrafts.message', { count: selectedDraftIds.size })} confirmLabel={t('projectViewer.confirm.deleteSelectedDrafts.confirm')} onClose={() => setShowDeleteSelectedModal(false)} onConfirm={deleteSelectedDrafts} />
+      <ConfirmDialog open={showDeleteAllDraftsModal} tone="danger" title={t('projectViewer.confirm.deleteAllDrafts.title')} message={t('projectViewer.confirm.deleteAllDrafts.message', { count: draftJobs.length })} confirmLabel={t('projectViewer.confirm.deleteAllDrafts.confirm')} onClose={() => setShowDeleteAllDraftsModal(false)} onConfirm={deleteAllDrafts} />
+      {projectFormMode && (
+        <ProjectFormDialog
+          projectId={projectFormMode === 'edit' ? localProject.id : undefined}
+          copyFromId={projectFormMode === 'duplicate' ? localProject.id : undefined}
+          onClose={() => setProjectFormMode(null)}
+          onSaved={(saved) => {
+            setProjectFormMode(null);
+            if (saved.isNew) {
+              navigate(`/project/${saved.id}`);
+              return;
+            }
+            setLocalProject((prev) => ({ ...prev, name: saved.name, description: saved.description, prefix: saved.prefix }));
+          }}
+        />
+      )}
+      <ConfirmDialog open={showDeleteProjectModal} tone="danger" title={t('projectViewer.confirm.deleteProject.title')} message={t('projectViewer.confirm.deleteProject.message', { name: localProject.name })} confirmLabel={t('projectViewer.confirm.deleteProject.confirm')} onClose={() => setShowDeleteProjectModal(false)} onConfirm={onDelete} />
+      <ConfirmDialog
+        open={jobToDeleteId !== null}
+        tone="danger"
+        title={t('projectViewer.confirm.deleteJob.title')}
+        message={t('projectViewer.confirm.deleteJob.message')}
+        confirmLabel={t('projectViewer.confirm.deleteJob.confirm')}
+        onClose={() => setJobToDeleteId(null)}
+        onConfirm={async () => {
+          if (jobToDeleteId) {
+            await deleteJob(jobToDeleteId);
+            setJobToDeleteId(null);
+          }
+        }}
+      />
+      <LibrarySelectionDialog
+        open={showLibrarySelector || changingLibraryItemId !== null || savingLibraryItemId !== null}
+        onClose={() => {
+          setShowLibrarySelector(false);
+          setChangingLibraryItemId(null);
+          setSavingLibraryItemId(null);
+        }}
+        onSelect={(libraryId) => {
+          if (changingLibraryItemId) handleWorkflowLibraryChange(changingLibraryItemId, libraryId);
+          else if (savingLibraryItemId) void handleSaveWorkflowItemToLibrary(libraryId);
+          else handleLibrarySelect(libraryId);
+        }}
+        libraries={(() => {
+          if (savingLibraryItemId) {
+            const type = workflowItem(savingLibraryItemId)?.type === 'image' ? 'image' : 'text';
+            return librarySummaries.filter((library) => library.type === type);
+          }
+          if (isCivitaiProject) return librarySummaries.filter((library) => library.type === 'text' || library.type === 'image');
+          return isAudioProject ? librarySummaries.filter((library) => library.type === 'text') : librarySummaries;
+        })()}
+        selectedLibraryIds={savingLibraryItemId ? [] : (localProject.workflow || []).filter((item) => item.type === 'library').map((item) => item.value)}
+        isLoading={isRefreshingLibraries || isSavingToLibrary}
+        error={libraryRefreshError}
+        title={savingLibraryItemId ? t('projectViewer.saveToLibrarySelection.title', { defaultValue: 'Save to Library' }) : undefined}
+        description={savingLibraryItemId ? t('projectViewer.saveToLibrarySelection.description', { defaultValue: 'Choose a library to save this item to' }) : undefined}
+      />
+      <MediaPicker
+        isOpen={!!selectingLibraryForItemId}
+        title="Pick Workflow Item"
+        allowedTypes={[workflowPickerType]}
+        defaultSourceKind="library"
+        multiple={false}
+        enableImageVersionSelection
+        memoryKey={`workflow-item:${workflowPickerType}`}
+        onClose={() => setSelectingLibraryForItemId(null)}
+        onConfirm={(items: UniversalPickedItem[]) => {
+          const picked = items[0];
+          if (!selectingLibraryForItemId || !picked) return;
+          updateWorkflowItem(selectingLibraryForItemId, picked.value, picked.thumbnailUrl, picked.optimizedUrl, picked.size);
+          setSelectingLibraryForItemId(null);
+        }}
+      />
+      <MediaPicker
+        isOpen={isImportingWorkflow}
+        title={t('projectViewer.main.importWorkflowTitle')}
+        allowedTypes={[mediaProjectType as LibraryType]}
+        // Only the same kind of project: a Civitai workflow is no use to a regular image project, nor the reverse.
+        projectTypes={[localProject.type || 'image']}
+        sourceKinds={['album']}
+        defaultSourceKind="album"
+        multiple={false}
+        memoryKey={`workflow-import:${localProject.type || 'image'}:${mediaProjectType}`}
+        onClose={() => setIsImportingWorkflow(false)}
+        onConfirm={handleImportWorkflow}
+      />
+      <LibraryPreviewDialog
+        library={previewingLibrary}
+        selectedTags={workflowItem(previewingWorkflowItemId)?.selectedTags || []}
+        onUpdateTags={(tags) => {
+          if (previewingWorkflowItemId) updateWorkflowItemTags(previewingWorkflowItemId, tags);
+        }}
+        tagMatchMode={workflowItem(previewingWorkflowItemId)?.tagMatchMode || 'or'}
+        onUpdateTagMatchMode={(mode) => {
+          if (previewingWorkflowItemId) updateWorkflowItemTagMatchMode(previewingWorkflowItemId, mode);
+        }}
+        isSelectionMode={!!selectingLibraryForItemId}
+        onSelectItem={(content) => {
+          if (selectingLibraryForItemId) {
+            updateWorkflowItem(selectingLibraryForItemId, content);
+            setSelectingLibraryForItemId(null);
+            setPreviewingLibrary(null);
+            setPreviewingWorkflowItemId(null);
+          }
+        }}
+        isLoading={isLoadingPreviewLibrary}
+        onClose={() => {
+          ++libraryPreviewRequestRef.current;
+          setIsLoadingPreviewLibrary(false);
+          setPreviewingLibrary(null);
+          setPreviewingWorkflowItemId(null);
+        }}
+      />
+      {lightboxData && (
+        <Lightbox
+          images={lightboxData.images}
+          startIndex={lightboxData.index}
+          onClose={() => setLightboxData(null)}
+          onDelete={
+            lightboxData.albumItemIds
+              ? (index) => {
+                  const albumItemId = lightboxData.albumItemIds?.[index];
+                  const item = albumItemId ? localAlbumRef.current.find((i) => i.id === albumItemId) : undefined;
+                  if (item) {
+                    setAlbumItemsToDelete([item]);
+                    setShowDeleteAlbumModal(true);
+                  }
+                }
+              : lightboxData.onDelete
+          }
+          onReuse={
+            lightboxData.albumItemIds
+              ? (index) => {
+                  const albumItemId = lightboxData.albumItemIds?.[index];
+                  const item = albumItemId ? localAlbumRef.current.find((i) => i.id === albumItemId) : undefined;
+                  if (item) handleReuseAlbumWorkflow(item);
+                }
+              : undefined
+          }
+          onIndexChange={(index) => {
+            setLightboxData((current) => (current && current.index !== index ? { ...current, index } : current));
+            lightboxData.onIndexChange?.(index);
+          }}
+        />
+      )}
+      <ConfirmDialog
+        open={showDeleteAlbumModal}
+        tone="danger"
+        title={t('projectViewer.confirm.moveToRecycleBin.title')}
+        message={t('projectViewer.confirm.moveToRecycleBin.message', { count: albumItemsToDelete?.length || 0 })}
+        confirmLabel={t('projectViewer.confirm.moveToRecycleBin.confirm')}
+        dismissKeys={['d', 'D']}
+        onClose={() => {
+          setShowDeleteAlbumModal(false);
+          setAlbumItemsToDelete(null);
+        }}
+        onConfirm={async () => {
+          if (albumItemsToDelete) {
+            await deleteAlbumItems(albumItemsToDelete);
+            updateLightboxAfterAlbumDelete(albumItemsToDelete);
+            setShowDeleteAlbumModal(false);
+            setAlbumItemsToDelete(null);
+          }
+        }}
+      />
+      <ConfirmDialog open={showDeleteCompletedSelectedModal} tone="danger" title={t('projectViewer.confirm.removeFinishedRecords.title')} message={t('projectViewer.confirm.removeFinishedRecords.message', { count: selectedCompletedIds.size })} confirmLabel={t('projectViewer.confirm.removeFinishedRecords.confirm')} onClose={() => setShowDeleteCompletedSelectedModal(false)} onConfirm={deleteSelectedCompleted} />
+      <ConfirmDialog open={showDeleteQueueSelectedModal} tone="danger" title={t('projectViewer.confirm.deleteSelectedJobs.title')} message={t('projectViewer.confirm.deleteSelectedJobs.message', { count: selectedQueueIds.size })} confirmLabel={t('projectViewer.confirm.deleteSelectedJobs.confirm')} onClose={() => setShowDeleteQueueSelectedModal(false)} onConfirm={deleteSelectedQueue} />
+      <ConfirmDialog open={showClearAllFailedModal} tone="danger" title={t('projectViewer.confirm.clearFailedJobs.title')} message={t('projectViewer.confirm.clearFailedJobs.message')} confirmLabel={t('projectViewer.confirm.clearFailedJobs.confirm')} onClose={() => setShowClearAllFailedModal(false)} onConfirm={clearAllFailed} />
+    </div>
+  );
+}

@@ -1,0 +1,31 @@
+/* Material Symbols (variable font: FILL, wght, GRAD, opsz axes) */
+.m3-icon {
+  --m3-icon-size: 24px;
+  display: inline-block;
+  flex-shrink: 0;
+  width: var(--m3-icon-size);
+  height: var(--m3-icon-size);
+  overflow: hidden;
+  font-family: "Material Symbols Outlined", sans-serif;
+  font-size: var(--m3-icon-size);
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  font-variation-settings:
+    "FILL" var(--m3-icon-fill, 0),
+    "wght" var(--m3-icon-wght, 400),
+    "GRAD" var(--m3-icon-grad, 0),
+    "opsz" var(--m3-icon-opsz, 24);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+  transition: font-variation-settings var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}

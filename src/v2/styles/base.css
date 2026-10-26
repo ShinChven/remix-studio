@@ -1,0 +1,14 @@
+/* Element resets. They sit under the M3 layer so components keep their own colors and type. */
+
+h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd {
+  margin: 0;
+}
+img, video, svg, canvas {
+  max-width: 100%;
+}
+button {
+  font: inherit;
+}
+a {
+  color: inherit;
+}

@@ -1,0 +1,731 @@
+/*
+ * Material 3 Expressive reference and system tokens (non-color).
+ * Colors live in baseline-scheme.css (static) and are overridden at runtime by ThemeProvider.
+ */
+:root {
+  /* Typeface */
+  --md-ref-typeface-brand:
+    "Roboto Flex Variable", Roboto, "Noto Sans SC", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", system-ui, sans-serif;
+  --md-ref-typeface-plain: var(--md-ref-typeface-brand);
+  --md-ref-typeface-mono: "Roboto Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --md-ref-typeface-weight-regular: 400;
+  --md-ref-typeface-weight-medium: 500;
+  --md-ref-typeface-weight-bold: 700;
+
+  /* Typescale, baseline (font shorthand + tracking) */
+  --md-sys-typescale-display-large: 400 3.5625rem / 4rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-large-tracking: -0.015625rem;
+  --md-sys-typescale-display-medium: 400 2.8125rem / 3.25rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-medium-tracking: 0;
+  --md-sys-typescale-display-small: 400 2.25rem / 2.75rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-display-small-tracking: 0;
+  --md-sys-typescale-headline-large: 400 2rem / 2.5rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-large-tracking: 0;
+  --md-sys-typescale-headline-medium: 400 1.75rem / 2.25rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-medium-tracking: 0;
+  --md-sys-typescale-headline-small: 400 1.5rem / 2rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-headline-small-tracking: 0;
+  --md-sys-typescale-title-large: 400 1.375rem / 1.75rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-title-large-tracking: 0;
+  --md-sys-typescale-title-medium: 500 1rem / 1.5rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-title-medium-tracking: 0.009375rem;
+  --md-sys-typescale-title-small: 500 0.875rem / 1.25rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-title-small-tracking: 0.00625rem;
+  --md-sys-typescale-body-large: 400 1rem / 1.5rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-large-tracking: 0.03125rem;
+  --md-sys-typescale-body-medium: 400 0.875rem / 1.25rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-medium-tracking: 0.015625rem;
+  --md-sys-typescale-body-small: 400 0.75rem / 1rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-body-small-tracking: 0.025rem;
+  --md-sys-typescale-label-large: 500 0.875rem / 1.25rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-large-tracking: 0.00625rem;
+  --md-sys-typescale-label-medium: 500 0.75rem / 1rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-medium-tracking: 0.03125rem;
+  --md-sys-typescale-label-small: 500 0.6875rem / 1rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-label-small-tracking: 0.03125rem;
+
+  /* Typescale, emphasized (M3 Expressive): higher weight for selection, actions and headlines */
+  --md-sys-typescale-emphasized-display-large: 500 3.5625rem / 4rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-display-large-tracking: -0.015625rem;
+  --md-sys-typescale-emphasized-display-medium:
+    500 2.8125rem / 3.25rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-display-medium-tracking: 0;
+  --md-sys-typescale-emphasized-display-small: 500 2.25rem / 2.75rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-display-small-tracking: 0;
+  --md-sys-typescale-emphasized-headline-large: 500 2rem / 2.5rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-headline-large-tracking: 0;
+  --md-sys-typescale-emphasized-headline-medium: 500 1.75rem / 2.25rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-headline-medium-tracking: 0;
+  --md-sys-typescale-emphasized-headline-small: 500 1.5rem / 2rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-headline-small-tracking: 0;
+  --md-sys-typescale-emphasized-title-large: 500 1.375rem / 1.75rem var(--md-ref-typeface-brand);
+  --md-sys-typescale-emphasized-title-large-tracking: 0;
+  --md-sys-typescale-emphasized-title-medium: 700 1rem / 1.5rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-title-medium-tracking: 0.009375rem;
+  --md-sys-typescale-emphasized-title-small: 700 0.875rem / 1.25rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-title-small-tracking: 0.00625rem;
+  --md-sys-typescale-emphasized-body-large: 500 1rem / 1.5rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-body-large-tracking: 0.03125rem;
+  --md-sys-typescale-emphasized-body-medium: 500 0.875rem / 1.25rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-body-medium-tracking: 0.015625rem;
+  --md-sys-typescale-emphasized-body-small: 500 0.75rem / 1rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-body-small-tracking: 0.025rem;
+  --md-sys-typescale-emphasized-label-large: 700 0.875rem / 1.25rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-label-large-tracking: 0.00625rem;
+  --md-sys-typescale-emphasized-label-medium: 700 0.75rem / 1rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-label-medium-tracking: 0.03125rem;
+  --md-sys-typescale-emphasized-label-small: 700 0.6875rem / 1rem var(--md-ref-typeface-plain);
+  --md-sys-typescale-emphasized-label-small-tracking: 0.03125rem;
+
+  /* Shape */
+  --md-sys-shape-corner-none: 0;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small: 8px;
+  --md-sys-shape-corner-medium: 12px;
+  --md-sys-shape-corner-large: 16px;
+  --md-sys-shape-corner-large-increased: 20px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-extra-large-increased: 32px;
+  --md-sys-shape-corner-extra-extra-large: 48px;
+  --md-sys-shape-corner-full: 9999px;
+
+  /* Spacing (M3 Expressive): an 8dp scale, space100 = 8dp, plus nested units */
+  --md-sys-measurement-space0: 0;
+  --md-sys-measurement-space25: 2px;
+  --md-sys-measurement-space50: 4px;
+  --md-sys-measurement-space75: 6px;
+  --md-sys-measurement-space100: 8px;
+  --md-sys-measurement-space125: 10px;
+  --md-sys-measurement-space150: 12px;
+  --md-sys-measurement-space175: 14px;
+  --md-sys-measurement-space200: 16px;
+  --md-sys-measurement-space250: 20px;
+  --md-sys-measurement-space300: 24px;
+  --md-sys-measurement-space400: 32px;
+  --md-sys-measurement-space500: 40px;
+  --md-sys-measurement-space600: 48px;
+  --md-sys-measurement-space700: 56px;
+  --md-sys-measurement-space800: 64px;
+  --md-sys-measurement-space900: 72px;
+
+  /* Elevation (key + ambient shadow), levels 0–5 */
+  --m3-shadow-key: color-mix(in srgb, var(--md-sys-color-shadow) 30%, transparent);
+  --m3-shadow-ambient: color-mix(in srgb, var(--md-sys-color-shadow) 15%, transparent);
+  --md-sys-elevation-level0: none;
+  --md-sys-elevation-level1:
+    0 1px 2px 0 var(--m3-shadow-key), 0 1px 3px 1px var(--m3-shadow-ambient);
+  --md-sys-elevation-level2:
+    0 1px 2px 0 var(--m3-shadow-key), 0 2px 6px 2px var(--m3-shadow-ambient);
+  --md-sys-elevation-level3:
+    0 1px 3px 0 var(--m3-shadow-key), 0 4px 8px 3px var(--m3-shadow-ambient);
+  --md-sys-elevation-level4:
+    0 2px 3px 0 var(--m3-shadow-key), 0 6px 10px 4px var(--m3-shadow-ambient);
+  --md-sys-elevation-level5:
+    0 4px 4px 0 var(--m3-shadow-key), 0 8px 12px 6px var(--m3-shadow-ambient);
+
+  /* State layers */
+  --md-sys-state-hover-state-layer-opacity: 0.08;
+  --md-sys-state-focus-state-layer-opacity: 0.12;
+  --md-sys-state-pressed-state-layer-opacity: 0.12;
+  --md-sys-state-dragged-state-layer-opacity: 0.16;
+  --md-sys-state-disabled-container-opacity: 0.12;
+  --md-sys-state-disabled-content-opacity: 0.38;
+
+  /* Focus indicator */
+  --md-sys-focus-ring-color: var(--md-sys-color-secondary);
+  --md-sys-focus-ring-width: 3px;
+  --md-sys-focus-ring-offset: 2px;
+
+  /* Motion: easing */
+  --md-sys-motion-easing-linear: cubic-bezier(0, 0, 1, 1);
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* Motion: duration */
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+  --md-sys-motion-duration-long3: 550ms;
+  --md-sys-motion-duration-long4: 600ms;
+  --md-sys-motion-duration-extra-long1: 700ms;
+  --md-sys-motion-duration-extra-long2: 800ms;
+  --md-sys-motion-duration-extra-long3: 900ms;
+  --md-sys-motion-duration-extra-long4: 1000ms;
+
+  /*
+   * Motion: spring tokens (md.sys.motion.spring.<speed>.<kind>) of the Expressive scheme.
+   * Spatial springs (position, size, corners) overshoot; effects springs (color, opacity) do not.
+   * Each pairs an easing with the duration it needs. These cubic-bezier curves are the spec's
+   * web approximations; browsers with linear() get the exact spring curves below.
+   */
+  --md-sys-motion-spring-fast-spatial: cubic-bezier(0.42, 1.67, 0.21, 0.9);
+  --md-sys-motion-spring-fast-spatial-duration: 350ms;
+  --md-sys-motion-spring-default-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+  --md-sys-motion-spring-default-spatial-duration: 500ms;
+  --md-sys-motion-spring-slow-spatial: cubic-bezier(0.39, 1.29, 0.35, 0.98);
+  --md-sys-motion-spring-slow-spatial-duration: 650ms;
+  --md-sys-motion-spring-fast-effects: cubic-bezier(0.31, 0.94, 0.34, 1);
+  --md-sys-motion-spring-fast-effects-duration: 150ms;
+  --md-sys-motion-spring-default-effects: cubic-bezier(0.34, 0.8, 0.34, 1);
+  --md-sys-motion-spring-default-effects-duration: 200ms;
+  --md-sys-motion-spring-slow-effects: cubic-bezier(0.34, 0.88, 0.34, 1);
+  --md-sys-motion-spring-slow-effects-duration: 300ms;
+
+  /* Layout: window margins and pane spacer */
+  --m3-window-margin: 16px;
+  --m3-pane-spacer: 24px;
+
+  /* Stacking order for overlays */
+  --m3-z-app-bar: 20;
+  --m3-z-navigation: 30;
+  --m3-z-sheet: 40;
+  --m3-z-dialog: 60;
+  --m3-z-menu: 70;
+  --m3-z-snackbar: 80;
+  --m3-z-tooltip: 90;
+
+  --m3-icon-grad: 0;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --m3-window-margin: 24px;
+  }
+}
+
+/* Standard motion scheme: calmer springs with almost no bounce. Set on the root by
+ * ThemeProvider (`motionScheme`) or on any subtree with `data-motion-scheme="standard"`. */
+[data-motion-scheme="standard"] {
+  --md-sys-motion-spring-fast-spatial: cubic-bezier(0.27, 1.06, 0.18, 1);
+  --md-sys-motion-spring-fast-spatial-duration: 350ms;
+  --md-sys-motion-spring-default-spatial: cubic-bezier(0.27, 1.06, 0.18, 1);
+  --md-sys-motion-spring-default-spatial-duration: 500ms;
+  --md-sys-motion-spring-slow-spatial: cubic-bezier(0.27, 1.06, 0.18, 1);
+  --md-sys-motion-spring-slow-spatial-duration: 750ms;
+}
+
+[data-motion-scheme="expressive"] {
+  --md-sys-motion-spring-fast-spatial: cubic-bezier(0.42, 1.67, 0.21, 0.9);
+  --md-sys-motion-spring-fast-spatial-duration: 350ms;
+  --md-sys-motion-spring-default-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+  --md-sys-motion-spring-default-spatial-duration: 500ms;
+  --md-sys-motion-spring-slow-spatial: cubic-bezier(0.39, 1.29, 0.35, 0.98);
+  --md-sys-motion-spring-slow-spatial-duration: 650ms;
+}
+
+/* Exact spring curves, sampled from the damped-spring solution (src/utils/spring.ts). */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root,
+  [data-motion-scheme="expressive"] {
+    --md-sys-motion-spring-fast-spatial: linear(
+      0,
+      0.021,
+      0.076,
+      0.156,
+      0.252,
+      0.356,
+      0.462,
+      0.566,
+      0.664,
+      0.753,
+      0.832,
+      0.9,
+      0.956,
+      1.002,
+      1.037,
+      1.063,
+      1.08,
+      1.09,
+      1.094,
+      1.094,
+      1.09,
+      1.083,
+      1.075,
+      1.065,
+      1.055,
+      1.045,
+      1.035,
+      1.027,
+      1.019,
+      1.012,
+      1.006,
+      1.001,
+      0.998,
+      0.995,
+      0.993,
+      0.992,
+      0.991,
+      0.991,
+      0.991,
+      0.992,
+      0.993,
+      0.993,
+      0.994,
+      0.995,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-fast-spatial-duration: 362ms;
+    --md-sys-motion-spring-fast-effects: linear(
+      0,
+      0.058,
+      0.181,
+      0.321,
+      0.456,
+      0.574,
+      0.672,
+      0.751,
+      0.813,
+      0.861,
+      0.897,
+      0.924,
+      0.945,
+      0.96,
+      0.971,
+      0.979,
+      0.985,
+      0.989,
+      0.992,
+      0.994,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-fast-effects-duration: 150ms;
+    --md-sys-motion-spring-default-spatial: linear(
+      0,
+      0.014,
+      0.052,
+      0.107,
+      0.172,
+      0.244,
+      0.319,
+      0.394,
+      0.467,
+      0.537,
+      0.602,
+      0.661,
+      0.716,
+      0.765,
+      0.808,
+      0.845,
+      0.878,
+      0.906,
+      0.929,
+      0.949,
+      0.965,
+      0.978,
+      0.989,
+      0.997,
+      1.003,
+      1.008,
+      1.011,
+      1.013,
+      1.015,
+      1.015,
+      1.015,
+      1.015,
+      1.014,
+      1.013,
+      1.012,
+      1.011,
+      1.01,
+      1.009,
+      1.008,
+      1.006,
+      1.006,
+      1.005,
+      1.004,
+      1.003,
+      1.003,
+      1.002,
+      1.002,
+      1.001,
+      1
+    );
+    --md-sys-motion-spring-default-spatial-duration: 437ms;
+    --md-sys-motion-spring-default-effects: linear(
+      0,
+      0.059,
+      0.183,
+      0.325,
+      0.461,
+      0.579,
+      0.677,
+      0.755,
+      0.817,
+      0.864,
+      0.9,
+      0.927,
+      0.947,
+      0.961,
+      0.972,
+      0.98,
+      0.986,
+      0.99,
+      0.993,
+      0.995,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-default-effects-duration: 233ms;
+    --md-sys-motion-spring-slow-spatial: linear(
+      0,
+      0.014,
+      0.052,
+      0.106,
+      0.171,
+      0.242,
+      0.317,
+      0.391,
+      0.464,
+      0.533,
+      0.598,
+      0.658,
+      0.713,
+      0.761,
+      0.805,
+      0.843,
+      0.875,
+      0.904,
+      0.927,
+      0.947,
+      0.964,
+      0.977,
+      0.988,
+      0.996,
+      1.003,
+      1.007,
+      1.011,
+      1.013,
+      1.014,
+      1.015,
+      1.015,
+      1.015,
+      1.014,
+      1.013,
+      1.012,
+      1.011,
+      1.01,
+      1.009,
+      1.008,
+      1.007,
+      1.006,
+      1.005,
+      1.004,
+      1.003,
+      1.003,
+      1.002,
+      1.002,
+      1.001,
+      1
+    );
+    --md-sys-motion-spring-slow-spatial-duration: 600ms;
+    --md-sys-motion-spring-slow-effects: linear(
+      0,
+      0.058,
+      0.183,
+      0.324,
+      0.459,
+      0.577,
+      0.675,
+      0.754,
+      0.816,
+      0.863,
+      0.899,
+      0.926,
+      0.946,
+      0.961,
+      0.972,
+      0.98,
+      0.985,
+      0.99,
+      0.993,
+      0.995,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-slow-effects-duration: 329ms;
+  }
+
+  [data-motion-scheme="standard"] {
+    --md-sys-motion-spring-fast-spatial: linear(
+      0,
+      0.014,
+      0.05,
+      0.101,
+      0.162,
+      0.229,
+      0.298,
+      0.366,
+      0.433,
+      0.497,
+      0.556,
+      0.611,
+      0.662,
+      0.708,
+      0.749,
+      0.785,
+      0.817,
+      0.846,
+      0.871,
+      0.892,
+      0.91,
+      0.926,
+      0.94,
+      0.951,
+      0.961,
+      0.969,
+      0.976,
+      0.981,
+      0.986,
+      0.989,
+      0.992,
+      0.995,
+      0.996,
+      0.998,
+      0.999,
+      1,
+      1,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.002,
+      1.002,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1
+    );
+    --md-sys-motion-spring-fast-spatial-duration: 225ms;
+    --md-sys-motion-spring-fast-effects: linear(
+      0,
+      0.058,
+      0.181,
+      0.321,
+      0.456,
+      0.574,
+      0.672,
+      0.751,
+      0.813,
+      0.861,
+      0.897,
+      0.924,
+      0.945,
+      0.96,
+      0.971,
+      0.979,
+      0.985,
+      0.989,
+      0.992,
+      0.994,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-fast-effects-duration: 150ms;
+    --md-sys-motion-spring-default-spatial: linear(
+      0,
+      0.014,
+      0.049,
+      0.1,
+      0.161,
+      0.227,
+      0.296,
+      0.364,
+      0.431,
+      0.494,
+      0.554,
+      0.609,
+      0.659,
+      0.705,
+      0.746,
+      0.783,
+      0.815,
+      0.844,
+      0.869,
+      0.89,
+      0.909,
+      0.925,
+      0.938,
+      0.95,
+      0.96,
+      0.968,
+      0.975,
+      0.98,
+      0.985,
+      0.989,
+      0.992,
+      0.994,
+      0.996,
+      0.998,
+      0.999,
+      1,
+      1,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.002,
+      1.002,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1
+    );
+    --md-sys-motion-spring-default-spatial-duration: 317ms;
+    --md-sys-motion-spring-default-effects: linear(
+      0,
+      0.059,
+      0.183,
+      0.325,
+      0.461,
+      0.579,
+      0.677,
+      0.755,
+      0.817,
+      0.864,
+      0.9,
+      0.927,
+      0.947,
+      0.961,
+      0.972,
+      0.98,
+      0.986,
+      0.99,
+      0.993,
+      0.995,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-default-effects-duration: 233ms;
+    --md-sys-motion-spring-slow-spatial: linear(
+      0,
+      0.014,
+      0.05,
+      0.102,
+      0.163,
+      0.23,
+      0.299,
+      0.368,
+      0.435,
+      0.498,
+      0.558,
+      0.613,
+      0.664,
+      0.709,
+      0.75,
+      0.787,
+      0.819,
+      0.847,
+      0.872,
+      0.893,
+      0.911,
+      0.927,
+      0.941,
+      0.952,
+      0.961,
+      0.969,
+      0.976,
+      0.981,
+      0.986,
+      0.99,
+      0.992,
+      0.995,
+      0.997,
+      0.998,
+      0.999,
+      1,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.002,
+      1.002,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1.001,
+      1
+    );
+    --md-sys-motion-spring-slow-spatial-duration: 487ms;
+    --md-sys-motion-spring-slow-effects: linear(
+      0,
+      0.058,
+      0.183,
+      0.324,
+      0.459,
+      0.577,
+      0.675,
+      0.754,
+      0.816,
+      0.863,
+      0.899,
+      0.926,
+      0.946,
+      0.961,
+      0.972,
+      0.98,
+      0.985,
+      0.99,
+      0.993,
+      0.995,
+      0.996,
+      0.997,
+      0.998,
+      0.999,
+      1
+    );
+    --md-sys-motion-spring-slow-effects-duration: 329ms;
+  }
+}
+
+/* Reduced motion: spatial springs settle without overshoot, at the speed of effects springs. */
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  [data-motion-scheme] {
+    --md-sys-motion-spring-fast-spatial: var(--md-sys-motion-spring-fast-effects);
+    --md-sys-motion-spring-fast-spatial-duration: var(--md-sys-motion-spring-fast-effects-duration);
+    --md-sys-motion-spring-default-spatial: var(--md-sys-motion-spring-default-effects);
+    --md-sys-motion-spring-default-spatial-duration: var(
+      --md-sys-motion-spring-default-effects-duration
+    );
+    --md-sys-motion-spring-slow-spatial: var(--md-sys-motion-spring-slow-effects);
+    --md-sys-motion-spring-slow-spatial-duration: var(--md-sys-motion-spring-slow-effects-duration);
+  }
+}

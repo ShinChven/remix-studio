@@ -1,0 +1,381 @@
+/* Text fields and selects share this field shell. */
+.m3-field {
+  --_height: 56px;
+  --_padding: 16px;
+  --_icon-padding: 12px;
+  --_label-color: var(--md-sys-color-on-surface-variant);
+  --_label-float-color: var(--md-sys-color-primary);
+  --_text: var(--md-sys-color-on-surface);
+  --_icon: var(--md-sys-color-on-surface-variant);
+  --_supporting: var(--md-sys-color-on-surface-variant);
+  --_indicator: var(--md-sys-color-on-surface-variant);
+  --_outline: var(--md-sys-color-outline);
+  --_accent: var(--md-sys-color-primary);
+  --_container: var(--md-sys-color-surface-container-highest);
+  --_label-start: var(--_padding);
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 210px;
+  vertical-align: top;
+  text-align: start;
+}
+.m3-field[data-full-width] {
+  display: flex;
+  width: 100%;
+}
+.m3-field[data-error] {
+  --_label-color: var(--md-sys-color-error);
+  --_label-float-color: var(--md-sys-color-error);
+  --_supporting: var(--md-sys-color-error);
+  --_indicator: var(--md-sys-color-error);
+  --_outline: var(--md-sys-color-error);
+  --_accent: var(--md-sys-color-error);
+}
+.m3-field[data-error] .m3-field__trailing {
+  color: var(--md-sys-color-error);
+}
+.m3-field[data-leading] {
+  --_label-start: calc(var(--_icon-padding) + 24px + 16px);
+}
+
+.m3-field__container {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: var(--_height);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  color: var(--_text);
+  cursor: text;
+}
+
+/* Filled */
+.m3-field[data-variant="filled"] .m3-field__container {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+  background: var(--_container);
+}
+.m3-field[data-variant="filled"] .m3-field__container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-field[data-variant="filled"]:not([data-disabled]) .m3-field__container:hover::before {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
+}
+.m3-field__indicator {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--_indicator);
+  pointer-events: none;
+}
+.m3-field__indicator::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--_accent);
+  scale: 0 1;
+  transition: scale var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-field:not([data-disabled]) .m3-field__container:hover .m3-field__indicator {
+  background: var(--md-sys-color-on-surface);
+}
+.m3-field[data-error]:not([data-disabled]) .m3-field__container:hover .m3-field__indicator {
+  background: var(--md-sys-color-on-error-container);
+}
+.m3-field:is(:focus-within, [data-focused]) .m3-field__indicator::after {
+  scale: 1 1;
+}
+
+/* Outlined: the notched outline is a fieldset whose legend reserves the label's width. */
+.m3-field__outline {
+  position: absolute;
+  inset: -5px 0 0;
+  margin: 0;
+  padding: 0 12px;
+  min-width: 0;
+  border: 1px solid var(--_outline);
+  border-radius: inherit;
+  pointer-events: none;
+  text-align: start;
+  transition: border-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+/* Without a label there is no legend to center the top border on, so the border sits at the top. */
+.m3-field:not([data-label]) .m3-field__outline {
+  inset: 0;
+}
+.m3-field__outline legend {
+  display: block;
+  float: unset;
+  width: auto;
+  max-width: 0.01px;
+  height: 11px;
+  padding: 0;
+  overflow: hidden;
+  visibility: hidden;
+  font: var(--md-sys-typescale-body-small);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+  white-space: nowrap;
+  transition: max-width 50ms var(--md-sys-motion-easing-standard);
+}
+.m3-field__outline legend > span {
+  display: inline-block;
+  padding-inline: 4px;
+  opacity: 0;
+  visibility: visible;
+}
+.m3-field[data-variant="outlined"]:not([data-disabled])
+  .m3-field__container:hover
+  .m3-field__outline {
+  border-color: var(--md-sys-color-on-surface);
+}
+.m3-field[data-variant="outlined"][data-error]:not([data-disabled])
+  .m3-field__container:hover
+  .m3-field__outline {
+  border-color: var(--md-sys-color-on-error-container);
+}
+.m3-field[data-variant="outlined"]:is(:focus-within, [data-focused]) .m3-field__outline {
+  border-width: 2px;
+  border-color: var(--_accent) !important;
+}
+
+/* Icons */
+.m3-field__leading,
+.m3-field__trailing {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: var(--_icon);
+}
+.m3-field__leading {
+  padding-inline-start: var(--_icon-padding);
+}
+.m3-field__trailing {
+  padding-inline-end: var(--_icon-padding);
+}
+.m3-field__trailing:has(> .m3-icon-button) {
+  padding-inline-end: 4px;
+}
+.m3-field[data-multiline] :is(.m3-field__leading, .m3-field__trailing) {
+  align-items: flex-start;
+  padding-top: 16px;
+}
+
+/* Body: label + input row */
+.m3-field__body {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  /* The text, not a leading icon, gives the field its baseline, so fields with and without icons
+     line up in baseline-aligned rows. Baseline items do not stretch: min-height fills the field. */
+  align-self: baseline;
+  min-width: 0;
+  min-height: var(--_height);
+  padding: 16px var(--_padding);
+}
+.m3-field[data-leading] .m3-field__body {
+  padding-inline-start: 16px;
+}
+.m3-field[data-trailing] .m3-field__body {
+  padding-inline-end: 16px;
+}
+.m3-field[data-variant="filled"][data-label] .m3-field__body {
+  padding-top: 24px;
+  padding-bottom: 8px;
+}
+.m3-field__row {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+.m3-field__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--_text);
+  caret-color: var(--_accent);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  text-align: inherit;
+  resize: none;
+}
+textarea.m3-field__input {
+  height: auto;
+  min-height: 24px;
+  overflow: hidden;
+}
+.m3-field__input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-field:is(:focus-within, [data-focused]) .m3-field__input::placeholder,
+.m3-field:not([data-label]) .m3-field__input::placeholder {
+  opacity: 1;
+}
+.m3-field__input:autofill {
+  -webkit-text-fill-color: var(--_text);
+  transition: background-color 600000s 0s;
+}
+.m3-field__prefix,
+.m3-field__suffix {
+  flex-shrink: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-field__prefix {
+  padding-inline-end: 2px;
+}
+.m3-field__suffix {
+  padding-inline-start: 2px;
+}
+.m3-field:not([data-label]) :is(.m3-field__prefix, .m3-field__suffix),
+.m3-field:is(:focus-within, [data-focused], [data-populated])
+  :is(.m3-field__prefix, .m3-field__suffix),
+.m3-field:has(:is(input, textarea).m3-field__input:not(:placeholder-shown))
+  :is(.m3-field__prefix, .m3-field__suffix) {
+  opacity: 1;
+}
+
+/* Floating label */
+.m3-field__label {
+  position: absolute;
+  top: 16px;
+  inset-inline-start: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--_label-color);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform-origin: left top;
+  transition:
+    transform var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
+    max-width var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-field__body > .m3-field__label {
+  inset-inline-start: var(--_padding);
+}
+.m3-field[data-leading] .m3-field__body > .m3-field__label {
+  inset-inline-start: 16px;
+}
+.m3-field__label:dir(rtl) {
+  transform-origin: right top;
+}
+.m3-field:is(:focus-within, [data-focused], [data-populated]) .m3-field__label,
+.m3-field:has(:is(input, textarea).m3-field__input:not(:placeholder-shown)) .m3-field__label,
+.m3-field:has(.m3-field__input:autofill) .m3-field__label {
+  max-width: 133%;
+}
+.m3-field[data-variant="filled"]:is(:focus-within, [data-focused], [data-populated])
+  .m3-field__label,
+.m3-field[data-variant="filled"]:has(:is(input, textarea).m3-field__input:not(:placeholder-shown))
+  .m3-field__label,
+.m3-field[data-variant="filled"]:has(.m3-field__input:autofill) .m3-field__label {
+  transform: translateY(-8px) scale(0.75);
+}
+.m3-field[data-variant="outlined"]:is(:focus-within, [data-focused], [data-populated])
+  .m3-field__label,
+.m3-field[data-variant="outlined"]:has(:is(input, textarea).m3-field__input:not(:placeholder-shown))
+  .m3-field__label,
+.m3-field[data-variant="outlined"]:has(.m3-field__input:autofill) .m3-field__label {
+  transform: translateY(-25px) scale(0.75);
+}
+/* Outlined fields with a leading icon float the label to the container start. */
+.m3-field[data-variant="outlined"][data-leading]:is(:focus-within, [data-focused], [data-populated])
+  .m3-field__label,
+.m3-field[data-variant="outlined"][data-leading]:has(
+    :is(input, textarea).m3-field__input:not(:placeholder-shown)
+  )
+  .m3-field__label {
+  transform: translate(calc(var(--_padding) - var(--_label-start)), -25px) scale(0.75);
+}
+.m3-field[data-variant="outlined"][data-leading]:is(:focus-within, [data-focused], [data-populated])
+  .m3-field__label:dir(rtl),
+.m3-field[data-variant="outlined"][data-leading]:has(
+    :is(input, textarea).m3-field__input:not(:placeholder-shown)
+  )
+  .m3-field__label:dir(rtl) {
+  transform: translate(calc(var(--_label-start) - var(--_padding)), -25px) scale(0.75);
+}
+.m3-field:is(:focus-within, [data-focused]) .m3-field__label {
+  color: var(--_label-float-color);
+}
+.m3-field[data-variant="outlined"]:is(:focus-within, [data-focused], [data-populated])
+  .m3-field__outline
+  legend,
+.m3-field[data-variant="outlined"]:has(:is(input, textarea).m3-field__input:not(:placeholder-shown))
+  .m3-field__outline
+  legend,
+.m3-field[data-variant="outlined"]:has(.m3-field__input:autofill) .m3-field__outline legend {
+  max-width: 100%;
+  transition: max-width 100ms var(--md-sys-motion-easing-standard) 50ms;
+}
+
+/* Supporting text and counter */
+.m3-field__supporting {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 16px 0;
+  color: var(--_supporting);
+  font: var(--md-sys-typescale-body-small);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+}
+.m3-field__counter {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+/* Disabled */
+.m3-field[data-disabled] {
+  --_text: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_label-color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_icon: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_supporting: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_indicator: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_outline: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  --_container: color-mix(in srgb, var(--md-sys-color-on-surface) 4%, transparent);
+}
+.m3-field[data-disabled] .m3-field__container {
+  cursor: default;
+}
+
+@media (forced-colors: active) {
+  .m3-field__container {
+    outline: 1px solid CanvasText;
+  }
+}

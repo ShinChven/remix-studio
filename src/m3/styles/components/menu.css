@@ -1,0 +1,276 @@
+/* ---------- Menu (M3 Expressive vertical menu; also used by the Select listbox) ---------- */
+.m3-menu {
+  --_container: var(--md-sys-color-surface-container-low);
+  --_label: var(--md-sys-color-on-surface);
+  --_icon: var(--md-sys-color-on-surface-variant);
+  --_selected: var(--md-sys-color-tertiary-container);
+  --_on-selected: var(--md-sys-color-on-tertiary-container);
+  --_radius: var(--md-sys-shape-corner-large);
+  z-index: var(--m3-z-menu);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-width: 112px;
+  max-width: 280px;
+  max-height: calc(100vh - 16px);
+  padding: var(--md-sys-measurement-space25);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--_radius);
+  background: var(--_container);
+  color: var(--_label);
+  box-shadow: var(--md-sys-elevation-level2);
+  outline: none;
+  transform-origin: top;
+  transition:
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    transform var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-menu[data-color="vibrant"] {
+  --_container: var(--md-sys-color-tertiary-container);
+  --_label: var(--md-sys-color-on-tertiary-container);
+  --_icon: var(--md-sys-color-on-tertiary-container);
+  --_selected: var(--md-sys-color-tertiary);
+  --_on-selected: var(--md-sys-color-on-tertiary);
+}
+/* While a submenu is open, the parent menu gets smaller corners and the submenu the active shape. */
+.m3-menu[data-inactive] {
+  --_radius: var(--md-sys-shape-corner-small);
+}
+.m3-menu[data-placement^="top"] {
+  transform-origin: bottom;
+}
+.m3-menu[data-state="closed"] {
+  opacity: 0;
+  transform: scaleY(0.85);
+  pointer-events: none;
+}
+@starting-style {
+  .m3-menu[data-state="open"] {
+    opacity: 0;
+    transform: scaleY(0.85);
+  }
+}
+/* Submenus slide out from the parent menu. */
+.m3-menu[data-submenu] {
+  transform-origin: left center;
+}
+.m3-menu[data-submenu]:dir(rtl) {
+  transform-origin: right center;
+}
+.m3-menu[data-submenu][data-state="closed"] {
+  transform: translateX(-8px) scale(0.96);
+}
+@starting-style {
+  .m3-menu[data-submenu][data-state="open"] {
+    transform: translateX(-8px) scale(0.96);
+  }
+}
+/* Grouped layout: each group is a container of its own, separated by gaps. */
+.m3-menu[data-grouped] {
+  gap: var(--md-sys-measurement-space25);
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+.m3-menu[data-grouped] > .m3-menu-group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--md-sys-measurement-space25);
+  border-radius: var(--md-sys-shape-corner-small);
+  background: var(--_container);
+  box-shadow: var(--md-sys-elevation-level2);
+}
+.m3-menu[data-grouped] > .m3-menu-group:first-child {
+  border-start-start-radius: var(--_radius);
+  border-start-end-radius: var(--_radius);
+}
+.m3-menu[data-grouped] > .m3-menu-group:last-child {
+  border-end-start-radius: var(--_radius);
+  border-end-end-radius: var(--_radius);
+}
+.m3-select__listbox {
+  max-width: none;
+}
+
+.m3-menu-item {
+  --_item-radius: var(--md-sys-shape-corner-extra-small);
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--md-sys-measurement-space150);
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: var(--md-sys-measurement-space100) var(--md-sys-measurement-space200);
+  border-radius: var(--_item-radius);
+  color: var(--_label);
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+/* The first and last items follow the container's rounder outer corners. */
+:is(.m3-menu, .m3-menu-group) > .m3-menu-item:first-child,
+.m3-menu-group__label + .m3-menu-item {
+  border-start-start-radius: var(--md-sys-shape-corner-medium);
+  border-start-end-radius: var(--md-sys-shape-corner-medium);
+}
+:is(.m3-menu, .m3-menu-group) > .m3-menu-item:last-child {
+  border-end-start-radius: var(--md-sys-shape-corner-medium);
+  border-end-end-radius: var(--md-sys-shape-corner-medium);
+}
+.m3-menu-item:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: calc(var(--md-sys-focus-ring-width) * -1);
+}
+.m3-menu-item:focus-visible > .m3-ripple::before,
+.m3-menu-item[data-active] > .m3-ripple::before,
+.m3-menu-item[data-open] > .m3-ripple::before {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
+}
+/* Listbox options have no Ripple element: draw their state layer directly. */
+.m3-select__listbox .m3-menu-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+.m3-select__listbox .m3-menu-item[data-active]::before {
+  opacity: var(--md-sys-state-hover-state-layer-opacity);
+}
+/* Selected items (and the item whose submenu is open) take the selected color and shape. */
+.m3-menu-item:is([data-selected], [aria-checked="true"]),
+.m3-menu-item[data-open] {
+  border-radius: var(--md-sys-shape-corner-medium);
+}
+.m3-menu-item:is([data-selected], [aria-checked="true"]) {
+  background: var(--_selected);
+  color: var(--_on-selected);
+}
+.m3-menu-item[aria-disabled="true"] {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  cursor: default;
+}
+.m3-menu-item__icon {
+  --m3-icon-size: 20px;
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 20px;
+  color: var(--_icon);
+}
+.m3-menu-item__icon:empty {
+  display: none;
+}
+.m3-menu-item[role="menuitemcheckbox"] .m3-menu-item__icon:empty,
+.m3-menu-item[role="menuitemradio"] .m3-menu-item__icon:empty {
+  display: inline-flex;
+}
+.m3-menu-item:is([data-selected], [aria-checked="true"]) .m3-menu-item__icon {
+  color: inherit;
+}
+.m3-menu-item[aria-disabled="true"] .m3-menu-item__icon {
+  color: inherit;
+}
+.m3-menu-item__text {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+.m3-menu-item__label {
+  overflow: hidden;
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-menu-item:is([data-selected], [aria-checked="true"]) .m3-menu-item__label {
+  font: var(--md-sys-typescale-emphasized-label-large);
+  letter-spacing: var(--md-sys-typescale-emphasized-label-large-tracking);
+}
+.m3-menu-item__supporting {
+  color: var(--_icon);
+  font: var(--md-sys-typescale-body-small);
+  letter-spacing: var(--md-sys-typescale-body-small-tracking);
+}
+.m3-menu-item:is([data-selected], [aria-checked="true"]) .m3-menu-item__supporting {
+  color: inherit;
+}
+.m3-menu-item__trailing-text {
+  position: relative;
+  flex-shrink: 0;
+  color: var(--_icon);
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+.m3-menu-item__submenu-arrow:dir(rtl) {
+  scale: -1 1;
+}
+.m3-menu-divider {
+  flex-shrink: 0;
+  height: 1px;
+  margin: var(--md-sys-measurement-space100) var(--md-sys-measurement-space150);
+  border: none;
+  background: var(--md-sys-color-outline-variant);
+}
+.m3-menu-group {
+  display: flex;
+  flex-direction: column;
+}
+.m3-menu-group__label {
+  padding: var(--md-sys-measurement-space150) var(--md-sys-measurement-space200)
+    var(--md-sys-measurement-space50);
+  color: var(--_icon);
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+
+/* ---------- Select ---------- */
+.m3-select .m3-field__container {
+  cursor: pointer;
+}
+.m3-select__value {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  line-height: 24px;
+  cursor: inherit;
+}
+.m3-select__placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-select:not([data-focused], [data-populated]) .m3-select__placeholder {
+  visibility: hidden;
+}
+.m3-select__arrow {
+  transition: rotate var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-select[data-focused] .m3-select__arrow {
+  rotate: 180deg;
+}
+.m3-select:not([data-disabled]) .m3-select__arrow {
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-select[data-focused]:not([data-error]) .m3-select__arrow {
+  color: var(--md-sys-color-primary);
+}

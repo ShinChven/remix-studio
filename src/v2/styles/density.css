@@ -1,0 +1,67 @@
+/*
+ * Density. `data-density="compact"` on any ancestor (the document for the global setting, or a
+ * region of a busy page) tightens fields, buttons, menus, lists, chips and tabs by one or two
+ * density steps, following the M3 density scale (-4dp per step).
+ */
+
+[data-density="compact"] .m3-field {
+  --_height: 44px;
+  --_padding: 12px;
+  --_icon-padding: 10px;
+  min-width: 160px;
+}
+[data-density="compact"] .m3-field__body {
+  padding-block: 10px;
+}
+[data-density="compact"] .m3-field[data-variant="filled"][data-label] .m3-field__body {
+  padding-top: 18px;
+  padding-bottom: 2px;
+}
+[data-density="compact"] .m3-field__label {
+  top: 10px;
+}
+[data-density="compact"] .m3-field[data-variant="filled"]:is(:focus-within, [data-focused], [data-populated]) .m3-field__label,
+[data-density="compact"] .m3-field[data-variant="filled"]:has(:is(input, textarea).m3-field__input:not(:placeholder-shown)) .m3-field__label {
+  transform: translateY(-7px) scale(0.75);
+}
+[data-density="compact"] .m3-field[data-variant="outlined"]:is(:focus-within, [data-focused], [data-populated]) .m3-field__label,
+[data-density="compact"] .m3-field[data-variant="outlined"]:has(:is(input, textarea).m3-field__input:not(:placeholder-shown)) .m3-field__label {
+  transform: translateY(-19px) scale(0.75);
+}
+[data-density="compact"] .m3-field[data-variant="outlined"][data-leading]:is(:focus-within, [data-focused], [data-populated]) .m3-field__label,
+[data-density="compact"] .m3-field[data-variant="outlined"][data-leading]:has(:is(input, textarea).m3-field__input:not(:placeholder-shown)) .m3-field__label {
+  transform: translate(calc(var(--_padding) - var(--_label-start)), -19px) scale(0.75);
+}
+[data-density="compact"] .m3-field[data-multiline] :is(.m3-field__leading, .m3-field__trailing) {
+  padding-top: 10px;
+}
+[data-density="compact"] .m3-field__input,
+[data-density="compact"] .m3-field__prefix,
+[data-density="compact"] .m3-field__suffix {
+  font: var(--md-sys-typescale-body-medium);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+}
+[data-density="compact"] .m3-field__label:not(:is(.m3-field:focus-within, .m3-field[data-populated]) *) {
+  font: var(--md-sys-typescale-body-medium);
+}
+
+[data-density="compact"] .m3-button[data-size="sm"] {
+  --_height: 36px;
+}
+[data-density="compact"] .m3-icon-button[data-size="sm"] {
+  --_size: 36px;
+}
+[data-density="compact"] .m3-menu-item {
+  min-height: 36px;
+  padding-block: var(--md-sys-measurement-space50);
+}
+[data-density="compact"] .m3-list-item {
+  min-height: 44px;
+  padding-block: var(--md-sys-measurement-space75);
+}
+[data-density="compact"] .m3-chip {
+  height: 28px;
+}
+[data-density="compact"] .m3-tab {
+  min-height: 40px;
+}

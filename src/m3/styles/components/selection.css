@@ -1,0 +1,335 @@
+/* ---------- Shared label wrapper ---------- */
+.m3-selection-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 48px;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.m3-selection-field[data-label-position="start"] {
+  flex-direction: row-reverse;
+  justify-content: space-between;
+  gap: 16px;
+}
+.m3-selection-field[data-label-position="start"]:has(.m3-switch) {
+  display: flex;
+}
+.m3-selection-field__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.m3-selection-field__supporting {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+}
+.m3-selection-field[data-disabled] {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  cursor: default;
+}
+.m3-selection-field[data-disabled] .m3-selection-field__supporting {
+  color: inherit;
+}
+
+/* Native input covers the control: it receives pointer, keyboard and form events. */
+.m3-checkbox__input,
+.m3-radio__input,
+.m3-switch__input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+  appearance: none;
+}
+
+/* ---------- Checkbox ---------- */
+.m3-checkbox {
+  --_color: var(--md-sys-color-on-surface-variant);
+  --_selected: var(--md-sys-color-primary);
+  --_on-selected: var(--md-sys-color-on-primary);
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.m3-checkbox > .m3-ripple {
+  color: var(--md-sys-color-on-surface);
+}
+.m3-checkbox:has(:checked, :indeterminate) > .m3-ripple {
+  color: var(--_selected);
+}
+.m3-checkbox:has(.m3-checkbox__input:focus-visible) {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: 0;
+}
+.m3-checkbox[data-error] {
+  --_color: var(--md-sys-color-error);
+  --_selected: var(--md-sys-color-error);
+  --_on-selected: var(--md-sys-color-on-error);
+}
+.m3-checkbox__box {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--_color);
+  border-radius: 2px;
+  transition:
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    border-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-checkbox__mark {
+  position: absolute;
+  inset: -2px;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: var(--_on-selected);
+  stroke-width: 2px;
+  stroke-linecap: square;
+}
+.m3-checkbox__check {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-checkbox__dash {
+  opacity: 0;
+  transform-origin: center;
+  scale: 0 1;
+  transition:
+    scale var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-checkbox__input:is(:checked, :indeterminate) ~ .m3-checkbox__box {
+  border-color: var(--_selected);
+  background: var(--_selected);
+}
+.m3-checkbox__input:checked:not(:indeterminate) ~ .m3-checkbox__box .m3-checkbox__check {
+  stroke-dashoffset: 0;
+}
+.m3-checkbox__input:indeterminate ~ .m3-checkbox__box .m3-checkbox__dash {
+  opacity: 1;
+  scale: 1 1;
+}
+.m3-checkbox[data-disabled] {
+  cursor: default;
+  --_color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_selected: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_on-selected: var(--md-sys-color-surface);
+}
+
+/* ---------- Radio ---------- */
+.m3-radio-group {
+  display: flex;
+  flex-direction: column;
+}
+.m3-radio-group[data-orientation="horizontal"] {
+  flex-flow: row wrap;
+  column-gap: 16px;
+}
+.m3-radio {
+  --_color: var(--md-sys-color-on-surface-variant);
+  --_selected: var(--md-sys-color-primary);
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.m3-radio > .m3-ripple {
+  color: var(--md-sys-color-on-surface);
+}
+.m3-radio:has(:checked) > .m3-ripple {
+  color: var(--_selected);
+}
+.m3-radio:has(.m3-radio__input:focus-visible) {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: 0;
+}
+.m3-radio[data-error] {
+  --_color: var(--md-sys-color-error);
+  --_selected: var(--md-sys-color-error);
+}
+.m3-radio__circle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--_color);
+  border-radius: 50%;
+  transition: border-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-radio__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--_selected);
+  scale: 0;
+  transition: scale var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-radio__input:checked ~ .m3-radio__circle {
+  border-color: var(--_selected);
+}
+.m3-radio__input:checked ~ .m3-radio__circle .m3-radio__dot {
+  scale: 1;
+}
+.m3-radio[data-disabled] {
+  cursor: default;
+  --_color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  --_selected: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}
+
+/* ---------- Switch ---------- */
+.m3-switch {
+  --_track-width: 52px;
+  --_track-height: 32px;
+  --_handle: 16px;
+  --_track: var(--md-sys-color-surface-container-highest);
+  --_outline: var(--md-sys-color-outline);
+  --_handle-color: var(--md-sys-color-outline);
+  --_icon: var(--md-sys-color-surface-container-highest);
+  --_travel: 20px;
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: var(--_track-width);
+  height: var(--_track-height);
+  margin: 8px 0;
+  border-radius: var(--md-sys-shape-corner-full);
+  cursor: pointer;
+}
+.m3-switch__track {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--_outline);
+  border-radius: inherit;
+  background: var(--_track);
+  transition:
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    border-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-switch:has(.m3-switch__input:focus-visible) {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: var(--md-sys-focus-ring-offset);
+}
+/* State layer: 40dp circle centred on the handle. */
+.m3-switch > .m3-ripple {
+  inset: auto;
+  top: -4px;
+  inset-inline-start: -4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--md-sys-color-on-surface);
+  transition: translate var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+.m3-switch__handle {
+  position: absolute;
+  top: 50%;
+  inset-inline-start: 16px;
+  display: grid;
+  place-items: center;
+  width: var(--_handle);
+  height: var(--_handle);
+  border-radius: 50%;
+  background: var(--_handle-color);
+  translate: -50% -50%;
+  pointer-events: none;
+  transition:
+    inset-inline-start var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    height var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-switch:dir(rtl) .m3-switch__handle {
+  translate: 50% -50%;
+}
+.m3-switch__icon {
+  grid-area: 1 / 1;
+  color: var(--_icon);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-switch[data-unselected-icon] {
+  --_handle: 24px;
+}
+.m3-switch[data-unselected-icon] .m3-switch__input:not(:checked) ~ .m3-switch__handle [data-off] {
+  opacity: 1;
+}
+.m3-switch__input:checked ~ .m3-switch__handle [data-on] {
+  opacity: 1;
+}
+.m3-switch:has(.m3-switch__input:checked) {
+  --_track: var(--md-sys-color-primary);
+  --_outline: var(--md-sys-color-primary);
+  --_handle-color: var(--md-sys-color-on-primary);
+  --_icon: var(--md-sys-color-on-primary-container);
+  --_handle: 24px;
+}
+.m3-switch:has(.m3-switch__input:checked) > .m3-ripple {
+  color: var(--md-sys-color-primary);
+  translate: 20px 0;
+}
+.m3-switch:dir(rtl):has(.m3-switch__input:checked) > .m3-ripple {
+  translate: -20px 0;
+}
+.m3-switch__input:checked ~ .m3-switch__handle {
+  inset-inline-start: 36px;
+}
+.m3-switch:hover:not([data-disabled]) .m3-switch__input:not(:checked) ~ .m3-switch__handle {
+  background: var(--md-sys-color-on-surface-variant);
+}
+.m3-switch:hover:not([data-disabled]) .m3-switch__input:checked ~ .m3-switch__handle {
+  background: var(--md-sys-color-primary-container);
+}
+.m3-switch:active:not([data-disabled]) {
+  --_handle: 28px;
+}
+.m3-switch[data-disabled] {
+  cursor: default;
+  --_track: color-mix(in srgb, var(--md-sys-color-surface-container-highest) 12%, transparent);
+  --_outline: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  --_handle-color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}
+.m3-switch[data-disabled]:has(.m3-switch__input:checked) {
+  --_track: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent);
+  --_outline: transparent;
+  --_handle-color: var(--md-sys-color-surface);
+  --_icon: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+}
+.m3-selection-field[data-label-position="end"]:has(> .m3-switch) {
+  gap: 12px;
+}

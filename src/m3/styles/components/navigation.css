@@ -1,0 +1,978 @@
+/* Shared active indicator (pill behind the icon) */
+.m3-nav-indicator {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 32px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  transition: color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-nav-indicator::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-secondary-container);
+  scale: 0.4 1;
+  opacity: 0;
+  transition:
+    scale var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+[data-active] > .m3-nav-indicator {
+  color: var(--md-sys-color-on-secondary-container);
+}
+[data-active] > .m3-nav-indicator::before {
+  scale: 1 1;
+  opacity: 1;
+}
+.m3-nav-indicator > .m3-icon,
+.m3-nav-indicator > .m3-badge-anchor {
+  position: relative;
+}
+
+/* ---------- Navigation bar (flexible, M3 Expressive: 64dp) ---------- */
+.m3-navigation-bar {
+  display: flex;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 64px;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-navigation-bar__item {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-sys-measurement-space50);
+  min-width: 48px;
+  height: 64px;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.m3-navigation-bar__item:focus-visible .m3-nav-indicator {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: var(--md-sys-focus-ring-offset);
+}
+.m3-navigation-bar__label {
+  position: relative;
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  white-space: nowrap;
+  transition: color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+/* The active label takes the secondary color (M3 Expressive). */
+.m3-navigation-bar__item[data-active] > .m3-navigation-bar__label {
+  color: var(--md-sys-color-secondary);
+}
+.m3-navigation-bar[data-labels="selected"]
+  .m3-navigation-bar__item:not([data-active])
+  .m3-navigation-bar__label {
+  display: none;
+}
+/* Horizontal items (medium windows): label beside the icon inside a 40dp indicator. */
+.m3-navigation-bar[data-layout="horizontal"] .m3-navigation-bar__item {
+  flex: 0 1 auto;
+  min-width: 96px;
+  padding-inline: var(--md-sys-measurement-space100);
+}
+.m3-navigation-bar[data-layout="horizontal"] .m3-nav-indicator {
+  gap: var(--md-sys-measurement-space50);
+  width: auto;
+  height: 40px;
+  padding-inline: var(--md-sys-measurement-space200);
+}
+.m3-navigation-bar[data-layout="horizontal"] [data-active] .m3-navigation-bar__label {
+  color: var(--md-sys-color-on-secondary-container);
+}
+.m3-navigation-bar__item:is(:disabled, [data-disabled]) {
+  opacity: 0.38;
+  cursor: default;
+}
+
+/* ---------- Navigation rail (M3 Expressive: collapsed 96dp, expanded 220–360dp) ---------- */
+.m3-navigation-rail {
+  --_expanded-width: 256px;
+  --_inset: 20px;
+  --_spatial: var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+  --_effects: var(--md-sys-motion-spring-default-effects-duration)
+    var(--md-sys-motion-spring-default-effects);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  box-sizing: border-box;
+  width: 96px;
+  height: 100%;
+  padding: 44px 0 16px;
+  overflow: hidden;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface-variant);
+  transition: width var(--_spatial);
+}
+.m3-navigation-rail[data-expanded] {
+  width: var(--_expanded-width);
+}
+.m3-navigation-rail[data-hidden] {
+  width: 0;
+  visibility: hidden;
+  transition:
+    width var(--_spatial),
+    visibility 0s var(--md-sys-motion-spring-default-spatial-duration);
+}
+.m3-navigation-rail:has(.m3-navigation-rail__header) {
+  padding-top: 8px;
+}
+.m3-navigation-rail__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--md-sys-measurement-space100);
+  padding-inline: var(--_inset);
+  padding-bottom: var(--md-sys-measurement-space500);
+}
+.m3-navigation-rail__top {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space50);
+  min-height: 56px;
+  width: 100%;
+}
+/* The 56dp menu target lines up with the 56dp destination indicators. */
+.m3-navigation-rail__menu {
+  margin-inline-start: 8px;
+}
+.m3-navigation-rail__brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity var(--_effects);
+}
+.m3-navigation-rail[data-expanded] .m3-navigation-rail__brand {
+  opacity: 1;
+}
+.m3-navigation-rail__expanded-header {
+  width: calc(var(--_expanded-width) - 2 * var(--_inset));
+}
+/* In the rail the FAB rests at level 0 and extends when the rail expands. */
+.m3-navigation-rail__fab {
+  --_elevation: var(--md-sys-elevation-level0);
+  --_elevation-hover: var(--md-sys-elevation-level1);
+}
+/* With the full-width indicator, the extended FAB stretches to the same width as the items. Its
+ * content stays at the start, so the icon keeps its place through the expand morph. */
+.m3-navigation-rail .m3-navigation-rail__fab {
+  min-width: var(--_size);
+  transition:
+    box-shadow var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
+    padding var(--_spatial),
+    min-width var(--_spatial);
+}
+.m3-navigation-rail[data-indicator="fill"] .m3-navigation-rail__fab {
+  justify-content: flex-start;
+}
+.m3-navigation-rail[data-expanded][data-indicator="fill"] .m3-navigation-rail__fab {
+  min-width: 100%;
+}
+.m3-navigation-rail__items {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden auto;
+  scrollbar-width: none;
+}
+.m3-navigation-rail[data-expanded] .m3-navigation-rail__items {
+  scrollbar-width: thin;
+}
+.m3-navigation-rail[data-align="center"] .m3-navigation-rail__items {
+  justify-content: center;
+}
+.m3-navigation-rail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space50);
+}
+.m3-navigation-rail__section + .m3-navigation-rail__section {
+  margin-top: var(--md-sys-measurement-space200);
+}
+.m3-navigation-rail__headline {
+  margin: 0;
+  padding: var(--md-sys-measurement-space200) calc(var(--_inset) + 16px)
+    var(--md-sys-measurement-space100);
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-title-small);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-navigation-rail__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--md-sys-measurement-space50);
+  padding: var(--md-sys-measurement-space200) var(--_inset) 0;
+}
+
+/*
+ * Destinations morph between the two rails: the indicator starts at the same inset in both, so
+ * the icon stays put while the label below folds away and the label inside the indicator opens.
+ */
+.m3-navigation-rail__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 64px;
+  padding: 6px var(--_inset);
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    min-height var(--_spatial),
+    padding var(--_spatial);
+}
+.m3-navigation-rail__item:focus-visible .m3-nav-indicator {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: var(--md-sys-focus-ring-offset);
+}
+.m3-navigation-rail .m3-nav-indicator {
+  justify-content: flex-start;
+  gap: 0;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  padding-inline: 16px;
+  box-sizing: border-box;
+  transition:
+    height var(--_spatial),
+    min-width var(--_spatial),
+    gap var(--_spatial),
+    color var(--_effects);
+}
+.m3-navigation-rail__inline-label {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0fr;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  white-space: nowrap;
+  transition:
+    grid-template-columns var(--_spatial),
+    opacity var(--_effects);
+}
+.m3-navigation-rail__inline-label > span {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space100);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.m3-navigation-rail__count {
+  margin-inline-start: auto;
+  padding-inline-start: var(--md-sys-measurement-space150);
+  font: var(--md-sys-typescale-label-large);
+}
+.m3-navigation-rail__label {
+  display: grid;
+  grid-template-rows: 1fr;
+  width: 56px;
+  margin-top: var(--md-sys-measurement-space50);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  text-align: center;
+  transition:
+    grid-template-rows var(--_spatial),
+    margin var(--_spatial),
+    opacity var(--_effects),
+    color var(--_effects);
+}
+.m3-navigation-rail__label > span {
+  min-height: 0;
+  overflow: hidden;
+  /* Long labels may overflow the indicator width symmetrically rather than truncate. */
+  margin-inline: -16px;
+}
+.m3-navigation-rail__item[data-active] > .m3-navigation-rail__label {
+  color: var(--md-sys-color-secondary);
+}
+.m3-navigation-rail[data-hide-labels]
+  .m3-navigation-rail__item:not([data-active])
+  .m3-navigation-rail__label {
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  opacity: 0;
+}
+/* Expanded rail: horizontal destinations whose indicator hugs the icon and label. */
+.m3-navigation-rail[data-expanded] .m3-navigation-rail__item {
+  min-height: 56px;
+  padding-block: 0;
+}
+.m3-navigation-rail[data-expanded] .m3-nav-indicator {
+  gap: var(--md-sys-measurement-space100);
+  height: 56px;
+}
+.m3-navigation-rail[data-expanded] .m3-navigation-rail__inline-label {
+  grid-template-columns: 1fr;
+  opacity: 1;
+}
+.m3-navigation-rail[data-expanded] .m3-navigation-rail__label {
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  opacity: 0;
+}
+.m3-navigation-rail[data-expanded] .m3-badge-anchor .m3-badge:not(:empty) {
+  display: none;
+}
+.m3-navigation-rail[data-expanded][data-density="compact"] .m3-navigation-rail__item {
+  min-height: 40px;
+}
+.m3-navigation-rail[data-expanded][data-density="compact"] .m3-nav-indicator {
+  height: 40px;
+}
+/* Full-width indicator (opt-in): it grows to the rail width and counts move to the end. */
+.m3-navigation-rail[data-expanded][data-indicator="fill"] .m3-nav-indicator {
+  min-width: 100%;
+}
+.m3-navigation-rail[data-indicator="fill"] .m3-navigation-rail__inline-label {
+  flex: 1 1 auto;
+}
+.m3-navigation-rail[data-expanded][data-density="compact"] .m3-navigation-rail__section {
+  gap: 0;
+}
+.m3-navigation-rail__item:is(:disabled, [data-disabled]) {
+  opacity: 0.38;
+  cursor: default;
+}
+
+/* Modal expanded rail: over the content, on surface container, with a scrim. */
+.m3-navigation-rail-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--m3-z-sheet);
+}
+.m3-navigation-rail__modal {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: flex;
+  max-width: calc(100vw - 56px);
+  outline: none;
+  box-shadow: var(--md-sys-elevation-level2);
+  border-start-end-radius: var(--md-sys-shape-corner-large);
+  border-end-end-radius: var(--md-sys-shape-corner-large);
+  overflow: hidden;
+  transition: translate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-navigation-rail__modal > .m3-navigation-rail {
+  max-width: 100%;
+  background: var(--md-sys-color-surface-container);
+}
+.m3-navigation-rail__modal[data-state="closed"] {
+  translate: -100% 0;
+  transition-timing-function: var(--md-sys-motion-easing-emphasized-accelerate);
+  transition-duration: var(--md-sys-motion-duration-short4);
+}
+.m3-navigation-rail__modal:dir(rtl)[data-state="closed"] {
+  translate: 100% 0;
+}
+@starting-style {
+  .m3-navigation-rail__modal[data-state="open"] {
+    translate: -100% 0;
+  }
+  .m3-navigation-rail__modal:dir(rtl)[data-state="open"] {
+    translate: 100% 0;
+  }
+}
+
+/* ---------- App bar (M3 Expressive) ---------- */
+.m3-app-bar {
+  --_container: var(--md-sys-color-surface);
+  z-index: var(--m3-z-app-bar);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 100%;
+  background: var(--_container);
+  color: var(--md-sys-color-on-surface);
+  transition: background-color var(--md-sys-motion-spring-default-effects-duration)
+    var(--md-sys-motion-spring-default-effects);
+}
+.m3-app-bar[data-position="sticky"] {
+  position: sticky;
+  top: 0;
+}
+.m3-app-bar[data-position="fixed"] {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+}
+.m3-app-bar[data-scrolled] {
+  --_container: var(--md-sys-color-surface-container);
+}
+.m3-app-bar__row {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space50);
+  box-sizing: border-box;
+  min-height: 64px;
+  padding: 8px var(--md-sys-measurement-space50) 8px 16px;
+}
+.m3-app-bar:has(.m3-app-bar__navigation) .m3-app-bar__row {
+  padding-inline-start: var(--md-sys-measurement-space50);
+}
+.m3-app-bar__navigation,
+.m3-app-bar__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-app-bar__navigation {
+  color: var(--md-sys-color-on-surface);
+}
+.m3-app-bar__titles {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 4px;
+}
+.m3-app-bar__title,
+.m3-app-bar__headline {
+  margin: 0;
+  font: var(--md-sys-typescale-title-large);
+  letter-spacing: var(--md-sys-typescale-title-large-tracking);
+}
+/* The small bar never wraps its headline. */
+.m3-app-bar__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-app-bar__subtitle {
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.m3-app-bar[data-align="center"] .m3-app-bar__titles {
+  align-items: center;
+  text-align: center;
+}
+.m3-app-bar[data-align="center"] .m3-app-bar__navigation,
+.m3-app-bar[data-align="center"] .m3-app-bar__actions {
+  min-width: 48px;
+}
+.m3-app-bar[data-align="center"] .m3-app-bar__actions {
+  justify-content: flex-end;
+}
+/* Flexible bars: the small headline fades in as the large one collapses away. */
+.m3-app-bar:is([data-variant="medium-flexible"], [data-variant="large-flexible"])
+  .m3-app-bar__titles {
+  opacity: var(--_collapse);
+}
+.m3-app-bar__expanded {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: calc(var(--_extra) * (1 - var(--_collapse)));
+  overflow: hidden;
+  opacity: calc(1 - var(--_collapse) * 1.5);
+}
+.m3-app-bar__expanded-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  min-height: var(--_extra);
+  padding: 0 16px 12px;
+}
+.m3-app-bar__expanded[data-align="center"] .m3-app-bar__expanded-content {
+  align-items: center;
+  text-align: center;
+}
+.m3-app-bar__expanded .m3-app-bar__headline {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.m3-app-bar__expanded[data-variant="medium-flexible"] .m3-app-bar__headline {
+  font: var(--md-sys-typescale-headline-medium);
+  letter-spacing: var(--md-sys-typescale-headline-medium-tracking);
+}
+.m3-app-bar__expanded[data-variant="medium-flexible"] .m3-app-bar__subtitle {
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+  white-space: normal;
+}
+.m3-app-bar__expanded[data-variant="large-flexible"] .m3-app-bar__headline {
+  font: var(--md-sys-typescale-display-small);
+  letter-spacing: var(--md-sys-typescale-display-small-tracking);
+}
+.m3-app-bar__expanded[data-variant="large-flexible"] .m3-app-bar__subtitle {
+  font: var(--md-sys-typescale-title-medium);
+  letter-spacing: var(--md-sys-typescale-title-medium-tracking);
+  white-space: normal;
+}
+/* In-flow headline (sticky bars): full height, scrolls away with the content. */
+.m3-app-bar__expanded[data-in-flow] {
+  height: auto;
+  opacity: 1;
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+}
+/* Search app bar: a 56dp search bar between the leading and trailing elements. */
+.m3-app-bar__search {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+}
+.m3-app-bar__search > * {
+  flex: 1 1 auto;
+  max-width: max(312px, 50%);
+}
+.m3-app-bar[data-variant="search"] .m3-search__bar {
+  height: 56px;
+  background: var(--md-sys-color-surface-container);
+}
+.m3-app-bar[data-variant="search"][data-scrolled] .m3-search__bar {
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+/* ---------- Toolbars (M3 Expressive): docked and floating ---------- */
+.m3-toolbar {
+  --_container: var(--md-sys-color-surface-container);
+  --_content: var(--md-sys-color-on-surface-variant);
+  --_selected: var(--md-sys-color-secondary-container);
+  --_on-selected: var(--md-sys-color-on-secondary-container);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  background: var(--_container);
+  color: var(--_content);
+  transition: translate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-toolbar[data-color="vibrant"] {
+  --_container: var(--md-sys-color-primary-container);
+  --_content: var(--md-sys-color-on-primary-container);
+  --_selected: var(--md-sys-color-surface-container);
+  --_on-selected: var(--md-sys-color-on-surface);
+}
+/* Standard icon buttons take the toolbar's content color; selected ones its selected colors. */
+.m3-toolbar .m3-icon-button[data-variant="standard"] {
+  --_icon: var(--_content);
+}
+.m3-toolbar .m3-icon-button[data-variant="standard"][data-selected] {
+  --_container: var(--_selected);
+  --_icon: var(--_on-selected);
+}
+.m3-toolbar .m3-button[data-variant="text"] {
+  --_label: var(--_content);
+}
+.m3-toolbar[data-type="docked"] {
+  justify-content: center;
+  gap: 32px;
+  width: 100%;
+  min-height: 64px;
+  padding-inline: var(--md-sys-measurement-space200);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@media (max-width: 599.98px) {
+  /* Compact windows: evenly spaced controls. */
+  .m3-toolbar[data-type="docked"] {
+    justify-content: space-between;
+    gap: 4px;
+  }
+}
+.m3-toolbar__fab {
+  display: flex;
+  margin-inline-start: auto;
+}
+.m3-toolbar__fab .m3-fab {
+  --_elevation: var(--md-sys-elevation-level0);
+  --_elevation-hover: var(--md-sys-elevation-level1);
+}
+.m3-toolbar[data-type="floating"] {
+  gap: var(--md-sys-measurement-space50);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  height: 64px;
+  padding-inline: var(--md-sys-measurement-space100);
+  border-radius: var(--md-sys-shape-corner-full);
+  box-shadow: var(--md-sys-elevation-level3);
+}
+.m3-toolbar[data-type="floating"][data-orientation="vertical"] {
+  flex-direction: column;
+  width: 64px;
+  height: max-content;
+  max-height: calc(100% - 48px);
+  padding-block: var(--md-sys-measurement-space100);
+  padding-inline: 0;
+}
+.m3-toolbar[data-flat] {
+  box-shadow: none;
+}
+.m3-toolbar[data-type="docked"][data-hidden] {
+  translate: 0 100%;
+}
+.m3-toolbar[data-type="floating"][data-hidden] {
+  translate: 0 calc(100% + 32px);
+}
+.m3-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space100);
+  transition: translate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-toolbar-group[data-orientation="vertical"] {
+  flex-direction: column;
+}
+.m3-toolbar-group[data-hidden] {
+  translate: 0 calc(100% + 32px);
+}
+.m3-toolbar-group > .m3-fab {
+  --_elevation: var(--md-sys-elevation-level1);
+  --_elevation-hover: var(--md-sys-elevation-level2);
+}
+
+/* ---------- Tabs ---------- */
+.m3-tabs {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface);
+  scrollbar-width: none;
+}
+.m3-tabs::-webkit-scrollbar {
+  display: none;
+}
+.m3-tab {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 16px;
+  border: none;
+  background: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-title-small);
+  letter-spacing: var(--md-sys-typescale-title-small-tracking);
+  white-space: nowrap;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.m3-tabs[data-scrollable] .m3-tab {
+  flex: 0 0 auto;
+}
+.m3-tab:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: calc(var(--md-sys-focus-ring-width) * -1);
+}
+.m3-tab[data-stacked] {
+  min-height: 64px;
+}
+.m3-tab[aria-selected="true"] {
+  color: var(--md-sys-color-primary);
+}
+.m3-tabs[data-variant="secondary"] .m3-tab[aria-selected="true"] {
+  color: var(--md-sys-color-on-surface);
+}
+.m3-tab > .m3-ripple {
+  color: var(--md-sys-color-on-surface);
+}
+.m3-tab[aria-selected="true"] > .m3-ripple {
+  color: var(--md-sys-color-primary);
+}
+.m3-tab__content {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 24px;
+  height: 100%;
+}
+.m3-tab[data-stacked] .m3-tab__content {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+.m3-tab__icon,
+.m3-tab__label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.m3-tab:disabled {
+  color: color-mix(in srgb, var(--md-sys-color-on-surface) 38%, transparent);
+  cursor: default;
+}
+.m3-tabs__indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: var(--_width);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--md-sys-color-primary);
+  translate: var(--_left) 0;
+  pointer-events: none;
+  transition:
+    translate var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial),
+    width var(--md-sys-motion-spring-default-spatial-duration)
+    var(--md-sys-motion-spring-default-spatial);
+}
+.m3-tabs[data-variant="secondary"] .m3-tabs__indicator {
+  height: 2px;
+  border-radius: 0;
+}
+.m3-tab-panel {
+  outline: none;
+}
+.m3-tab-panel:focus-visible {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: calc(var(--md-sys-focus-ring-width) * -1);
+}
+
+/* ---------- Search (M3 Expressive, contained style) ---------- */
+.m3-search {
+  --_margin: var(--md-sys-measurement-space150);
+  position: relative;
+  max-width: 720px;
+  min-width: 0;
+}
+/* The bar grows wider when focused: its margins shrink from 24dp to 12dp of the container. */
+.m3-search__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space50);
+  box-sizing: border-box;
+  height: 56px;
+  margin-inline: var(--_margin);
+  padding-inline: var(--md-sys-measurement-space200);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  transition:
+    margin var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    padding var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-search__bar:has(.m3-search__trailing > .m3-icon-button:only-child) {
+  padding-inline-end: var(--md-sys-measurement-space100);
+}
+.m3-search[data-active] .m3-search__bar {
+  margin-inline: 0;
+  padding-inline: var(--md-sys-measurement-space100);
+}
+.m3-search__leading,
+.m3-search__trailing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-search__shortcut {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: var(--md-sys-measurement-space150);
+  padding: 2px 6px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-small);
+  line-height: 1;
+  user-select: none;
+}
+.m3-search__leading {
+  min-width: 24px;
+  color: var(--md-sys-color-on-surface);
+}
+.m3-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--md-sys-measurement-space100);
+  border: none;
+  outline: none;
+  background: none;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+}
+.m3-search__input::placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+.m3-search__bar:has(.m3-search__input:focus-visible) {
+  outline: var(--md-sys-focus-ring-width) solid var(--md-sys-focus-ring-color);
+  outline-offset: var(--md-sys-focus-ring-offset);
+}
+.m3-search[data-view] .m3-search__bar:has(.m3-search__input:focus-visible) {
+  outline: none;
+}
+/* Docked view: a separate rounded container 2dp under the bar. */
+.m3-search__view {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(56px + var(--md-sys-measurement-space25));
+  z-index: var(--m3-z-menu);
+  box-sizing: border-box;
+  max-height: min(66vh, 560px);
+  overflow: auto;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--md-sys-elevation-level2);
+  transform-origin: top center;
+  animation: m3-search-view-in var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial);
+}
+@keyframes m3-search-view-in {
+  from {
+    opacity: 0;
+    scale: 1 0.92;
+  }
+}
+.m3-search__progress {
+  position: sticky;
+  top: 0;
+}
+.m3-search__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space50);
+  padding: var(--md-sys-measurement-space100);
+}
+/* Groups are separated by gaps, each a rounded block of its own. */
+.m3-search__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space25);
+  padding-block: var(--md-sys-measurement-space50);
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container);
+}
+.m3-search__group-label {
+  padding: var(--md-sys-measurement-space100) var(--md-sys-measurement-space200) 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
+}
+.m3-search__option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space200);
+  min-height: 56px;
+  padding: 8px var(--md-sys-measurement-space200);
+  border-radius: var(--md-sys-shape-corner-medium);
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  letter-spacing: var(--md-sys-typescale-body-large-tracking);
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
+}
+.m3-search__option[data-active] {
+  background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent);
+}
+.m3-search__option-icon {
+  display: inline-flex;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.m3-search__option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.m3-search__option-supporting {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+  letter-spacing: var(--md-sys-typescale-body-medium-tracking);
+}
+.m3-search__empty {
+  padding: 24px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+  text-align: center;
+}
+/* Full-screen view (compact windows): the bar keeps its shape over a low surface. */
+.m3-search[data-fullscreen] {
+  position: fixed;
+  inset: 0;
+  z-index: var(--m3-z-dialog);
+  display: flex;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space100);
+  max-width: none;
+  padding: var(--md-sys-measurement-space100) var(--md-sys-measurement-space150);
+  background: var(--md-sys-color-surface-container-low);
+}
+.m3-search[data-fullscreen] .m3-search__view {
+  position: static;
+  flex: 1 1 auto;
+  max-height: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+.m3-search[data-fullscreen] .m3-search__list {
+  padding-inline: 0;
+}
