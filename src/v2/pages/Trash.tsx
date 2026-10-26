@@ -120,7 +120,13 @@ export function Trash() {
                     setLightbox({ images: withImages.map((i) => imageDisplayUrl(i.optimizedUrl || i.imageUrl)), index: idx >= 0 ? idx : 0 });
                   }}
                 >
-                  <img src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} alt={item.prompt} referrerPolicy="no-referrer" loading="lazy" />
+                  {item.thumbnailUrl || item.imageUrl ? (
+                    <img src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} alt="" referrerPolicy="no-referrer" loading="lazy" onError={(e) => { (e.currentTarget as HTMLElement).style.display = 'none'; }} />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-surface-container-high p-4 text-on-surface-variant">
+                      <Icon name="description" size={32} />
+                    </div>
+                  )}
                   <span className="v2-trash-card__scrim">
                     <Text as="span" variant="body-small" className="line-clamp-3">
                       {item.prompt}
