@@ -5,8 +5,8 @@ import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 
 export type ProjectSection = 'draft' | 'queue' | 'completed' | 'album';
 
-export interface SectionNavItem {
-  value: ProjectSection;
+export interface SectionNavItem<T extends string = ProjectSection> {
+  value: T;
   label: string;
   icon: string;
   count: number;
@@ -15,11 +15,11 @@ export interface SectionNavItem {
 }
 
 // Each section renders its own bar, so the nav remounts on every switch; the indicator
-// starts from where it last stood and slides to the new section.
-let lastIndicator: { left: number; width: number } | null = null;
+// starts from where it last stood (per page, by `scope`) and slides to the new section.
+const lastIndicators = new Map<string, { left: number; width: number }>();
 
 /** The results pane's sections, as one quiet segmented pill with counts and a sliding indicator. */
-export function SectionNav({ items, value, onChange }: { items: SectionNavItem[]; value: ProjectSection; onChange: (value: ProjectSection) => void }) {
+export function SectionNav<T extends string = ProjectSection>({ items, value, onChange, label, scope = 'project' }: { items: SectionNavItem<T>[]; value: T; onChange: (value: T) => void; label?: string; scope?: string }) {
   const { t } = useTranslation();
   const navRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -38,7 +38,7 @@ export function SectionNav({ items, value, onChange }: { items: SectionNavItem[]
     };
     const target = measure();
     if (!target) return;
-    const from = lastIndicator;
+    const from = lastIndicators.get(scope);
     if (from && (from.left !== target.left || from.width !== target.width)) {
       indicator.style.transition = 'none';
       place(from);
@@ -46,24 +46,25 @@ export function SectionNav({ items, value, onChange }: { items: SectionNavItem[]
       indicator.style.transition = '';
     }
     place(target);
-    lastIndicator = target;
+    lastIndicators.set(scope, target);
     // Counts and labels change widths; follow them without animating.
     const observer = new ResizeObserver(() => {
       const next = measure();
       // The observer also reports once as it starts; snapping then would cancel the slide.
-      if (!next || (lastIndicator && next.left === lastIndicator.left && next.width === lastIndicator.width)) return;
+      const last = lastIndicators.get(scope);
+      if (!next || (last && next.left === last.left && next.width === last.width)) return;
       indicator.style.transition = 'none';
       place(next);
       void indicator.offsetWidth;
       indicator.style.transition = '';
-      lastIndicator = next;
+      lastIndicators.set(scope, next);
     });
     observer.observe(nav);
     return () => observer.disconnect();
-  }, [value]);
+  }, [value, scope]);
 
   return (
-    <nav ref={navRef} className="v2-section-nav" aria-label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}>
+    <nav ref={navRef} className="v2-section-nav" aria-label={label ?? t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}>
       <span ref={indicatorRef} className="v2-section-nav__indicator" aria-hidden />
       {items.map((item) => {
         const active = item.value === value;

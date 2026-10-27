@@ -1,560 +1,574 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { adminResetUserPassword, createUser, getUserDetail, getUsers, updateUserRole, updateUserStatus, updateUserStorageLimit } from '../../api';
-import { Avatar, Button, DataTable, Dialog, Icon, Select, SideSheet, Text, TextField, useSnackbar } from '../../m3';
+import { Button, IconButton, InputChip, LoadingIndicator, Select, SideSheet, Text, useSnackbar } from '../../m3';
 import type { UserDetail, UserRole, UserStatus, UserSummary } from '../../types';
 import { useAuth } from '../app/auth';
+import { DangerAction, ResultsBar, SectionNav } from '../components/project/ResultsBar';
+import { CreateUserDialog, ResetPasswordDialog } from '../components/users/UserDialogs';
+import { UserRow } from '../components/users/UserRow';
+import { UserSheet } from '../components/users/UserSheet';
+import { UsersHero, type UsersOverview } from '../components/users/UsersHero';
+import { STORAGE_TIERS, tierOf } from '../components/users/userMeta';
+import { formatBytes } from '../lib/format';
+import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { ErrorState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
+import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
 import { SearchField } from '../ui/SearchField';
-import { StatTile, StatusPill } from '../ui/Stat';
 
-type Filters = { q: string; role: UserRole | 'all'; status: UserStatus | 'all'; page: number; pageSize: number };
-const INITIAL: Filters = { q: '', role: 'all', status: 'all', page: 1, pageSize: 20 };
+type View = 'all' | UserStatus;
+type RoleFilter = 'all' | UserRole;
+type SortKey = 'newest' | 'oldest' | 'recent' | 'email' | 'email-desc';
 
-function formatBytes(bytes: number) {
-  if (!bytes) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / 1024 ** index;
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+const VIEWS: View[] = ['all', 'active', 'disabled'];
+const ROLES: RoleFilter[] = ['all', 'admin', 'user'];
+const SORTS: Record<SortKey, { sortBy: 'createdAt' | 'lastLoginAt' | 'email'; sortOrder: 'asc' | 'desc'; icon: string }> = {
+  newest: { sortBy: 'createdAt', sortOrder: 'desc', icon: 'south' },
+  oldest: { sortBy: 'createdAt', sortOrder: 'asc', icon: 'north' },
+  recent: { sortBy: 'lastLoginAt', sortOrder: 'desc', icon: 'login' },
+  email: { sortBy: 'email', sortOrder: 'asc', icon: 'sort_by_alpha' },
+  'email-desc': { sortBy: 'email', sortOrder: 'desc', icon: 'sort_by_alpha' },
+};
+const PAGE_SIZES = [25, 50, 100];
+
+type Pending = { kind: 'role'; user: UserSummary; role: UserRole } | { kind: 'status'; user: UserSummary; status: UserStatus } | { kind: 'bulk-status'; users: UserSummary[]; status: UserStatus };
+
+function pick<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
+  return value && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
 }
 
 export function AdminUsers() {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
-  const { user: currentUser } = useAuth();
-  const TIERS = useMemo(
-    () => [
-      { name: 'Free (5GB)', value: 5 * 1024 ** 3 },
-      { name: 'Professional (100GB)', value: 100 * 1024 ** 3 },
-      { name: 'Premium (500GB)', value: 500 * 1024 ** 3 },
-    ],
-    [],
+  const { user: me } = useAuth();
+  const [params, setParams] = useSearchParams();
+
+  // Filters, sort, paging and the open account live in the URL.
+  const q = params.get('q') ?? '';
+  const view = pick(params.get('status'), VIEWS, 'all');
+  const role = pick(params.get('role'), ROLES, 'all');
+  const sort = pick(params.get('sort'), Object.keys(SORTS) as SortKey[], 'newest');
+  const pageSize = PAGE_SIZES.includes(Number(params.get('size'))) ? Number(params.get('size')) : PAGE_SIZES[0];
+  const page = Math.max(1, Math.floor(Number(params.get('page'))) || 1);
+  const openId = params.get('user');
+
+  const update = useCallback(
+    (patch: Record<string, string | number | null>, { push = false }: { push?: boolean } = {}) => {
+      setParams(
+        (previous) => {
+          const next = new URLSearchParams(previous);
+          for (const [key, value] of Object.entries(patch)) {
+            if (value === null || value === '' || value === 'all') next.delete(key);
+            else next.set(key, String(value));
+          }
+          // Any change to what is listed starts again from the first page.
+          if (!('page' in patch) && !('user' in patch)) next.delete('page');
+          if (next.get('page') === '1') next.delete('page');
+          if (next.get('sort') === 'newest') next.delete('sort');
+          if (next.get('size') === String(PAGE_SIZES[0])) next.delete('size');
+          return next;
+        },
+        { replace: !push },
+      );
+    },
+    [setParams],
   );
-  const [filters, setFilters] = useState<Filters>(INITIAL);
-  const [searchInput, setSearchInput] = useState('');
+
+  const [searchInput, setSearchInput] = useState(q);
+  useEffect(() => setSearchInput(q), [q]);
+  useEffect(() => {
+    const value = searchInput.trim();
+    if (value === q) return;
+    const timer = window.setTimeout(() => update({ q: value }), 350);
+    return () => window.clearTimeout(timer);
+  }, [searchInput, q, update]);
+
+  const [reloadKey, setReloadKey] = useState(0);
+  const refresh = useCallback(() => setReloadKey((key) => key + 1), []);
+
+  // The page of accounts.
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState('');
-  const [activeUserId, setActiveUserId] = useState<string | null>(null);
-  const [activeUser, setActiveUser] = useState<UserDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [detailError, setDetailError] = useState('');
-  const [createOpen, setCreateOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const blankForm = { email: '', password: '', role: 'user' as UserRole, status: 'disabled' as UserStatus, storageLimit: TIERS[0].value };
-  const [form, setForm] = useState(blankForm);
-  const [resetPassword, setResetPassword] = useState('');
-  const [resetting, setResetting] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState<{ userId: string; status: UserStatus; email: string } | null>(null);
-  const [pendingRole, setPendingRole] = useState<{ userId: string; role: UserRole; email: string } | null>(null);
-
-  const formatDate = (value?: number) => (value ? new Date(value).toLocaleString() : t('adminUsers.never'));
-  const relative = (value?: number) => {
-    if (!value) return t('adminUsers.never');
-    const minutes = Math.round((Date.now() - value) / 60000);
-    if (minutes < 1) return t('adminUsers.justNow');
-    if (minutes < 60) return t('adminUsers.relativeTime.m', { count: minutes });
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return t('adminUsers.relativeTime.h', { count: hours });
-    const days = Math.round(hours / 24);
-    if (days < 30) return t('adminUsers.relativeTime.d', { count: days });
-    return new Date(value).toLocaleDateString();
-  };
-  const tierName = (limit?: number) => TIERS.find((tier) => Math.abs(tier.value - (limit || 0)) < 1000)?.name || 'Custom';
-  const canResetPassword = activeUser && currentUser && activeUser.id !== currentUser.id;
-
-  const loadUsers = async () => {
+  const listRequest = useRef(0);
+  useEffect(() => {
+    const id = ++listRequest.current;
     setLoading(true);
-    setError('');
-    try {
-      const result = await getUsers(filters);
-      setUsers(result.items);
-      setTotal(result.total);
-      setPages(result.pages);
-    } catch (err) {
-      setError((err as Error).message || t('adminUsers.errors.loadUsers'));
-    } finally {
-      setLoading(false);
+    getUsers({ q, role, status: view, page, pageSize, sortBy: SORTS[sort].sortBy, sortOrder: SORTS[sort].sortOrder })
+      .then((result) => {
+        if (id !== listRequest.current) return;
+        setUsers(result.items);
+        setTotal(result.total);
+        setPages(result.pages);
+        setError('');
+      })
+      .catch((err: Error) => id === listRequest.current && setError(err.message || t('adminUsers.errors.loadUsers')))
+      .finally(() => {
+        if (id !== listRequest.current) return;
+        setLoading(false);
+        setLoaded(true);
+      });
+  }, [q, role, view, page, pageSize, sort, reloadKey, t]);
+
+  // Everyone at a glance, for the hero.
+  const [overview, setOverview] = useState<UsersOverview | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getUsers({ pageSize: 5 }), getUsers({ status: 'active', pageSize: 1 }), getUsers({ status: 'disabled', pageSize: 1 }), getUsers({ role: 'admin', pageSize: 1 })])
+      .then(([all, active, disabled, admins]) => {
+        if (!cancelled) setOverview({ total: all.total, active: active.total, disabled: disabled.total, admins: admins.total, newest: all.items });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  // Counts on the status switcher follow the search and role; without them they are the overview's.
+  const [scopedCounts, setScopedCounts] = useState<Record<View, number> | null>(null);
+  useEffect(() => {
+    if (!q && role === 'all') {
+      setScopedCounts(null);
+      return;
     }
-  };
+    let cancelled = false;
+    Promise.all(VIEWS.map((status) => getUsers({ q, role, status, pageSize: 1 })))
+      .then(([all, active, disabled]) => {
+        if (!cancelled) setScopedCounts({ all: all.total, active: active.total, disabled: disabled.total });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [q, role, reloadKey]);
+  const counts: Record<View, number> | null = scopedCounts ?? (overview ? { all: overview.total, active: overview.active, disabled: overview.disabled } : null);
 
-  const loadDetail = async (userId: string) => {
-    setDetailLoading(true);
-    setDetailError('');
-    try {
-      setActiveUser(await getUserDetail(userId));
-      setResetPassword('');
-    } catch (err) {
-      setDetailError((err as Error).message || t('adminUsers.errors.loadDetail'));
-    } finally {
-      setDetailLoading(false);
-    }
-  };
-
+  // The open account.
+  const [detail, setDetail] = useState<UserDetail | null>(null);
+  const [detailError, setDetailError] = useState('');
   useEffect(() => {
-    void loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setFilters((c) => ({ ...c, q: searchInput.trim(), page: 1 })), 400);
-    return () => clearTimeout(timer);
-  }, [searchInput]);
-
-  useEffect(() => {
-    if (!activeUserId) {
-      setActiveUser(null);
+    if (!openId) {
+      setDetail(null);
       setDetailError('');
       return;
     }
-    void loadDetail(activeUserId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUserId]);
+    let cancelled = false;
+    setDetailError('');
+    getUserDetail(openId)
+      .then((result) => !cancelled && setDetail(result))
+      .catch((err: Error) => !cancelled && setDetailError(err.message || t('adminUsers.errors.loadDetail')));
+    return () => {
+      cancelled = true;
+    };
+  }, [openId, reloadKey, t]);
+  const shownDetail = detail && detail.id === openId ? detail : null;
 
-  const refreshAll = async (userId?: string) => {
-    await loadUsers();
-    if (userId || activeUserId) await loadDetail(userId || activeUserId!);
+  // Selection covers the accounts in view; it clears whenever the list changes.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const anchorId = useRef<string | null>(null);
+  useEffect(() => {
+    setSelected(new Set());
+    anchorId.current = null;
+  }, [q, role, view, page, pageSize, sort]);
+  const selectedUsers = useMemo(() => users.filter((user) => selected.has(user.id)), [users, selected]);
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
+
+  const toggle = (id: string, range: boolean) => {
+    setSelected((current) => {
+      const next = new Set(current);
+      const from = anchorId.current ? users.findIndex((user) => user.id === anchorId.current) : -1;
+      const to = users.findIndex((user) => user.id === id);
+      if (range && from >= 0 && to >= 0) {
+        const [start, end] = from < to ? [from, to] : [to, from];
+        for (const user of users.slice(start, end + 1)) next.add(user.id);
+      } else if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    anchorId.current = id;
   };
 
-  const fail = (err: unknown, key: string) => {
-    const message = (err as Error).message || t(key);
-    setError(message);
-    snackbar.show(message);
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<UserSummary | null>(null);
+
+  const fail = (err: unknown, key: string) => snackbar.show((err as Error).message || t(key));
+
+  const copy = (text: string) => {
+    void navigator.clipboard
+      .writeText(text)
+      .then(() => snackbar.show(t('v2.users.copied')))
+      .catch(() => snackbar.show(t('v2.users.copyFailed')));
   };
 
   const changeStorage = async (userId: string, limit: number) => {
     try {
       await updateUserStorageLimit(userId, limit);
       snackbar.show(t('adminUsers.toasts.storageUpdated'));
-      await refreshAll(userId);
+      refresh();
+      return true;
     } catch (err) {
       fail(err, 'adminUsers.errors.updateStorage');
+      return false;
     }
   };
 
-  const submitCreate = async (event?: FormEvent) => {
-    event?.preventDefault();
-    setCreating(true);
-    setError('');
+  /** Runs one change over several accounts, one at a time, and reports how it went. */
+  const runBulk = async (targets: UserSummary[], change: (user: UserSummary) => Promise<void>) => {
+    let done = 0;
+    let firstError = '';
+    for (const user of targets) {
+      try {
+        await change(user);
+        done += 1;
+      } catch (err) {
+        firstError ||= `${user.email}: ${(err as Error).message}`;
+      }
+    }
+    const failed = targets.length - done;
+    snackbar.show(failed ? t('v2.users.bulkPartial', { done, failed, reason: firstError }) : t('v2.users.bulkDone', { count: done }));
+    clearSelection();
+    refresh();
+  };
+
+  const bulkStatus = (status: UserStatus) => {
+    const targets = selectedUsers.filter((user) => user.id !== me?.id && user.status !== status);
+    if (!targets.length) {
+      snackbar.show(t('v2.users.nothingToChange'));
+      return;
+    }
+    setPending({ kind: 'bulk-status', users: targets, status });
+  };
+
+  const bulkStorage = (limit: number) => {
+    const targets = selectedUsers.filter((user) => Math.abs((user.storageLimit || 0) - limit) >= 1000);
+    if (!targets.length) {
+      snackbar.show(t('v2.users.nothingToChange'));
+      return;
+    }
+    void runBulk(targets, (user) => updateUserStorageLimit(user.id, limit));
+  };
+
+  const openUser = (id: string) => update({ user: id }, { push: true });
+  const closeUser = () => update({ user: null });
+
+  const tierItems = (current: number | undefined, onSelect: (bytes: number) => void): ActionMenuItem[] =>
+    STORAGE_TIERS.map((tier, index) => ({
+      key: `tier-${tier.key}`,
+      label: t('v2.users.tierLabel', { tier: t(`v2.users.tiers.${tier.key}`), size: formatBytes(tier.bytes) }),
+      type: 'radio' as const,
+      checked: current !== undefined && tierOf(current) === tier.key,
+      divider: index === 0,
+      onSelect: () => onSelect(tier.bytes),
+    }));
+
+  const rowMenu = (user: UserSummary): ActionMenuItem[] => {
+    const self = user.id === me?.id;
+    return [
+      { key: 'open', icon: 'person_search', label: t('v2.users.open'), onSelect: () => openUser(user.id) },
+      { key: 'select', icon: selected.has(user.id) ? 'check_box' : 'check_box_outline_blank', label: t('v2.project.select'), type: 'checkbox', checked: selected.has(user.id), onSelect: () => toggle(user.id, false) },
+      { key: 'copy-email', icon: 'alternate_email', label: t('v2.users.copyEmail'), onSelect: () => copy(user.email) },
+      { key: 'copy-id', icon: 'fingerprint', label: t('v2.users.copyId'), onSelect: () => copy(user.id) },
+      {
+        key: 'role',
+        icon: user.role === 'admin' ? 'remove_moderator' : 'add_moderator',
+        label: user.role === 'admin' ? t('adminUsers.confirm.demoteTitle') : t('adminUsers.confirm.promoteTitle'),
+        disabled: self,
+        divider: true,
+        onSelect: () => setPending({ kind: 'role', user, role: user.role === 'admin' ? 'user' : 'admin' }),
+      },
+      { key: 'reset', icon: 'key', label: t('v2.users.resetPassword'), disabled: self, onSelect: () => setResetTarget(user) },
+      {
+        key: 'status',
+        icon: user.status === 'active' ? 'block' : 'check_circle',
+        label: user.status === 'active' ? t('v2.users.disable') : t('v2.users.enable'),
+        danger: user.status === 'active',
+        disabled: self,
+        onSelect: () => setPending({ kind: 'status', user, status: user.status === 'active' ? 'disabled' : 'active' }),
+      },
+      ...tierItems(user.storageLimit, (bytes) => {
+        if (tierOf(user.storageLimit) !== tierOf(bytes)) void changeStorage(user.id, bytes);
+      }),
+    ];
+  };
+
+  const filtered = Boolean(q) || role !== 'all' || view !== 'all';
+  const clearFilters = () => {
+    setSearchInput('');
+    update({ q: null, role: null, status: null });
+  };
+  const rangeStart = total ? (Math.min(page, pages) - 1) * pageSize + 1 : 0;
+  const rangeEnd = Math.min(total, rangeStart + users.length - 1);
+
+  const nav = (
+    <SectionNav<View>
+      scope="users"
+      label={t('v2.users.sections')}
+      value={view}
+      onChange={(next) => update({ status: next })}
+      items={[
+        { value: 'all', label: t('v2.users.all'), icon: 'group', count: counts?.all ?? 0 },
+        { value: 'active', label: t('adminUsers.active'), icon: 'check_circle', count: counts?.active ?? 0 },
+        { value: 'disabled', label: t('adminUsers.disabled'), icon: 'block', count: counts?.disabled ?? 0, signal: (counts?.disabled ?? 0) > 0 ? 'error' : undefined },
+      ]}
+    />
+  );
+
+  const tools = (
+    <>
+      <SearchField value={searchInput} onChange={setSearchInput} onSubmit={(value) => update({ q: value.trim() })} placeholder={t('adminUsers.searchPlaceholder')} className="v2-users-search" />
+      <ActionMenu
+        label={t('v2.users.role')}
+        icon="filter_list"
+        variant={role === 'all' ? 'standard' : 'tonal'}
+        openOnHover
+        items={ROLES.map((value) => ({
+          key: value,
+          type: 'radio' as const,
+          checked: role === value,
+          icon: value === 'admin' ? 'shield_person' : value === 'user' ? 'person' : 'groups',
+          label: value === 'all' ? t('v2.users.allRoles') : value === 'admin' ? t('v2.users.admins') : t('v2.users.members'),
+          onSelect: () => update({ role: value }),
+        }))}
+      />
+      <ActionMenu
+        label={t('v2.users.sort')}
+        icon="sort"
+        openOnHover
+        items={(Object.keys(SORTS) as SortKey[]).map((value) => ({
+          key: value,
+          type: 'radio' as const,
+          checked: sort === value,
+          icon: SORTS[value].icon,
+          label: t(`v2.users.sorts.${value}`),
+          onSelect: () => update({ sort: value }),
+        }))}
+      />
+    </>
+  );
+
+  const chips = (q || role !== 'all') && (
+    <>
+      {q && <InputChip label={`“${q}”`} icon="search" onRemove={() => update({ q: null })} removeLabel={t('v2.users.clearSearch')} />}
+      {role !== 'all' && <InputChip label={role === 'admin' ? t('v2.users.admins') : t('v2.users.members')} icon={role === 'admin' ? 'shield_person' : 'person'} onRemove={() => update({ role: null })} />}
+      <Button variant="text" size="xs" onClick={clearFilters}>
+        {t('v2.project.clearFilters')}
+      </Button>
+    </>
+  );
+
+  const pendingCopy = (() => {
+    if (!pending) return null;
+    if (pending.kind === 'role') {
+      const promote = pending.role === 'admin';
+      return {
+        tone: 'danger' as const,
+        icon: promote ? 'add_moderator' : 'remove_moderator',
+        title: promote ? t('adminUsers.confirm.promoteTitle') : t('adminUsers.confirm.demoteTitle'),
+        message: t(promote ? 'adminUsers.confirm.promoteMessage' : 'adminUsers.confirm.demoteMessage', { email: pending.user.email }),
+      };
+    }
+    const enable = pending.status === 'active';
+    if (pending.kind === 'status') {
+      return {
+        tone: enable ? ('default' as const) : ('danger' as const),
+        icon: enable ? 'check_circle' : 'block',
+        title: enable ? t('adminUsers.confirm.enableTitle') : t('adminUsers.confirm.disableTitle'),
+        message: t(enable ? 'adminUsers.confirm.enableMessage' : 'adminUsers.confirm.disableMessage', { email: pending.user.email }),
+      };
+    }
+    return {
+      tone: enable ? ('default' as const) : ('danger' as const),
+      icon: enable ? 'check_circle' : 'block',
+      title: t(enable ? 'v2.users.bulkEnableTitle' : 'v2.users.bulkDisableTitle', { count: pending.users.length }),
+      message: t(enable ? 'v2.users.bulkEnableMessage' : 'v2.users.bulkDisableMessage', { count: pending.users.length }),
+    };
+  })();
+
+  const confirmPending = async () => {
+    if (!pending) return;
+    if (pending.kind === 'bulk-status') {
+      const status = pending.status;
+      await runBulk(pending.users, (user) => updateUserStatus(user.id, status));
+      return;
+    }
     try {
-      await createUser(form);
-      snackbar.show(t('adminUsers.toasts.userCreated'));
-      setCreateOpen(false);
-      setForm(blankForm);
-      setFilters((c) => ({ ...c, page: 1 }));
-      await loadUsers();
+      if (pending.kind === 'role') {
+        await updateUserRole(pending.user.id, pending.role);
+        snackbar.show(t('adminUsers.toasts.roleUpdated'));
+      } else {
+        await updateUserStatus(pending.user.id, pending.status);
+        snackbar.show(pending.status === 'active' ? t('adminUsers.toasts.userEnabled') : t('adminUsers.toasts.userDisabled'));
+      }
+      refresh();
     } catch (err) {
-      fail(err, 'adminUsers.errors.createUser');
-    } finally {
-      setCreating(false);
+      fail(err, pending.kind === 'role' ? 'adminUsers.errors.updateRole' : 'adminUsers.errors.updateStatus');
     }
   };
-
-  const submitReset = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!activeUser) return;
-    setResetting(true);
-    try {
-      await adminResetUserPassword(activeUser.id, resetPassword);
-      snackbar.show(t('adminUsers.toasts.passwordReset'));
-      setResetPassword('');
-      await loadDetail(activeUser.id);
-    } catch (err) {
-      fail(err, 'adminUsers.errors.resetPassword');
-    } finally {
-      setResetting(false);
-    }
-  };
-
-  const roleOptions = [
-    { value: 'user', label: t('adminUsers.user') },
-    { value: 'admin', label: t('adminUsers.admin') },
-  ];
 
   return (
-    <Page density="compact">
-      <PageHeader
-        size="large"
-        title={t('adminUsers.title')}
-        description={t('adminUsers.description')}
+    <Page className="v2-users" density="compact">
+      <UsersHero
+        overview={overview}
         actions={
           <>
+            <Button variant="filled" icon="person_add" emphasized onClick={() => setCreateOpen(true)}>
+              {t('adminUsers.createUser')}
+            </Button>
             <Button variant="tonal" icon="mail" href="/admin/invites">
               {t('adminUsers.inviteUsers')}
             </Button>
-            <Button variant="filled" icon="person_add" onClick={() => setCreateOpen(true)}>
-              {t('adminUsers.createUser')}
-            </Button>
           </>
         }
       />
 
-      {error && <ErrorState message={error} />}
-
-      <DataTable<UserSummary>
-        aria-label={t('adminUsers.title')}
-        density="compact"
-        loading={loading}
-        rows={users}
-        getRowId={(u) => u.id}
-        onRowClick={(u) => setActiveUserId(u.id)}
-        toolbar={
-          <div className="flex flex-wrap items-center gap-2 p-2">
-            <SearchField value={searchInput} onChange={setSearchInput} placeholder={t('adminUsers.searchPlaceholder')} shape="pill" className="flex-1" />
-            <Select
-              variant="outlined"
-              aria-label={t('adminUsers.table.role')}
-              value={filters.role}
-              onChange={(role) => setFilters((c) => ({ ...c, role: role as Filters['role'], page: 1 }))}
-              options={[{ value: 'all', label: t('adminUsers.allRoles') }, ...roleOptions]}
-              className="v2-inline-select"
-            />
-            <Select
-              variant="outlined"
-              aria-label={t('adminUsers.table.status')}
-              value={filters.status}
-              onChange={(status) => setFilters((c) => ({ ...c, status: status as Filters['status'], page: 1 }))}
-              options={[
-                { value: 'all', label: t('adminUsers.allStatuses') },
-                { value: 'active', label: t('adminUsers.active') },
-                { value: 'disabled', label: t('adminUsers.disabled') },
-              ]}
-              className="v2-inline-select"
-            />
-          </div>
-        }
-        empty={
-          <div className="flex flex-col items-center gap-2 py-12">
-            <Icon name="group" size={40} className="text-on-surface-variant" />
-            <Text variant="title-medium">{t('adminUsers.noUsersFound')}</Text>
-            <Text variant="body-small" className="text-on-surface-variant">
-              {t('adminUsers.adjustFilters')}
-            </Text>
-          </div>
-        }
-        columns={[
-          {
-            key: 'user',
-            header: t('adminUsers.table.user'),
-            cell: (u) => (
-              <span className="flex min-w-0 items-center gap-3">
-                <Avatar name={u.email} size={32} />
-                <span className="flex min-w-0 flex-col">
-                  <Text as="span" variant="label-large" emphasized className="truncate">
-                    {u.email}
-                  </Text>
-                  <Text as="span" variant="body-small" className="truncate font-mono text-on-surface-variant">
-                    {u.id}
-                  </Text>
-                </span>
-              </span>
-            ),
-          },
-          { key: 'role', header: t('adminUsers.table.role'), width: 100, cell: (u) => <StatusPill tone={u.role === 'admin' ? 'warning' : 'neutral'}>{u.role}</StatusPill> },
-          { key: 'status', header: t('adminUsers.table.status'), width: 100, cell: (u) => <StatusPill tone={u.status === 'active' ? 'success' : 'error'}>{u.status}</StatusPill> },
-          {
-            key: 'storage',
-            header: t('adminUsers.table.storage'),
-            width: 170,
-            hideBelow: 900,
-            cell: (u) => (
-              <span className="flex flex-col">
-                <span>
-                  {formatBytes(u.usedStorage)} / {formatBytes(u.storageLimit || 0)}
-                </span>
-                <Text as="span" variant="body-small" className="text-on-surface-variant">
-                  {tierName(u.storageLimit)}
-                </Text>
-              </span>
-            ),
-          },
-          { key: 'projects', header: t('adminUsers.table.projects'), width: 90, numeric: true, hideBelow: 1100, cell: (u) => u.projectCount },
-          { key: 'libraries', header: t('adminUsers.table.libraries'), width: 90, numeric: true, hideBelow: 1100, cell: (u) => u.libraryCount },
-          {
-            key: 'lastLogin',
-            header: t('adminUsers.table.lastLogin'),
-            width: 150,
-            hideBelow: 700,
-            cell: (u) => (
-              <span className="flex flex-col">
-                <span>{relative(u.lastLoginAt)}</span>
-                <Text as="span" variant="body-small" className="text-on-surface-variant">
-                  {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleDateString() : t('adminUsers.neverSignedIn')}
-                </Text>
-              </span>
-            ),
-          },
-        ]}
-        actionsHeader={t('adminUsers.table.actions')}
-        actionsWidth={130}
-        rowActions={(u) => (
-          <Select
-            variant="outlined"
-            aria-label={t('adminUsers.table.role')}
-            value={u.role}
-            disabled={u.id === currentUser?.id}
-            onChange={(role) => setPendingRole({ userId: u.id, role: role as UserRole, email: u.email })}
-            options={roleOptions}
-            className="v2-inline-select"
-          />
-        )}
-      />
-
-      <div className="v2-paged-footer">
-        <Text variant="body-medium" className="text-on-surface-variant">
-          {total > 0 ? t('adminUsers.showingUsers', { count: users.length, total }) : t('adminUsers.noUsersToShow')}
-        </Text>
-        <div className="flex flex-wrap items-center gap-3">
-          <Select
-            variant="outlined"
-            aria-label={t('pagination.pageSize')}
-            value={String(filters.pageSize)}
-            onChange={(size) => setFilters((c) => ({ ...c, pageSize: Number(size), page: 1 }))}
-            options={[20, 50, 100].map((n) => ({ value: String(n), label: t('adminUsers.pageSize', { count: n }) }))}
-            className="v2-inline-select v2-inline-select--narrow v2-page-size"
-          />
-          <Text variant="label-medium" className="text-on-surface-variant">
-            {t('adminUsers.pagination', { current: filters.page, total: pages })}
-          </Text>
-          <Pagination page={filters.page} pages={pages} onPageChange={(page) => setFilters((c) => ({ ...c, page }))} />
-        </div>
-      </div>
-
-      <Dialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        icon="person_add"
-        headline={t('adminUsers.createModal.title')}
-        maxWidth={560}
-        fullScreen="compact"
-        confirmAction={
-          <Button variant="filled" loading={creating} onClick={() => void submitCreate()}>
-            {t('adminUsers.createModal.submit')}
-          </Button>
-        }
-        actions={
-          <>
-            <Button variant="text" onClick={() => setCreateOpen(false)}>
-              {t('adminUsers.createModal.cancel')}
-            </Button>
-            <Button variant="filled" icon="person_add" loading={creating} onClick={() => void submitCreate()}>
-              {t('adminUsers.createModal.submit')}
-            </Button>
-          </>
-        }
-      >
-        <form onSubmit={(e) => void submitCreate(e)} className="flex flex-col gap-4">
-          <Text variant="body-medium" className="text-on-surface-variant">
-            {t('adminUsers.createModal.description')}
-          </Text>
-          <TextField variant="outlined" type="email" required label={t('adminUsers.createModal.email')} value={form.email} onValueChange={(email) => setForm((c) => ({ ...c, email }))} fullWidth />
-          <TextField
-            variant="outlined"
-            type="password"
-            minLength={8}
-            label={`${t('adminUsers.createModal.password')} ${t('adminUsers.createModal.optional')}`}
-            placeholder={t('adminUsers.createModal.passwordPlaceholder')}
-            value={form.password}
-            onValueChange={(password) => setForm((c) => ({ ...c, password }))}
-            passwordToggle
-            fullWidth
-          />
-          <div className="grid gap-4 md:grid-cols-3">
-            <Select variant="outlined" label={t('adminUsers.createModal.role')} value={form.role} onChange={(role) => setForm((c) => ({ ...c, role: role as UserRole }))} options={roleOptions} fullWidth />
-            <Select
-              variant="outlined"
-              label={t('adminUsers.createModal.status')}
-              value={form.status}
-              onChange={(status) => setForm((c) => ({ ...c, status: status as UserStatus }))}
-              options={[
-                { value: 'active', label: t('adminUsers.active') },
-                { value: 'disabled', label: t('adminUsers.disabled') },
-              ]}
-              fullWidth
-            />
-            <Select
-              variant="outlined"
-              label={t('adminUsers.createModal.storage')}
-              value={String(form.storageLimit)}
-              onChange={(v) => setForm((c) => ({ ...c, storageLimit: Number(v) }))}
-              options={TIERS.map((tier) => ({ value: String(tier.value), label: tier.name }))}
-              fullWidth
-            />
-          </div>
-          <button type="submit" hidden />
-        </form>
-      </Dialog>
-
-      <SideSheet open={!!activeUserId} onClose={() => setActiveUserId(null)} modal width={640} headline={t('adminUsers.detail.title')}>
-        <div className="flex flex-col gap-5 pb-6" data-density="compact">
-          <Text variant="body-medium" className="text-on-surface-variant">
-            {t('adminUsers.detail.description')}
-          </Text>
-          {detailLoading ? (
-            <LoadingState />
-          ) : detailError ? (
-            <ErrorState message={detailError} />
-          ) : activeUser ? (
+      <section className="v2-users-pane" aria-label={t('v2.users.title')}>
+        <ResultsBar
+          nav={nav}
+          totalCount={users.length}
+          selectedCount={selectedUsers.length}
+          onToggleSelectAll={() => setSelected(new Set(users.map((user) => user.id)))}
+          onClearSelection={clearSelection}
+          isLoading={loading && loaded}
+          tools={tools}
+          below={chips || undefined}
+          menuItems={[
+            { key: 'invite', icon: 'mail', label: t('adminUsers.inviteUsers'), href: '/admin/invites' },
+            { key: 'refresh', icon: 'refresh', label: t('v2.users.refresh'), onSelect: refresh },
+          ]}
+          selectionActions={
             <>
-              <Section variant="tonal">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <Text variant="label-small" className="uppercase tracking-widest text-on-surface-variant">
-                      {t('adminUsers.detail.account')}
-                    </Text>
-                    <Text variant="title-large" emphasized className="break-all">
-                      {activeUser.email}
-                    </Text>
-                    <Text variant="body-small" className="font-mono text-on-surface-variant">
-                      {activeUser.id}
-                    </Text>
-                  </div>
-                  <div className="flex gap-2">
-                    <StatusPill tone={activeUser.role === 'admin' ? 'warning' : 'neutral'}>{activeUser.role}</StatusPill>
-                    <StatusPill tone={activeUser.status === 'active' ? 'success' : 'error'}>{activeUser.status}</StatusPill>
-                  </div>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {(
-                    [
-                      ['schedule', 'adminUsers.detail.created', formatDate(activeUser.createdAt)],
-                      ['login', 'adminUsers.detail.lastLogin', formatDate(activeUser.lastLoginAt)],
-                      ['hard_drive', 'adminUsers.detail.storageTier', tierName(activeUser.storageLimit)],
-                      ['shield', 'adminUsers.detail.usedLimit', `${formatBytes(activeUser.usedStorage)} / ${formatBytes(activeUser.storageLimit || 0)}`],
-                      ['group', 'adminUsers.detail.createdBy', activeUser.createdBy?.email || t('adminUsers.detail.selfRegistered')],
-                      ['confirmation_number', 'adminUsers.detail.inviteCode', activeUser.inviteCode?.code || t('adminUsers.detail.notInviteBased')],
-                      ['sticky_note_2', 'adminUsers.detail.inviteNote', activeUser.inviteCode?.note || t('adminUsers.detail.noNote')],
-                    ] as const
-                  ).map(([icon, key, value]) => (
-                    <div key={key} className="v2-kv">
-                      <Text as="span" variant="label-small" className="inline-flex items-center gap-1 uppercase tracking-widest text-on-surface-variant">
-                        <Icon name={icon} size={14} />
-                        {t(key)}
-                      </Text>
-                      <Text as="span" variant="body-medium" className="break-all">
-                        {value}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-              <div className="v2-stat-grid">
-                <StatTile label={t('adminUsers.detail.projects')} value={activeUser.projectCount} />
-                <StatTile label={t('adminUsers.detail.libraries')} value={activeUser.libraryCount} />
-                <StatTile label={t('adminUsers.detail.providers')} value={activeUser.providerCount} />
-                <StatTile label={t('adminUsers.detail.exports')} value={activeUser.exportCount} />
-              </div>
-              <Section variant="tonal" title={t('adminUsers.detail.storageBreakdown')}>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {(
-                    [
-                      ['adminUsers.detail.projects', activeUser.storageBreakdown.projects],
-                      ['adminUsers.detail.libraries', activeUser.storageBreakdown.libraries],
-                      ['adminUsers.detail.exports', activeUser.storageBreakdown.exports],
-                      ['adminUsers.detail.trash', activeUser.storageBreakdown.trash],
-                    ] as const
-                  ).map(([key, value]) => (
-                    <div key={key} className="v2-kv v2-kv--row">
-                      <Text as="span" variant="body-medium" className="text-on-surface-variant">
-                        {t(key)}
-                      </Text>
-                      <Text as="span" variant="label-large" emphasized>
-                        {formatBytes(value)}
-                      </Text>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-              <Section variant="tonal" title={t('adminUsers.detail.adminControls')}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Select
-                    variant="outlined"
-                    label={t('adminUsers.table.role')}
-                    value={activeUser.role}
-                    disabled={activeUser.id === currentUser?.id}
-                    onChange={(role) => setPendingRole({ userId: activeUser.id, role: role as UserRole, email: activeUser.email })}
-                    options={roleOptions}
-                    fullWidth
-                  />
-                  <Select
-                    variant="outlined"
-                    label={t('adminUsers.detail.limit')}
-                    value={String(activeUser.storageLimit || TIERS[0].value)}
-                    onChange={(v) => void changeStorage(activeUser.id, Number(v))}
-                    options={TIERS.map((tier) => ({ value: String(tier.value), label: tier.name }))}
-                    fullWidth
-                  />
-                </div>
-                <Button
-                  variant="tonal"
-                  icon={activeUser.status === 'active' ? 'block' : 'check_circle'}
-                  className={activeUser.status === 'active' ? 'v2-button-danger self-start' : 'self-start'}
-                  disabled={activeUser.id === currentUser?.id}
-                  onClick={() => setPendingStatus({ userId: activeUser.id, status: activeUser.status === 'active' ? 'disabled' : 'active', email: activeUser.email })}
-                >
-                  {activeUser.status === 'active' ? t('adminUsers.detail.disableUser') : t('adminUsers.detail.enableUser')}
-                </Button>
-              </Section>
-              <Section variant="tonal" icon={<Icon name="key" />} title={t('adminUsers.detail.passwordReset')}>
-                {canResetPassword ? (
-                  <form onSubmit={(e) => void submitReset(e)} className="flex flex-col gap-3">
-                    <TextField variant="outlined" type="password" minLength={8} required label={t('adminUsers.detail.newPassword')} value={resetPassword} onValueChange={setResetPassword} passwordToggle fullWidth />
-                    <Button type="submit" variant="filled" icon="key" loading={resetting} className="self-start">
-                      {t('adminUsers.detail.resetSubmit')}
-                    </Button>
-                  </form>
-                ) : (
-                  <Text variant="body-medium" className="text-on-surface-variant">
-                    {t('adminUsers.detail.ownPasswordNote')}
-                  </Text>
-                )}
-              </Section>
+              <IconButton icon="check_circle" size="sm" label={t('v2.users.enable')} tooltip onClick={() => bulkStatus('active')} />
+              <ActionMenu label={t('v2.users.setStorage')} icon="hard_drive" openOnHover items={tierItems(undefined, bulkStorage).map((item) => ({ ...item, type: 'item' as const, divider: false }))} />
+              <DangerAction icon="block" label={t('v2.users.disable')} onClick={() => bulkStatus('disabled')} />
             </>
-          ) : null}
-        </div>
+          }
+        />
+
+        {error && (
+          <div className="v2-pane-inset">
+            <ErrorState message={error} onRetry={refresh} />
+          </div>
+        )}
+
+        {!loaded ? (
+          <LoadingState />
+        ) : users.length === 0 && !error ? (
+          <EmptyState
+            className="v2-pane-empty"
+            shape={filtered ? 'puffy' : 'cookie-9'}
+            icon={filtered ? 'person_search' : 'group'}
+            title={filtered ? t('v2.users.noMatches') : t('adminUsers.noUsersFound')}
+            description={filtered ? t('v2.users.noMatchesHint') : t('adminUsers.adjustFilters')}
+            action={
+              filtered ? (
+                <Button variant="tonal" icon="filter_alt_off" onClick={clearFilters}>
+                  {t('v2.project.clearFilters')}
+                </Button>
+              ) : (
+                <Button variant="filled" icon="person_add" onClick={() => setCreateOpen(true)}>
+                  {t('adminUsers.createUser')}
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <ul className="v2-user-list" data-loading={loading ? '' : undefined} aria-busy={loading}>
+            {users.map((user) => (
+              <UserRow
+                key={user.id}
+                user={user}
+                isSelf={user.id === me?.id}
+                selected={selected.has(user.id)}
+                selecting={selected.size > 0}
+                onToggleSelect={(range) => toggle(user.id, range)}
+                onOpen={() => openUser(user.id)}
+                menuItems={rowMenu(user)}
+              />
+            ))}
+          </ul>
+        )}
+
+        {loaded && total > 0 && (
+          <footer className="v2-users-footer" data-density="compact">
+            <Text variant="label-medium" className="text-on-surface-variant">
+              {t('pagination.range', { start: rangeStart, end: rangeEnd, total })}
+            </Text>
+            <div className="v2-users-footer__paging">
+              <Select
+                variant="outlined"
+                aria-label={t('pagination.pageSize')}
+                value={String(pageSize)}
+                onChange={(size) => update({ size: Number(size) })}
+                options={PAGE_SIZES.map((size) => ({ value: String(size), label: t('adminUsers.pageSize', { count: size }) }))}
+                className="v2-inline-select v2-page-size"
+              />
+              {pages > 1 && <Pagination page={Math.min(page, pages)} pages={pages} onPageChange={(next) => update({ page: next })} scrollToTop={false} />}
+            </div>
+          </footer>
+        )}
+      </section>
+
+      <SideSheet open={openId !== null} onClose={closeUser} modal width={600} headline={t('adminUsers.detail.title')}>
+        {detailError ? (
+          <ErrorState message={detailError} onRetry={refresh} />
+        ) : shownDetail ? (
+          <UserSheet
+            user={shownDetail}
+            isSelf={shownDetail.id === me?.id}
+            onCopy={copy}
+            onToggleStatus={() => setPending({ kind: 'status', user: shownDetail, status: shownDetail.status === 'active' ? 'disabled' : 'active' })}
+            onToggleRole={() => setPending({ kind: 'role', user: shownDetail, role: shownDetail.role === 'admin' ? 'user' : 'admin' })}
+            onResetPassword={() => setResetTarget(shownDetail)}
+            onChangeStorage={(limit) => changeStorage(shownDetail.id, limit)}
+          />
+        ) : (
+          <div className="v2-results-loading">
+            <LoadingIndicator contained aria-label={t('projectViewer.common.loading')} />
+          </div>
+        )}
       </SideSheet>
 
-      <ConfirmDialog
-        open={pendingRole !== null}
-        tone="danger"
-        title={pendingRole?.role === 'admin' ? t('adminUsers.confirm.promoteTitle') : t('adminUsers.confirm.demoteTitle')}
-        message={pendingRole ? (pendingRole.role === 'admin' ? t('adminUsers.confirm.promoteMessage', { email: pendingRole.email }) : t('adminUsers.confirm.demoteMessage', { email: pendingRole.email })) : ''}
-        confirmLabel={pendingRole?.role === 'admin' ? t('adminUsers.confirm.promoteTitle') : t('adminUsers.confirm.demoteTitle')}
-        onClose={() => setPendingRole(null)}
-        onConfirm={async () => {
-          if (!pendingRole) return;
+      <CreateUserDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCopy={copy}
+        onCreate={async (data) => {
           try {
-            await updateUserRole(pendingRole.userId, pendingRole.role);
-            snackbar.show(t('adminUsers.toasts.roleUpdated'));
-            await refreshAll(pendingRole.userId);
+            const { user } = await createUser(data);
+            snackbar.show({ message: t('adminUsers.toasts.userCreated'), action: { label: t('v2.users.open'), onClick: () => openUser(user.id) } });
+            refresh();
+            return user;
           } catch (err) {
-            fail(err, 'adminUsers.errors.updateRole');
+            fail(err, 'adminUsers.errors.createUser');
+            return null;
           }
         }}
       />
-      <ConfirmDialog
-        open={pendingStatus !== null}
-        tone={pendingStatus?.status === 'active' ? 'default' : 'danger'}
-        title={pendingStatus?.status === 'active' ? t('adminUsers.confirm.enableTitle') : t('adminUsers.confirm.disableTitle')}
-        message={pendingStatus ? (pendingStatus.status === 'active' ? t('adminUsers.confirm.enableMessage', { email: pendingStatus.email }) : t('adminUsers.confirm.disableMessage', { email: pendingStatus.email })) : ''}
-        confirmLabel={pendingStatus?.status === 'active' ? t('adminUsers.confirm.enableTitle') : t('adminUsers.confirm.disableTitle')}
-        onClose={() => setPendingStatus(null)}
-        onConfirm={async () => {
-          if (!pendingStatus) return;
+
+      <ResetPasswordDialog
+        email={resetTarget?.email ?? null}
+        onClose={() => setResetTarget(null)}
+        onCopy={copy}
+        onReset={async (password) => {
+          if (!resetTarget) return false;
           try {
-            await updateUserStatus(pendingStatus.userId, pendingStatus.status);
-            snackbar.show(pendingStatus.status === 'active' ? t('adminUsers.toasts.userEnabled') : t('adminUsers.toasts.userDisabled'));
-            await refreshAll(pendingStatus.userId);
+            await adminResetUserPassword(resetTarget.id, password);
+            snackbar.show(t('adminUsers.toasts.passwordReset'));
+            return true;
           } catch (err) {
-            fail(err, 'adminUsers.errors.updateStatus');
+            fail(err, 'adminUsers.errors.resetPassword');
+            return false;
           }
         }}
       />
+
+      <ConfirmDialog open={pending !== null} tone={pendingCopy?.tone} icon={pendingCopy?.icon} title={pendingCopy?.title ?? ''} message={pendingCopy?.message} confirmLabel={pendingCopy?.title} onClose={() => setPending(null)} onConfirm={confirmPending} />
     </Page>
   );
 }
