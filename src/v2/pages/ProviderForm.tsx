@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createProvider, fetchProvider, updateProvider } from '../../api';
-import { Button, DataTable, Icon, IconButton, Ripple, Text, TextField } from '../../m3';
+import { Button, Icon, IconButton, Ripple, Shape, Text, TextField, useSnackbar } from '../../m3';
 import { PROVIDER_MODELS_MAP, type ProviderType } from '../../types';
-import { ProviderLogo } from '../components/ProviderLogo';
+import { ModelRows, useModelEntries } from '../components/providers/ModelRows';
+import { ProviderHero } from '../components/providers/ProviderHero';
+import { ProviderMark } from '../components/providers/ProviderMark';
+import { KEY_PAGES, modelsByKind, SERVICE_TYPES, serviceKinds, serviceMeta } from '../components/providers/providerMeta';
+import { kindMeta } from '../ui/entityMeta';
+import { KindBadge } from '../ui/KindBadge';
 import { NumberField } from '../ui/NumberField';
-import { ErrorState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
-import { StatusPill } from '../ui/Stat';
-
-const PROVIDER_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'Alibabacloud', 'Kimi', 'MiniMax', 'RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs', 'Civitai'];
-const CATEGORY_ICON: Record<string, string> = { text: 'chat', image: 'image', video: 'movie', audio: 'music_note' };
+import { ErrorState, LoadingState, Page } from '../ui/Page';
 
 /** A secret field that never offers itself to password managers: masked text, not a password. */
 function SecretField({ label, value, onChange, placeholder, supporting }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; supporting?: string }) {
+  const { t } = useTranslation();
   const [shown, setShown] = useState(false);
   return (
     <TextField
@@ -32,22 +34,79 @@ function SecretField({ label, value, onChange, placeholder, supporting }: { labe
       data-bwignore="true"
       leadingIcon="key"
       inputClassName={shown ? 'font-mono' : 'font-mono v2-masked'}
-      trailingIcon={<IconButton icon={shown ? 'visibility_off' : 'visibility'} label={shown ? 'Hide' : 'Show'} size="xs" onClick={() => setShown((s) => !s)} />}
+      trailingIcon={<IconButton icon={shown ? 'visibility_off' : 'visibility'} label={shown ? t('v2.providers.form.hideKey') : t('v2.providers.form.showKey')} size="xs" onClick={() => setShown((s) => !s)} />}
       fullWidth
     />
   );
 }
 
+/** A numbered step of the form: its number on a shape, its title and a hint. */
+function StepHead({ number, title, hint }: { number?: number; title: string; hint: string }) {
+  return (
+    <div className="v2-form-step__head">
+      {number !== undefined && (
+        <span className="v2-form-step__number" aria-hidden>
+          <Shape name="cookie-9" size={32} morph={false} />
+          <span>{number}</span>
+        </span>
+      )}
+      <div className="v2-form-step__titles">
+        <Text as="h2" variant="title-medium" emphasized>
+          {title}
+        </Text>
+        <Text as="span" variant="body-small" className="v2-form-step__hint">
+          {hint}
+        </Text>
+      </div>
+    </div>
+  );
+}
+
+/** One service to pick: its mark (morphing while chosen), its name and what it makes. */
+function ServiceOption({ type, selected, onSelect }: { type: ProviderType; selected: boolean; onSelect: () => void }) {
+  const { t } = useTranslation();
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      data-selected={selected ? '' : undefined}
+      className="v2-service-option m3-focus-ring"
+      onClick={onSelect}
+      onPointerEnter={() => setHover(true)}
+      onPointerLeave={() => setHover(false)}
+    >
+      <Ripple />
+      <ProviderMark type={type} size={40} active={selected || hover} />
+      <span className="v2-service-option__text">
+        <span className="v2-service-option__name">{serviceMeta(type).label}</span>
+        <span className="v2-service-option__kinds">
+          {serviceKinds(type).map((kind) => (
+            <KindBadge key={kind} kind={kind} size={20} label={t(`v2.providers.kind.${kind}`)} />
+          ))}
+        </span>
+      </span>
+      {selected && <Icon name="check_circle" size={20} filled className="v2-service-option__check" />}
+    </button>
+  );
+}
+
 export function ProviderForm() {
   const { t } = useTranslation();
+  const snackbar = useSnackbar();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedType = searchParams.get('type') as ProviderType | null;
+  const initialType = requestedType && SERVICE_TYPES.includes(requestedType) ? requestedType : 'GoogleAI';
 
-  const [name, setName] = useState('');
-  const [type, setType] = useState<ProviderType>(requestedType && PROVIDER_TYPES.includes(requestedType) ? requestedType : 'GoogleAI');
+  const [name, setName] = useState(isEditing ? '' : serviceMeta(initialType).label);
+  // Until it is typed, the name of a new provider follows the service.
+  const [nameTouched, setNameTouched] = useState(false);
+  const [savedName, setSavedName] = useState('');
+  const [type, setType] = useState<ProviderType>(initialType);
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [apiUrl, setApiUrl] = useState('');
@@ -64,6 +123,7 @@ export function ProviderForm() {
       try {
         const p = await fetchProvider(id!);
         setName(p.name);
+        setSavedName(p.name);
         setType(p.type);
         setApiUrl(p.apiUrl || '');
         setConcurrency(p.concurrency || 1);
@@ -77,11 +137,18 @@ export function ProviderForm() {
     })();
   }, [id, isEditing, navigate]);
 
+  const service = serviceMeta(type);
   const leave = () => navigate(isEditing ? `/provider/${id}` : '/providers');
+
+  const chooseType = (next: ProviderType) => {
+    setType(next);
+    setError(null);
+    if (!nameTouched) setName(serviceMeta(next).label);
+  };
 
   const submit = async (e?: FormEvent) => {
     e?.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || isSubmitting) return;
     const keyMissing = t(type === 'KlingAI' ? 'providerForm.errors.accessKeyRequired' : 'providerForm.errors.apiKeyRequired');
     if (!isEditing && !apiKey.trim()) return setError(keyMissing);
     if (isEditing && !apiKey.trim() && !hasExistingKey) return setError(keyMissing);
@@ -100,9 +167,11 @@ export function ProviderForm() {
       };
       if (isEditing) {
         await updateProvider(id!, payload);
+        snackbar.show(t('v2.providers.form.saved'));
         navigate(`/provider/${id}`);
       } else {
-        await createProvider(payload as never);
+        const createdId = await createProvider(payload as never);
+        snackbar.show({ message: t('v2.providers.form.connected', { name: payload.name }), action: { label: t('v2.providers.open'), onClick: () => navigate(`/provider/${createdId}`) } });
         navigate('/providers');
       }
     } catch (err) {
@@ -112,140 +181,169 @@ export function ProviderForm() {
     }
   };
 
-  const models = useMemo(() => PROVIDER_MODELS_MAP[type] || [], [type]);
+  const configs = useMemo(() => PROVIDER_MODELS_MAP[type] || [], [type]);
+  const models = useModelEntries(configs);
+  const groups = modelsByKind(models);
+
+  const copy = (text: string) => {
+    void navigator.clipboard
+      .writeText(text)
+      .then(() => snackbar.show(t('v2.providers.copied')))
+      .catch(() => snackbar.show(t('v2.providers.copyFailed')));
+  };
 
   if (isLoading) return <LoadingState minHeight={400} />;
 
+  const kling = type === 'KlingAI';
+
   return (
-    <Page density="compact">
-      <PageHeader
-        backLink={{ label: t('providerForm.cancel'), onClick: leave }}
-        title={isEditing ? t('providerForm.editTitle') : t('providerForm.newTitle')}
-        description={t('providerForm.securityNote')}
-        actions={
-          <>
-            <Button variant="text" onClick={leave}>
-              {t('providerForm.cancel')}
-            </Button>
-            <Button variant="filled" icon="save" loading={isSubmitting} disabled={!name.trim()} onClick={() => void submit()} emphasized>
-              {isEditing ? t('providerForm.submitSave') : t('providerForm.submitCreate')}
-            </Button>
-          </>
+    <Page className="v2-provider-page v2-provider-form" density="compact">
+      <ProviderHero
+        type={type}
+        backLink={isEditing ? { to: `/provider/${id}`, label: savedName || t('providers.title') } : { to: '/providers', label: t('providers.title') }}
+        kicker={isEditing ? service.label : t('v2.providers.form.newKicker')}
+        title={isEditing ? t('v2.providers.form.editTitle', { name: savedName }) : service.label}
+        description={isEditing ? undefined : t('v2.providers.form.newDescription')}
+        badges={
+          <span className="v2-provider-hero__kinds">
+            {serviceKinds(type).map((kind) => (
+              <span key={kind} className="v2-provider-kind" data-kind={kind}>
+                <Icon name={kindMeta(kind).icon} size={15} filled aria-hidden />
+                <span className="v2-provider-kind__label">{t(`v2.providers.kind.${kind}`)}</span>
+              </span>
+            ))}
+          </span>
         }
       />
 
-      <Section className="mb-6">
-        {isEditing ? (
-          <div className="flex">
-            <span className="v2-provider-type" data-selected="">
-              <ProviderLogo type={type} size={20} />
-              <span>{type}</span>
-            </span>
-          </div>
-        ) : (
-          <div className="v2-provider-types" role="radiogroup" aria-label="Provider type">
-            {PROVIDER_TYPES.map((value) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={type === value}
-                data-selected={type === value ? '' : undefined}
-                className="v2-provider-type m3-focus-ring"
-                onClick={() => setType(value)}
-              >
-                <Ripple />
-                <ProviderLogo type={value} size={20} />
-                <span>{value}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </Section>
+      <div className="v2-provider-form__layout">
+        <form className="v2-provider-form__main" onSubmit={(e) => void submit(e)} autoComplete="off">
+          {!isEditing && (
+            <section className="v2-form-step">
+              <StepHead number={1} title={t('v2.providers.form.stepService')} hint={t('v2.providers.form.stepServiceHint')} />
+              <div className="v2-service-picker" role="radiogroup" aria-label={t('v2.providers.form.stepService')}>
+                {SERVICE_TYPES.map((value) => (
+                  <ServiceOption key={value} type={value} selected={type === value} onSelect={() => chooseType(value)} />
+                ))}
+              </div>
+            </section>
+          )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-        <form onSubmit={(e) => void submit(e)} autoComplete="off" className="flex h-fit flex-col gap-5">
-          <Section variant="card">
-            <TextField
-              variant="outlined"
-              label={t('providerForm.nameLabel')}
-              value={name}
-              onValueChange={setName}
-              placeholder={t('providerForm.namePlaceholder')}
-              autoComplete="off"
-              spellCheck={false}
-              autoFocus
-              required
-              fullWidth
-            />
-            <SecretField
-              label={type === 'KlingAI' ? t('providerForm.accessKeyLabel') : t('providerForm.apiKeyLabel')}
-              value={apiKey}
-              onChange={setApiKey}
-              placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : type === 'KlingAI' ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
-              supporting={isEditing && hasExistingKey ? t('providerForm.leaveBlankToKeep') : undefined}
-            />
-            {type === 'KlingAI' && (
-              <SecretField
-                label={t('providerForm.secretKeyLabel')}
-                value={apiSecret}
-                onChange={setApiSecret}
-                placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
-                supporting={isEditing && hasExistingSecret ? t('providerForm.leaveBlankToKeep') : undefined}
+          <section className="v2-form-step">
+            <StepHead number={isEditing ? undefined : 2} title={t('v2.providers.form.stepKey')} hint={t('v2.providers.form.stepKeyHint')} />
+            <div className="v2-form-card">
+              <TextField
+                variant="outlined"
+                label={t('providerForm.nameLabel')}
+                value={name}
+                onValueChange={(value) => {
+                  setName(value);
+                  setNameTouched(true);
+                }}
+                placeholder={t('providerForm.namePlaceholder')}
+                supportingText={t('v2.providers.form.nameHint')}
+                autoComplete="off"
+                spellCheck={false}
+                required
+                fullWidth
               />
-            )}
-            <TextField
-              variant="outlined"
-              type="url"
-              label={t('providerForm.apiUrlLabel')}
-              leadingIcon="public"
-              value={apiUrl}
-              onValueChange={setApiUrl}
-              placeholder={t('providerForm.apiUrlPlaceholder')}
-              supportingText={t('providerForm.apiUrlOptional')}
-              autoComplete="off"
-              spellCheck={false}
-              inputClassName="font-mono"
-              fullWidth
-            />
-            <NumberField
-              label={`${t('providerForm.parallelTasksLabel')} · ${t('providerForm.maxRequests')}`}
-              value={concurrency}
-              onValueChange={setConcurrency}
-              min={1}
-              max={1000}
-              integer
-              stepper
-              supportingText={t('providerForm.concurrencyLimit')}
-              fullWidth
-            />
-          </Section>
+              <SecretField
+                label={kling ? t('providerForm.accessKeyLabel') : t('providerForm.apiKeyLabel')}
+                value={apiKey}
+                onChange={setApiKey}
+                placeholder={isEditing && hasExistingKey ? t('providerForm.stored') : kling ? t('providerForm.accessKeyPlaceholder') : t('providerForm.apiKeyPlaceholder')}
+                supporting={isEditing && hasExistingKey ? t('v2.providers.form.keyStored') : undefined}
+              />
+              {kling && (
+                <SecretField
+                  label={t('providerForm.secretKeyLabel')}
+                  value={apiSecret}
+                  onChange={setApiSecret}
+                  placeholder={isEditing && hasExistingSecret ? t('providerForm.stored') : t('providerForm.secretKeyPlaceholder')}
+                  supporting={isEditing && hasExistingSecret ? t('v2.providers.form.secretStored') : undefined}
+                />
+              )}
+              <a className="v2-key-link m3-focus-ring" href={KEY_PAGES[type]} target="_blank" rel="noopener noreferrer">
+                <Icon name="open_in_new" size={16} aria-hidden />
+                {t('v2.providers.form.getKey', { service: service.label })}
+              </a>
+            </div>
+          </section>
+
+          <section className="v2-form-step">
+            <StepHead number={isEditing ? undefined : 3} title={t('v2.providers.form.stepRequests')} hint={t('v2.providers.form.stepRequestsHint')} />
+            <div className="v2-form-card v2-form-card--split">
+              <NumberField
+                label={t('v2.providers.parallel')}
+                value={concurrency}
+                onValueChange={setConcurrency}
+                min={1}
+                max={1000}
+                integer
+                stepper
+                leadingIcon="speed"
+                supportingText={t('v2.providers.form.parallelHint')}
+                fullWidth
+              />
+              <TextField
+                variant="outlined"
+                type="url"
+                label={t('providerForm.apiUrlLabel')}
+                leadingIcon="public"
+                value={apiUrl}
+                onValueChange={setApiUrl}
+                placeholder={t('providerForm.apiUrlPlaceholder')}
+                supportingText={t('v2.providers.form.apiUrlHint', { service: service.label })}
+                autoComplete="off"
+                spellCheck={false}
+                inputClassName="font-mono"
+                fullWidth
+              />
+            </div>
+          </section>
+
           {error && <ErrorState message={error} />}
           <button type="submit" hidden />
+
+          <div className="v2-provider-form__bar">
+            <Button variant="text" onClick={leave}>
+              {t('providerForm.cancel')}
+            </Button>
+            <Button variant="filled" size="md" icon={isEditing ? 'save' : 'link'} loading={isSubmitting} disabled={!name.trim()} onClick={() => void submit()} emphasized>
+              {isEditing ? t('v2.providers.form.saveChanges') : t('v2.providers.form.connect', { service: service.label })}
+            </Button>
+          </div>
         </form>
 
-        <Section variant="card" title={t('providerForm.supportedModels')}>
-          {models.length > 0 ? (
-            <DataTable
-              aria-label={t('providerForm.supportedModels')}
-              density="compact"
-              stickyHeader
-              maxHeight={560}
-              rows={models}
-              getRowId={(m) => m.id}
-              columns={[
-                { key: 'name', header: t('common.name', 'Name'), cell: (m) => <Text variant="label-large" emphasized>{m.name}</Text> },
-                { key: 'id', header: 'Model ID', cell: (m) => <span className="font-mono text-on-surface-variant">{m.modelId}</span>, hideBelow: 600 },
-                { key: 'type', header: 'Type', width: 120, cell: (m) => <StatusPill icon={CATEGORY_ICON[m.category] ?? 'image'}>{m.category}</StatusPill> },
-              ]}
-            />
+        <aside className="v2-provider-form__aside" aria-label={t('v2.providers.form.makes', { service: service.label })}>
+          <div className="v2-provider-form__aside-head">
+            <Text as="h2" variant="title-medium" emphasized>
+              {t('v2.providers.form.makes', { service: service.label })}
+            </Text>
+            {models.length > 0 && (
+              <Text as="span" variant="body-small" className="v2-form-step__hint">
+                {t('v2.providers.form.modelCount', { count: models.length })}
+              </Text>
+            )}
+          </div>
+          {groups.length > 0 ? (
+            groups.map((group) => (
+              <section key={group.kind} className="v2-model-group" data-kind={group.kind}>
+                <Text as="h3" variant="label-large" emphasized className="v2-model-group__title">
+                  <Icon name={kindMeta(group.kind).icon} size={16} filled aria-hidden />
+                  {t(`v2.providers.kinds.${group.kind}`)}
+                  <span className="v2-model-group__count">{group.models.length}</span>
+                </Text>
+                <ModelRows models={group.models} onCopy={copy} compact />
+              </section>
+            ))
           ) : (
             <div className="v2-notice">
               <Icon name="info" />
-              <Text variant="body-medium">{type === 'Civitai' ? t('providerForm.civitaiModelsNote') : 'No models listed for this provider yet.'}</Text>
+              <Text variant="body-medium">{type === 'Civitai' ? t('providerForm.civitaiModelsNote') : t('v2.providers.form.noModels')}</Text>
             </div>
           )}
-        </Section>
+        </aside>
       </div>
     </Page>
   );
