@@ -65,7 +65,7 @@ const MODES: Array<{ value: ThemeMode; icon: string; key: string }> = [
 
 /**
  * Bottom of the navigation rail: color mode and the appearance panel, storage, the account and,
- * for admins, user management with the update notice. It shows a full layout in the expanded
+ * for admins, the update notice. It shows a full layout in the expanded
  * rail and icon buttons in the collapsed one.
  */
 export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
@@ -79,7 +79,6 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
   const percent = usage && usage.limit ? Math.min(100, (usage.size / usage.limit) * 100) : 0;
   const storageText = usage ? `${formatBytes(usage.size)} / ${formatBytes(usage.limit)}` : t('mainLayout.storageUnavailable');
   const accountActive = location.pathname === '/account' || location.pathname.startsWith('/account/');
-  const adminActive = location.pathname.startsWith('/admin/');
 
   const changeMode = (next: ThemeMode, event?: MouseEvent) => setModeWithReveal(setMode, next, event);
 
@@ -107,15 +106,8 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
       <div className="v2-rail-footer" data-variant="collapsed">
         <IconButton icon="palette" label={t('v2.theme.open')} tooltip onClick={onOpenTheme} />
         <IconButton icon="swap_horiz" label={t('v2.shell.classicUiHint')} tooltip onClick={openClassicUi} />
-        {isAdmin && (
-          <IconButton
-            icon="shield_person"
-            label={t('sidebar.userManagement')}
-            tooltip
-            href="/admin/users"
-            selected={adminActive}
-            badge={updateUrl ? <Badge /> : undefined}
-          />
+        {isAdmin && updateUrl && (
+          <IconButton icon="upgrade" label={t('sidebar.updateAvailable', 'Update Available')} tooltip href={updateUrl} target="_blank" rel="noopener noreferrer" badge={<Badge />} />
         )}
         <MenuButton
           placement="right"
@@ -192,27 +184,19 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
           {accountMenu}
         </MenuButton>
 
-        {isAdmin && (
+        {isAdmin && updateUrl && (
           <div className="flex items-center gap-1">
-            <Link to="/admin/users" className="v2-admin-link m3-focus-ring" data-active={adminActive ? '' : undefined}>
-              <Icon name="shield_person" />
-              <Text as="span" variant="label-large">
-                {t('sidebar.userManagement')}
-              </Text>
-            </Link>
-            {updateUrl && (
-              <IconButton
-                icon="upgrade"
-                label={t('sidebar.updateAvailable', 'Update Available')}
-                tooltip
-                variant="tonal"
-                size="xs"
-                href={updateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                badge={<Badge />}
-              />
-            )}
+            <IconButton
+              icon="upgrade"
+              label={t('sidebar.updateAvailable', 'Update Available')}
+              tooltip
+              variant="tonal"
+              size="xs"
+              href={updateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              badge={<Badge />}
+            />
           </div>
         )}
 

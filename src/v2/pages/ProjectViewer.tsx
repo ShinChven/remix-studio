@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -41,7 +41,7 @@ import { groupComfyBindings, isComfyRemix } from '../../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../../lib/live';
 import { projectMediaType } from '../../lib/project-media';
 import { countWorkflowCombinations } from '../../lib/remixEngine';
-import { Button, ButtonGroup, LoadingIndicator } from '../../m3';
+import { Button } from '../../m3';
 import {
   createDefaultAudioProjectConfig,
   formatPromptLimit,
@@ -74,7 +74,9 @@ import { LibrarySelectionDialog } from '../components/project/LibrarySelectionDi
 import { ModelSelectorDialog } from '../components/project/ModelSelectorDialog';
 import { PromptEditDialog } from '../components/project/PromptEditDialog';
 import { PromptLimitDialog } from '../components/project/PromptLimitDialog';
+import { ResultsBar, SectionNav } from '../components/project/ResultsBar';
 import { WorkflowPanel } from '../components/project/WorkflowPanel';
+import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState } from '../ui/Page';
 import { useToast } from '../ui/useToast';
@@ -2597,17 +2599,37 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     });
   };
 
+  const clearDraftSelection = useCallback(() => setSelectedDraftIds(new Set()), []);
+  const clearQueueSelection = useCallback(() => setSelectedQueueIds(new Set()), []);
+  const clearCompletedSelection = useCallback(() => setSelectedCompletedIds(new Set()), []);
+  const clearAlbumSelection = useCallback(() => setSelectedAlbumIds(new Set()), []);
+
   const albumTabLabel = localProject.type === 'text' ? t('projectViewer.tabs.texts') : localProject.type === 'audio' ? t('projectViewer.tabs.audios') : t('projectViewer.tabs.album');
-  const tabLabel = (label: string, count: number) => (
-    <span className="v2-tab-label">
-      {label}
-      <span className="v2-tab-label__count">{count}</span>
-    </span>
+  const sectionNav = (
+    <SectionNav
+      value={activeTab}
+      onChange={setActiveTab}
+      items={[
+        { value: 'draft', label: t('v2.project.sections.drafts'), icon: 'edit_note', count: draftJobs.length },
+        {
+          value: 'queue',
+          label: t('projectViewer.tabs.queue'),
+          icon: 'pending_actions',
+          count: queueJobs.length,
+          signal: queueJobs.some((job) => job.status === 'failed') ? 'error' : queueJobs.some((job) => job.status === 'processing') ? 'running' : undefined,
+        },
+        { value: 'completed', label: t('projectViewer.tabs.done'), icon: 'task_alt', count: completedTotal },
+        { value: 'album', label: albumTabLabel, icon: localProject.type === 'text' ? 'article' : localProject.type === 'audio' ? 'library_music' : localProject.type === 'video' ? 'video_library' : 'photo_library', count: albumTotal },
+      ]}
+    />
   );
   const workflowItem = (id: string | null) => (localProject.workflow || []).find((i) => i.id === id);
 
+  const toggleMobileView = () => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow');
+  const floatingSwitch = useContext(TopBarSlotContext) === null;
+
   return (
-    <div className="v2-project" data-mobile-view={mobileView} data-expanded={isWorkflowExpanded ? '' : undefined} data-density="compact">
+    <div className="v2-project" data-mobile-view={mobileView} data-floating-switch={floatingSwitch ? '' : undefined} data-expanded={isWorkflowExpanded ? '' : undefined} data-density="compact">
       <ModelSelectorDialog
         open={isModelSelectorOpen}
         onClose={() => setIsModelSelectorOpen(false)}
@@ -2625,9 +2647,18 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         }}
       />
 
-      <Button variant="filled" size="sm" icon={mobileView === 'workflow' ? 'view_list' : 'account_tree'} className="v2-project__mobile-toggle" onClick={() => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow')}>
-        {mobileView === 'workflow' ? t('projectViewer.main.mobileJobs') : t('projectViewer.common.back')}
-      </Button>
+      {/* Switching between the workflow and the results on narrow screens: in the phone top bar, or floating where there is none. */}
+      <TopBarActions
+        fallback={
+          <Button variant="filled" size="sm" icon={mobileView === 'workflow' ? 'view_list' : 'account_tree'} className="v2-project__mobile-toggle" onClick={toggleMobileView}>
+            {mobileView === 'workflow' ? t('projectViewer.main.mobileJobs') : t('projectViewer.common.back')}
+          </Button>
+        }
+      >
+        <Button variant="tonal" size="sm" icon={mobileView === 'workflow' ? 'view_list' : 'account_tree'} onClick={toggleMobileView}>
+          {mobileView === 'workflow' ? t('projectViewer.main.mobileJobs') : t('v2.project.workflow')}
+        </Button>
+      </TopBarActions>
 
       <aside className="v2-project__workflow">
         <WorkflowPanel
@@ -2699,33 +2730,16 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       </aside>
 
       <section className="v2-project__results v2-pane">
-        <div className="v2-project__head justify-center">
-          <ButtonGroup
-            variant="connected"
-            size="xs"
-            selection="single"
-            value={activeTab}
-            onChange={(val) => val && setActiveTab(val as typeof activeTab)}
-            aria-label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}
-          >
-            <Button value="draft" icon="edit_note">
-              {t('projectViewer.tabs.draft')} <span className="opacity-60 font-mono text-[11px]">({draftJobs.length})</span>
-            </Button>
-            <Button value="queue" icon="pending_actions">
-              {t('projectViewer.tabs.queue')} <span className="opacity-60 font-mono text-[11px]">({queueJobs.length})</span>
-            </Button>
-            <Button value="completed" icon="task_alt">
-              {t('projectViewer.tabs.done')} <span className="opacity-60 font-mono text-[11px]">({completedTotal})</span>
-            </Button>
-            <Button value="album" icon="photo_library">
-              {albumTabLabel} <span className="opacity-60 font-mono text-[11px]">({albumTotal})</span>
-            </Button>
-          </ButtonGroup>
-        </div>
         <div ref={tabContentRef} className="v2-project__scroll">
-          {(activeTab === 'draft' || activeTab === 'queue') && isLoadingJobs && <LoadingState minHeight={240} />}
+          {(activeTab === 'draft' || activeTab === 'queue') && isLoadingJobs && (
+            <section className="v2-results-section">
+              <ResultsBar nav={sectionNav} isLoading totalCount={0} selectedCount={0} onToggleSelectAll={() => undefined} onClearSelection={() => undefined} />
+            </section>
+          )}
           {activeTab === 'draft' && !isLoadingJobs && (
             <DraftsTab
+              nav={sectionNav}
+              clearDraftSelection={clearDraftSelection}
               draftJobs={draftJobs}
               selectedDraftIds={selectedDraftIds}
               toggleSelectAllDrafts={toggleSelectAllDrafts}
@@ -2752,6 +2766,8 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
           )}
           {activeTab === 'queue' && !isLoadingJobs && (
             <QueueTab
+              nav={sectionNav}
+              clearQueueSelection={clearQueueSelection}
               queueJobs={queueJobs}
               selectedQueueIds={selectedQueueIds}
               toggleSelectAllQueue={toggleSelectAllQueue}
@@ -2771,9 +2787,11 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
               onReuse={handleReuseWorkflow}
             />
           )}
-          {activeTab === 'completed' && isLoadingCompleted && <LoadingState minHeight={240} />}
-          {activeTab === 'completed' && !isLoadingCompleted && (
+          {activeTab === 'completed' && (
             <CompletedTab
+              nav={sectionNav}
+              isLoading={isLoadingCompleted}
+              clearCompletedSelection={clearCompletedSelection}
               completedJobs={completedJobs}
               expandedJobId={expandedJobId}
               toggleJobExpand={toggleJobExpand}
@@ -2797,14 +2815,11 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
               onSortChange={handleCompletedSortChange}
             />
           )}
-          {/* The album stays mounted while it reloads; a spinner covers it only when nothing is underneath. */}
-          {activeTab === 'album' && isLoadingAlbum && albumItems.length === 0 && (
-            <div className="v2-project__overlay">
-              <LoadingIndicator />
-            </div>
-          )}
+          {/* The album stays mounted while it reloads; a spinner shows in place of the grid only when nothing is there yet. */}
           {activeTab === 'album' && (
             <AlbumTab
+              nav={sectionNav}
+              clearAlbumSelection={clearAlbumSelection}
               projectId={localProject.id}
               projectName={localProject.name}
               albumItems={albumItems}

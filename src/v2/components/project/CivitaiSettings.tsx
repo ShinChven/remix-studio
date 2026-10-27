@@ -21,6 +21,7 @@ import { Button, Icon, Select, Slider, Switch, Text } from '../../../m3';
 import type { CivitaiGenerationConfig, CivitaiMediaType, CivitaiVideoSettings as VideoSettings, Library, Project, Provider, WorkflowItem } from '../../../types';
 import { ChoiceChips, SettingField } from '../../ui/ChoiceChips';
 import { NumberField } from '../../ui/NumberField';
+import { ProviderLogo } from '../ProviderLogo';
 import { DockChip, RunDock, type DraftsProgress } from './RunDock';
 
 function NumberRow({ label, value, onChange, min, max, step, integer }: { label: string; value: number; onChange: (value: number) => void; min: number; max: number; step?: number; integer?: boolean }) {
@@ -158,10 +159,12 @@ export interface CivitaiSettingsPanelProps {
   onAddDraftsToQueue: () => void;
   isAddingDrafts: boolean;
   draftsProgress: DraftsProgress | null;
+  /** The add-step button, shown on the dock. */
+  addStep?: React.ReactNode;
 }
 
 /** The settings of a Civitai project: account, images or videos, and the parameters every job shares. */
-export function CivitaiSettingsPanel({ localProject, isWorkflowLoaded, hasHistory, providers, libraries, onSaveProject, isSettingsCollapsed, setIsSettingsCollapsed, queueCount, setQueueCount, combinationsCount, workflowError, uploadingItemIds, onAddDraftsToQueue, isAddingDrafts, draftsProgress }: CivitaiSettingsPanelProps) {
+export function CivitaiSettingsPanel({ localProject, isWorkflowLoaded, hasHistory, providers, libraries, onSaveProject, isSettingsCollapsed, setIsSettingsCollapsed, queueCount, setQueueCount, combinationsCount, workflowError, uploadingItemIds, onAddDraftsToQueue, isAddingDrafts, draftsProgress, addStep }: CivitaiSettingsPanelProps) {
   const { t } = useTranslation();
   const accounts = providers.filter((provider) => provider.type === 'Civitai');
   const account = accounts.find((provider) => provider.id === localProject.providerId);
@@ -309,13 +312,11 @@ export function CivitaiSettingsPanel({ localProject, isWorkflowLoaded, hasHistor
 
   return (
     <RunDock
-      title={
-        <>
-          {account?.name || t('projectViewer.settings.none')} <span className="text-primary">· {checkpointSummary}</span>
-        </>
-      }
+      title={checkpointSummary}
+      leading={<ProviderLogo type="Civitai" size={18} />}
       chips={
         <>
+          <DockChip>{account?.name || t('projectViewer.settings.none')}</DockChip>
           {isVideo ? (
             <>
               <DockChip>
@@ -361,6 +362,7 @@ export function CivitaiSettingsPanel({ localProject, isWorkflowLoaded, hasHistor
       uploading={uploadingItemIds.size > 0}
       isAddingDrafts={isAddingDrafts}
       draftsProgress={draftsProgress}
+      addStep={addStep}
     />
   );
 }

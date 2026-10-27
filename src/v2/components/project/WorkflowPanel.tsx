@@ -1,13 +1,14 @@
 import { useState, type DragEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { civitaiModelItems, civitaiVideoEngine, isCivitaiVideo } from '../../../lib/civitai';
-import { Button, Dialog, Icon, IconButton, LoadingIndicator, MenuButton, MenuDivider, MenuItem, Text } from '../../../m3';
+import { Button, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuItem, Ripple, Text } from '../../../m3';
 import { PROVIDER_MODELS_MAP, resolveCustomModels, type Library, type Project, type Provider, type ProviderType, type WorkflowItem } from '../../../types';
 import { formatBytes } from '../../lib/format';
 import { CivitaiModelStep } from './CivitaiModelStep';
 import { CivitaiSettingsPanel } from './CivitaiSettings';
 import { ComfySettingsPanel, ComfyWorkflowPanel } from './ComfyWorkflowPanel';
 import type { DraftsProgress } from './RunDock';
+import { HoverMenuButton } from '../../ui/HoverMenuButton';
 import { SettingsPanel } from './SettingsPanel';
 import { WorkflowStep } from './WorkflowStep';
 
@@ -137,11 +138,39 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
     if (props.onFilesDrop && e.dataTransfer.files.length > 0) props.onFilesDrop(Array.from(e.dataTransfer.files));
   };
 
-  const addButton = (type: 'text' | 'image' | 'video' | 'audio' | 'library', icon: string, label: string) => (
-    <Button key={type} variant="tonal" size="xs" icon={icon} onClick={() => props.onAddWorkflowItem(type)}>
+  const addItem = (type: 'text' | 'image' | 'video' | 'audio' | 'library', icon: string, label: string) => (
+    <MenuItem key={type} icon={icon} onSelect={() => props.onAddWorkflowItem(type)}>
       {label}
-    </Button>
+    </MenuItem>
   );
+  const addStepMenu = (
+    <HoverMenuButton placement="top-start" aria-label={t('v2.project.addStep')} trigger={(p) => <IconButton {...p} icon="add" size="sm" variant="tonal" label={t('v2.project.addStep')} />}>
+      {addItem('text', 'text_fields', t('projectViewer.common.text'))}
+      {supportsImageInput && addItem('image', 'image', t('projectViewer.common.imageShort'))}
+      {addItem('library', 'library_books', t('projectViewer.common.libraryShort'))}
+      {isCivitai && !civitaiVideo && (
+        <MenuItem icon="hexagon" disabled={hasCheckpoint} supportingText={hasCheckpoint ? t('projectViewer.civitai.oneCheckpointItem') : undefined} onSelect={() => addModelItem('checkpoint')}>
+          {t('projectViewer.civitai.modelShort')}
+        </MenuItem>
+      )}
+      {isCivitai && (
+        <MenuItem icon="layers" disabled={lorasUnsupported} supportingText={lorasUnsupported ? t('projectViewer.civitai.video.noLorasHint', { engine: engine.label }) : undefined} onSelect={() => addModelItem('lora')}>
+          {t('projectViewer.civitai.loraShort')}
+        </MenuItem>
+      )}
+      {localProject.type === 'video' && model?.options.supportsReferenceVideo && addItem('video', 'movie', t('projectViewer.common.video'))}
+      {localProject.type === 'video' && model?.options.supportsReferenceAudio && addItem('audio', 'graphic_eq', t('projectViewer.common.audio'))}
+    </HoverMenuButton>
+  );
+
+  const enabledCount = items.length - disabledCount;
+  const subtitle = [
+    t('v2.project.stepCount', { count: enabledCount }),
+    !isComfy && props.combinationsCount > 0 ? t('v2.project.combinationCount', { count: props.combinationsCount, formatted: props.combinationsCount.toLocaleString() }) : null,
+    disabledCount > 0 ? t('v2.project.disabledCount', { count: disabledCount }) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="v2-workflow" data-expanded={isExpanded ? '' : undefined} onDragOver={onPanelDragOver} onDragLeave={(e) => e.dataTransfer.types.includes('Files') && setDragOverFiles(false)} onDrop={onPanelDrop}>
@@ -153,16 +182,21 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
       )}
       <header className="v2-workflow__head">
         <button type="button" className="v2-workflow__title m3-focus-ring" title={localProject.name} onClick={() => setInfoOpen(true)}>
-          <Text as="span" variant="title-large" emphasized className="truncate">
+          <Ripple />
+          <Text as="span" variant="title-large" emphasized className="v2-workflow__name">
             {localProject.name}
           </Text>
+          <Text as="span" variant="body-small" className="v2-workflow__sub">
+            {props.isArchived && (
+              <span className="v2-workflow__archived">
+                <Icon name="archive" size={14} /> {t('projectViewer.main.archivedBadge')}
+                {subtitle && ' · '}
+              </span>
+            )}
+            {subtitle}
+          </Text>
         </button>
-        {props.isArchived && (
-          <span className="v2-info-chip" data-tone="warning">
-            <Icon name="archive" size={14} /> {t('projectViewer.main.archivedBadge')}
-          </span>
-        )}
-        <span className="ms-auto flex items-center">
+        <span className="v2-workflow__tools">
           <IconButton icon="auto_awesome" size="sm" label={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })} tooltip onClick={props.onStartAssistantChat} />
           <IconButton
             icon={isExpanded ? 'close_fullscreen' : 'open_in_full'}
@@ -173,10 +207,10 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
             selected={isExpanded}
             onClick={props.onToggleExpand}
           />
-          <MenuButton
+          <HoverMenuButton
             placement="bottom-end"
-            aria-label={t('projectViewer.main.editProjectInfo')}
-            trigger={(p) => <IconButton {...p} icon="more_vert" size="sm" label={t('projectViewer.main.editProjectInfo')} />}
+            aria-label={t('v2.project.projectMenu')}
+            trigger={(p) => <IconButton {...p} icon="more_vert" size="sm" label={t('v2.project.projectMenu')} />}
           >
             <MenuItem icon={props.showDisabledItems ? 'visibility_off' : 'visibility'} disabled={disabledCount === 0} trailingText={disabledCount > 0 ? `${disabledCount} · H` : 'H'} onSelect={props.onToggleShowDisabledItems}>
               {t(props.showDisabledItems ? 'projectViewer.main.hideDisabledItems' : 'projectViewer.main.showDisabledItems')}
@@ -187,22 +221,26 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
               </MenuItem>
             )}
             <MenuDivider />
-            <MenuItem icon="settings" onSelect={props.onNavigateToEdit}>
-              {t('projectViewer.main.editProjectInfo')}
+            <MenuItem icon="info" onSelect={() => setInfoOpen(true)}>
+              {t('projectViewer.main.projectInfo', { defaultValue: 'Project info' })}
+            </MenuItem>
+            <MenuItem icon="edit" onSelect={props.onNavigateToEdit}>
+              {t('v2.project.editProject')}
             </MenuItem>
             <MenuItem icon="content_copy" onSelect={props.onNavigateToDuplicate}>
-              {t('projectViewer.main.duplicateProject')}
+              {t('v2.project.duplicateProject')}
             </MenuItem>
             <MenuItem icon="ink_eraser" onSelect={props.onNavigateToOrphans}>
-              {t('projectViewer.main.manageOrphans')}
+              {t('v2.project.manageOrphans')}
             </MenuItem>
             <MenuItem icon={props.isArchived ? 'unarchive' : 'archive'} disabled={props.isTogglingArchive} onSelect={() => void props.onToggleArchive()}>
-              {t(props.isArchived ? 'projectViewer.main.unarchiveProject' : 'projectViewer.main.archiveProject')}
+              {t(props.isArchived ? 'v2.project.unarchiveProject' : 'v2.project.archiveProject')}
             </MenuItem>
+            <MenuDivider />
             <MenuItem icon="delete" className="v2-menu-danger" onSelect={props.onShowDeleteProject}>
-              {t('projectViewer.main.deleteProject')}
+              {t('v2.project.deleteProject')}
             </MenuItem>
-          </MenuButton>
+          </HoverMenuButton>
         </span>
       </header>
 
@@ -245,25 +283,6 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
         </>
       ) : (
         <>
-          <div className="v2-workflow__add" data-density="compact">
-            {addButton('text', 'text_fields', t('projectViewer.common.text'))}
-            {supportsImageInput && addButton('image', 'image', t('projectViewer.common.imageShort'))}
-            {addButton('library', 'library_books', t('projectViewer.common.libraryShort'))}
-            {isCivitai && (
-              <>
-                {!civitaiVideo && (
-                  <Button variant="tonal" size="xs" icon="hexagon" disabled={hasCheckpoint} title={hasCheckpoint ? t('projectViewer.civitai.oneCheckpointItem') : t('projectViewer.civitai.addCheckpointItem')} onClick={() => addModelItem('checkpoint')}>
-                    {t('projectViewer.civitai.modelShort')}
-                  </Button>
-                )}
-                <Button variant="tonal" size="xs" icon="layers" disabled={lorasUnsupported} title={lorasUnsupported ? t('projectViewer.civitai.video.noLorasHint', { engine: engine.label }) : t('projectViewer.civitai.addLoraItem')} onClick={() => addModelItem('lora')}>
-                  {t('projectViewer.civitai.loraShort')}
-                </Button>
-              </>
-            )}
-            {localProject.type === 'video' && model?.options.supportsReferenceVideo && addButton('video', 'movie', t('projectViewer.common.video'))}
-            {localProject.type === 'video' && model?.options.supportsReferenceAudio && addButton('audio', 'graphic_eq', t('projectViewer.common.audio'))}
-          </div>
           <div ref={workflowListRef} className="v2-workflow__list" data-grid={isExpanded ? '' : undefined}>
             {isLoading && (
               <div className="flex justify-center py-10">
@@ -321,13 +340,20 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
                 ),
               )}
             {!isLoading && visible.length === 0 && (
-              <Text variant="body-medium" className="v2-dashed-note">
-                {items.length === 0 ? t('projectViewer.main.buildWorkflow') : t('projectViewer.workflow.allItemsHidden')}
-              </Text>
+              <div className="v2-workflow__empty">
+                <Icon name={items.length === 0 ? 'account_tree' : 'visibility_off'} size={28} />
+                <Text variant="title-small">{items.length === 0 ? t('projectViewer.main.buildWorkflow') : t('projectViewer.workflow.allItemsHidden')}</Text>
+                {items.length === 0 && (
+                  <Text variant="body-small" className="text-on-surface-variant">
+                    {t('v2.project.buildWorkflowHint')}
+                  </Text>
+                )}
+              </div>
             )}
           </div>
           {isCivitai ? (
             <CivitaiSettingsPanel
+              addStep={addStepMenu}
               localProject={localProject}
               isWorkflowLoaded={!isLoading}
               hasHistory={props.hasHistory}
@@ -347,6 +373,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
             />
           ) : (
             <SettingsPanel
+              addStep={addStepMenu}
               localProject={localProject}
               setLocalProject={props.setLocalProject}
               onUpdate={props.onUpdate}

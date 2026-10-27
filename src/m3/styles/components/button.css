@@ -44,8 +44,8 @@
   outline: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
-    var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
     width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
     box-shadow var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
@@ -259,8 +259,8 @@
   outline: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
-    var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
     width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
     background-color var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
@@ -738,8 +738,8 @@
     width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
     height var(--md-sys-motion-spring-fast-spatial-duration)
     var(--md-sys-motion-spring-fast-spatial),
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
-    var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
     background-color var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
     color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),

@@ -1,17 +1,23 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Checkbox, Icon, IconButton, Ripple, Text } from '../../../m3';
+import { imageDisplayUrl } from '../../../api';
+import { Checkbox, Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
 import type { Job } from '../../../types';
+
+export type JobTone = 'neutral' | 'running' | 'error' | 'success';
 
 export interface JobRowProps {
   job: Job;
   isExpanded: boolean;
   isSelected: boolean;
-  tone?: 'primary' | 'success' | 'error';
+  /** Whether any row of the list is selected, so every row shows its checkbox. */
+  selecting: boolean;
+  tone?: JobTone;
   providerName?: string;
   modelName?: string;
-  statusBadge?: ReactNode;
-  metaChips?: ReactNode;
+  /** Short status text at the trailing edge, e.g. "Running" or a time. */
+  status?: ReactNode;
+  /** The row's own actions, shown on hover and focus. */
   actionButtons?: ReactNode;
   expandedContent?: ReactNode;
   onToggleExpand: (id: string) => void;
@@ -19,13 +25,41 @@ export interface JobRowProps {
   onReuse?: (job: Job) => void;
 }
 
-/** One job in the drafts, queue or done list: prompt, model, status and actions; expands into its details. */
-export function JobRow({ job, isExpanded, isSelected, tone = 'primary', providerName, modelName, statusBadge, metaChips, actionButtons, expandedContent, onToggleExpand, onToggleSelect, onReuse }: JobRowProps) {
+/** The settings a job runs with, as quiet text. */
+export function jobSettings(job: Job): string[] {
+  return [
+    job.aspectRatio,
+    job.resolution,
+    job.quality,
+    job.duration != null ? `${job.duration}s` : undefined,
+    job.format?.toUpperCase(),
+    (job.videoContexts?.length || 0) > 0 ? `${job.videoContexts!.length} vid` : undefined,
+    (job.audioContexts?.length || 0) > 0 ? `${job.audioContexts!.length} aud` : undefined,
+  ].filter(Boolean) as string[];
+}
+
+/** A short date for a list, with the year only when it isn't this year. */
+export function shortDate(ts?: number) {
+  if (!ts) return '';
+  const date = new Date(ts);
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleString(undefined, { year: sameYear ? undefined : '2-digit', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+const LEAD_ICON: Record<JobTone, string> = { neutral: 'edit_note', running: 'progress_activity', error: 'error', success: 'check' };
+
+/** One job in the drafts, queue or done list: a thumbnail, the prompt, a quiet line of model and settings; expands into its details. */
+export function JobRow({ job, isExpanded, isSelected, selecting, tone = 'neutral', providerName, modelName, status, actionButtons, expandedContent, onToggleExpand, onToggleSelect, onReuse }: JobRowProps) {
   const { t } = useTranslation();
+  const thumb = job.thumbnailUrl || job.optimizedUrl || job.imageUrl || job.imageContexts?.[0];
+  // The file behind a finished job can be gone (deleted from the album), so a failed load falls back to a glyph.
+  const [brokenThumb, setBrokenThumb] = useState<string | null>(null);
+  const showThumb = thumb && brokenThumb !== thumb;
+  const meta = [providerName, modelName, ...jobSettings(job)].filter(Boolean).join(' · ');
   return (
-    <div className="v2-job" data-expanded={isExpanded ? '' : undefined} data-selected={isSelected ? '' : undefined} data-tone={tone}>
+    <div className="v2-jobrow" data-expanded={isExpanded ? '' : undefined} data-selected={isSelected ? '' : undefined} data-selecting={selecting ? '' : undefined} data-tone={tone}>
       <div
-        className="v2-job__head m3-focus-ring"
+        className="v2-jobrow__head m3-focus-ring"
         role="button"
         tabIndex={0}
         aria-expanded={isExpanded}
@@ -39,58 +73,40 @@ export function JobRow({ job, isExpanded, isSelected, tone = 'primary', provider
       >
         <Ripple />
         <span
-          className="v2-job__check"
+          className="v2-jobrow__lead"
           onClick={(e) => {
             e.stopPropagation();
             onToggleSelect(job.id, e.shiftKey);
           }}
         >
-          <Checkbox checked={isSelected} onChange={() => undefined} aria-label={job.prompt.slice(0, 60)} tabIndex={-1} />
+          <span className="v2-jobrow__thumb" data-tone={tone}>
+            {showThumb ? (
+              <img src={imageDisplayUrl(thumb)} alt="" loading="lazy" onError={() => setBrokenThumb(thumb)} />
+            ) : thumb ? (
+              <Icon name="hide_image" size={18} />
+            ) : tone === 'running' ? <LoadingIndicator size={20} aria-hidden /> : <Icon name={LEAD_ICON[tone]} size={18} />}
+          </span>
+          <span className="v2-jobrow__check">
+            <Checkbox checked={isSelected} onChange={() => undefined} aria-label={job.prompt.slice(0, 60)} tabIndex={-1} />
+          </span>
         </span>
-        <Icon name="expand_more" size={18} className="v2-job__chevron" />
-        <Text as="span" variant="body-small" className="v2-job__prompt" title={job.prompt}>
-          {job.prompt}
-        </Text>
-        <div className="v2-job__meta">
-          {(providerName || modelName) && (
-            <span className="v2-info-chip v2-job__model">
-              {providerName && <span className="truncate">{providerName}</span>}
-              {providerName && modelName && <span className="v2-dot" />}
-              {modelName && <span className="truncate text-primary">{modelName}</span>}
-            </span>
+        <span className="v2-jobrow__text">
+          <Text as="span" variant="body-medium" className="v2-jobrow__prompt" title={job.prompt}>
+            {job.prompt || <em>{t('projectViewer.workflow.noTextContent')}</em>}
+          </Text>
+          {meta && (
+            <Text as="span" variant="body-small" className="v2-jobrow__meta">
+              {meta}
+            </Text>
           )}
-          {metaChips}
-          {statusBadge}
-        </div>
-        <div className="v2-job__actions" onClick={(e) => e.stopPropagation()}>
+        </span>
+        {status && <span className="v2-jobrow__status" data-tone={tone}>{status}</span>}
+        <div className="v2-jobrow__actions" onClick={(e) => e.stopPropagation()}>
           {onReuse && <IconButton icon="history" size="xs" label={t('projectViewer.common.reuseConfiguration')} tooltip onClick={() => onReuse(job)} />}
           {actionButtons}
         </div>
       </div>
-      {isExpanded && expandedContent && <div className="v2-job__body">{expandedContent}</div>}
+      {isExpanded && expandedContent && <div className="v2-jobrow__body">{expandedContent}</div>}
     </div>
-  );
-}
-
-/** Small uppercase chip for a job's settings and status. */
-export function InfoChip({ children, tone, icon }: { children: ReactNode; tone?: 'primary' | 'success' | 'warning' | 'error' | 'tertiary'; icon?: ReactNode }) {
-  return (
-    <span className="v2-info-chip" data-tone={tone}>
-      {icon}
-      {children}
-    </span>
-  );
-}
-
-/** The settings chips every job shows. */
-export function JobSettingChips({ job }: { job: Job }) {
-  return (
-    <>
-      {job.aspectRatio && <InfoChip>{job.aspectRatio}</InfoChip>}
-      {job.quality && <InfoChip>{job.quality}</InfoChip>}
-      {job.format && <InfoChip>{job.format}</InfoChip>}
-      {(job.videoContexts?.length || 0) > 0 && <InfoChip tone="tertiary">{job.videoContexts?.length} vid</InfoChip>}
-      {(job.audioContexts?.length || 0) > 0 && <InfoChip tone="tertiary">{job.audioContexts?.length} aud</InfoChip>}
-    </>
   );
 }

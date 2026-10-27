@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl, type AlbumExportVersion } from '../../../api';
 import { Button, ChipSet, Dialog, Icon, IconButton, InputChip, SuggestionChip, Text, TextField } from '../../../m3';
@@ -17,8 +17,8 @@ async function copyWithToast(value: string, ok: string, fail: string, toast: Ret
   }
 }
 
-/** The full prompt of an album result, with the Civitai settings it ran with. */
-export function AlbumPromptDialog({ item, onClose }: { item: AlbumItem | null; onClose: () => void }) {
+/** The full prompt of an album result, with the Civitai settings it ran with and anything else it is given to show. */
+export function AlbumPromptDialog({ item, onClose, headline, children }: { item: AlbumItem | null; onClose: () => void; headline?: ReactNode; children?: ReactNode }) {
   const { t } = useTranslation();
   const toast = useToast();
   return (
@@ -26,7 +26,7 @@ export function AlbumPromptDialog({ item, onClose }: { item: AlbumItem | null; o
       open={item !== null}
       onClose={onClose}
       icon="text_fields"
-      headline={t('projectViewer.albumPrompt.title')}
+      headline={headline ?? t('projectViewer.albumPrompt.title')}
       fullScreen="compact"
       maxWidth={880}
       actions={
@@ -54,6 +54,7 @@ export function AlbumPromptDialog({ item, onClose }: { item: AlbumItem | null; o
             {item.prompt}
           </Text>
           {item.civitaiParams && <CivitaiParamsTable params={item.civitaiParams} sourceCount={item.imageContexts?.length ?? 0} />}
+          {children}
         </div>
       )}
     </Dialog>

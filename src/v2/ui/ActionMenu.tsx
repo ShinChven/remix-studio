@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { IconButton, MenuButton, MenuDivider, MenuItem, type Placement, type ButtonSize, type IconButtonVariant } from '../../m3';
+import { HoverMenuButton } from './HoverMenuButton';
 
 export interface ActionMenuItem {
   key: string;
@@ -30,18 +31,21 @@ export interface ActionMenuProps {
   className?: string;
   /** Custom trigger instead of the overflow icon button. */
   trigger?: Parameters<typeof MenuButton>[0]['trigger'];
+  /** Opens when the pointer rests on the trigger, where the device can hover. */
+  openOnHover?: boolean;
 }
 
 /** Overflow menu: an icon button that opens a menu of actions. */
-export function ActionMenu({ items, label, icon = 'more_vert', placement = 'bottom-end', size = 'sm', variant = 'standard', className, trigger }: ActionMenuProps) {
+export function ActionMenu({ items, label, icon = 'more_vert', placement = 'bottom-end', size = 'sm', variant = 'standard', className, trigger, openOnHover }: ActionMenuProps) {
   const visible = items.filter((item) => !item.hidden);
   if (!visible.length) return null;
+  const Button = openOnHover ? HoverMenuButton : MenuButton;
   return (
-    <MenuButton
+    <Button
       placement={placement}
       aria-label={label}
       trigger={
-        trigger ??
+        (trigger as Parameters<typeof Button>[0]['trigger']) ??
         ((props) => (
           <IconButton
             {...props}
@@ -77,6 +81,6 @@ export function ActionMenu({ items, label, icon = 'more_vert', placement = 'bott
           {item.label}
         </MenuItem>,
       ])}
-    </MenuButton>
+    </Button>
   );
 }
