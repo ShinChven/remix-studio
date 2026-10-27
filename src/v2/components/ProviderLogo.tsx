@@ -23,11 +23,16 @@ const MONOGRAM: Partial<Record<ProviderType, string>> = {
   Civitai: 'C',
 };
 
+/** The letters that stand in for a provider without a brand mark, or null when it has one. */
+export function providerMonogram(type: ProviderType | string): string | null {
+  return BRAND[type as ProviderType] ? null : (MONOGRAM[type as ProviderType] ?? String(type).slice(0, 2));
+}
+
 /** A provider's brand mark, or a monogram where no mark is available. */
 export function ProviderLogo({ type, size = 20, className }: { type: ProviderType | string; size?: number; className?: string }) {
   const Brand = BRAND[type as ProviderType];
   if (Brand) return <Brand size={size} className={cx('v2-provider-logo', className)} />;
-  const text = MONOGRAM[type as ProviderType] ?? String(type).slice(0, 2);
+  const text = providerMonogram(type) ?? '';
   return (
     <span
       className={cx('v2-provider-logo v2-provider-monogram', className)}
