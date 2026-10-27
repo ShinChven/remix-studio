@@ -1795,7 +1795,7 @@
   user-select: none;
 }
 
-/* ---------- Trash ---------- */
+/* ---------- File cards (orphan files) ---------- */
 .v2-trash-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1857,6 +1857,398 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px 8px 8px 12px;
+}
+
+/* ---------- Trash ---------- */
+/*
+ * The recycle bin: a hero with what the bin holds, the space it takes and the last things thrown
+ * in, sticking out of the bin; then the project page's results bar over runs of frames by day or
+ * project. Restoring is the main action and lifts items out; deleting forever is red and drops them.
+ */
+.v2-trash { display: flex; flex-direction: column; gap: 8px; }
+.v2-page.v2-trash { padding-top: var(--md-sys-measurement-space200); }
+.v2-trash :is(button, label, a, [role="button"]) { -webkit-tap-highlight-color: transparent; }
+
+/* Hero */
+.v2-trash-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  overflow: hidden;
+  padding: 24px 32px 28px 24px;
+  border-radius: var(--md-sys-shape-corner-extra-large-increased);
+  background: color-mix(in srgb, var(--md-sys-color-tertiary-container) 38%, var(--md-sys-color-surface-container));
+  isolation: isolate;
+}
+/* Centered behind the bin, as its stage; on narrow windows it drifts off the corner. */
+.v2-trash-hero__backdrop {
+  position: absolute;
+  z-index: -1;
+  top: calc(50% - 196px);
+  inset-inline-end: -28px;
+  color: color-mix(in srgb, var(--md-sys-color-tertiary-container) 72%, transparent);
+  rotate: -8deg;
+  transition: rotate var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial);
+}
+.v2-trash-hero:hover .v2-trash-hero__backdrop { rotate: 22deg; }
+.v2-trash-hero__main { display: flex; min-width: 0; flex: 1; flex-direction: column; align-items: flex-start; gap: 12px; }
+.v2-trash-hero__heading { display: flex; min-width: 0; max-width: 100%; align-items: center; gap: 16px; }
+.v2-trash-hero__badge { display: inline-grid; flex-shrink: 0; place-items: center; width: 64px; height: 64px; color: var(--md-sys-color-tertiary); }
+.v2-trash-hero__badge > * { grid-area: 1 / 1; }
+.v2-trash-hero__badge-shape { transition: rotate var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial); }
+.v2-trash-hero:hover .v2-trash-hero__badge-shape { rotate: -12deg; }
+.v2-trash-hero__badge-icon { position: relative; color: var(--md-sys-color-on-tertiary); }
+.v2-trash-hero__titles { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.v2-trash-hero__kicker { color: var(--md-sys-color-tertiary); }
+.v2-trash-hero .v2-trash-hero__title { margin: 0; font: var(--md-sys-typescale-emphasized-display-small); }
+.v2-trash-hero__description { max-width: 60ch; margin: 0; color: var(--md-sys-color-on-surface-variant); }
+.v2-trash-hero__stats { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.v2-trash-hero__stats > li {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 72%, transparent);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+  white-space: nowrap;
+}
+.v2-trash-hero__stats strong { color: var(--md-sys-color-on-surface); font: var(--md-sys-typescale-emphasized-label-large); font-variant-numeric: tabular-nums; }
+.v2-trash-hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+
+/* The space the bin takes, split by kind. */
+.v2-trash-space { --_image: var(--md-sys-color-tertiary); --_video: var(--md-sys-color-secondary); --_audio: var(--v2-color-success); --_text: var(--md-sys-color-primary); display: flex; width: min(100%, 440px); flex-direction: column; gap: 8px; }
+.v2-trash-space__head { display: flex; align-items: baseline; gap: 8px; }
+.v2-trash-space__head strong { color: var(--md-sys-color-on-surface); font: var(--md-sys-typescale-emphasized-title-large); font-variant-numeric: tabular-nums; }
+.v2-trash-space__head span { color: var(--md-sys-color-on-surface-variant); font: var(--md-sys-typescale-label-large); }
+.v2-trash-space__bar { display: flex; height: 10px; gap: 4px; }
+.v2-trash-space__bar > span {
+  min-width: 10px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--_image);
+  transform-origin: left center;
+  animation: v2-trash-grow var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial) both;
+}
+.v2-trash-space__bar > span:nth-child(2) { animation-delay: 60ms; }
+.v2-trash-space__bar > span:nth-child(3) { animation-delay: 120ms; }
+.v2-trash-space__legend { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 0; padding: 0; color: var(--md-sys-color-on-surface-variant); font: var(--md-sys-typescale-label-medium); list-style: none; }
+.v2-trash-space__legend > li { display: inline-flex; align-items: center; gap: 6px; }
+.v2-trash-space__legend > li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--_image); }
+.v2-trash-space__legend strong { color: var(--md-sys-color-on-surface); font: var(--md-sys-typescale-emphasized-label-medium); font-variant-numeric: tabular-nums; }
+:is(.v2-trash-space__bar > span, .v2-trash-space__legend > li)[data-kind="video"] { --_image: var(--_video); }
+:is(.v2-trash-space__bar > span, .v2-trash-space__legend > li)[data-kind="audio"] { --_image: var(--_audio); }
+:is(.v2-trash-space__bar > span, .v2-trash-space__legend > li)[data-kind="text"] { --_image: var(--_text); }
+@keyframes v2-trash-grow { from { scale: 0 1; } }
+
+/* The last things thrown in, sticking out of the bin; they lift out while the pointer is on the hero. */
+.v2-trash-hero__pile { display: flex; flex-shrink: 0; flex-direction: column; align-items: center; gap: 10px; width: 300px; margin: 0; }
+.v2-trash-hero__cards { position: relative; width: 300px; height: 212px; }
+.v2-trash-hero__card {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  width: 124px;
+  height: 156px;
+  margin-left: -62px;
+  overflow: hidden;
+  border: 4px solid var(--md-sys-color-surface-container-lowest);
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-sys-elevation-level2);
+  transform-origin: 50% 100%;
+  transition:
+    translate var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    rotate var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    scale var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+}
+.v2-trash-hero__card img { width: 100%; height: 100%; object-fit: cover; }
+.v2-trash-hero__card-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 45%, transparent);
+  color: #fff;
+}
+.v2-trash-hero__card-text {
+  display: -webkit-box;
+  margin: 12px;
+  overflow: hidden;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 7;
+}
+.v2-trash-hero__card-art { display: grid; width: 100%; height: 100%; place-items: center; background: var(--_art-bg); color: var(--_art); }
+.v2-trash-hero__card-art > * { grid-area: 1 / 1; }
+.v2-trash-hero__card-art > .m3-icon { position: relative; color: var(--_art-on); }
+.v2-trash-hero__card { --_art-bg: var(--v2-color-success-container); --_art: var(--v2-color-success); --_art-on: var(--v2-color-on-success); }
+.v2-trash-hero__card[data-kind="image"] { --_art-bg: var(--md-sys-color-tertiary-container); --_art: var(--md-sys-color-tertiary); --_art-on: var(--md-sys-color-on-tertiary); }
+.v2-trash-hero__card[data-kind="video"] { --_art-bg: var(--md-sys-color-secondary-container); --_art: var(--md-sys-color-secondary); --_art-on: var(--md-sys-color-on-secondary); }
+.v2-trash-hero__card[data-index="0"] { z-index: 3; rotate: -5deg; }
+.v2-trash-hero__card[data-index="1"] { z-index: 2; translate: -66px 10px; rotate: -17deg; scale: 0.88; }
+.v2-trash-hero__card[data-index="2"] { z-index: 1; translate: 68px 6px; rotate: 13deg; scale: 0.88; }
+.v2-trash-hero:hover .v2-trash-hero__card[data-index="0"] { translate: 0 -22px; rotate: 0deg; scale: 1.04; }
+.v2-trash-hero:hover .v2-trash-hero__card[data-index="1"] { translate: -86px -8px; rotate: -9deg; scale: 0.9; }
+.v2-trash-hero:hover .v2-trash-hero__card[data-index="2"] { translate: 88px -12px; rotate: 7deg; scale: 0.9; }
+/* The bin: a rim and a ribbed body in front of the pile. */
+.v2-trash-hero__cards::before,
+.v2-trash-hero__cards::after { content: ""; position: absolute; z-index: 4; left: 50%; }
+.v2-trash-hero__cards::before {
+  bottom: 0;
+  width: 212px;
+  height: 64px;
+  margin-left: -106px;
+  border-radius: 10px 10px var(--md-sys-shape-corner-extra-large) var(--md-sys-shape-corner-extra-large);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 34px, color-mix(in srgb, var(--md-sys-color-on-tertiary) 22%, transparent) 34px 40px) 18px 14px / calc(100% - 36px) calc(100% - 26px) no-repeat,
+    var(--md-sys-color-tertiary);
+}
+.v2-trash-hero__cards::after {
+  bottom: 56px;
+  width: 236px;
+  height: 18px;
+  margin-left: -118px;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: color-mix(in srgb, var(--md-sys-color-tertiary) 82%, var(--md-sys-color-on-tertiary));
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+}
+/* Empty: the bin alone, lower in the hero. */
+.v2-trash-hero__pile[data-empty] .v2-trash-hero__cards { height: 120px; }
+.v2-trash-hero__caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 6px 16px;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 72%, transparent);
+}
+.v2-trash-hero__caption-label { color: var(--md-sys-color-on-surface-variant); letter-spacing: 0.06em; text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) {
+  .v2-trash-hero__backdrop, .v2-trash-hero__badge-shape, .v2-trash-hero__card { transition: none; }
+  .v2-trash-space__bar > span { animation: none; }
+}
+@media (max-width: 1023.98px) {
+  .v2-trash-hero__pile { display: none; }
+}
+@media (max-width: 599.98px) {
+  .v2-trash-hero { padding: 16px 16px 20px 14px; border-radius: var(--md-sys-shape-corner-extra-large); }
+  .v2-trash-hero__backdrop { top: -170px; inset-inline-end: -170px; }
+  .v2-trash-hero__heading { gap: 12px; }
+  .v2-trash-hero__badge, .v2-trash-hero__badge-shape { width: 48px; height: 48px; }
+  .v2-trash-hero .v2-trash-hero__title { font: var(--md-sys-typescale-emphasized-headline-small); }
+  .v2-trash-hero__description { font: var(--md-sys-typescale-body-medium); }
+  .v2-trash-hero__stats > li { height: 28px; padding: 0 10px; font: var(--md-sys-typescale-label-medium); }
+  .v2-trash-hero__stats strong { font: var(--md-sys-typescale-emphasized-label-medium); }
+}
+
+/* Items pane: clipped to its corners without becoming a scroller, so the bar can stick. */
+.v2-trash-pane {
+  position: relative;
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  overflow: clip;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-lowest);
+  container: pane / inline-size;
+}
+.v2-trash-pane .v2-results-head { border-radius: var(--md-sys-shape-corner-extra-large) var(--md-sys-shape-corner-extra-large) 0 0; }
+/* Up to five kinds and four tools do not share a phone's row: the kinds span the first, the tools end the second. */
+@container pane (max-width: 560px) {
+  .v2-trash-pane .v2-results-bar:not([data-selecting]) .v2-section-nav { flex: 1 1 100%; }
+  .v2-trash-pane .v2-section-nav__item { flex: 1; justify-content: center; }
+}
+@media (max-width: 599.98px) {
+  .v2-trash-pane { border-radius: var(--md-sys-shape-corner-large); }
+}
+
+/* Runs by day or project; the check slides in before the label to take the whole run. */
+.v2-trash-groups { display: flex; flex-direction: column; padding-bottom: 8px; }
+.v2-trash-group__head { display: flex; min-width: 0; align-items: center; padding: 10px 16px 0 12px; }
+.v2-trash-group__check {
+  display: inline-flex;
+  width: 0;
+  flex-shrink: 0;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+:is(.v2-trash-group__head:hover, .v2-trash-group__head:focus-within, .v2-trash-groups[data-selecting] .v2-trash-group__head) .v2-trash-group__check { width: 40px; margin-inline-start: -8px; opacity: 1; }
+@media (hover: none) {
+  .v2-trash-group__check { width: 40px; margin-inline-start: -8px; opacity: 1; }
+}
+.v2-trash-group__label { display: flex; min-width: 0; align-items: center; gap: 6px; margin: 0; padding-inline-start: 4px; }
+.v2-trash-group__orphan { flex-shrink: 0; color: var(--md-sys-color-error); }
+.v2-trash-group__meta { flex-shrink: 0; margin-inline-start: 10px; color: var(--md-sys-color-on-surface-variant); font: var(--md-sys-typescale-body-small); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v2-trash-group .v2-shots { padding-top: 10px; }
+
+/* Frames: each kind in its own colors; text and audio fill the frame with their own surface. */
+.v2-trash-shot {
+  --v2-kind: var(--md-sys-color-tertiary);
+  --v2-on-kind: var(--md-sys-color-on-tertiary);
+  --v2-kind-container: var(--md-sys-color-tertiary-container);
+  --v2-on-kind-container: var(--md-sys-color-on-tertiary-container);
+}
+.v2-trash-shot[data-kind="video"] {
+  --v2-kind: var(--md-sys-color-secondary);
+  --v2-on-kind: var(--md-sys-color-on-secondary);
+  --v2-kind-container: var(--md-sys-color-secondary-container);
+  --v2-on-kind-container: var(--md-sys-color-on-secondary-container);
+}
+.v2-trash-shot[data-kind="audio"] {
+  --v2-kind: var(--v2-color-success);
+  --v2-on-kind: var(--v2-color-on-success);
+  --v2-kind-container: var(--v2-color-success-container);
+  --v2-on-kind-container: var(--v2-color-on-success-container);
+}
+.v2-trash-shot[data-kind="text"] {
+  --v2-kind: var(--md-sys-color-primary);
+  --v2-on-kind: var(--md-sys-color-on-primary);
+  --v2-kind-container: var(--md-sys-color-primary-container);
+  --v2-on-kind-container: var(--md-sys-color-on-primary-container);
+}
+.v2-trash-shot .v2-shot__index > :first-child { margin-inline-start: 0; }
+.v2-trash-shot__missing { display: grid; place-items: center; color: var(--md-sys-color-on-surface-variant); opacity: 0.6; }
+.v2-trash-shot__pill { display: inline-flex; align-items: center; gap: 3px; }
+:is(.v2-trash-shot__text, .v2-trash-shot__art) {
+  position: absolute;
+  inset: 0;
+  transition:
+    scale var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    border-radius var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+}
+.v2-trash-shot[data-selected] :is(.v2-trash-shot__text, .v2-trash-shot__art) { border-radius: var(--md-sys-shape-corner-large); scale: 0.86; }
+.v2-trash-shot[data-kind="text"] .v2-shot__open { cursor: pointer; }
+/* Text: a quote mark in the corner the checkbox takes on hover, then the start of the text, fading out. */
+.v2-trash-shot__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  padding: 12px 16px 36px;
+  background: color-mix(in srgb, var(--v2-kind-container) 40%, var(--md-sys-color-surface-container-low));
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-small);
+  text-align: start;
+}
+.v2-trash-shot__quote {
+  flex-shrink: 0;
+  color: var(--v2-kind);
+  transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+:is(.v2-trash-shot:hover, .v2-trash-shot:focus-within, .v2-shots[data-selecting] .v2-trash-shot) .v2-trash-shot__quote { opacity: 0; }
+.v2-trash-shot__excerpt {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 96%);
+  mask-image: linear-gradient(to bottom, #000 58%, transparent 96%);
+}
+.v2-lib-shots[data-size="l"] .v2-trash-shot__text { padding: 16px 20px 40px; font: var(--md-sys-typescale-body-medium); }
+.v2-lib-shots[data-size="s"] .v2-trash-shot__text { padding: 8px 10px 28px; font: var(--md-sys-typescale-label-small); }
+.v2-lib-shots[data-size="s"] .v2-trash-shot__quote { width: 18px; height: 18px; font-size: 18px; }
+.v2-trash-shot__art { display: grid; place-items: center; background: color-mix(in srgb, var(--v2-kind-container) 60%, var(--md-sys-color-surface-container-low)); }
+.v2-trash-shot__art > * { grid-area: 1 / 1; }
+.v2-trash-shot__art-shape { color: var(--v2-kind); transition: rotate var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial); }
+.v2-trash-shot:hover .v2-trash-shot__art-shape { rotate: 24deg; }
+.v2-trash-shot[data-playing] .v2-trash-shot__art-shape { animation: v2-spin 14s linear infinite; }
+.v2-trash-shot__art-icon { position: relative; color: var(--v2-on-kind); }
+.v2-trash-shot[data-kind="audio"] .v2-shot__open { cursor: pointer; }
+.v2-trash-shot__progress { position: absolute; z-index: 1; bottom: 34px; inset-inline: 14px; --md-sys-color-primary: var(--v2-kind); }
+.v2-trash-shot__project { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.v2-trash-shot__project > .m3-icon { flex-shrink: 0; color: var(--md-sys-color-on-surface-variant); }
+.v2-trash-shot__project:hover > .m3-icon { color: inherit; }
+.v2-trash-shot__project[data-orphan] { color: var(--md-sys-color-on-surface-variant); }
+.v2-trash-shot__project[data-orphan] > .m3-icon { color: var(--md-sys-color-error); }
+/* Restored items lift out of the grid; deleted ones drop away. */
+.v2-trash-shot[data-leaving] { pointer-events: none; }
+.v2-trash-shot[data-leaving="restore"] { animation: v2-trash-lift var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-accelerate) forwards; }
+.v2-trash-shot[data-leaving="delete"] { animation: v2-trash-drop var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-accelerate) forwards; }
+@keyframes v2-trash-lift { to { opacity: 0; translate: 0 -28px; scale: 0.92; } }
+@keyframes v2-trash-drop { to { opacity: 0; translate: 0 20px; rotate: -5deg; scale: 0.82; } }
+@media (prefers-reduced-motion: reduce) {
+  .v2-trash-group__check, :is(.v2-trash-shot__text, .v2-trash-shot__art), .v2-trash-shot__art-shape { transition: none; }
+  .v2-trash-shot[data-playing] .v2-trash-shot__art-shape, .v2-trash-shot[data-leaving] { animation: none; }
+}
+
+/* One item up close */
+.v2-trash-dialog__body { display: grid; align-items: start; gap: 24px; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr); }
+.v2-trash-dialog__preview {
+  display: flex;
+  min-height: 240px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-surface-container-high);
+}
+.v2-trash-dialog__picture { display: block; max-width: 100%; max-height: 64vh; object-fit: contain; }
+.v2-trash-dialog__missing { color: var(--md-sys-color-on-surface-variant); opacity: 0.6; }
+.v2-trash-dialog__video { display: block; width: 100%; max-height: 64vh; background: #000; }
+.v2-trash-dialog__track { display: flex; width: 100%; flex-direction: column; align-items: center; gap: 24px; padding: 36px 24px; background: color-mix(in srgb, var(--v2-color-success-container) 60%, var(--md-sys-color-surface-container-low)); }
+.v2-trash-dialog__art { display: grid; place-items: center; color: var(--v2-color-success); }
+.v2-trash-dialog__art > * { grid-area: 1 / 1; }
+.v2-trash-dialog__art > svg { animation: v2-spin 18s linear infinite; }
+.v2-trash-dialog__art > .m3-icon { position: relative; color: var(--v2-color-on-success); }
+.v2-trash-dialog__body[data-kind="text"] .v2-trash-dialog__preview { align-items: stretch; }
+.v2-trash-dialog__text {
+  width: 100%;
+  max-height: 64vh;
+  overflow: auto;
+  padding: 20px 22px;
+  background: color-mix(in srgb, var(--md-sys-color-primary-container) 32%, var(--md-sys-color-surface-container-low));
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.v2-trash-dialog__facts { display: flex; min-width: 0; flex-direction: column; gap: 16px; }
+.v2-trash-dialog__project {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  cursor: pointer;
+  text-align: start;
+  transition: border-radius var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.v2-trash-dialog__project:hover { border-radius: var(--md-sys-shape-corner-extra-large); }
+.v2-trash-dialog__project[data-orphan] { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.v2-trash-dialog__project-text { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+.v2-trash-dialog__project-label { opacity: 0.8; }
+.v2-trash-dialog__orphan { margin: -6px 0 0; color: var(--md-sys-color-on-surface-variant); }
+.v2-trash-dialog__prompt { display: flex; align-items: flex-start; gap: 4px; }
+.v2-trash-dialog__prompt > p { flex: 1; max-height: 9.6em; margin: 0; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; }
+.v2-trash-dialog__prompt-text { margin: 0; color: var(--md-sys-color-on-surface-variant); overflow-wrap: anywhere; white-space: pre-wrap; }
+.v2-trash-dialog__nav { display: flex; align-items: center; gap: 2px; margin-inline-end: auto; }
+.v2-trash-dialog__counter { min-width: 5ch; color: var(--md-sys-color-on-surface-variant); font-variant-numeric: tabular-nums; text-align: center; }
+@media (max-width: 719.98px) {
+  .v2-trash-dialog__body { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-trash-dialog__art > svg { animation: none; }
 }
 
 /* ---------- Glass and card motion (shared preferences) ---------- */

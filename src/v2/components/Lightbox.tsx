@@ -13,6 +13,9 @@ export interface LightboxProps {
   /** Restores the workflow that produced the image being viewed. */
   onReuse?: (index: number) => void;
   onIndexChange?: (index: number) => void;
+  /** Another icon and label for the R and D actions, where they mean something else (e.g. restore from the trash). */
+  reuseAction?: { icon: string; label: string };
+  deleteAction?: { icon: string; label: string };
 }
 
 /** An unattended slideshow lets the display sleep again after this long. */
@@ -64,7 +67,7 @@ function store(key: string, value: string) {
  * Full-window image viewer: arrows and keys to browse, a slideshow with a countdown and
  * transitions, fullscreen with auto-hiding controls, and optional delete and reuse actions.
  */
-export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onIndexChange }: LightboxProps) {
+export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onIndexChange, reuseAction, deleteAction }: LightboxProps) {
   const { t } = useTranslation();
   const [index, setIndex] = useState(() => clampIndex(startIndex, images.length));
   const [playing, setPlaying] = useState(false);
@@ -352,8 +355,8 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
               </Button>
             </>
           )}
-          {onReuse && <IconButton icon="refresh" label={`${t('projectViewer.album.reuseWorkflow')} (R)`} tooltip variant="tonal" onClick={() => requestReuse(bounded)} />}
-          {onDelete && <IconButton icon="delete" label={`${t('projectViewer.imageLightbox.deleteImage')} (D)`} tooltip variant="tonal" className="v2-button-danger" onClick={() => requestDelete(bounded)} />}
+          {onReuse && <IconButton icon={reuseAction?.icon ?? 'refresh'} label={`${reuseAction?.label ?? t('projectViewer.album.reuseWorkflow')} (R)`} tooltip variant="tonal" onClick={() => requestReuse(bounded)} />}
+          {onDelete && <IconButton icon={deleteAction?.icon ?? 'delete'} label={`${deleteAction?.label ?? t('projectViewer.imageLightbox.deleteImage')} (D)`} tooltip variant="tonal" className="v2-button-danger" onClick={() => requestDelete(bounded)} />}
           <IconButton
             icon={fullscreen ? 'fullscreen_exit' : 'fullscreen'}
             label={`${t(fullscreen ? 'projectViewer.imageLightbox.exitFullscreen' : 'projectViewer.imageLightbox.enterFullscreen')} (F)`}

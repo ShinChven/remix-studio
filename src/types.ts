@@ -2300,8 +2300,11 @@ export interface AlbumItem {
 
 export interface TrashItem extends AlbumItem {
   projectId: string;
+  /** The project's current name, or its name when the item was deleted if the project is gone. */
   projectName: string;
   deletedAt: number;
+  /** False once the project itself was deleted; the item can then only be deleted. */
+  projectExists?: boolean;
 }
 
 export interface Project {

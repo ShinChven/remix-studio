@@ -1125,7 +1125,17 @@ export class ProjectRepository {
       where: { userId },
       orderBy: [{ deletedAt: 'desc' }, { id: 'desc' }],
     });
-    return items.map((item) => this.mapTrashItem(item));
+    // Items outlive their project; only those whose project is still there can go back.
+    const projectIds = [...new Set(items.map((item) => item.projectId))];
+    const projects = projectIds.length
+      ? await this.prisma.project.findMany({ where: { userId, id: { in: projectIds } }, select: { id: true, name: true } })
+      : [];
+    const names = new Map(projects.map((project) => [project.id, project.name]));
+    return items.map((item) => {
+      const mapped = this.mapTrashItem(item);
+      const name = names.get(item.projectId);
+      return { ...mapped, projectName: name ?? mapped.projectName, projectExists: name !== undefined };
+    });
   }
 
   async restoreTrashItem(userId: string, itemId: string): Promise<void> {
