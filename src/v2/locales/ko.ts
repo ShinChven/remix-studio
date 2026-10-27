@@ -359,6 +359,16 @@ const messages: V2Messages = {
     noMatches: '일치하는 항목이 없습니다',
     noMatchesHint: '다른 검색어, 종류 또는 프로젝트를 선택해 보세요.',
   },
+  projects: {
+    statProjects_one: '개 프로젝트',
+    statProjects_other: '개 프로젝트',
+    statArchived_one: '보관됨',
+    statArchived_other: '보관됨',
+    statRunning: '실행 중',
+    statQueued: '대기 중',
+    statFailed: '실패',
+    newest: '최신 프로젝트',
+  },
 };
 
 export default messages;

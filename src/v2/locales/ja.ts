@@ -359,6 +359,16 @@ const messages: V2Messages = {
     noMatches: '一致する項目はありません',
     noMatchesHint: '検索語、種類、プロジェクトを変えてみてください。',
   },
+  projects: {
+    statProjects_one: 'プロジェクト',
+    statProjects_other: 'プロジェクト',
+    statArchived_one: 'アーカイブ済み',
+    statArchived_other: 'アーカイブ済み',
+    statRunning: '実行中',
+    statQueued: 'キュー済み',
+    statFailed: '失敗',
+    newest: '最新のプロジェクト',
+  },
 };
 
 export default messages;

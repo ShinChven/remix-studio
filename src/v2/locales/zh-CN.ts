@@ -359,6 +359,16 @@ const messages: V2Messages = {
     noMatches: '回收站中没有匹配的内容',
     noMatchesHint: '换个关键词、类型或项目试试。',
   },
+  projects: {
+    statProjects_one: '个项目',
+    statProjects_other: '个项目',
+    statArchived_one: '已归档',
+    statArchived_other: '已归档',
+    statRunning: '运行中',
+    statQueued: '排队中',
+    statFailed: '失败',
+    newest: '最新项目',
+  },
 };
 
 export default messages;

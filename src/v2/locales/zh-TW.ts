@@ -359,6 +359,16 @@ const messages: V2Messages = {
     noMatches: '資源回收筒中沒有相符的內容',
     noMatchesHint: '換個關鍵字、類型或專案試試。',
   },
+  projects: {
+    statProjects_one: '個專案',
+    statProjects_other: '個專案',
+    statArchived_one: '已封存',
+    statArchived_other: '已封存',
+    statRunning: '執行中',
+    statQueued: '排隊中',
+    statFailed: '失敗',
+    newest: '最新專案',
+  },
 };
 
 export default messages;

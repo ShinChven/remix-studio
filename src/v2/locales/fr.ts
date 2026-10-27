@@ -359,6 +359,16 @@ const messages: V2Messages = {
     noMatches: 'Rien ne correspond dans la corbeille',
     noMatchesHint: 'Essayez une autre recherche, un autre type ou un autre projet.',
   },
+  projects: {
+    statProjects_one: 'projet',
+    statProjects_other: 'projets',
+    statArchived_one: 'archivé',
+    statArchived_other: 'archivés',
+    statRunning: 'en cours',
+    statQueued: 'en file',
+    statFailed: 'en échec',
+    newest: 'Dernier projet',
+  },
 };
 
 export default messages;

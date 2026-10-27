@@ -358,6 +358,16 @@ const en = {
     noMatches: 'Nothing in the bin matches',
     noMatchesHint: 'Try another search, kind or project.',
   },
+  projects: {
+    statProjects_one: 'project',
+    statProjects_other: 'projects',
+    statArchived_one: 'archived',
+    statArchived_other: 'archived',
+    statRunning: 'running',
+    statQueued: 'queued',
+    statFailed: 'failed',
+    newest: 'Newest project',
+  },
 };
 
 export default en;
