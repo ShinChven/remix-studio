@@ -94,8 +94,10 @@ export function JobRow({ job, isExpanded, isSelected, selecting, tone = 'neutral
           <Text as="span" variant="body-medium" className="v2-jobrow__prompt" title={job.prompt}>
             {job.prompt || <em>{t('projectViewer.workflow.noTextContent')}</em>}
           </Text>
-          {meta && (
+          {(meta || status) && (
             <Text as="span" variant="body-small" className="v2-jobrow__meta">
+              {/* On a narrow pane the trailing status is hidden, so it leads the meta line instead. */}
+              {status && <span className="v2-jobrow__inline-status" data-tone={tone}>{status}{meta && ' · '}</span>}
               {meta}
             </Text>
           )}
