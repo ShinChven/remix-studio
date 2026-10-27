@@ -79,6 +79,8 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
   const rootRef = useRef<HTMLDivElement>(null);
   const onIndexChangeRef = useRef(onIndexChange);
   const lastSrc = useRef<string | undefined>(images[clampIndex(startIndex, images.length)]);
+  const [shownSrc, setShownSrc] = useState(lastSrc.current);
+  const preloaded = useRef<HTMLImageElement[]>([]);
 
   useEffect(() => {
     onIndexChangeRef.current = onIndexChange;
@@ -182,20 +184,52 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
   useWakeLock(playing, WAKE_LOCK_MAX_MS);
 
   const currentSrc = images[clampIndex(index, images.length)];
+  // The incoming image is swapped in only once decoded, so the current one stays on screen meanwhile.
+  useEffect(() => {
+    if (!currentSrc || currentSrc === shownSrc) return;
+    let cancelled = false;
+    const img = new Image();
+    img.src = currentSrc;
+    img
+      .decode()
+      .catch(() => {})
+      .then(() => {
+        if (!cancelled) setShownSrc(currentSrc);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSrc]);
+
+  // Neighbours are decoded ahead so stepping either way is instant.
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const i = clampIndex(index, images.length);
+    const neighbours = new Set([images[(i + 1) % images.length], images[(i - 1 + images.length) % images.length]]);
+    preloaded.current = [...neighbours].map((src) => {
+      const img = new Image();
+      img.src = src;
+      img.decode().catch(() => {});
+      return img;
+    });
+  }, [images, index]);
+
   // The outgoing image stays underneath while the incoming one animates over it.
   useEffect(() => {
     const animating = playing && transition !== 'none';
     const prev = lastSrc.current;
-    lastSrc.current = currentSrc;
-    if (!animating || !prev || prev === currentSrc) {
+    lastSrc.current = shownSrc;
+    if (!animating || !prev || prev === shownSrc) {
       setPrevSrc(null);
       return;
     }
     setPrevSrc(prev);
     const timer = setTimeout(() => setPrevSrc(null), TRANSITION_MS);
     return () => clearTimeout(timer);
-  }, [currentSrc, playing, transition]);
+  }, [shownSrc, playing, transition]);
 
+  // The countdown restarts once the next image is actually on screen.
   useEffect(() => {
     if (!playing || images.length <= 1) {
       setProgress(0);
@@ -214,7 +248,7 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [playing, interval, images.length, index]);
+  }, [playing, interval, images.length, index, shownSrc]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -332,8 +366,8 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
 
         {prevSrc && <img src={prevSrc} alt="" aria-hidden className="v2-lightbox__image v2-lightbox__image--prev" />}
         <img
-          key={`${currentSrc}-${playing && transition !== 'none' ? transition : 'static'}`}
-          src={currentSrc}
+          key={playing && transition !== 'none' ? `${shownSrc}-${transition}` : 'static'}
+          src={shownSrc}
           alt={t('projectViewer.imageLightbox.previewAlt', { index: bounded + 1 })}
           className="v2-lightbox__image"
           data-transition={playing && transition !== 'none' ? transition : undefined}
