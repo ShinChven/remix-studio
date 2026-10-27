@@ -281,7 +281,6 @@
   overflow: visible;
 }
 .m3-time-dialog .m3-dialog__actions {
-  align-items: center;
   padding: 16px 12px 12px;
 }
 .m3-time__mode {
