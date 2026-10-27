@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { Icon, Shape, Text } from '../../../m3';
+import { Icon, Text } from '../../../m3';
 import type { ModelConfig } from '../../../types';
 import { useModelDescriptions } from '../../lib/modelDescriptions';
-import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 import { modelTraits, type ProviderKind } from './providerMeta';
 
 export interface ModelEntry {
@@ -38,11 +38,8 @@ export function ModelRows({ models, onCopy, compact = false }: { models: ModelEn
   return (
     <ul className="v2-model-rows" data-compact={compact ? '' : undefined}>
       {models.map((model) => (
-        <li key={model.key} className="v2-model-row" data-kind={model.kind} data-reach={model.reach}>
-          <span className="v2-model-row__art" aria-hidden>
-            <Shape name={kindMeta(model.kind).shape} size={compact ? 32 : 36} morph={false} />
-            <Icon name={kindMeta(model.kind).icon} size={compact ? 16 : 18} filled />
-          </span>
+        <li key={model.key} className="v2-model-row" data-kind-host data-reach={model.reach}>
+          <KindBadge kind={model.kind} size={compact ? 32 : 36} tone="solid" className="v2-model-row__art" />
           <span className="v2-model-row__body">
             <span className="v2-model-row__name-line">
               <Text as="span" variant="title-small" emphasized className="v2-model-row__name">

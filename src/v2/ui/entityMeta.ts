@@ -8,15 +8,17 @@ export interface KindMeta {
   /** Accent text color utility class. */
   accent: string;
   shape: MaterialShapeName;
+  /** One notch of the shape in degrees: turning by it lands on the same silhouette. */
+  turn: number;
 }
 
 const KINDS: Record<string, KindMeta> = {
-  text: { icon: 'notes', tone: 'bg-primary-container text-on-primary-container', accent: 'text-primary', shape: 'cookie-4' },
-  image: { icon: 'image', tone: 'bg-tertiary-container text-on-tertiary-container', accent: 'text-tertiary', shape: 'clover-4' },
-  video: { icon: 'movie', tone: 'bg-secondary-container text-on-secondary-container', accent: 'text-secondary', shape: 'sunny' },
-  audio: { icon: 'music_note', tone: 'bg-success-container text-on-success-container', accent: 'text-success', shape: 'soft-burst' },
-  comfyui: { icon: 'account_tree', tone: 'bg-warning-container text-on-warning-container', accent: 'text-warning', shape: 'puffy-diamond' },
-  civitai: { icon: 'hexagon', tone: 'bg-surface-container-highest text-primary', accent: 'text-primary', shape: 'pentagon' },
+  text: { icon: 'notes', tone: 'bg-primary-container text-on-primary-container', accent: 'text-primary', shape: 'cookie-4', turn: 90 },
+  image: { icon: 'image', tone: 'bg-tertiary-container text-on-tertiary-container', accent: 'text-tertiary', shape: 'clover-4', turn: 90 },
+  video: { icon: 'movie', tone: 'bg-secondary-container text-on-secondary-container', accent: 'text-secondary', shape: 'sunny', turn: 45 },
+  audio: { icon: 'music_note', tone: 'bg-success-container text-on-success-container', accent: 'text-success', shape: 'soft-burst', turn: 36 },
+  comfyui: { icon: 'account_tree', tone: 'bg-warning-container text-on-warning-container', accent: 'text-warning', shape: 'puffy-diamond', turn: 90 },
+  civitai: { icon: 'hexagon', tone: 'bg-surface-container-highest text-primary', accent: 'text-primary', shape: 'pentagon', turn: 72 },
 };
 
 export function kindMeta(kind: string | undefined): KindMeta {

@@ -9,6 +9,7 @@ import { ProviderHero } from '../components/providers/ProviderHero';
 import { ProviderMark } from '../components/providers/ProviderMark';
 import { KEY_PAGES, modelsByKind, SERVICE_TYPES, serviceKinds, serviceMeta } from '../components/providers/providerMeta';
 import { kindMeta } from '../ui/entityMeta';
+import { KindBadge } from '../ui/KindBadge';
 import { NumberField } from '../ui/NumberField';
 import { ErrorState, LoadingState, Page } from '../ui/Page';
 
@@ -82,7 +83,7 @@ function ServiceOption({ type, selected, onSelect }: { type: ProviderType; selec
         <span className="v2-service-option__name">{serviceMeta(type).label}</span>
         <span className="v2-service-option__kinds">
           {serviceKinds(type).map((kind) => (
-            <Icon key={kind} name={kindMeta(kind).icon} size={13} filled data-kind={kind} aria-label={t(`v2.providers.kind.${kind}`)} />
+            <KindBadge key={kind} kind={kind} size={20} label={t(`v2.providers.kind.${kind}`)} />
           ))}
         </span>
       </span>

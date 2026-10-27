@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, Shape, Text } from '../../../m3';
 import type { Provider, ProviderType } from '../../../types';
-import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 import { ProviderMark } from './ProviderMark';
 import { activeJobCount, PROVIDER_KINDS, projectCount, providerHasCredentials, readyModelCounts, serviceMeta, type ProviderKind } from './providerMeta';
 
@@ -108,10 +108,7 @@ export function ProvidersHero({ providers, actions, onPickKind }: ProvidersHeroP
                       title={t('v2.providers.showKind', { kind: t(`v2.providers.kinds.${kind}`) })}
                       onClick={() => onPickKind(kind)}
                     >
-                      <span className="v2-providers-reach__art" aria-hidden>
-                        <Shape name={kindMeta(kind).shape} size={36} morph={false} />
-                        <Icon name={kindMeta(kind).icon} size={18} filled />
-                      </span>
+                      <KindBadge kind={kind} size={36} tone="solid" />
                       <span className="v2-providers-reach__text">
                         <span className="v2-providers-reach__name">{t(`v2.providers.kinds.${kind}`)}</span>
                         <span className="v2-providers-reach__count">

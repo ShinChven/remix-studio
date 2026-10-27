@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Icon, Ripple, Shape, Text } from '../../../m3';
 import type { ProviderType } from '../../../types';
-import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 import { ProviderMark } from './ProviderMark';
 import { SERVICE_TYPES, serviceKinds, serviceMeta, type ProviderKind } from './providerMeta';
 
@@ -28,9 +28,7 @@ function ServiceTile({ type }: { type: ProviderType }) {
           </Text>
           <span className="v2-service-tile__kinds">
             {serviceKinds(type).map((kind) => (
-              <span key={kind} data-kind={kind} title={t(`v2.providers.kind.${kind}`)}>
-                <Icon name={kindMeta(kind).icon} size={14} filled aria-label={t(`v2.providers.kind.${kind}`)} />
-              </span>
+              <KindBadge key={kind} kind={kind} size={24} label={t(`v2.providers.kind.${kind}`)} />
             ))}
           </span>
         </span>
@@ -48,12 +46,16 @@ export function ServiceGallery({ kind }: { kind?: ProviderKind }) {
   const { t } = useTranslation();
   const types = kind ? SERVICE_TYPES.filter((type) => serviceKinds(type).includes(kind)) : SERVICE_TYPES;
   return (
-    <div className="v2-service-gallery" data-kind={kind}>
+    <div className="v2-service-gallery" data-kind-host>
       <div className="v2-service-gallery__head">
-        <span className="v2-service-gallery__art" aria-hidden>
-          <Shape name={kind ? kindMeta(kind).shape : 'cookie-9'} size={72} className="v2-service-gallery__shape" />
-          <Icon name={kind ? kindMeta(kind).icon : 'key'} size={30} filled />
-        </span>
+        {kind ? (
+          <KindBadge kind={kind} size={72} />
+        ) : (
+          <span className="v2-service-gallery__art" aria-hidden>
+            <Shape name="cookie-9" size={72} className="v2-service-gallery__shape" />
+            <Icon name="key" size={30} filled />
+          </span>
+        )}
         <Text as="h2" variant="title-large" emphasized>
           {kind ? t(`v2.providers.noKindTitle.${kind}`) : t('v2.providers.emptyTitle')}
         </Text>

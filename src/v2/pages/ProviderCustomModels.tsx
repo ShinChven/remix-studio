@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { fetchProvider, updateProvider } from '../../api';
@@ -9,6 +9,7 @@ import { ProviderHero } from '../components/providers/ProviderHero';
 import { modelTraits } from '../components/providers/providerMeta';
 import { useModelDescriptions } from '../lib/modelDescriptions';
 import { kindMeta } from '../ui/entityMeta';
+import { KindBadge } from '../ui/KindBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
 
@@ -55,10 +56,7 @@ function VariantDialog({ editor, baseModels, saving, onChange, onSave, onClose }
           />
           {base && (
             <div className="v2-variant-form__base" data-kind={base.category}>
-              <span className="v2-model-row__art" aria-hidden>
-                <Shape name={kindMeta(base.category).shape} size={32} morph={false} />
-                <Icon name={kindMeta(base.category).icon} size={16} filled />
-              </span>
+              <KindBadge kind={base.category} size={32} tone="solid" />
               <span>
                 <Text as="span" variant="body-small">
                   {descriptions[base.id] ?? t('v2.providers.variants.inheritsAll')}
@@ -233,7 +231,7 @@ export function ProviderCustomModels() {
                 const base = baseModelMap.get(alias.baseModelId);
                 const kind = base?.category ?? 'image';
                 return (
-                  <li key={`${alias.customModelId}-${index}`} className="v2-variant" data-kind={kind}>
+                  <li key={`${alias.customModelId}-${index}`} className="v2-variant" data-kind={kind} style={{ '--v2-kind-turn': `${kindMeta(kind).turn}deg` } as CSSProperties}>
                     <span className="v2-variant__art" aria-hidden>
                       <Shape name={kindMeta(kind).shape} size={44} morph={false} />
                       <Icon name="layers" size={20} filled />
