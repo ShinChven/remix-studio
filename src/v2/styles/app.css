@@ -31,7 +31,7 @@
   align-items: start;
   column-gap: 16px;
   row-gap: 14px;
-  padding: 8px 4px 12px;
+  padding: 8px 0 12px;
 }
 .v2-page-hero__badge { display: grid; grid-area: badge; place-items: center; margin-top: 2px; }
 .v2-page-hero__badge > * { grid-area: 1 / 1; }
