@@ -5,6 +5,7 @@ import { Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
 import type { Library, WorkflowItem } from '../../../types';
 import type { ActionMenuItem } from '../../ui/ActionMenu';
 import { FilePickButton, StepCard, type StepDragProps } from './StepCard';
+import { kindMeta } from '../../ui/entityMeta';
 
 export interface WorkflowStepProps extends StepDragProps {
   item: WorkflowItem;
@@ -26,7 +27,7 @@ export interface WorkflowStepProps extends StepDragProps {
   headerExtra?: ReactNode;
 }
 
-const ICONS: Record<string, string> = { text: 'notes', image: 'image', video: 'movie', audio: 'graphic_eq', library: 'auto_stories' };
+const ICONS: Record<string, string> = { text: kindMeta('text').icon, image: kindMeta('image').icon, video: kindMeta('video').icon, audio: kindMeta('audio').icon, library: 'auto_stories' };
 
 /** One step of a regular workflow: text, reference media, or a library to draw from. */
 export function WorkflowStep(props: WorkflowStepProps) {

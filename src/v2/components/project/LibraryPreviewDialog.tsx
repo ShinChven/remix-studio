@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { filterItemsByTags } from '../../../lib/remixEngine';
-import { Button, Dialog, Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
+import { Button, Dialog, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
+import { KindBadge } from '../../ui/KindBadge';
 import type { Library, LibraryItem } from '../../../types';
 import { EmptyState } from '../../ui/Page';
 import { SearchField } from '../../ui/SearchField';
@@ -132,7 +133,7 @@ export function LibraryPreviewDialog({ library, selectedTags, onUpdateTags, tagM
                       ) : library.type === 'video' && item.thumbnailUrl ? (
                         <img src={imageDisplayUrl(item.thumbnailUrl)} alt="" loading="lazy" />
                       ) : (
-                        <Icon name={library.type === 'video' ? 'movie' : 'graphic_eq'} size={32} />
+                        <KindBadge kind={library.type === 'video' ? 'video' : 'audio'} size={48} />
                       )}
                       {isSelectionMode && <span className="v2-preview-card__pick">{t('projectViewer.libraryPreview.clickToSelect')}</span>}
                     </button>

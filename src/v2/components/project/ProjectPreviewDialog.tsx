@@ -4,14 +4,15 @@ import { imageDisplayUrl } from '../../../api';
 import { civitaiOptionLabel } from '../../../lib/civitai';
 import { Button, Dialog, Icon, Text } from '../../../m3';
 import type { Library, Project, WorkflowItem } from '../../../types';
+import { kindMeta } from '../../ui/entityMeta';
 import { EmptyState } from '../../ui/Page';
 import { StatusPill } from '../../ui/Stat';
 
 const STEP_ICONS: Record<WorkflowItem['type'], string> = {
-  text: 'notes',
-  image: 'image',
-  video: 'movie',
-  audio: 'graphic_eq',
+  text: kindMeta('text').icon,
+  image: kindMeta('image').icon,
+  video: kindMeta('video').icon,
+  audio: kindMeta('audio').icon,
   library: 'photo_library',
   model: 'hexagon',
 };

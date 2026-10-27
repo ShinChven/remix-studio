@@ -516,6 +516,16 @@ const messages: V2Messages = {
       deleteMessage: '{{id}}은(는) 더 이상 사용되지 않습니다. 이 변형을 쓰는 프로젝트는 다른 모델을 골라야 합니다.',
     },
   },
+  projects: {
+    statProjects_one: '개 프로젝트',
+    statProjects_other: '개 프로젝트',
+    statArchived_one: '보관됨',
+    statArchived_other: '보관됨',
+    statRunning: '실행 중',
+    statQueued: '대기 중',
+    statFailed: '실패',
+    newest: '최신 프로젝트',
+  },
 };
 
 export default messages;

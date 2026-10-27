@@ -102,7 +102,7 @@ export function LibraryForm() {
                 aria-label={t('libraryForm.typeLabel')}
                 value={type}
                 onChange={setType}
-                options={TYPES.map((value) => ({ value, icon: kindMeta(value).icon, tone: kindMeta(value).tone, label: t(typeLabelKey(value), value) }))}
+                options={TYPES.map((value) => ({ value, kind: value, tone: kindMeta(value).tone, label: t(typeLabelKey(value), value) }))}
               />
             </div>
           )}

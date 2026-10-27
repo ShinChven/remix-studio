@@ -515,6 +515,16 @@ const en = {
       deleteMessage: 'Requests stop using {{id}}. Projects set to this variant will need another model.',
     },
   },
+  projects: {
+    statProjects_one: 'project',
+    statProjects_other: 'projects',
+    statArchived_one: 'archived',
+    statArchived_other: 'archived',
+    statRunning: 'running',
+    statQueued: 'queued',
+    statFailed: 'failed',
+    newest: 'Newest project',
+  },
 };
 
 export default en;

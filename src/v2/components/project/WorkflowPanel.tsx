@@ -11,6 +11,7 @@ import type { DraftsProgress } from './RunDock';
 import { HoverMenuButton } from '../../ui/HoverMenuButton';
 import { SettingsPanel } from './SettingsPanel';
 import { WorkflowStep } from './WorkflowStep';
+import { kindMeta } from '../../ui/entityMeta';
 
 export interface WorkflowPanelProps {
   isLoading?: boolean;
@@ -145,8 +146,8 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
   );
   const addStepMenu = (
     <HoverMenuButton placement="top-start" aria-label={t('v2.project.addStep')} trigger={(p) => <IconButton {...p} icon="add" size="sm" variant="tonal" label={t('v2.project.addStep')} />}>
-      {addItem('text', 'text_fields', t('projectViewer.common.text'))}
-      {supportsImageInput && addItem('image', 'image', t('projectViewer.common.imageShort'))}
+      {addItem('text', kindMeta('text').icon, t('projectViewer.common.text'))}
+      {supportsImageInput && addItem('image', kindMeta('image').icon, t('projectViewer.common.imageShort'))}
       {addItem('library', 'library_books', t('projectViewer.common.libraryShort'))}
       {isCivitai && !civitaiVideo && (
         <MenuItem icon="hexagon" disabled={hasCheckpoint} supportingText={hasCheckpoint ? t('projectViewer.civitai.oneCheckpointItem') : undefined} onSelect={() => addModelItem('checkpoint')}>
@@ -158,8 +159,8 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
           {t('projectViewer.civitai.loraShort')}
         </MenuItem>
       )}
-      {localProject.type === 'video' && model?.options.supportsReferenceVideo && addItem('video', 'movie', t('projectViewer.common.video'))}
-      {localProject.type === 'video' && model?.options.supportsReferenceAudio && addItem('audio', 'graphic_eq', t('projectViewer.common.audio'))}
+      {localProject.type === 'video' && model?.options.supportsReferenceVideo && addItem('video', kindMeta('video').icon, t('projectViewer.common.video'))}
+      {localProject.type === 'video' && model?.options.supportsReferenceAudio && addItem('audio', kindMeta('audio').icon, t('projectViewer.common.audio'))}
     </HoverMenuButton>
   );
 

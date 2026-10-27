@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { deleteProject, fetchProjects, startProjectBundleExport, updateProject } from '../../api';
+import { deleteProject, fetchProjects, fetchQueueStatus, startProjectBundleExport, updateProject } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { IconButton, Text, useSnackbar } from '../../m3';
+import { Button, Text, useSnackbar } from '../../m3';
 import type { Project } from '../../types';
 import { ProjectCard } from '../components/EntityCards';
 import { ProjectFormDialog } from '../components/ProjectFormDialog';
+import { ProjectsHero, type ProjectsOverview, type ProjectsQueue } from '../components/projects/ProjectsHero';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
+import { EmptyState, LoadingState, Page } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
 import { SearchField } from '../ui/SearchField';
 import { CardGrid, ListToolbar, MobileFab, Segmented } from '../ui/Toolbar';
@@ -61,7 +62,53 @@ export function Projects() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, q, status]);
 
-  useLiveRefresh((event) => event.resource === 'project', () => loadProjects(true));
+  // Every project at a glance, for the hero.
+  const [overview, setOverview] = useState<ProjectsOverview | null>(null);
+  const [overviewKey, setOverviewKey] = useState(0);
+  const refreshOverview = () => setOverviewKey((key) => key + 1);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([fetchProjects(1, 5, undefined, 'active'), fetchProjects(1, 1, undefined, 'archived', false, true)])
+      .then(([active, archived]) => {
+        if (!cancelled) setOverview({ active: active.total, archived: archived.total, newest: active.items });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [overviewKey]);
+
+  // What is generating across every project; kept current while anything is.
+  const [queue, setQueue] = useState<ProjectsQueue | null>(null);
+  const [queueKey, setQueueKey] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    fetchQueueStatus('projects')
+      .then(({ totals }) => {
+        if (!cancelled) setQueue({ running: totals.processingJobs, queued: totals.pendingJobs, failed: totals.failedJobs });
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [queueKey]);
+  const busy = !!queue && queue.running + queue.queued > 0;
+  useEffect(() => {
+    if (!busy) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') setQueueKey((key) => key + 1);
+    }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [busy]);
+
+  useLiveRefresh(
+    (event) => event.resource === 'project',
+    () => {
+      refreshOverview();
+      return loadProjects(true);
+    },
+  );
+  useLiveRefresh((event) => event.resource === 'project', () => setQueueKey((key) => key + 1), { minIntervalMs: 10_000 });
 
   const updateParams = (apply: (next: URLSearchParams) => void) =>
     setSearchParams((prev) => {
@@ -76,6 +123,7 @@ export function Projects() {
     try {
       await updateProject(project.id, { status: nextStatus });
       snackbar.show(nextStatus === 'archived' ? t('projects.archivedToast', { name: project.name }) : t('projects.unarchivedToast', { name: project.name }));
+      refreshOverview();
       await loadProjects();
     } catch (e) {
       console.error(e);
@@ -99,15 +147,21 @@ export function Projects() {
   };
 
   return (
-    <Page>
-      <PageHeader
-        size="large"
-        title={t('projects.title')}
-        description={t('projects.description')}
+    <Page className="v2-projects">
+      <ProjectsHero
+        overview={overview}
+        queue={queue}
         actions={
           <>
-            <IconButton icon="unarchive" label={t('projectImports.selectFile')} tooltip variant="tonal" href="/projects/import" />
-            <IconButton icon="monitor_heart" label={t('sidebar.queueMonitor')} tooltip variant="tonal" href="/projects/queues" />
+            <Button variant="filled" icon="add" emphasized className="v2-projects-hero__create" onClick={() => setProjectForm({})}>
+              {t('projects.newProject')}
+            </Button>
+            <Button variant="tonal" icon="unarchive" href="/projects/import">
+              {t('projectImports.selectFile')}
+            </Button>
+            <Button variant="tonal" icon="monitor_heart" href="/projects/queues">
+              {t('sidebar.queueMonitor')}
+            </Button>
           </>
         }
       />
@@ -137,9 +191,6 @@ export function Projects() {
             })
           }
         />
-        <span className="hidden sm:inline-flex">
-          <IconButton icon="add" label={t('projects.newProject')} tooltip variant="filled" onClick={() => setProjectForm({})} />
-        </span>
       </ListToolbar>
 
       {isLoading ? (
@@ -201,6 +252,7 @@ export function Projects() {
           setTogglingId(deleteTarget.id);
           try {
             await deleteProject(deleteTarget.id);
+            refreshOverview();
             await loadProjects();
             snackbar.show(t('projects.deleteSuccess', { name: deleteTarget.name }));
           } catch (e) {

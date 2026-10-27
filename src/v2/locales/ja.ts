@@ -516,6 +516,16 @@ const messages: V2Messages = {
       deleteMessage: '{{id}} は使われなくなります。このバリエーションを使うプロジェクトは別のモデルを選ぶ必要があります。',
     },
   },
+  projects: {
+    statProjects_one: 'プロジェクト',
+    statProjects_other: 'プロジェクト',
+    statArchived_one: 'アーカイブ済み',
+    statArchived_other: 'アーカイブ済み',
+    statRunning: '実行中',
+    statQueued: 'キュー済み',
+    statFailed: '失敗',
+    newest: '最新のプロジェクト',
+  },
 };
 
 export default messages;

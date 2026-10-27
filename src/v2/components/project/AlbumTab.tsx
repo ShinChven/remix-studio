@@ -10,6 +10,7 @@ import { withBase } from '../../app/paths';
 import { formatBytes } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { HoverMenuButton } from '../../ui/HoverMenuButton';
+import { kindMeta } from '../../ui/entityMeta';
 import { EmptyState } from '../../ui/Page';
 import { PagedFooter, PAGE_SIZE_OPTIONS } from '../../ui/PagedFooter';
 import { PromptDialog } from '../../ui/PromptDialog';
@@ -442,7 +443,7 @@ export function AlbumTab(props: AlbumTabProps) {
     </>
   );
 
-  const emptyIcon = isText ? 'article' : isVideo ? 'movie' : isAudio ? 'music_note' : 'photo_library';
+  const emptyKind = kindMeta(mediaType);
   const target = isText ? t('projectViewer.album.collection') : isVideo ? t('projectViewer.album.reel') : isAudio ? t('projectViewer.album.audioCollection') : t('projectViewer.tabs.album').toLowerCase();
   const indexLabel = (index: number) => ((page - 1) * (pageSize === 'all' ? 0 : pageSize) + index + 1).toString().padStart(2, '0');
 
@@ -507,8 +508,8 @@ export function AlbumTab(props: AlbumTabProps) {
         </div>
       ) : total === 0 && !filtered ? (
         <EmptyState
-          icon={emptyIcon}
-          shape="sunny"
+          icon={emptyKind.icon}
+          shape={emptyKind.shape}
           className="v2-pane-empty"
           title={isText ? t('projectViewer.album.noTexts') : isVideo ? t('projectViewer.album.noVideos') : isAudio ? t('projectViewer.album.noAudios') : t('projectViewer.album.galleryEmpty')}
           description={t('projectViewer.album.emptyDescription', { target })}

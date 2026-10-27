@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
-import { Button, Icon, Shape, Text } from '../../../m3';
+import { Button, Shape, Text } from '../../../m3';
 import type { Library, LibraryItem } from '../../../types';
 import { formatBytes, formatDate } from '../../lib/format';
 import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 
 /** One card of the cover stack: a picture, the start of a text, or a track's name. */
 interface Cover {
@@ -50,17 +51,14 @@ export function LibraryHero({ library, itemCount, primary, actions }: LibraryHer
   const updated = formatDate(library.updatedAt);
 
   return (
-    <header className="v2-lib-hero" data-covers={stack.length > 0 ? '' : undefined}>
+    <header className="v2-lib-hero" data-kind-host data-covers={stack.length > 0 ? '' : undefined}>
       <Shape name={meta.shape} size={320} morph={false} className="v2-lib-hero__backdrop" />
       <div className="v2-lib-hero__main">
         <Button variant="text" size="xs" icon="arrow_back" href="/libraries" className="v2-lib-hero__back">
           {t('nav.libraries', 'Libraries')}
         </Button>
         <div className="v2-lib-hero__heading">
-          <span className="v2-lib-hero__badge" aria-hidden>
-            <Shape name={meta.shape} size={64} morph={false} className="v2-lib-hero__badge-shape" />
-            <Icon name={meta.icon} size={28} filled className="v2-lib-hero__badge-icon" />
-          </span>
+          <KindBadge kind={type} size={64} tone="solid" className="v2-lib-hero__badge" />
           <div className="v2-lib-hero__titles">
             <Text as="span" variant="label-large" emphasized className="v2-lib-hero__kicker">
               {t(`v2.library.kind.${type}`)}
@@ -105,8 +103,7 @@ export function LibraryHero({ library, itemCount, primary, actions }: LibraryHer
               ) : type === 'audio' ? (
                 <>
                   <span className="v2-lib-hero__cover-art">
-                    <Shape name={meta.shape} size={72} morph={false} />
-                    <Icon name={meta.icon} size={28} filled />
+                    <KindBadge kind={type} size={72} tone={index === 0 ? 'solid' : 'container'} />
                   </span>
                   <span className="v2-lib-hero__cover-caption">{cover.title}</span>
                 </>

@@ -5,6 +5,7 @@ import type { Library, Project } from '../../types';
 import { formatBytes } from '../lib/format';
 import { ActionMenu } from '../ui/ActionMenu';
 import { kindMeta } from '../ui/entityMeta';
+import { KindBadge } from '../ui/KindBadge';
 import { MediaCard } from '../ui/MediaCard';
 
 const ASSET_LABEL: Record<string, string> = {
@@ -58,7 +59,12 @@ export function ProjectCard({ project, isToggling, isExporting, onStartAssistant
       href={`/project/${project.id}`}
       image={image}
       seed={project.id}
-      kicker={projectKicker(project)}
+      kicker={
+        <>
+          <KindBadge kind={project.type ?? 'image'} size={24} tone="solid" />
+          {projectKicker(project)}
+        </>
+      }
       title={project.name}
       description={project.description}
       badge={
@@ -146,9 +152,7 @@ export function LibraryCard({ library, isCheckingRefs, onTogglePin, onStartAssis
     <Card variant={isPinned ? 'filled' : 'elevated'} className="v2-library-card" data-pinned={isPinned ? '' : undefined}>
       <CardActionArea href={`/library/${library.id}`}>
         <div className="v2-library-card__body">
-          <span className={`v2-kind-badge ${meta.tone}`} data-shape={meta.shape}>
-            <Icon name={meta.icon} />
-          </span>
+          <KindBadge kind={library.type || 'text'} size={48} />
           <div className="min-w-0 flex-1">
             <Text as="h3" variant="title-medium" emphasized className="truncate">
               {library.name}
