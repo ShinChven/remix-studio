@@ -121,7 +121,7 @@ export function ProviderItem({ provider, layout, selected, selecting, onToggleSe
         >
           <Checkbox checked={selected} aria-label={t('v2.providers.selectProvider', { name: provider.name })} onChange={() => undefined} />
         </span>
-        <ProviderMark type={provider.type} size={layout === 'cards' ? 52 : 44} active={active} className="v2-provider__mark" />
+        <ProviderMark type={provider.type} size={44} active={active} className="v2-provider__mark" />
       </span>
 
       <span className="v2-provider__identity">

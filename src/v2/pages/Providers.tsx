@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { deleteProvider, fetchProviders, updateProvider } from '../../api';
-import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, usePrefersReducedMotion, useSnackbar } from '../../m3';
+import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, useSnackbar } from '../../m3';
 import type { Provider } from '../../types';
 import { DangerAction, ResultsBar, SectionNav } from '../components/project/ResultsBar';
 import { ProviderItem, type ProviderLayout } from '../components/providers/ProviderItem';
@@ -48,7 +48,6 @@ export function Providers() {
   const { t } = useTranslation();
   const snackbar = useSnackbar();
   const navigate = useNavigate();
-  const reducedMotion = usePrefersReducedMotion();
   const [params, setParams] = useSearchParams();
 
   // Search, kind, status and sort live in the URL.
@@ -227,12 +226,6 @@ export function Providers() {
       : { title: t('v2.providers.confirmDeleteMany', { count: pendingDelete.length }), message: `${t('v2.providers.confirmDeleteManyMessage')}${usage}` };
   })();
 
-  const paneRef = useRef<HTMLElement>(null);
-  const pickKind = (kind: ProviderKind) => {
-    update({ kind });
-    paneRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
-  };
-
   const filtered = Boolean(q) || status !== 'all' || view !== 'all';
   const clearFilters = () => update({ q: null, status: null, kind: null });
   const runningInScope = scoped.some((provider) => activeJobCount(provider) > 0);
@@ -307,7 +300,6 @@ export function Providers() {
     <Page className="v2-providers" density="compact">
       <ProvidersHero
         providers={providers}
-        onPickKind={pickKind}
         actions={
           <>
             <Button variant="filled" icon="add" emphasized href="/provider/new">
@@ -320,7 +312,7 @@ export function Providers() {
         }
       />
 
-      <section ref={paneRef} className="v2-providers-pane" aria-label={t('providers.allProviders')}>
+      <section className="v2-providers-pane" aria-label={t('providers.allProviders')}>
         {providers && providers.length > 0 && (
           <ResultsBar
             nav={nav}
