@@ -11,7 +11,8 @@ import { fallbackExternalUrl } from '../lib/platform';
 import { ActionMenu } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { MediaCard } from '../ui/MediaCard';
-import { EmptyState, Page, PageHeader, Section } from '../ui/Page';
+import { EmptyState, Page, Section } from '../ui/Page';
+import { PageHero } from '../ui/PageHero';
 import { Pagination } from '../ui/Pagination';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
@@ -174,16 +175,18 @@ export function Campaigns() {
 
   return (
     <Page>
-      <PageHeader
+      <PageHero
+        icon="send"
+        shape="burst"
         title={t('title')}
         description={t('description')}
         actions={
           <>
+            <Button variant="filled" icon="add" emphasized href="/campaigns/new" className="v2-hide-compact">
+              New Campaign
+            </Button>
             <Button variant="tonal" icon="share" href="/campaigns/channels">
               {t('channels')}
-            </Button>
-            <Button variant="filled" icon="add" href="/campaigns/new" className="v2-hide-compact">
-              New Campaign
             </Button>
           </>
         }

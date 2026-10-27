@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { deleteLibrary, duplicateLibrary, fetchLibraries, fetchLibraryReferences, setLibraryPinned } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { IconButton, Text, useSnackbar } from '../../m3';
+import { Button, Text, useSnackbar } from '../../m3';
 import type { Library } from '../../types';
 import { LibraryCard } from '../components/EntityCards';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
+import { EmptyState, LoadingState, Page } from '../ui/Page';
+import { PageHero } from '../ui/PageHero';
 import { Pagination } from '../ui/Pagination';
 import { PromptDialog } from '../ui/PromptDialog';
 import { SearchField } from '../ui/SearchField';
@@ -94,7 +95,17 @@ export function Libraries() {
 
   return (
     <Page>
-      <PageHeader size="large" title={t('libraries.title')} description={t('libraries.description')} />
+      <PageHero
+        icon="folder"
+        shape="cookie-6"
+        title={t('libraries.title')}
+        description={t('libraries.description')}
+        actions={
+          <Button variant="filled" icon="add" emphasized href="/library/new" className="v2-hide-compact">
+            {t('libraries.newLibrary')}
+          </Button>
+        }
+      />
 
       <ListToolbar title={t('libraries.allLibraries')} icon="grid_view" count={total}>
         <SearchField
@@ -109,9 +120,6 @@ export function Libraries() {
             })
           }
         />
-        <span className="hidden sm:inline-flex">
-          <IconButton icon="add" label={t('libraries.newLibrary')} tooltip variant="filled" href="/library/new" />
-        </span>
       </ListToolbar>
 
       {isLoading ? (
