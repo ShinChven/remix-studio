@@ -6,6 +6,7 @@ import { projectMediaType } from '../../lib/project-media';
 import { Button, Dialog, FilterChip, Icon, MenuButton, MenuItem, Select, Text, useMediaQuery } from '../../m3';
 import type { AlbumItem, AlbumItemSort, AspectRatioCount, Library, LibraryItem, LibraryType, Project, ProjectType } from '../../types';
 import { kindMeta } from '../ui/entityMeta';
+import { KindBadge } from '../ui/KindBadge';
 import { EmptyState, LoadingState } from '../ui/Page';
 import { PagedFooter, PageSizeSelect } from '../ui/PagedFooter';
 import { SearchField } from '../ui/SearchField';
@@ -608,7 +609,7 @@ export function MediaPicker({
                       <Text as="span" variant="label-large" emphasized className="truncate">
                         {source.name}
                       </Text>
-                      <Icon name={kindMeta(source.type).icon} size={16} />
+                      <KindBadge kind={source.type} size={24} />
                     </span>
                     <Text as="span" variant="body-small" className="line-clamp-2 opacity-75">
                       {source.description || `${source.itemCount} items`}
@@ -701,7 +702,7 @@ export function MediaPicker({
                         </span>
                       ) : (
                         <span className="v2-pick__media" style={{ aspectRatio: cssAspectRatio(item.aspectRatio) }}>
-                          {item.previewUrl ? <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.itemId} loading="lazy" /> : <Icon name={kindMeta(item.type).icon} size={32} />}
+                          {item.previewUrl ? <img src={imageDisplayUrl(item.previewUrl)} alt={item.title || item.itemId} loading="lazy" /> : <KindBadge kind={item.type} size={48} />}
                         </span>
                       )}
                       <span className="v2-pick__caption">

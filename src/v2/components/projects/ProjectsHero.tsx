@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { projectMediaType } from '../../../lib/project-media';
@@ -27,7 +27,7 @@ function Piece({ project, index }: { project: Project; index: number }) {
   const last = project.album?.[project.album.length - 1];
   const poster = broken ? '' : last?.thumbnailUrl || last?.optimizedUrl || (projectMediaType(project) === 'image' ? last?.imageUrl : '') || '';
   return (
-    <span className="v2-projects-hero__piece" data-index={index} data-kind={kind} data-poster={poster ? '' : undefined}>
+    <span className="v2-projects-hero__piece" data-index={index} data-kind={kind} data-poster={poster ? '' : undefined} style={{ '--v2-kind-turn': `${meta.turn}deg` } as CSSProperties}>
       <Shape name={meta.shape} size="100%" morph={false} className="v2-projects-hero__piece-shape" />
       {poster ? (
         <span className="v2-projects-hero__piece-picture" style={shapeMaskStyle(meta.shape)}>

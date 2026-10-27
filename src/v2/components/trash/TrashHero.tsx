@@ -4,7 +4,7 @@ import { imageDisplayUrl } from '../../../api';
 import { Icon, Shape, Text } from '../../../m3';
 import type { TrashItem } from '../../../types';
 import { formatBytes } from '../../lib/format';
-import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 import { TRASH_KINDS, timeAgo, trashBytes, trashKind, type TrashKind } from './trashMeta';
 
 /** The three most recently deleted items, as cards for the pile. */
@@ -16,7 +16,6 @@ function pile(items: TrashItem[]) {
 function PileCard({ item, index }: { item: TrashItem; index: number }) {
   const [broken, setBroken] = useState(false);
   const kind = trashKind(item);
-  const meta = kindMeta(kind);
   const poster = broken ? '' : item.thumbnailUrl || (kind === 'image' ? item.optimizedUrl || item.imageUrl : '');
   return (
     <span className="v2-trash-hero__card" data-index={index} data-kind={poster ? 'picture' : kind}>
@@ -33,8 +32,7 @@ function PileCard({ item, index }: { item: TrashItem; index: number }) {
         <span className="v2-trash-hero__card-text">{item.textContent || item.prompt}</span>
       ) : (
         <span className="v2-trash-hero__card-art">
-          <Shape name={meta.shape} size={72} morph={false} />
-          <Icon name={meta.icon} size={28} filled />
+          <KindBadge kind={kind} size={72} tone="solid" />
         </span>
       )}
     </span>
@@ -60,7 +58,7 @@ export function TrashHero({ items, actions }: TrashHeroProps) {
   const totalBytes = bytesByKind.reduce((sum, entry) => sum + entry.bytes, 0);
 
   return (
-    <header className="v2-trash-hero">
+    <header className="v2-trash-hero" data-kind-host>
       <Shape name="cookie-12" size={360} morph={false} className="v2-trash-hero__backdrop" />
       <div className="v2-trash-hero__main">
         <div className="v2-trash-hero__heading">

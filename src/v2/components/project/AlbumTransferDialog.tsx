@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { copyAlbumItemsToProject, copyAlbumToLibrary, fetchLibraries, fetchProjects, imageDisplayUrl, moveAlbumItemsToProject } from '../../../api';
 import type { ProjectMediaType } from '../../../lib/project-media';
 import { Button, Dialog, Icon, LoadingIndicator, Ripple, Text, TextField, useSnackbar } from '../../../m3';
+import { KindBadge } from '../../ui/KindBadge';
 import type { AlbumItem, Library, Project, ProjectType } from '../../../types';
 import { withBase } from '../../app/paths';
 import { ChoiceTiles } from '../../ui/ChoiceTiles';
@@ -100,7 +101,6 @@ export function AlbumTransferDialog({ projectId, projectName, mediaType, project
   const [version, setVersion] = useState<'raw' | 'optimized'>('optimized');
   const [submitting, setSubmitting] = useState(false);
   const isTextOrAudio = mediaType === 'text' || mediaType === 'audio';
-  const typeIcon = mediaType === 'text' ? 'article' : mediaType === 'video' ? 'movie' : mediaType === 'audio' ? 'graphic_eq' : 'image';
   const isMove = action === 'move';
 
   // Each kind of destination loads the first time it is shown, and once.
@@ -280,7 +280,7 @@ export function AlbumTransferDialog({ projectId, projectName, mediaType, project
                 const src = item.thumbnailUrl || item.optimizedUrl || item.imageUrl;
                 return (
                   <span key={item.id} className="v2-transfer-strip__thumb" title={albumFilename(item)}>
-                    {src ? <img src={imageDisplayUrl(src)} alt="" loading="lazy" /> : <Icon name={typeIcon} />}
+                    {src ? <img src={imageDisplayUrl(src)} alt="" loading="lazy" /> : <KindBadge kind={mediaType} size={32} />}
                     {hidden > 0 && index === preview.length - 1 && <span className="v2-transfer-strip__more">+{hidden + 1}</span>}
                   </span>
                 );

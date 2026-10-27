@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, Dialog, Icon, LoadingIndicator, Ripple, Text } from '../../../m3';
 import type { Library } from '../../../types';
-import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 import { EmptyState } from '../../ui/Page';
 import { SearchField } from '../../ui/SearchField';
 import { StatusPill } from '../../ui/Stat';
@@ -82,11 +82,10 @@ export function LibrarySelectionDialog({ open, onClose, onSelect, libraries, sel
             {filtered.map((lib) => {
               const count = usage.get(lib.id) || 0;
               const cover = lib.coverUrl || (lib.type === 'image' ? lib.items[0]?.thumbnailUrl || lib.items[0]?.content : lib.items[0]?.thumbnailUrl);
-              const meta = kindMeta(lib.type || 'text');
               return (
                 <button key={lib.id} type="button" className="v2-pick-card m3-focus-ring" onClick={() => onSelect(lib.id)}>
                   <Ripple />
-                  <span className="v2-pick-card__media">{(lib.type === 'image' || lib.type === 'video') && cover ? <img src={cover} alt="" loading="lazy" /> : <Icon name={meta.icon} />}</span>
+                  <span className="v2-pick-card__media">{(lib.type === 'image' || lib.type === 'video') && cover ? <img src={cover} alt="" loading="lazy" /> : <KindBadge kind={lib.type || 'text'} size={40} />}</span>
                   <span className="flex min-w-0 flex-1 flex-col gap-1 text-start">
                     <span className="flex items-center justify-between gap-2">
                       <Text as="span" variant="title-small" emphasized className="truncate">

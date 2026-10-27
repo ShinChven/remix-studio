@@ -6,6 +6,7 @@ import type { TrashItem } from '../../../types';
 import { formatBytes } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { kindMeta } from '../../ui/entityMeta';
+import { KindBadge } from '../../ui/KindBadge';
 import { timeAgo, trashBytes, trashKind, trashTitle, type TrashGroup } from './trashMeta';
 
 export type TileSize = 's' | 'm' | 'l';
@@ -185,7 +186,7 @@ export function TrashGrid({ groups, selectedIds, size, showProject, leaving, men
                           <img src={imageDisplayUrl(poster)} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" onError={() => markBroken(item.id)} />
                         ) : (
                           <span className="v2-trash-shot__missing">
-                            <Icon name={broken.has(item.id) ? 'broken_image' : meta.icon} size={40} />
+                            {broken.has(item.id) ? <Icon name="broken_image" size={40} /> : <KindBadge kind={kind} size={56} />}
                           </span>
                         )}
                         {previewId === item.id && <video className="v2-lib-shot__preview" src={imageDisplayUrl(item.imageUrl)} muted loop autoPlay playsInline preload="auto" aria-hidden />}

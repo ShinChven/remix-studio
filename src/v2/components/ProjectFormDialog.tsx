@@ -208,7 +208,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
                 onChange={setProjectType}
                 options={TYPES.map((type) => ({
                   value: type,
-                  icon: kindMeta(type).icon,
+                  kind: type,
                   tone: kindMeta(type).tone,
                   label: t(`projectForm.type${type[0].toUpperCase()}${type.slice(1)}`),
                 }))}

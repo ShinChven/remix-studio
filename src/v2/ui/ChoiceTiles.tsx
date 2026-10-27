@@ -1,10 +1,13 @@
 import type { ReactNode } from 'react';
 import { cx, Icon, Ripple, Text } from '../../m3';
+import { KindBadge } from './KindBadge';
 
 export interface ChoiceTile<V extends string> {
   value: V;
   label: ReactNode;
   icon?: string;
+  /** A media kind, drawn as its kind badge instead of the icon. */
+  kind?: string;
   supportingText?: ReactNode;
   /** Utility classes for the selected tile (container + on-container roles). */
   tone?: string;
@@ -40,7 +43,7 @@ export function ChoiceTiles<V extends string>({ options, value, onChange, column
             onClick={() => onChange(option.value)}
           >
             <Ripple disabled={option.disabled} />
-            {option.icon && <Icon name={option.icon} filled={selected} />}
+            {option.kind ? <KindBadge kind={option.kind} size={36} tone={selected ? 'solid' : 'container'} /> : option.icon && <Icon name={option.icon} filled={selected} />}
             <span className="flex min-w-0 flex-col items-start gap-0.5 text-start">
               <Text as="span" variant="label-large" emphasized={selected}>
                 {option.label}

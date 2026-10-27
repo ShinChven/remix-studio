@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Checkbox, Icon, IconButton, useMediaQuery } from '../../../m3';
+import { KindBadge } from '../../ui/KindBadge';
 import type { LibraryItem } from '../../../types';
 import { formatBytes } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
@@ -80,7 +81,7 @@ export function LibraryMediaGrid({ type, items, selectedIds, fit, size, firstInd
                 {poster ? (
                   <img src={imageDisplayUrl(poster)} alt={name} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                 ) : (
-                  <Icon name={isVideo ? 'movie' : 'image'} size={40} className="v2-lib-shot__fallback" />
+                  <KindBadge kind={isVideo ? 'video' : 'image'} size={56} />
                 )}
                 {previewId === item.id && <video className="v2-lib-shot__preview" src={imageDisplayUrl(item.content)} muted loop autoPlay playsInline preload="auto" aria-hidden />}
                 {isVideo && (
