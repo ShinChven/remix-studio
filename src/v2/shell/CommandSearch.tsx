@@ -93,7 +93,7 @@ export function SearchTrigger() {
     <button type="button" className="v2-search-trigger m3-focus-ring" onClick={open} aria-haspopup="dialog">
       <Ripple />
       <Icon name="search" size={20} />
-      <span className="v2-search-trigger__text">{t('v2.shell.searchPlaceholder')}</span>
+      <span className="v2-search-trigger__text">{t('v2.shell.searchShort')}</span>
       <kbd className="v2-search-trigger__kbd">{mac ? '⌘K' : 'Ctrl K'}</kbd>
     </button>
   );

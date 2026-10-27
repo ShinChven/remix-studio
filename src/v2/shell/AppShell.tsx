@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
-import { AppScaffold, IconButton, type NavItem, type NavSection } from '../../m3';
+import { AppScaffold, type NavItem, type NavSection } from '../../m3';
+import { useAuth } from '../app/auth';
 import { ThemeEditor } from '../theme/ThemeEditor';
-import { CommandPaletteProvider, SearchTrigger, useOpenCommandPalette } from './CommandSearch';
+import { CommandPaletteProvider, SearchTrigger } from './CommandSearch';
 import { RailFooter } from './RailFooter';
 import { ThemeEditorContext } from './ThemeEditorContext';
+import { TopBarSlotContext } from './TopBarActions';
 
 const RAIL_KEY = 'v2-rail-expanded';
 
@@ -18,6 +20,7 @@ function activeKey(pathname: string): string | null {
   if (pathname === '/providers' || pathname.startsWith('/provider/')) return 'providers';
   if (pathname === '/exports' || pathname.startsWith('/exports/')) return 'exports';
   if (pathname === '/trash') return 'trash';
+  if (pathname.startsWith('/admin/')) return 'users';
   return null;
 }
 
@@ -26,6 +29,7 @@ export function AppShell() {
   const { t } = useTranslation();
   const location = useLocation();
   const [themeOpen, setThemeOpen] = useState(false);
+  const [topBarSlot, setTopBarSlot] = useState<HTMLElement | null>(null);
   const [railExpanded, setRailExpanded] = useState(() => {
     try {
       return localStorage.getItem(RAIL_KEY) !== 'false';
@@ -43,11 +47,15 @@ export function AppShell() {
   const providers = item('providers', '/providers', 'key', t('sidebar.providers'));
   const exports = item('exports', '/exports', 'folder_zip', t('sidebar.exports'));
   const trash = item('trash', '/trash', 'delete', t('sidebar.recycleBin'));
-  const items = [home, assistant, projects, libraries, campaigns, providers, exports, trash];
+  // User management is an admin's own Manage destination.
+  const isAdmin = useAuth().user?.role === 'admin';
+  const users = item('users', '/admin/users', 'shield_person', t('v2.shell.users'));
+  const manage = isAdmin ? [providers, exports, trash, users] : [providers, exports, trash];
+  const items = [home, assistant, projects, libraries, campaigns, ...manage];
   const sections: NavSection[] = [
     { items: [home, assistant] },
     { headline: t('v2.shell.sections.create'), items: [projects, libraries, campaigns] },
-    { headline: t('v2.shell.sections.manage'), items: [providers, exports, trash] },
+    { headline: t('v2.shell.sections.manage'), items: manage },
   ];
 
   return (
@@ -89,13 +97,15 @@ export function AppShell() {
                 <img src="/favicon.svg" alt="" width={24} height={24} />
                 <span className="m3-typescale-emphasized-title-medium">Remix Studio</span>
               </span>
-              <CompactSearchButton />
-              <IconButton icon="palette" label={t('v2.theme.open')} onClick={() => setThemeOpen(true)} />
+              {/* Search and appearance live in the navigation; this end of the bar is the page's own. */}
+              <span ref={setTopBarSlot} className="v2-compact-top__actions" />
             </div>
           ) : null
         }
       >
-        <Outlet />
+        <TopBarSlotContext.Provider value={topBarSlot}>
+          <Outlet />
+        </TopBarSlotContext.Provider>
       </AppScaffold>
       <ThemeEditor open={themeOpen} onClose={() => setThemeOpen(false)} />
     </CommandPaletteProvider>
@@ -103,8 +113,3 @@ export function AppShell() {
   );
 }
 
-function CompactSearchButton() {
-  const { t } = useTranslation();
-  const open = useOpenCommandPalette();
-  return <IconButton icon="search" label={t('v2.common.search')} className="ms-auto" onClick={open} />;
-}

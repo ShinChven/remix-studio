@@ -3,6 +3,7 @@ import { Icon, Ripple, Select, Switch, Text, TextField } from '../../../m3';
 import { DEFAULT_AUDIO_PROJECT_CONFIG, GEMINI_TTS_VOICES, parseAudioProjectConfig, resolveAudioGenerationKind, serializeAudioProjectConfig, type AudioProjectConfig, type Project, type Provider } from '../../../types';
 import { useModelDescriptions } from '../../lib/modelDescriptions';
 import { ChoiceChips, RatioGlyph, SettingField } from '../../ui/ChoiceChips';
+import { ProviderLogo } from '../ProviderLogo';
 import { DockChip, RunDock, type DraftsProgress } from './RunDock';
 
 export interface SettingsPanelProps {
@@ -23,6 +24,8 @@ export interface SettingsPanelProps {
   onAddDraftsToQueue: () => void;
   isAddingDrafts: boolean;
   draftsProgress: DraftsProgress | null;
+  /** The add-step button, shown on the dock. */
+  addStep?: React.ReactNode;
 }
 
 type Voice = (typeof GEMINI_TTS_VOICES)[number];
@@ -56,7 +59,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const ratios = (fallback: string[]) => (model?.options.aspectRatios || fallback).map((ratio) => ({ value: ratio, label: ratio, visual: <RatioGlyph ratio={ratio} /> }));
 
   const chips = !hasModel ? (
-    <DockChip tone="warning">{t('projectViewer.settings.selectModelToConfigure')}</DockChip>
+    <DockChip>{t('projectViewer.settings.selectModelToConfigure')}</DockChip>
   ) : isAudio ? (
     <>
       {isMusic ? (
@@ -85,7 +88,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
     <>
       <DockChip>{localProject.aspectRatio || '1:1'}</DockChip>
       <DockChip>{localProject.quality || '1K'}</DockChip>
-      <DockChip>{localProject.format || 'png'}</DockChip>
+      <DockChip>{(localProject.format || 'png').toUpperCase()}</DockChip>
       {model?.options.stepsOptions && <DockChip>S={localProject.steps ?? (model.options.stepsOptions[0] || 20)}</DockChip>}
       {model?.options.guidanceOptions && <DockChip>G={localProject.guidance ?? (model.options.guidanceOptions[0] || 3.5)}</DockChip>}
     </>
@@ -245,13 +248,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
   return (
     <RunDock
-      title={
-        <>
-          {provider?.name || t('projectViewer.settings.none')} <span className="text-primary">· {model?.name || t('projectViewer.settings.none')}</span>
-        </>
-      }
+      title={model?.name || t('projectViewer.settings.selectModel')}
+      leading={provider ? <ProviderLogo type={provider.type} size={18} /> : undefined}
       chips={
         <>
+          {provider && <DockChip>{provider.name}</DockChip>}
           {chips}
           {localProject.shuffle && (
             <DockChip tone="tertiary">
@@ -273,6 +274,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
       uploading={props.uploadingItemIds.size > 0}
       isAddingDrafts={props.isAddingDrafts}
       draftsProgress={props.draftsProgress}
+      addStep={props.addStep}
     />
   );
 }

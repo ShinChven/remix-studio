@@ -1,24 +1,27 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { imageDisplayUrl, startAlbumExport, startAutoTag, type AlbumExportVersion } from '../../../api';
 import type { ProjectMediaType } from '../../../lib/project-media';
-import { resourceRef } from '../../../lib/resource-ref';
-import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuButton, MenuDivider, MenuItem, Select, Text, TextField } from '../../../m3';
+import { copyText, resourceRef } from '../../../lib/resource-ref';
+import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, SubMenu, Text, TextField, useSnackbar } from '../../../m3';
 import type { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../../types';
 import { withBase } from '../../app/paths';
+import { formatBytes } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
+import { HoverMenuButton } from '../../ui/HoverMenuButton';
 import { EmptyState } from '../../ui/Page';
 import { PagedFooter, PAGE_SIZE_OPTIONS } from '../../ui/PagedFooter';
 import { PromptDialog } from '../../ui/PromptDialog';
 import { useToast } from '../../ui/useToast';
 import { AutoTagDialog } from '../AutoTagDialog';
 import { AutoTagProgress } from '../AutoTagProgress';
-import { CopyRefButton } from '../CopyRefButton';
 import { TagDialog } from '../TagDialog';
 import { AlbumBatchTagDialog, AlbumPromptDialog, ExportPackageDialog, TextAlbumCompareDialog, TextAlbumDetailDialog, type AlbumBatchTagMode } from './AlbumDialogs';
 import { AlbumTransferDialog, albumFilename, type AlbumTransferAction } from './AlbumTransferDialog';
-import { PaneToolbar } from './PaneToolbar';
+import { ParamTable } from './JobDetails';
+import { shortDate } from './JobRow';
+import { DangerAction, ResultsBar } from './ResultsBar';
 
 export interface AlbumLightboxData {
   images: string[];
@@ -29,12 +32,15 @@ export interface AlbumLightboxData {
 }
 
 export interface AlbumTabProps {
+  /** The section switcher, shown in the bar. */
+  nav: ReactNode;
   projectId: string;
   projectName: string;
   albumItems: AlbumItem[];
   selectedAlbumIds: Set<string>;
   toggleSelectAllAlbum: (scopeIds?: string[]) => void;
   toggleAlbumSelection: (id: string, isShiftPressed: boolean, scopeIds?: string[]) => void;
+  clearAlbumSelection: () => void;
   setAlbumItemsToDelete: (items: AlbumItem[]) => void;
   setShowDeleteAlbumModal: (show: boolean) => void;
   getProviderName: (id?: string) => string;
@@ -79,27 +85,23 @@ function cssAspectRatio(value?: string) {
   return w && h ? `${w} / ${h}` : '1 / 1';
 }
 
-// Date and time on a 24-hour clock, joined by a space, so the pill fits a narrow card.
-function cardDate(ts: number, withYear: boolean) {
-  const date = new Date(ts);
-  const day = date.toLocaleDateString(undefined, { year: withYear ? '2-digit' : undefined, month: '2-digit', day: '2-digit' });
-  const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-  return `${day} ${time}`;
-}
-
-function shortTimestamp(ts?: number) {
-  return ts ? new Date(ts).toLocaleString(undefined, { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-}
-
 function sizeLabel(bytes: number) {
-  return bytes > 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)}M` : `${(bytes / 1024).toFixed(0)}K`;
+  return bytes > 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
 }
 
-/** Album search that waits for typing (and IME composition) to settle before filtering. */
+/**
+ * Album search that waits for typing (and IME composition) to settle before filtering. In a narrow
+ * pane it folds into an icon that opens the field on a row of its own and closes once focus leaves.
+ */
 function AlbumSearch({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(value);
   const [composing, setComposing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (expanded) wrapRef.current?.querySelector('input')?.focus();
+  }, [expanded]);
   useEffect(() => setDraft(value), [value]);
   useEffect(() => {
     if (composing || draft === value) return;
@@ -107,6 +109,15 @@ function AlbumSearch({ value, onChange }: { value: string; onChange: (value: str
     return () => window.clearTimeout(timer);
   }, [draft, value, onChange, composing]);
   return (
+    <span
+      ref={wrapRef}
+      className="v2-album-search-wrap"
+      data-expanded={expanded ? '' : undefined}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setExpanded(false);
+      }}
+    >
+      <IconButton icon="search" size="sm" variant={value ? 'tonal' : 'standard'} className="v2-album-search__toggle" label={t('projectViewer.album.searchPlaceholder')} onClick={() => setExpanded(true)} />
     <TextField
       variant="outlined"
       type="search"
@@ -123,72 +134,27 @@ function AlbumSearch({ value, onChange }: { value: string; onChange: (value: str
             }
           : undefined
       }
-      placeholder={t('projectViewer.album.searchPlaceholder')}
+      placeholder={t('v2.common.search')}
       aria-label={t('projectViewer.album.searchPlaceholder')}
+      title={t('projectViewer.album.searchPlaceholder')}
       className="v2-search-field v2-search-field--pill v2-album-search"
     />
+    </span>
   );
 }
 
-/** Checkbox menu for the aspect-ratio or tag filter. */
-const FilterMenu = memo(function FilterMenu({
-  icon,
-  label,
-  activeLabel,
-  allLabel,
-  options,
-  selected,
-  onToggle,
-  onClear,
-  header,
-}: {
-  icon: string;
-  label: string;
-  activeLabel: string;
-  allLabel: string;
-  options: { key: string; count: number }[];
-  selected: string[];
-  onToggle: (key: string) => void;
-  onClear: () => void;
-  header?: React.ReactNode;
-}) {
-  const active = selected.length > 0;
-  return (
-    <MenuButton
-      placement="bottom-end"
-      aria-label={label}
-      trigger={(props) => (
-        <Button {...props} variant={active ? 'tonal' : 'outlined'} size="xs" icon={icon} trailingIcon="arrow_drop_down" aria-label={label}>
-          {active ? activeLabel : label}
-        </Button>
-      )}
-    >
-      <MenuItem icon="select_all" type="checkbox" checked={!active} onSelect={onClear}>
-        {allLabel}
-      </MenuItem>
-      {header}
-      <MenuDivider />
-      {options.map(({ key, count }) => (
-        <MenuItem key={key} type="checkbox" checked={selected.includes(key)} keepOpen onSelect={() => onToggle(key)} trailingText={String(count)}>
-          {key}
-        </MenuItem>
-      ))}
-    </MenuButton>
-  );
-});
-
-/** Tag chips on an album card or row; clicking one filters by it. */
-function TagChips({ tags, onTagClick, limit }: { tags?: string[]; onTagClick?: (tag: string) => void; limit?: number }) {
+/** Tags on an album item, as quiet text; clicking one filters by it. */
+function TagLine({ tags, onTagClick, limit }: { tags?: string[]; onTagClick?: (tag: string) => void; limit?: number }) {
   if (!tags || tags.length === 0) return null;
   const shown = limit ? tags.slice(0, limit) : tags;
   const overflow = tags.length - shown.length;
   return (
-    <span className="v2-tag-row">
+    <span className="v2-tag-line">
       {shown.map((tag) => (
         <button
           key={tag}
           type="button"
-          className="v2-tag-mini v2-tag-mini--button"
+          className="v2-tag-line__tag"
           title={tag}
           disabled={!onTagClick}
           onClick={(e) => {
@@ -196,10 +162,22 @@ function TagChips({ tags, onTagClick, limit }: { tags?: string[]; onTagClick?: (
             onTagClick?.(tag);
           }}
         >
-          {tag}
+          #{tag}
         </button>
       ))}
-      {overflow > 0 && <span className="v2-tag-overflow">+{overflow}</span>}
+      {overflow > 0 && <span className="v2-tag-line__more">+{overflow}</span>}
+    </span>
+  );
+}
+
+/** One active filter, removable. */
+function FilterChip({ label, onRemove, removeLabel }: { label: ReactNode; onRemove: () => void; removeLabel: string }) {
+  return (
+    <span className="v2-filter-chip">
+      <span className="truncate">{label}</span>
+      <button type="button" className="v2-filter-chip__remove m3-focus-ring" aria-label={removeLabel} onClick={onRemove}>
+        <Icon name="close" size={14} />
+      </button>
     </span>
   );
 }
@@ -241,6 +219,7 @@ export function AlbumTab(props: AlbumTabProps) {
   } = props;
   const { t, i18n } = useTranslation();
   const toast = useToast();
+  const snackbar = useSnackbar();
   const navigate = useNavigate();
   const isText = projectType === 'text';
   const isVideo = projectType === 'video';
@@ -249,7 +228,7 @@ export function AlbumTab(props: AlbumTabProps) {
   // Video and audio would need frames or a transcript first.
   const canAutoTag = mediaType === 'image' || mediaType === 'text';
 
-  const [promptItem, setPromptItem] = useState<AlbumItem | null>(null);
+  const [infoItem, setInfoItem] = useState<AlbumItem | null>(null);
   const [detailIndex, setDetailIndex] = useState<number | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
   const [exportItemIds, setExportItemIds] = useState<string[] | undefined>();
@@ -347,6 +326,16 @@ export function AlbumTab(props: AlbumTabProps) {
     }
   };
 
+  const copyReference = async (item: AlbumItem) => {
+    const reference = resourceRef.albumItem(projectId, item.id);
+    try {
+      await copyText(reference);
+      snackbar.show(`${t('resourceRef.copied')} · ${reference}`);
+    } catch {
+      snackbar.show(`${t('resourceRef.copyFailed')} · ${reference}`);
+    }
+  };
+
   const toggleAudioPlayback = (id: string) => {
     const audio = audioRefs.current[id];
     if (!audio) return;
@@ -413,122 +402,202 @@ export function AlbumTab(props: AlbumTabProps) {
     });
   };
 
-  const actions: ActionMenuItem[] = [
-    { key: 'export', label: hasSelection ? t('projectViewer.album.exportSelected') : useAllScope ? t('projectViewer.album.exportAll') : t('projectViewer.album.exportPage'), icon: 'folder_zip', onSelect: () => openExport(!hasSelection) },
-    { key: 'tag', label: hasSelection ? t('projectViewer.album.tagSelected') : useAllScope ? t('projectViewer.album.tagAll') : t('projectViewer.album.tagResults'), icon: 'sell', onSelect: () => setBatchTagOpen(true) },
-    { key: 'autotag', hidden: !canAutoTag, label: hasSelection ? t('projectViewer.album.autoTagSelected') : useAllScope ? t('projectViewer.album.autoTagAll') : t('projectViewer.album.autoTagResults'), icon: 'wand_stars', onSelect: () => setAutoTagOpen(true) },
-    { key: 'copy', label: hasSelection ? t('projectViewer.transfer.copyTo') : useAllScope ? t('projectViewer.transfer.copyAllTo') : t('projectViewer.transfer.copyPageTo'), icon: 'content_copy', onSelect: () => setTransferAction('copy') },
-    { key: 'move', hidden: !hasSelection, label: t('projectViewer.transfer.moveTo'), icon: 'drive_file_move', onSelect: () => setTransferAction('move') },
-    { key: 'compare', hidden: !(isText && selectedIds.length > 1), label: t('projectViewer.album.compareSelected'), icon: 'view_column', onSelect: () => setCompareOpen(true) },
-    { key: 'delete', hidden: !hasSelection, divider: true, danger: true, label: t('projectViewer.common.deleteSelected'), icon: 'delete', onSelect: () => deleteItems(selectedItems) },
+  // Everything at once, or what the filters show: the same actions the selection gets.
+  const scopeActions: ActionMenuItem[] = [
+    { key: 'export', label: useAllScope ? t('projectViewer.album.exportAll') : t('projectViewer.album.exportPage'), icon: 'folder_zip', onSelect: () => openExport(true) },
+    { key: 'tag', label: useAllScope ? t('projectViewer.album.tagAll') : t('projectViewer.album.tagResults'), icon: 'sell', onSelect: () => setBatchTagOpen(true) },
+    { key: 'autotag', hidden: !canAutoTag, label: useAllScope ? t('projectViewer.album.autoTagAll') : t('projectViewer.album.autoTagResults'), icon: 'wand_stars', onSelect: () => setAutoTagOpen(true) },
+    { key: 'copy', label: useAllScope ? t('projectViewer.transfer.copyAllTo') : t('projectViewer.transfer.copyPageTo'), icon: 'content_copy', onSelect: () => setTransferAction('copy') },
   ];
-  const actionsMenu = (
-    <ActionMenu
-      label={t('projectViewer.album.actions')}
-      items={actions}
-      placement="bottom-start"
-      trigger={(p) => (
-        <Button {...p} variant="tonal" size="xs" trailingIcon="arrow_drop_down" disabled={isLoading || (!hasSelection && total === 0)}>
-          {t('projectViewer.album.actions')}
-        </Button>
+  const selectionMore: ActionMenuItem[] = [
+    { key: 'autotag', hidden: !canAutoTag, label: t('projectViewer.album.autoTagSelected'), icon: 'wand_stars', onSelect: () => setAutoTagOpen(true) },
+    { key: 'copy', label: t('projectViewer.transfer.copyTo'), icon: 'content_copy', onSelect: () => setTransferAction('copy') },
+    { key: 'move', label: t('projectViewer.transfer.moveTo'), icon: 'drive_file_move', onSelect: () => setTransferAction('move') },
+    { key: 'compare', hidden: !(isText && selectedIds.length > 1), label: t('projectViewer.album.compareSelected'), icon: 'view_column', onSelect: () => setCompareOpen(true) },
+  ];
+
+  const itemMenu = (item: AlbumItem, opts: { media?: boolean; className?: string } = {}) => {
+    const items: ActionMenuItem[] = [
+      { key: 'info', label: t('v2.project.details'), icon: 'info', onSelect: () => setInfoItem(item) },
+      { key: 'rename', hidden: !opts.media, label: t('projectViewer.album.editFilename'), icon: 'edit', onSelect: () => setRenameItem(item) },
+      { key: 'tags', label: t('projectViewer.album.editTags'), icon: 'sell', onSelect: () => setTagItem(item) },
+      { key: 'reuse', hidden: !onReuseWorkflow, disabled: Boolean(reusingAlbumItemId), label: t('projectViewer.album.reuseWorkflow'), icon: 'history', onSelect: () => onReuseWorkflow?.(item) },
+      { key: 'ref', label: t('resourceRef.copy'), icon: 'tag', onSelect: () => void copyReference(item) },
+      { key: 'original', hidden: !opts.media, divider: true, label: t('projectViewer.album.openOriginal'), icon: 'open_in_new', href: imageDisplayUrl(item.imageUrl), target: '_blank' },
+      { key: 'watermark', hidden: !opts.media || isVideo, label: t('projectViewer.album.quickWatermark'), icon: 'approval', href: withBase(`/project/${projectId}/album/${item.id}/watermark`), target: '_blank' },
+      { key: 'delete', divider: true, danger: true, label: t('projectViewer.common.delete'), icon: 'delete', onSelect: () => deleteItems([item]) },
+    ];
+    return <ActionMenu label={t('v2.project.moreActions')} items={items} size="xs" className={opts.className} />;
+  };
+
+  const activeFilterCount = selectedAspectRatios.length + selectedTags.length;
+  const filtered = hasRatioFilter || hasTagFilter || hasSearch;
+
+  const tools = (
+    <>
+      <AlbumSearch value={search} onChange={props.onSearchChange} />
+      {(showRatioFilter || tagCounts.length > 0 || hasTagFilter || hasRatioFilter) && (
+        <HoverMenuButton
+          placement="bottom-end"
+          aria-label={t('v2.project.filters')}
+          trigger={(p) => <IconButton {...p} icon="filter_list" size="sm" variant={activeFilterCount > 0 ? 'tonal' : 'standard'} label={t('v2.project.filters')} />}
+        >
+          {showRatioFilter && (
+            <SubMenu icon="aspect_ratio" label={hasRatioFilter ? t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length }) : t('projectViewer.album.aspectRatioFilter')}>
+              <MenuItem type="checkbox" checked={!hasRatioFilter} keepOpen onSelect={() => props.onSelectedAspectRatiosChange([])}>
+                {t('projectViewer.album.allAspectRatios')}
+              </MenuItem>
+              <MenuDivider />
+              {aspectRatioCounts.map(({ ratio, count }) => (
+                <MenuItem key={ratio} type="checkbox" checked={selectedAspectRatios.includes(ratio)} keepOpen onSelect={() => toggleRatio(ratio)} trailingText={String(count)}>
+                  {ratio}
+                </MenuItem>
+              ))}
+            </SubMenu>
+          )}
+          {(tagCounts.length > 0 || hasTagFilter) && (
+            <SubMenu icon="sell" label={hasTagFilter ? t('projectViewer.album.tagFilterCount', { count: selectedTags.length }) : t('projectViewer.album.tagFilter')}>
+              <MenuItem type="radio" checked={tagMatch === 'all'} keepOpen onSelect={() => props.onTagMatchChange('all')}>
+                {t('projectViewer.album.tagMatchAll')}
+              </MenuItem>
+              <MenuItem type="radio" checked={tagMatch === 'any'} keepOpen onSelect={() => props.onTagMatchChange('any')}>
+                {t('projectViewer.album.tagMatchAny')}
+              </MenuItem>
+              <MenuDivider />
+              <MenuItem type="checkbox" checked={!hasTagFilter} keepOpen onSelect={() => props.onSelectedTagsChange([])}>
+                {t('projectViewer.album.allTags')}
+              </MenuItem>
+              {tagCounts.map(({ tag, count }) => (
+                <MenuItem key={tag} type="checkbox" checked={selectedTags.includes(tag)} keepOpen onSelect={() => toggleTag(tag)} trailingText={String(count)}>
+                  {tag}
+                </MenuItem>
+              ))}
+            </SubMenu>
+          )}
+        </HoverMenuButton>
       )}
-    />
+      <HoverMenuButton placement="bottom-end" aria-label={t('v2.project.viewOptions')} trigger={(p) => <IconButton {...p} icon="tune" size="sm" label={t('v2.project.viewOptions')} />}>
+        <MenuGroup label={t('v2.project.sort')}>
+          <MenuItem type="radio" icon="arrow_downward" checked={sort === 'newest'} onSelect={() => props.onSortChange('newest')}>
+            {t('projectViewer.album.sortNewest')}
+          </MenuItem>
+          <MenuItem type="radio" icon="arrow_upward" checked={sort === 'oldest'} onSelect={() => props.onSortChange('oldest')}>
+            {t('projectViewer.album.sortOldest')}
+          </MenuItem>
+        </MenuGroup>
+        <MenuDivider />
+        <MenuGroup label={t('pagination.pageSize')}>
+          {PAGE_SIZE_OPTIONS.map((size) => (
+            <MenuItem key={String(size)} type="radio" checked={pageSize === size} onSelect={() => props.onPageSizeChange(size)}>
+              {size === 'all' ? t('pagination.all') : String(size)}
+            </MenuItem>
+          ))}
+        </MenuGroup>
+      </HoverMenuButton>
+    </>
   );
 
-  const itemButtons = (item: AlbumItem) => (
+  const selectionActions = (
     <>
-      <CopyRefButton reference={resourceRef.albumItem(projectId, item.id)} />
-      <IconButton icon="sell" size="xs" label={t('projectViewer.album.editTags')} tooltip onClick={() => setTagItem(item)} />
-      {onReuseWorkflow && (
-        <IconButton
-          icon={reusingAlbumItemId === item.id ? <LoadingIndicator size={18} aria-hidden /> : 'history'}
-          size="xs"
-          label={t('projectViewer.album.reuseWorkflow')}
-          tooltip
-          disabled={Boolean(reusingAlbumItemId)}
-          onClick={() => onReuseWorkflow(item)}
-        />
+      <IconButton icon="folder_zip" size="sm" label={t('projectViewer.album.exportSelected')} tooltip onClick={() => openExport(false)} />
+      <IconButton icon="sell" size="sm" label={t('projectViewer.album.tagSelected')} tooltip onClick={() => setBatchTagOpen(true)} />
+      <ActionMenu label={t('v2.project.moreActions')} items={selectionMore} size="sm" openOnHover />
+      <DangerAction label={t('projectViewer.common.deleteSelected')} onClick={() => deleteItems(selectedItems)} />
+    </>
+  );
+
+  const filterRow = filtered && (
+    <>
+      {hasSearch && <FilterChip label={`“${search}”`} removeLabel={t('projectViewer.album.clearSearch')} onRemove={() => props.onSearchChange('')} />}
+      {selectedAspectRatios.map((ratio) => (
+        <FilterChip key={`r:${ratio}`} label={ratio} removeLabel={ratio} onRemove={() => toggleRatio(ratio)} />
+      ))}
+      {selectedTags.map((tag) => (
+        <FilterChip key={`t:${tag}`} label={`#${tag}`} removeLabel={t('projectViewer.album.tagRemove', { tag })} onRemove={() => toggleTag(tag)} />
+      ))}
+      {selectedTags.length > 1 && (
+        <button type="button" className="v2-filter-link" onClick={() => props.onTagMatchChange(tagMatch === 'all' ? 'any' : 'all')}>
+          {tagMatch === 'all' ? t('projectViewer.album.tagMatchAll') : t('projectViewer.album.tagMatchAny')}
+        </button>
       )}
+      <button
+        type="button"
+        className="v2-filter-link"
+        onClick={() => {
+          props.onSearchChange('');
+          props.onSelectedAspectRatiosChange([]);
+          props.onSelectedTagsChange([]);
+        }}
+      >
+        {t('v2.project.clearFilters')}
+      </button>
     </>
   );
 
   const emptyIcon = isText ? 'article' : isVideo ? 'movie' : isAudio ? 'music_note' : 'photo_library';
   const target = isText ? t('projectViewer.album.collection') : isVideo ? t('projectViewer.album.reel') : isAudio ? t('projectViewer.album.audioCollection') : t('projectViewer.tabs.album').toLowerCase();
+  const indexLabel = (index: number) => ((page - 1) * (pageSize === 'all' ? 0 : pageSize) + index + 1).toString().padStart(2, '0');
+
+  const infoRows = (item: AlbumItem) =>
+    [
+      { label: t('v2.project.filename'), value: albumFilename(item) },
+      { label: t('projectViewer.common.model'), value: `${getProviderName(item.providerId)} · ${getModelName(item.providerId, item.modelConfigId)}` },
+      item.createdAt ? { label: t('v2.project.created'), value: new Date(item.createdAt).toLocaleString() } : null,
+      item.aspectRatio ? { label: t('projectViewer.settings.aspectRatio'), value: item.aspectRatio } : null,
+      item.resolution || item.quality ? { label: item.resolution ? t('projectViewer.settings.resolution') : t('projectViewer.settings.quality'), value: item.resolution || item.quality } : null,
+      item.duration != null ? { label: t('v2.project.duration'), value: `${item.duration}s` } : null,
+      item.format ? { label: t('projectViewer.settings.format'), value: item.format.toUpperCase() } : null,
+      item.size || item.optimizedSize || item.thumbnailSize
+        ? {
+            label: t('v2.project.fileSizes'),
+            value: [
+              item.size ? `${t('projectViewer.album.raw')} ${sizeLabel(item.size)}` : null,
+              item.optimizedSize ? `${t('projectViewer.album.optimized')} ${sizeLabel(item.optimizedSize)}` : null,
+              item.thumbnailSize ? `${t('projectViewer.album.thumbnail')} ${sizeLabel(item.thumbnailSize)}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+          }
+        : null,
+      item.tags && item.tags.length > 0 ? { label: t('projectViewer.album.tagFilter'), value: item.tags.map((tag) => `#${tag}`).join('  ') } : null,
+    ].filter(Boolean) as Array<{ label: string; value: ReactNode }>;
+
+  const selecting = hasSelection;
+  const selectBox = (item: AlbumItem, label: string, className: string) => (
+    <span
+      className={className}
+      onClick={(e) => {
+        e.stopPropagation();
+        toggleAlbumSelection(item.id, e.shiftKey, itemIds);
+      }}
+    >
+      <Checkbox checked={selectedAlbumIds.has(item.id)} onChange={() => undefined} tabIndex={-1} aria-label={label} />
+    </span>
+  );
 
   return (
-    <section>
-      <PaneToolbar
+    <section className="v2-results-section">
+      <ResultsBar
+        nav={props.nav}
+        isLoading={isLoading && albumItems.length > 0}
         totalCount={albumItems.length}
         selectedCount={selectedIds.length}
-        isLoading={isLoading}
         onToggleSelectAll={() => toggleSelectAllAlbum(itemIds)}
-        prefix={
-          !isText && (
-            <Text as="span" variant="label-medium" className="flex items-center gap-1 text-primary">
-              <Icon name="stacks" size={16} />
-              {(totalSize / (1024 * 1024)).toFixed(2)} MB
-            </Text>
-          )
-        }
-        selectionActions={actionsMenu}
-        zeroSelectionActions={actionsMenu}
-        rightActions={
-          <>
-            <AlbumSearch value={search} onChange={props.onSearchChange} />
-            {showRatioFilter && (
-              <FilterMenu
-                icon="aspect_ratio"
-                label={t('projectViewer.album.aspectRatioFilter')}
-                activeLabel={t('projectViewer.album.aspectRatioFilterCount', { count: selectedAspectRatios.length })}
-                allLabel={t('projectViewer.album.allAspectRatios')}
-                options={aspectRatioCounts.map(({ ratio, count }) => ({ key: ratio, count }))}
-                selected={selectedAspectRatios}
-                onToggle={toggleRatio}
-                onClear={() => props.onSelectedAspectRatiosChange([])}
-              />
-            )}
-            {(tagCounts.length > 0 || hasTagFilter) && (
-              <FilterMenu
-                icon="sell"
-                label={t('projectViewer.album.tagFilter')}
-                activeLabel={t('projectViewer.album.tagFilterCount', { count: selectedTags.length })}
-                allLabel={t('projectViewer.album.allTags')}
-                options={tagCounts.map(({ tag, count }) => ({ key: tag, count }))}
-                selected={selectedTags}
-                onToggle={toggleTag}
-                onClear={() => props.onSelectedTagsChange([])}
-                header={
-                  <>
-                    <MenuDivider />
-                    <MenuItem type="radio" checked={tagMatch === 'all'} keepOpen onSelect={() => props.onTagMatchChange('all')}>
-                      {t('projectViewer.album.tagMatchAll')}
-                    </MenuItem>
-                    <MenuItem type="radio" checked={tagMatch === 'any'} keepOpen onSelect={() => props.onTagMatchChange('any')}>
-                      {t('projectViewer.album.tagMatchAny')}
-                    </MenuItem>
-                  </>
-                }
-              />
-            )}
-            <Select
-              variant="outlined"
-              aria-label={t('pagination.pageSize')}
-              leadingIcon="view_agenda"
-              value={String(pageSize)}
-              onChange={(v) => props.onPageSizeChange(v === 'all' ? 'all' : Number(v))}
-              options={PAGE_SIZE_OPTIONS.map((o) => ({ value: String(o), label: o === 'all' ? t('pagination.all') : String(o) }))}
-              className="v2-inline-select v2-inline-select--narrow"
-            />
-            <Button variant="outlined" size="xs" icon={sort === 'newest' ? 'arrow_downward' : 'arrow_upward'} onClick={() => props.onSortChange(sort === 'newest' ? 'oldest' : 'newest')}>
-              {sort === 'newest' ? t('projectViewer.album.sortNewest') : t('projectViewer.album.sortOldest')}
-            </Button>
-          </>
-        }
+        onClearSelection={props.clearAlbumSelection}
+        summary={total > 0 && (isText || isAudio ? t('v2.project.itemCount', { count: total }) : `${t('v2.project.itemCount', { count: total })} · ${formatBytes(totalSize)}`)}
+        tools={tools}
+        menuItems={total > 0 ? scopeActions : []}
+        selectionActions={selectionActions}
+        below={filterRow}
       />
 
       {canAutoTag && <AutoTagProgress scope={{ kind: 'album', projectId }} runKey={autoTagRunKey} className="v2-pane-inset" />}
 
-      {total === 0 && !hasRatioFilter && !hasTagFilter && !hasSearch ? (
+      {isLoading && albumItems.length === 0 ? (
+        <div className="v2-results-loading">
+          <LoadingIndicator />
+        </div>
+      ) : total === 0 && !filtered ? (
         <EmptyState
           icon={emptyIcon}
           shape="sunny"
@@ -539,40 +608,29 @@ export function AlbumTab(props: AlbumTabProps) {
       ) : albumItems.length === 0 ? (
         <EmptyState icon="filter_alt_off" className="v2-pane-empty" title={t('projectViewer.album.noFilterMatches')} description={t('projectViewer.album.noFilterMatchesDescription')} />
       ) : isText ? (
-        <div className="v2-job-list">
-          {albumItems.map((item, index) => {
-            const selected = selectedAlbumIds.has(item.id);
-            return (
-              <div key={item.id} className="v2-album-row" data-selected={selected ? '' : undefined}>
-                <span
-                  className="v2-job__check"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleAlbumSelection(item.id, e.shiftKey, itemIds);
-                  }}
-                >
-                  <Checkbox checked={selected} onChange={() => undefined} tabIndex={-1} aria-label={`#${index + 1}`} />
-                </span>
-                <button type="button" className="v2-album-row__main m3-focus-ring" title={t('projectViewer.album.viewTextDetails')} onClick={() => setDetailIndex(index)}>
-                  <span className="v2-album-row__index">#{(index + 1).toString().padStart(2, '0')}</span>
-                  <Text as="span" variant="body-small" className="min-w-0 flex-1 truncate">
-                    {item.textContent || item.prompt}
-                  </Text>
-                  {(item.imageContexts?.length || 0) > 0 && <span className="v2-info-chip v2-pane-wide">{t('projectViewer.album.imageContexts', { count: item.imageContexts?.length || 0 })}</span>}
-                </button>
-                <span className="v2-album-row__tags">
-                  <TagChips tags={item.tags} onTagClick={toggleTag} limit={2} />
-                </span>
-                {itemButtons(item)}
-                <IconButton icon="delete" size="xs" label={t('projectViewer.common.delete')} tooltip onClick={() => deleteItems([item])} />
-              </div>
-            );
-          })}
+        <div className="v2-joblist" data-selecting={selecting ? '' : undefined}>
+          {albumItems.map((item, index) => (
+            <div key={item.id} className="v2-line" data-selected={selectedAlbumIds.has(item.id) ? '' : undefined}>
+              {selectBox(item, `#${index + 1}`, 'v2-line__check')}
+              <span className="v2-line__index">{indexLabel(index)}</span>
+              <button type="button" className="v2-line__main m3-focus-ring" title={t('projectViewer.album.viewTextDetails')} onClick={() => setDetailIndex(index)}>
+                <Text as="span" variant="body-medium" className="v2-line__title">
+                  {item.textContent || item.prompt}
+                </Text>
+                <Text as="span" variant="body-small" className="v2-line__meta">
+                  {[getModelName(item.providerId, item.modelConfigId), shortDate(item.createdAt), (item.imageContexts?.length || 0) > 0 ? t('projectViewer.album.imageContexts', { count: item.imageContexts?.length || 0 }) : null].filter(Boolean).join(' · ')}
+                </Text>
+              </button>
+              <span className="v2-line__tags">
+                <TagLine tags={item.tags} onTagClick={toggleTag} limit={3} />
+              </span>
+              <span className="v2-line__actions">{itemMenu(item)}</span>
+            </div>
+          ))}
         </div>
       ) : isAudio ? (
-        <div className="flex flex-col gap-2 p-3">
+        <div className="v2-joblist" data-selecting={selecting ? '' : undefined}>
           {albumItems.map((item, index) => {
-            const selected = selectedAlbumIds.has(item.id);
             const expanded = expandedAudio.has(item.id);
             const playing = playingAudio === item.id;
             const toggleExpand = () =>
@@ -582,164 +640,92 @@ export function AlbumTab(props: AlbumTabProps) {
                 else next.add(item.id);
                 return next;
               });
-            const audioEl = (controls: boolean) => (
-              <audio
-                ref={(el) => {
-                  audioRefs.current[item.id] = el;
-                }}
-                src={imageDisplayUrl(item.imageUrl)}
-                controls={controls}
-                preload={controls ? undefined : 'none'}
-                className={controls ? 'w-full' : 'hidden'}
-                onPlay={() => setPlayingAudio(item.id)}
-                onPause={() => setPlayingAudio((cur) => (cur === item.id ? null : cur))}
-                onEnded={() => setPlayingAudio((cur) => (cur === item.id ? null : cur))}
-              />
-            );
             return (
-              <div key={item.id} className="v2-audio-card" data-selected={selected ? '' : undefined} data-playing={playing ? '' : undefined}>
-                <div className="v2-audio-card__head">
-                  <span
-                    className="v2-job__check"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleAlbumSelection(item.id, e.shiftKey, itemIds);
-                    }}
-                  >
-                    <Checkbox checked={selected} onChange={() => undefined} tabIndex={-1} aria-label={`#${index + 1}`} />
-                  </span>
-                  <span className="v2-album-row__index">#{(index + 1).toString().padStart(2, '0')}</span>
-                  <button type="button" className="v2-album-row__main m3-focus-ring" title={expanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')} onClick={toggleExpand}>
-                    <Text as="span" variant="body-medium" className="min-w-0 flex-1 truncate">
+              <div key={item.id} className="v2-line v2-line--audio" data-selected={selectedAlbumIds.has(item.id) ? '' : undefined} data-playing={playing ? '' : undefined} data-expanded={expanded ? '' : undefined}>
+                <div className="v2-line__row">
+                  {selectBox(item, `#${index + 1}`, 'v2-line__check')}
+                  <IconButton icon={playing ? 'pause' : 'play_arrow'} variant={playing ? 'filled' : 'tonal'} size="sm" className="v2-line__play" label={playing ? t('projectViewer.album.pauseAudio') : t('projectViewer.album.playAudio')} onClick={() => toggleAudioPlayback(item.id)} />
+                  <button type="button" className="v2-line__main m3-focus-ring" aria-expanded={expanded} title={expanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')} onClick={toggleExpand}>
+                    <Text as="span" variant="body-medium" className="v2-line__title">
                       {item.prompt}
                     </Text>
-                  </button>
-                  {item.createdAt && (
-                    <Text as="span" variant="label-small" className="v2-pane-wide whitespace-nowrap text-on-surface-variant">
-                      {shortTimestamp(item.createdAt)}
+                    <Text as="span" variant="body-small" className="v2-line__meta">
+                      {[getModelName(item.providerId, item.modelConfigId), item.format?.toUpperCase(), item.size ? sizeLabel(item.size) : null, shortDate(item.createdAt)].filter(Boolean).join(' · ')}
                     </Text>
-                  )}
-                  <IconButton icon={playing ? 'pause' : 'play_arrow'} variant={playing ? 'filled' : 'tonal'} size="xs" label={playing ? t('projectViewer.album.pauseAudio') : t('projectViewer.album.playAudio')} onClick={() => toggleAudioPlayback(item.id)} />
-                  {itemButtons(item)}
-                  <IconButton icon="delete" size="xs" label={t('projectViewer.common.delete')} tooltip onClick={() => deleteItems([item])} />
-                  <IconButton icon={expanded ? 'expand_less' : 'expand_more'} size="xs" label={expanded ? t('projectViewer.album.collapse') : t('projectViewer.album.expand')} onClick={toggleExpand} />
+                  </button>
+                  <span className="v2-line__tags">
+                    <TagLine tags={item.tags} onTagClick={toggleTag} limit={3} />
+                  </span>
+                  <span className="v2-line__actions">{itemMenu(item)}</span>
                 </div>
-                {expanded ? (
-                  <div className="flex flex-col gap-3 pt-3">
-                    <TagChips tags={item.tags} onTagClick={toggleTag} />
+                <audio
+                  ref={(el) => {
+                    audioRefs.current[item.id] = el;
+                  }}
+                  src={imageDisplayUrl(item.imageUrl)}
+                  controls={expanded}
+                  preload={expanded ? undefined : 'none'}
+                  className={expanded ? 'v2-line__player' : 'hidden'}
+                  onPlay={() => setPlayingAudio(item.id)}
+                  onPause={() => setPlayingAudio((cur) => (cur === item.id ? null : cur))}
+                  onEnded={() => setPlayingAudio((cur) => (cur === item.id ? null : cur))}
+                />
+                {expanded && (
+                  <div className="v2-line__details">
                     <Text variant="body-medium" className="whitespace-pre-wrap">
                       {item.prompt}
                     </Text>
-                    {item.textContent && (
-                      <div className="flex flex-col gap-1">
-                        <Text variant="label-small" className="uppercase tracking-widest text-on-surface-variant">
-                          {t('projectViewer.common.generatedText')}
-                        </Text>
-                        <div className="v2-code-block">{item.textContent}</div>
-                      </div>
-                    )}
-                    {audioEl(true)}
-                    <div className="flex flex-wrap gap-1">
-                      <span className="v2-info-chip">{getProviderName(item.providerId)}</span>
-                      <span className="v2-info-chip" data-tone="primary">
-                        {getModelName(item.providerId, item.modelConfigId)}
-                      </span>
-                      {item.format && <span className="v2-info-chip">{item.format}</span>}
-                      {item.size && <span className="v2-info-chip">{(item.size / 1024).toFixed(1)} KB</span>}
-                      {item.createdAt && <span className="v2-info-chip">{shortTimestamp(item.createdAt)}</span>}
-                    </div>
+                    {item.textContent && <div className="v2-code-block">{item.textContent}</div>}
+                    <TagLine tags={item.tags} onTagClick={toggleTag} />
                   </div>
-                ) : (
-                  audioEl(false)
                 )}
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="v2-album-grid">
+        <div className="v2-shots" data-selecting={selecting ? '' : undefined}>
           {albumItems.map((item, index) => {
             const selected = selectedAlbumIds.has(item.id);
             const filename = albumFilename(item);
             return (
-              <article key={item.id} id={`album-item-${item.id}`} className="v2-album-card" data-selected={selected ? '' : undefined}>
-                <div className="v2-album-card__media" style={{ aspectRatio: cssAspectRatio(item.aspectRatio) }}>
-                  <button type="button" className="v2-album-card__open" onClick={() => openLightbox(item)} aria-label={isVideo ? t('projectViewer.album.playVideo') : filename}>
+              <article key={item.id} id={`album-item-${item.id}`} className="v2-shot" data-selected={selected ? '' : undefined}>
+                <div className="v2-shot__frame" style={{ aspectRatio: cssAspectRatio(item.aspectRatio) }}>
+                  <button type="button" className="v2-shot__open" onClick={(e) => (selecting ? toggleAlbumSelection(item.id, e.shiftKey, itemIds) : openLightbox(item))} aria-label={isVideo ? t('projectViewer.album.playVideo') : filename}>
                     <img src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} alt={item.prompt} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                     {isVideo && (
-                      <span className="v2-tile__overlay">
-                        <Icon name="play_arrow" size={32} filled />
+                      <span className="v2-shot__play">
+                        <Icon name="play_arrow" size={28} filled />
                       </span>
                     )}
                   </button>
-                  <span
-                    className="v2-tile__check"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleAlbumSelection(item.id, e.shiftKey, itemIds);
-                    }}
-                  >
-                    <Checkbox checked={selected} onChange={() => undefined} tabIndex={-1} aria-label={filename} />
+                  {selectBox(item, filename, 'v2-shot__check')}
+                  <div className="v2-shot__tools">
+                    <IconButton icon="delete" size="xs" className="v2-shot__tool" label={t('projectViewer.common.delete')} tooltip onClick={() => deleteItems([item])} />
+                    {onReuseWorkflow && (
+                      <IconButton
+                        icon={reusingAlbumItemId === item.id ? <LoadingIndicator size={16} aria-hidden /> : 'history'}
+                        size="xs"
+                        className="v2-shot__tool"
+                        label={t('projectViewer.album.reuseWorkflow')}
+                        tooltip
+                        disabled={Boolean(reusingAlbumItemId)}
+                        onClick={() => onReuseWorkflow(item)}
+                      />
+                    )}
+                    {itemMenu(item, { media: true, className: 'v2-shot__tool' })}
+                  </div>
+                  <span className="v2-shot__index">
+                    {item.aspectRatio && <span>{item.aspectRatio}</span>}
+                    <span>#{indexLabel(index)}</span>
                   </span>
-                  <div className="v2-album-card__quick">
-                    <IconButton icon="delete" size="xs" variant="filled" className="v2-button-danger" label={t('projectViewer.common.delete')} tooltip onClick={() => deleteItems([item])} />
-                    <IconButton icon="open_in_new" size="xs" variant="tonal" label={t('projectViewer.album.openOriginal')} tooltip href={imageDisplayUrl(item.imageUrl)} target="_blank" rel="noreferrer" />
-                    {!isVideo && <IconButton icon="approval" size="xs" variant="tonal" label={t('projectViewer.album.quickWatermark')} tooltip href={withBase(`/project/${projectId}/album/${item.id}/watermark`)} target="_blank" rel="noreferrer" />}
-                  </div>
-                  <div className="v2-album-card__pills">
-                    {item.aspectRatio && <span className="v2-album-pill">{item.aspectRatio}</span>}
-                    {item.createdAt && (
-                      <>
-                        <span className="v2-album-pill v2-card-narrow">{cardDate(item.createdAt, false)}</span>
-                        <span className="v2-album-pill v2-card-wide">{cardDate(item.createdAt, true)}</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="v2-album-card__index">#{(index + 1).toString().padStart(2, '0')}</span>
                 </div>
-                <div className="v2-album-card__body">
-                  <div className="v2-album-card__title">
-                    <Text as="h3" variant="title-small" emphasized className="min-w-0 flex-1 truncate" title={filename}>
-                      {filename}
-                    </Text>
-                    <IconButton icon="edit" size="xs" label={t('projectViewer.album.editFilename')} tooltip onClick={() => setRenameItem(item)} />
-                    {itemButtons(item)}
-                  </div>
-                  {/* Once anything is tagged the row stays on every card, so the rows below line up. */}
-                  {tagCounts.length > 0 && (
-                    <div className="v2-album-card__tags">
-                      <TagChips tags={item.tags} onTagClick={toggleTag} limit={4} />
-                    </div>
-                  )}
-                  <button type="button" className="v2-album-card__prompt" title={t('projectViewer.album.viewFullPrompt')} onClick={() => setPromptItem(item)}>
-                    {item.prompt}
+                <div className="v2-shot__caption">
+                  <button type="button" className="v2-shot__name" title={`${filename}\n${t('projectViewer.album.viewFullPrompt')}`} onClick={() => setInfoItem(item)}>
+                    {filename}
                   </button>
-                  <div className="v2-album-card__meta">
-                    <span className="v2-info-chip" title={getProviderName(item.providerId)}>
-                      {getProviderName(item.providerId)}
-                    </span>
-                    <span className="v2-info-chip" data-tone="primary" title={getModelName(item.providerId, item.modelConfigId)}>
-                      {getModelName(item.providerId, item.modelConfigId)}
-                    </span>
-                  </div>
-                  <div className="v2-album-card__sizes">
-                    {[
-                      { label: t('projectViewer.album.raw'), size: item.size },
-                      { label: t('projectViewer.album.optimized'), size: item.optimizedSize },
-                      { label: t('projectViewer.album.thumbnail'), size: item.thumbnailSize },
-                    ].map((s) =>
-                      s.size ? (
-                        <span key={s.label}>
-                          <em>{s.label}</em> {sizeLabel(s.size)}
-                        </span>
-                      ) : null,
-                    )}
-                  </div>
-                  <div className="v2-album-card__specs">
-                    {item.resolution ? <span>{item.resolution}</span> : item.quality ? <span>{item.quality}</span> : null}
-                    {item.duration != null && <span>{item.duration}s</span>}
-                    {item.format && <span>{item.format}</span>}
-                  </div>
+                  <span className="v2-shot__sub">{[getModelName(item.providerId, item.modelConfigId), shortDate(item.createdAt)].filter(Boolean).join(' · ')}</span>
+                  <TagLine tags={item.tags} onTagClick={toggleTag} limit={3} />
                 </div>
               </article>
             );
@@ -747,7 +733,8 @@ export function AlbumTab(props: AlbumTabProps) {
         </div>
       )}
 
-      {total > 0 && <PagedFooter page={page} pageSize={pageSize} total={total} pages={pages} onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />}
+      {total > 0 && <PagedFooter className="v2-results-footer" page={page} pageSize={pageSize} total={total} pages={pages} onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />}
+      {total > 0 && albumItems.length > 0 && <p className="v2-results-total">{isText ? t('v2.project.itemCount', { count: total }) : `${t('v2.project.itemCount', { count: total })} · ${formatBytes(totalSize)}`}</p>}
 
       <Dialog open={videoItem !== null} onClose={() => setVideoItem(null)} maxWidth={1100} className="v2-video-dialog" headline={videoItem ? albumFilename(videoItem) : undefined} actions={<Button variant="text" onClick={() => setVideoItem(null)}>{t('projectViewer.common.close')}</Button>}>
         {videoItem && (
@@ -760,7 +747,9 @@ export function AlbumTab(props: AlbumTabProps) {
           />
         )}
       </Dialog>
-      <AlbumPromptDialog item={promptItem} onClose={() => setPromptItem(null)} />
+      <AlbumPromptDialog item={infoItem} headline={infoItem ? albumFilename(infoItem) : undefined} onClose={() => setInfoItem(null)}>
+        {infoItem && <ParamTable label={t('v2.project.details')} rows={infoRows(infoItem)} />}
+      </AlbumPromptDialog>
       <PromptDialog
         open={renameItem !== null}
         icon="edit"

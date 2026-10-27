@@ -42,9 +42,9 @@ export function StepCard({ icon, label, extra, actions, disabled, tone = 'primar
       onDragEnd={draggable ? onDragEnd : undefined}
     >
       <div className="v2-step__head">
-        {draggable && <Icon name="drag_indicator" size={18} className="v2-step__grip" />}
-        <span className="v2-step__badge" data-tone={tone}>
-          <Icon name={icon} size={16} />
+        <span className="v2-step__badge" data-tone={tone} data-draggable={draggable ? '' : undefined}>
+          <Icon name={icon} size={16} className="v2-step__kind" />
+          {draggable && <Icon name="drag_indicator" size={16} className="v2-step__grip" />}
         </span>
         <Text as="span" variant="label-medium" emphasized className="v2-step__label">
           {label}

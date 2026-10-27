@@ -635,8 +635,8 @@
   text-align: start;
   text-decoration: none;
   transition:
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
-    var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
     background-color var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
     color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);

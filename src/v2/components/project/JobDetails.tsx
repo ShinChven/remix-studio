@@ -156,13 +156,9 @@ export function JobDetails({ job, onLightbox, showResultText, showError, showMet
       )}
       {showMetadata && meta.length > 0 && (
         <DetailBlock label={t('projectViewer.completed.metadata')}>
-          <div className="flex flex-wrap gap-1">
-            {meta.map((value) => (
-              <span key={value} className="v2-info-chip">
-                {value}
-              </span>
-            ))}
-          </div>
+          <Text as="div" variant="body-small" className="v2-detail-meta">
+            {meta.join(' · ')}
+          </Text>
         </DetailBlock>
       )}
     </div>

@@ -27,8 +27,8 @@
     var(--md-sys-motion-spring-fast-effects),
     transform var(--md-sys-motion-spring-default-spatial-duration)
     var(--md-sys-motion-spring-default-spatial),
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
-    var(--md-sys-motion-spring-fast-spatial);
+    border-radius var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects);
 }
 .m3-menu[data-color="vibrant"] {
   --_container: var(--md-sys-color-tertiary-container);
@@ -116,8 +116,8 @@
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
-    var(--md-sys-motion-spring-fast-spatial),
+    border-radius var(--md-sys-motion-spring-fast-effects-duration)
+    var(--md-sys-motion-spring-fast-effects),
     background-color var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
     color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
