@@ -408,8 +408,6 @@ const en = {
     added: 'Added',
     selectProvider: 'Select {{name}}',
     actionsFor: 'Actions for {{name}}',
-    missingKeyHint: 'Add an API key to generate with it.',
-    missingCredentialsHint: 'Add the access key and secret to generate with it.',
     addKey: 'Add key',
     open: 'Open',
     rename: 'Rename',
@@ -440,8 +438,6 @@ const en = {
       oldest: 'Oldest first',
       usage: 'Most used',
     },
-    connectService: 'Connect a service',
-    connectServiceHint: '{{count}} services to choose from',
     emptyTitle: 'Connect your first service',
     emptyDescription: 'Pick a service to add its API key. Keys are encrypted at rest and never shown again.',
     noKindTitle: {

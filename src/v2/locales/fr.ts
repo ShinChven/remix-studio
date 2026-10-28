@@ -409,8 +409,6 @@ const messages: V2Messages = {
     added: 'Ajouté',
     selectProvider: 'Sélectionner {{name}}',
     actionsFor: 'Actions pour {{name}}',
-    missingKeyHint: 'Ajoutez une clé API pour générer avec ce service.',
-    missingCredentialsHint: 'Ajoutez la clé d’accès et le secret pour générer avec ce service.',
     addKey: 'Ajouter la clé',
     open: 'Ouvrir',
     rename: 'Renommer',
@@ -441,8 +439,6 @@ const messages: V2Messages = {
       oldest: 'Plus anciens d’abord',
       usage: 'Plus utilisés',
     },
-    connectService: 'Connecter un service',
-    connectServiceHint: '{{count}} services au choix',
     emptyTitle: 'Connectez votre premier service',
     emptyDescription: 'Choisissez un service pour ajouter sa clé API. Les clés sont chiffrées au repos et ne sont plus jamais affichées.',
     noKindTitle: {

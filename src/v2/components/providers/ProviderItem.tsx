@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent, type MouseEvent, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Checkbox, Icon, IconButton, Ripple, Text } from '../../../m3';
+import { Checkbox, Icon, IconButton, Ripple, Text } from '../../../m3';
 import type { Provider } from '../../../types';
 import { formatDateTime } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
@@ -9,8 +9,6 @@ import { StatusPill } from '../../ui/Stat';
 import { relativeTime } from '../users/userMeta';
 import { ProviderMark } from './ProviderMark';
 import { activeJobCount, modelCounts, projectCount, providerHasCredentials, providerKinds, serviceMeta, urlHost } from './providerMeta';
-
-export type ProviderLayout = 'cards' | 'list';
 
 /** Clicks and keys inside a control stay there instead of opening the provider. */
 const keep = (event: SyntheticEvent) => event.stopPropagation();
@@ -59,7 +57,6 @@ function KindChips({ provider }: { provider: Provider }) {
 
 export interface ProviderItemProps {
   provider: Provider;
-  layout: ProviderLayout;
   selected: boolean;
   /** Something on the page is selected: a click then toggles the provider instead of opening it. */
   selecting: boolean;
@@ -67,13 +64,11 @@ export interface ProviderItemProps {
   onToggleSelect: (range: boolean) => void;
   onOpen: () => void;
   onConcurrencyChange: (value: number) => void;
-  /** Where to add the missing key. */
-  editHref: string;
   menuItems: ActionMenuItem[];
 }
 
 /** One connected service: its mark and name, what it makes, how many tasks it runs at once, and how much it is used. */
-export function ProviderItem({ provider, layout, selected, selecting, onToggleSelect, onOpen, onConcurrencyChange, editHref, menuItems }: ProviderItemProps) {
+export function ProviderItem({ provider, selected, selecting, onToggleSelect, onOpen, onConcurrencyChange, menuItems }: ProviderItemProps) {
   const { t, i18n } = useTranslation();
   const [active, setActive] = useState(false);
   const ready = providerHasCredentials(provider);
@@ -90,7 +85,6 @@ export function ProviderItem({ provider, layout, selected, selecting, onToggleSe
   return (
     <li
       className="v2-provider m3-focus-ring"
-      data-layout={layout}
       data-selected={selected ? '' : undefined}
       data-ready={ready ? '' : undefined}
       role="button"
@@ -126,7 +120,7 @@ export function ProviderItem({ provider, layout, selected, selecting, onToggleSe
 
       <span className="v2-provider__identity">
         <span className="v2-provider__name-line">
-          <Text as="span" variant={layout === 'cards' ? 'title-medium' : 'title-small'} emphasized className="v2-provider__name">
+          <Text as="span" variant="title-small" emphasized className="v2-provider__name">
             {provider.name}
           </Text>
           {ready ? (
@@ -152,7 +146,7 @@ export function ProviderItem({ provider, layout, selected, selecting, onToggleSe
 
       <KindChips provider={provider} />
 
-      {/* Cards label each figure; rows mark them with an icon and keep the label for screen readers and the tooltip. */}
+      {/* Each figure is marked with an icon; its label stays for screen readers and the tooltip. */}
       <span className="v2-provider__stats">
         <span className="v2-provider__stat v2-provider__stat--parallel" title={t('v2.providers.parallel')}>
           <span className="v2-provider__stat-label">{t('v2.providers.parallel')}</span>
@@ -184,20 +178,10 @@ export function ProviderItem({ provider, layout, selected, selecting, onToggleSe
         </span>
       </span>
 
-      {!ready && layout === 'cards' && (
-        <span className="v2-provider__notice" onClick={keep} onKeyDown={keep}>
-          <Text as="span" variant="body-small">
-            {provider.type === 'KlingAI' ? t('v2.providers.missingCredentialsHint') : t('v2.providers.missingKeyHint')}
-          </Text>
-          <Button variant="tonal" size="xs" icon="key" href={editHref}>
-            {t('v2.providers.addKey')}
-          </Button>
-        </span>
-      )}
-
       <span className="v2-provider__menu" onClick={keep} onKeyDown={keep}>
         <ActionMenu label={t('v2.providers.actionsFor', { name: provider.name })} items={menuItems} openOnHover />
       </span>
     </li>
   );
 }
+

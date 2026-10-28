@@ -409,8 +409,6 @@ const messages: V2Messages = {
     added: '添加于',
     selectProvider: '选择 {{name}}',
     actionsFor: '{{name}} 的操作',
-    missingKeyHint: '添加 API 密钥后即可用它生成。',
-    missingCredentialsHint: '添加访问密钥和密钥后即可用它生成。',
     addKey: '添加密钥',
     open: '打开',
     rename: '重命名',
@@ -441,8 +439,6 @@ const messages: V2Messages = {
       oldest: '最早添加',
       usage: '最常用',
     },
-    connectService: '连接服务',
-    connectServiceHint: '共 {{count}} 种服务可选',
     emptyTitle: '连接你的第一个服务',
     emptyDescription: '选择一个服务并添加它的 API 密钥。密钥加密存储，之后不会再显示。',
     noKindTitle: {

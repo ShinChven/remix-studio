@@ -71,33 +71,3 @@ export function ServiceGallery({ kind }: { kind?: ProviderKind }) {
     </div>
   );
 }
-
-/** The last tile of the card grid: connect another service. */
-export function AddServiceTile() {
-  const { t } = useTranslation();
-  const [active, setActive] = useState(false);
-  return (
-    <li className="v2-provider-add-slot">
-      <Link
-        to="/provider/new"
-        className="v2-provider-add m3-focus-ring"
-        onPointerEnter={() => setActive(true)}
-        onPointerLeave={() => setActive(false)}
-        onFocus={() => setActive(true)}
-        onBlur={() => setActive(false)}
-      >
-        <Ripple />
-        <span className="v2-provider-add__art" aria-hidden>
-          <Shape name={active ? 'sunny' : 'cookie-9'} size={56} />
-          <Icon name="add" size={26} />
-        </span>
-        <Text as="span" variant="title-small" emphasized>
-          {t('v2.providers.connectService')}
-        </Text>
-        <Text as="span" variant="body-small" className="v2-provider-add__hint">
-          {t('v2.providers.connectServiceHint', { count: SERVICE_TYPES.length })}
-        </Text>
-      </Link>
-    </li>
-  );
-}
