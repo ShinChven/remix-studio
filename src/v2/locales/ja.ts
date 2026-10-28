@@ -409,8 +409,6 @@ const messages: V2Messages = {
     added: '追加',
     selectProvider: '{{name}} を選択',
     actionsFor: '{{name}} の操作',
-    missingKeyHint: '生成に使うには API キーを追加してください。',
-    missingCredentialsHint: '生成に使うにはアクセスキーとシークレットを追加してください。',
     addKey: 'キーを追加',
     open: '開く',
     rename: '名前を変更',
@@ -441,8 +439,6 @@ const messages: V2Messages = {
       oldest: '古い順',
       usage: 'よく使う順',
     },
-    connectService: 'サービスを接続',
-    connectServiceHint: '{{count}} 種類のサービスから選べます',
     emptyTitle: '最初のサービスを接続しましょう',
     emptyDescription: 'サービスを選んで API キーを追加します。キーは暗号化して保存され、二度と表示されません。',
     noKindTitle: {

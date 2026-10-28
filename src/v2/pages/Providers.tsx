@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { deleteProvider, fetchProviders, updateProvider } from '../../api';
-import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, useSnackbar } from '../../m3';
+import { Button, IconButton, MenuGroup, MenuItem, useSnackbar } from '../../m3';
 import type { Provider } from '../../types';
 import { DangerAction, ResultsBar, SectionNav } from '../components/project/ResultsBar';
-import { ProviderItem, type ProviderLayout } from '../components/providers/ProviderItem';
+import { ProviderItem } from '../components/providers/ProviderItem';
 import { ProvidersHero } from '../components/providers/ProvidersHero';
 import {
   activeJobCount,
@@ -21,9 +21,8 @@ import {
   type ProviderSort,
   type ProviderStatus,
 } from '../components/providers/providerMeta';
-import { AddServiceTile, ServiceGallery } from '../components/providers/ServiceGallery';
+import { ServiceGallery } from '../components/providers/ServiceGallery';
 import { clampParallel, useParallelSaver } from '../components/providers/useParallelSaver';
-import { useViewPref } from '../lib/viewPrefs';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { HoverMenuButton } from '../ui/HoverMenuButton';
@@ -35,7 +34,6 @@ type View = 'all' | ProviderKind;
 const VIEWS: View[] = ['all', ...PROVIDER_KINDS];
 const VIEW_ICONS: Record<View, string> = { all: 'key', text: 'notes', image: 'image', video: 'movie', audio: 'music_note' };
 const STATUS_ICONS: Record<ProviderStatus, string> = { all: 'filter_list', ready: 'verified', missing: 'key_off', used: 'folder', running: 'progress_activity' };
-const LAYOUTS: ProviderLayout[] = ['cards', 'list'];
 const QUEUE_HREF = '/projects/queues?view=providers';
 /** How often usage refreshes while jobs are running. */
 const LIVE_REFRESH_MS = 15000;
@@ -55,7 +53,6 @@ export function Providers() {
   const view = pick(params.get('kind'), VIEWS, 'all');
   const status = pick(params.get('status'), PROVIDER_STATUSES, 'all');
   const sort = pick(params.get('sort'), Object.keys(PROVIDER_SORTS) as ProviderSort[], 'service');
-  const [layout, setLayout] = useViewPref<ProviderLayout>('v2.providers.layout', 'cards', LAYOUTS);
 
   const update = useCallback(
     (patch: Record<string, string | null>) => {
@@ -226,7 +223,6 @@ export function Providers() {
       : { title: t('v2.providers.confirmDeleteMany', { count: pendingDelete.length }), message: `${t('v2.providers.confirmDeleteManyMessage')}${usage}` };
   })();
 
-  const filtered = Boolean(q) || status !== 'all' || view !== 'all';
   const clearFilters = () => update({ q: null, status: null, kind: null });
   const runningInScope = scoped.some((provider) => activeJobCount(provider) > 0);
 
@@ -268,14 +264,6 @@ export function Providers() {
           {(Object.keys(PROVIDER_SORTS) as ProviderSort[]).map((value) => (
             <MenuItem key={value} type="radio" icon={PROVIDER_SORTS[value].icon} checked={sort === value} onSelect={() => update({ sort: value })}>
               {t(`v2.providers.sorts.${value}`)}
-            </MenuItem>
-          ))}
-        </MenuGroup>
-        <MenuDivider />
-        <MenuGroup label={t('v2.library.layout')}>
-          {LAYOUTS.map((value) => (
-            <MenuItem key={value} type="radio" icon={value === 'cards' ? 'grid_view' : 'view_agenda'} checked={layout === value} onSelect={() => setLayout(value)}>
-              {t(`v2.library.${value}`)}
             </MenuItem>
           ))}
         </MenuGroup>
@@ -358,22 +346,19 @@ export function Providers() {
             }
           />
         ) : (
-          <ul className="v2-provider-list" data-layout={layout} data-selecting={selected.size > 0 ? '' : undefined} aria-busy={loading}>
+          <ul className="v2-provider-list" data-selecting={selected.size > 0 ? '' : undefined} aria-busy={loading}>
             {shown.map((provider) => (
               <ProviderItem
                 key={provider.id}
                 provider={provider}
-                layout={layout}
                 selected={selected.has(provider.id)}
                 selecting={selected.size > 0}
                 onToggleSelect={(range) => toggle(provider.id, range)}
                 onOpen={() => openProvider(provider)}
                 onConcurrencyChange={(value) => changeConcurrency(provider, value)}
-                editHref={`/provider/${provider.id}/edit`}
                 menuItems={itemMenu(provider)}
               />
             ))}
-            {layout === 'cards' && !filtered && <AddServiceTile />}
           </ul>
         )}
       </section>

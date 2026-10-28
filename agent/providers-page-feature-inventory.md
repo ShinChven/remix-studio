@@ -16,14 +16,13 @@ these pages must keep each item. They use only the existing provider endpoints.
 - [x] What you can make: one tile per kind with the number of distinct models the ready providers offer, greyed with Not connected when nothing makes it; a tile filters the list to that kind and scrolls to it.
 - [x] Connected services' marks orbit a key (greyed suggestions when nothing is connected); the orbit turns and widens on hover; caption names them. Only where the hero has room.
 - [x] New provider and Queues (provider view).
-- [x] Results bar: kind switcher with counts that follow the search and status, a running dot on All; search (name, service, model names, address); status filter (ready, needs a key, used by projects, running jobs); sort (by service, name, newest, oldest, most used) and layout (cards or rows) in Sort and view; filter chips and Clear filters. Search, kind, status and sort live in the URL; the layout is remembered on the device.
+- [x] Results bar: kind switcher with counts that follow the search and status, a running dot on All; search (name, service, model names, address); status filter (ready, needs a key, used by projects, running jobs); sort (by service, name, newest, oldest, most used) in Sort and view; filter chips and Clear filters. Search, kind, status and sort live in the URL.
 - [x] Overflow: Select all, New provider, Queues, Refresh.
-- [x] Cards: mark, name with a verified mark, service and custom host; kind chips with model counts, Civitai's catalog and custom variants; parallel stepper, projects and running jobs; a warning strip with Add key when the key (or Kling's secret) is missing. Rows: the same in columns that drop out as the pane narrows, with icons instead of labels.
-- [x] Click opens the provider; while selecting, or with ctrl/cmd/shift, click toggles; shift extends a range; Space toggles; Enter opens. In cards the checkbox is a badge on the mark's corner; in rows it replaces the mark.
+- [x] Rows: mark, name with a verified mark, service and custom host; kind chips with model counts, Civitai's catalog and custom variants; parallel stepper, projects and running jobs; a missing-key pill when the key (or Kling's secret) is missing. Columns drop out as the pane narrows, with icons instead of labels.
+- [x] Click opens the provider; while selecting, or with ctrl/cmd/shift, click toggles; shift extends a range; Space toggles; Enter opens. The checkbox replaces the mark.
 - [x] Item menu: Open, Edit (Add key when missing), Rename, Custom models (BytePlus), Queues (while running), Select, Copy provider ID, Delete.
 - [x] Selection bar with Delete; deleting (one or several) confirms with the projects and active jobs that reference them, and reports what was deleted and the first failure.
 - [x] Usage refreshes every 15 s while jobs are running and the page is visible.
-- [x] Connect a service tile at the end of the unfiltered card grid.
 - [x] Empty: every service to connect, each opening the form with it chosen. A kind nothing connected makes: the services that make it. No matches: Clear filters. Loading, and load errors with Retry.
 
 ## New / edit form

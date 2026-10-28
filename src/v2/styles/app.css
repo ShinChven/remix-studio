@@ -5513,18 +5513,17 @@
 .v2-providers-pane__error:first-child { margin-top: 12px; }
 
 .v2-provider-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   margin: 0;
   padding: 4px 12px 16px;
   list-style: none;
   transition: opacity var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
 .v2-provider-list[aria-busy="true"] { opacity: 0.64; }
-.v2-provider-list[data-layout="list"] { display: flex; flex-direction: column; gap: 2px; }
 
-/* One provider: a card, or a row in the list layout. */
+/* One provider: a row. */
 .v2-provider {
   position: relative;
   display: grid;
@@ -5534,22 +5533,6 @@
   transition:
     background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
     border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
-}
-.v2-provider[data-layout="cards"] {
-  grid-template-areas:
-    "lead identity menu"
-    "kinds kinds kinds"
-    "stats stats stats"
-    "notice notice notice";
-  grid-template-columns: 44px minmax(0, 1fr) 40px;
-  align-content: start;
-  gap: 12px 12px;
-  padding: 14px 6px 12px 14px;
-  border-radius: var(--md-sys-shape-corner-extra-large);
-  background: var(--md-sys-color-surface-container-low);
-}
-.v2-provider[data-layout="cards"]:hover { border-radius: var(--md-sys-shape-corner-extra-large-increased); background: var(--md-sys-color-surface-container); }
-.v2-provider[data-layout="list"] {
   grid-template-areas: "lead identity kinds parallel projects running added menu";
   grid-template-columns: 48px minmax(0, 1fr) minmax(0, 220px) 116px 64px 64px 112px 40px;
   gap: 16px;
@@ -5557,7 +5540,7 @@
   padding: 10px 6px 10px 10px;
   border-radius: var(--md-sys-shape-corner-large);
 }
-.v2-provider[data-layout="list"]:hover { background: var(--md-sys-color-surface-container-low); }
+.v2-provider:hover { background: var(--md-sys-color-surface-container-low); }
 .v2-provider[data-selected],
 .v2-provider[data-selected]:hover {
   border-radius: var(--md-sys-shape-corner-extra-large);
@@ -5565,7 +5548,7 @@
   color: var(--md-sys-color-on-secondary-container);
 }
 
-/* The mark morphs under the pointer. In cards the checkbox joins it in the corner; in rows it takes the mark's place. */
+/* The mark morphs under the pointer; the checkbox takes its place. */
 .v2-provider__lead { display: grid; grid-area: lead; place-items: center; }
 .v2-provider__lead > * { grid-area: 1 / 1; }
 .v2-provider__mark {
@@ -5586,25 +5569,13 @@
     scale var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
 :is(.v2-provider:hover, .v2-provider:focus-within, .v2-provider[data-selected], .v2-provider-list[data-selecting] .v2-provider) .v2-provider__check { opacity: 1; scale: 1; }
-/* In cards the checkbox is a small badge on the mark's corner, so the mark stays in view. */
-.v2-provider[data-layout="cards"] .v2-provider__lead { position: relative; }
-.v2-provider[data-layout="cards"] .v2-provider__check {
-  position: absolute;
-  top: -16px;
-  inset-inline-start: -16px;
-  border-radius: 50%;
-  background: var(--md-sys-color-surface-container-lowest);
-  box-shadow: var(--md-sys-elevation-level1);
-}
-:is(.v2-provider:hover, .v2-provider:focus-within, .v2-provider[data-selected], .v2-provider-list[data-selecting] .v2-provider)[data-layout="cards"] .v2-provider__check { scale: 0.8; }
-.v2-provider[data-layout="cards"][data-selected] .v2-provider__mark { scale: 0.86; rotate: 0deg; }
-.v2-provider[data-layout="list"]:is(:hover, :focus-within, [data-selected]) .v2-provider__mark,
-.v2-provider-list[data-selecting] .v2-provider[data-layout="list"] .v2-provider__mark { opacity: 0; scale: 0.6; rotate: 45deg; }
+.v2-provider:is(:hover, :focus-within, [data-selected]) .v2-provider__mark,
+.v2-provider-list[data-selecting] .v2-provider .v2-provider__mark { opacity: 0; scale: 0.6; rotate: 45deg; }
 @media (hover: none) {
   .v2-provider__check { display: none; }
   .v2-provider-list[data-selecting] .v2-provider__check { display: inline-flex; }
-  .v2-provider[data-layout="list"] .v2-provider__mark { opacity: 1 !important; scale: 1 !important; rotate: 0deg !important; }
-  .v2-provider-list[data-selecting] .v2-provider[data-layout="list"] .v2-provider__mark { opacity: 0 !important; }
+  .v2-provider .v2-provider__mark { opacity: 1 !important; scale: 1 !important; rotate: 0deg !important; }
+  .v2-provider-list[data-selecting] .v2-provider .v2-provider__mark { opacity: 0 !important; }
 }
 
 .v2-provider__identity { display: flex; min-width: 0; grid-area: identity; flex-direction: column; gap: 2px; }
@@ -5612,7 +5583,6 @@
 .v2-provider__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .v2-provider__ready { display: inline-flex; flex-shrink: 0; color: var(--v2-color-success); }
 .v2-provider__name-line .v2-pill { flex-shrink: 0; height: 22px; padding-inline: 7px; font: var(--md-sys-typescale-label-small); }
-.v2-provider[data-layout="cards"] .v2-provider__missing-pill { display: none; }
 .v2-provider__service { display: flex; min-width: 0; align-items: center; gap: 10px; color: var(--md-sys-color-on-surface-variant); white-space: nowrap; }
 .v2-provider__service > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .v2-provider__service > :first-child { flex-shrink: 0; }
@@ -5638,32 +5608,20 @@
 .v2-provider-kind[data-kind="custom"] { --_fg: var(--md-sys-color-on-surface-variant); }
 .v2-provider-kind__count { color: var(--md-sys-color-on-surface); font: var(--md-sys-typescale-emphasized-label-large); font-variant-numeric: tabular-nums; }
 .v2-provider[data-selected] .v2-provider-kind { color: inherit; }
-.v2-provider[data-layout="list"] .v2-provider-kind__label { display: none; }
+.v2-provider .v2-provider-kind__label { display: none; }
 
-/* Parallel tasks, projects, jobs running and when it was added: a strip in cards, columns in rows. */
+/* Parallel tasks, projects, jobs running and when it was added: one column each. */
 .v2-provider__stats { display: contents; }
-.v2-provider[data-layout="cards"] .v2-provider__stats {
-  display: grid;
-  grid-area: stats;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
-  column-gap: 20px;
-  margin-inline-end: 8px;
-  padding-top: 10px;
-  border-top: 1px solid var(--md-sys-color-outline-variant);
-}
-.v2-provider[data-layout="cards"] .v2-provider__stat--added { display: none; }
 .v2-provider__stat { display: flex; min-width: 0; flex-direction: column; justify-content: center; gap: 2px; }
 .v2-provider__stat--parallel { grid-area: parallel; }
 .v2-provider__stat--projects { grid-area: projects; }
 .v2-provider__stat--running { grid-area: running; }
 .v2-provider__stat--added { grid-area: added; }
-.v2-provider[data-layout="cards"] .v2-provider__stat { grid-area: auto; }
 .v2-provider__stat-label { overflow: hidden; color: var(--md-sys-color-on-surface-variant); font: var(--md-sys-typescale-label-small); text-overflow: ellipsis; white-space: nowrap; }
 .v2-provider__stat-value { display: inline-flex; min-width: 0; height: 32px; align-items: center; gap: 6px; font: var(--md-sys-typescale-emphasized-title-small); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .v2-provider__stat-icon { flex-shrink: 0; color: var(--md-sys-color-on-surface-variant); }
-.v2-provider[data-layout="cards"] .v2-provider__stat-icon { display: none; }
-.v2-provider[data-layout="list"] .v2-provider__stat-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.v2-provider[data-layout="list"] .v2-provider__stat-value { gap: 5px; font: var(--md-sys-typescale-emphasized-label-large); }
+.v2-provider .v2-provider__stat-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.v2-provider .v2-provider__stat-value { gap: 5px; font: var(--md-sys-typescale-emphasized-label-large); }
 .v2-provider[data-selected] .v2-provider__stat-icon { color: inherit; }
 .v2-provider__stat--added .v2-provider__stat-value { overflow: hidden; font: var(--md-sys-typescale-label-large); text-overflow: ellipsis; }
 .v2-provider__stat--running:not([data-active]) .v2-provider__stat-value { color: var(--md-sys-color-on-surface-variant); }
@@ -5675,18 +5633,6 @@
 .v2-parallel__value { min-width: 26px; font: var(--md-sys-typescale-emphasized-title-small); font-variant-numeric: tabular-nums; text-align: center; }
 .v2-provider[data-selected] .v2-parallel { background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 70%, transparent); }
 
-.v2-provider__notice {
-  display: flex;
-  grid-area: notice;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 6px 6px 14px;
-  border-radius: var(--md-sys-shape-corner-large);
-  background: var(--v2-color-warning-container);
-  color: var(--v2-color-on-warning-container);
-  cursor: default;
-}
 .v2-provider__menu { display: inline-flex; grid-area: menu; justify-content: center; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5696,58 +5642,27 @@
 
 /* Columns drop out of the rows as the pane narrows. */
 @container pane (max-width: 1120px) {
-  .v2-provider[data-layout="list"] { grid-template-areas: "lead identity kinds parallel projects running menu"; grid-template-columns: 48px minmax(0, 1fr) minmax(0, 200px) 116px 64px 64px 40px; }
-  .v2-provider[data-layout="list"] .v2-provider__stat--added { display: none; }
+  .v2-provider { grid-template-areas: "lead identity kinds parallel projects running menu"; grid-template-columns: 48px minmax(0, 1fr) minmax(0, 200px) 116px 64px 64px 40px; }
+  .v2-provider .v2-provider__stat--added { display: none; }
 }
 @container pane (max-width: 900px) {
-  .v2-provider[data-layout="list"] { grid-template-areas: "lead identity kinds parallel running menu"; grid-template-columns: 48px minmax(0, 1fr) minmax(0, 180px) 116px 64px 40px; }
-  .v2-provider[data-layout="list"] .v2-provider__stat--projects { display: none; }
+  .v2-provider { grid-template-areas: "lead identity kinds parallel running menu"; grid-template-columns: 48px minmax(0, 1fr) minmax(0, 180px) 116px 64px 40px; }
+  .v2-provider .v2-provider__stat--projects { display: none; }
 }
 @container pane (max-width: 720px) {
-  .v2-provider[data-layout="list"] {
+  .v2-provider {
     grid-template-areas: "lead identity parallel menu" "lead kinds parallel menu";
     grid-template-columns: 44px minmax(0, 1fr) 116px 40px;
     gap: 6px 12px;
   }
-  .v2-provider[data-layout="list"] .v2-provider__lead { align-self: start; }
-  .v2-provider[data-layout="list"] .v2-provider__stat--running { display: none; }
+  .v2-provider .v2-provider__lead { align-self: start; }
+  .v2-provider .v2-provider__stat--running { display: none; }
 }
 @container pane (max-width: 520px) {
   .v2-provider-list { padding-inline: 8px; }
-  .v2-provider[data-layout="list"] { grid-template-areas: "lead identity menu" "lead kinds menu"; grid-template-columns: 44px minmax(0, 1fr) 40px; padding: 10px 2px 10px 8px; }
-  .v2-provider[data-layout="list"] .v2-provider__stat--parallel { display: none; }
-  .v2-provider[data-layout="cards"] { padding: 14px 6px 12px 12px; }
-  .v2-provider[data-layout="cards"] .v2-provider__stats { padding-inline: 12px; }
-  .v2-provider[data-layout="cards"] .v2-provider__stat + .v2-provider__stat { padding-inline-start: 10px; }
-  .v2-provider[data-layout="cards"] .v2-provider__stat--parallel { padding-inline-end: 10px; }
+  .v2-provider { grid-template-areas: "lead identity menu" "lead kinds menu"; grid-template-columns: 44px minmax(0, 1fr) 40px; padding: 10px 2px 10px 8px; }
+  .v2-provider .v2-provider__stat--parallel { display: none; }
 }
-
-/* The grid's last tile: connect another service. */
-.v2-provider-add-slot { display: flex; min-height: 200px; }
-.v2-provider-add {
-  position: relative;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 20px;
-  border: 2px dashed var(--md-sys-color-outline-variant);
-  border-radius: var(--md-sys-shape-corner-extra-large);
-  color: var(--md-sys-color-on-surface);
-  text-align: center;
-  text-decoration: none;
-  transition:
-    background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
-    border-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
-    border-radius var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
-}
-.v2-provider-add:hover { border-color: var(--md-sys-color-secondary); border-radius: var(--md-sys-shape-corner-extra-large-increased); background: color-mix(in srgb, var(--md-sys-color-secondary-container) 32%, transparent); }
-.v2-provider-add__art { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 6px; color: var(--md-sys-color-secondary-container); }
-.v2-provider-add__art > * { grid-area: 1 / 1; }
-.v2-provider-add__art .m3-icon { position: relative; color: var(--md-sys-color-on-secondary-container); }
-.v2-provider-add__hint { color: var(--md-sys-color-on-surface-variant); }
 
 /* Services to connect: everything on a first visit, or those that make a kind nothing connected makes. */
 .v2-service-gallery { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 40px 20px 32px; }
