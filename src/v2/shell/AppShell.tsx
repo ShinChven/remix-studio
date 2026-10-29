@@ -68,7 +68,6 @@ export function AppShell() {
         aria-label={t('v2.shell.navigation')}
         brand={
           <span className="v2-brand">
-            <img src="/favicon.svg" alt="" width={28} height={28} />
             <span className="m3-typescale-emphasized-title-large">Remix Studio</span>
           </span>
         }
@@ -94,7 +93,6 @@ export function AppShell() {
             <div className="v2-compact-top">
               {ctx.menuButton}
               <span className="v2-brand">
-                <img src="/favicon.svg" alt="" width={24} height={24} />
                 <span className="m3-typescale-emphasized-title-medium">Remix Studio</span>
               </span>
               {/* Search and appearance live in the navigation; this end of the bar is the page's own. */}
