@@ -8,6 +8,7 @@
     "allLibraries": "Toute les bibliothèques",
     "searchPlaceholder": "Rechercher des bibliothèques par nom ou ID...",
     "newLibrary": "Nouvelle bibliothèque",
+    "typeAll": "Tous",
     "noResultsFound": "Aucune bibliothèque correspondante trouvée",
     "new": "Nouveau",
     "noLibraries": {

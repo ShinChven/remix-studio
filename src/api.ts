@@ -429,7 +429,7 @@ export async function loadData(): Promise<AppData> {
 
 // ========== Library CRUD ==========
 
-export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false, cover: boolean = false): Promise<import('./types').PaginatedResult<Library>> {
+export async function fetchLibraries(page: number = 1, limit: number = 50, q?: string, includeItems: boolean = false, nameOnly: boolean = false, cover: boolean = false, type?: import('./types').LibraryType): Promise<import('./types').PaginatedResult<Library>> {
   const params = new URLSearchParams();
   if (page) params.set('page', page.toString());
   if (limit) params.set('limit', limit.toString());
@@ -437,6 +437,7 @@ export async function fetchLibraries(page: number = 1, limit: number = 50, q?: s
   if (includeItems) params.set('includeItems', 'true');
   if (nameOnly) params.set('nameOnly', 'true');
   if (cover) params.set('cover', 'true');
+  if (type) params.set('type', type);
 
   const res = await apiFetch(`/api/libraries?${params.toString()}`, { headers: getHeaders(false) });
   return handleResponse<import('./types').PaginatedResult<Library>>(res, 'Failed to list libraries');

@@ -17,8 +17,10 @@ import {
   toStorageKey,
   type QuickWatermarkSource,
 } from '../services/quick-watermark';
-import type { AlbumItem, LibraryItem, Library } from '../../src/types';
+import type { AlbumItem, LibraryItem, Library, LibraryType } from '../../src/types';
 import { filterItemsByTags } from '../../src/lib/remixEngine';
+
+const LIBRARY_TYPES: LibraryType[] = ['text', 'image', 'video', 'audio'];
 
 type Variables = { user: JwtPayload };
 
@@ -204,8 +206,10 @@ export function createLibraryRouter(
       const includeItems = c.req.query('includeItems') === 'true';
       const includeCover = c.req.query('cover') === 'true';
       const nameOnly = c.req.query('nameOnly') === 'true';
+      const typeParam = c.req.query('type');
+      const type = LIBRARY_TYPES.includes(typeParam as LibraryType) ? (typeParam as LibraryType) : undefined;
 
-      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems, undefined, nameOnly);
+      const result = await repository.getUserLibraries(user.userId, page, limit, q, includeItems, type, nameOnly);
 
       if (!includeItems) {
         if (!includeCover) return c.json(result);
