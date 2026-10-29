@@ -248,6 +248,8 @@ const en = {
     cards: 'Cards',
     list: 'List',
     uploadingCount: 'Uploading {{done}} of {{total}}',
+    pastedText: 'Pasted as a new item',
+    pasteFetchFailed: 'Couldn\'t fetch the pasted link. Copy the file itself instead.',
     skipped_one: '{{count}} file skipped: not the kind this library holds',
     skipped_other: '{{count}} files skipped: not the kind this library holds',
     dropTitle: 'Drop to add to {{name}}',

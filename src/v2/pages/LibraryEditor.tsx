@@ -57,6 +57,7 @@ const SORT_OPTIONS: { value: SortKey; icon: string; label: string }[] = [
   { value: 'name-desc', icon: 'sort_by_alpha', label: 'libraryEditor.sort.nameDesc' },
 ];
 const MEDIA_ACCEPT = { image: 'image/', video: 'video/', audio: 'audio/' } as const;
+const TEXT_FILE = /\.(txt|md|markdown)$/i;
 
 function parsePageSize(value: string | null): PageSize {
   if (value === 'all') return 'all';
@@ -303,7 +304,8 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
 
   const selectAll = () => setSelected(new Set(items.map((item) => item.id)));
 
-  const accepts = (file: File) => !isText && file.type.startsWith(MEDIA_ACCEPT[type as keyof typeof MEDIA_ACCEPT]);
+  const accepts = (file: File) =>
+    isText ? file.type.startsWith('text/') || TEXT_FILE.test(file.name) : file.type.startsWith(MEDIA_ACCEPT[type as keyof typeof MEDIA_ACCEPT]);
 
   const uploadFiles = async (files: File[]) => {
     const accepted = files.filter(accepts);
@@ -314,6 +316,11 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
     try {
       // Newest first in the library means the first file should be saved last.
       for (const [index, file] of [...accepted].reverse().entries()) {
+        if (isText) {
+          await createLibraryItem(library.id, { id: crypto.randomUUID(), content: await file.text(), title: file.name.replace(TEXT_FILE, '') });
+          setUpload({ done: index + 1, total: accepted.length });
+          continue;
+        }
         const base64 = await readFileAsDataUrl(file);
         let result: { key: string; size?: number; thumbnailKey?: string; optimizedKey?: string };
         if (type === 'image') result = await saveImage(base64, library.id);
@@ -338,6 +345,63 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
       setUpload(null);
     }
   };
+
+  const uploadFromUrl = async (url: string) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const name = decodeURIComponent(new URL(url, window.location.href).pathname.split('/').pop() || '') || 'pasted';
+      await uploadFiles([new File([blob], name, { type: blob.type })]);
+    } catch (err) {
+      console.error('Failed to fetch pasted URL:', err);
+      snackbar.show(t('v2.library.pasteFetchFailed'));
+    }
+  };
+
+  const pasteText = async (text: string) => {
+    try {
+      await createLibraryItem(library.id, { id: crypto.randomUUID(), content: text, title: '' });
+      await refresh();
+      snackbar.show(t('v2.library.pastedText'));
+    } catch (err) {
+      snackbar.show((err as Error).message || t('libraryEditor.toasts.uploadFailed'));
+    }
+  };
+
+  // Cmd/Ctrl+V anywhere on the page outside a text field: files (Finder, or an image copied in a
+  // browser) upload; text becomes an item of a text library, or a media URL to fetch otherwise.
+  const handlePaste = (e: ClipboardEvent) => {
+    const active = document.activeElement as HTMLElement | null;
+    if (e.defaultPrevented || upload || (active && (active.matches('input, textarea, select') || active.isContentEditable))) return;
+    const data = e.clipboardData;
+    if (!data) return;
+    const files = Array.from(data.files);
+    if (files.length > 0) {
+      e.preventDefault();
+      void uploadFiles(files);
+      return;
+    }
+    const text = data.getData('text/plain').trim();
+    if (isText) {
+      if (!text) return;
+      e.preventDefault();
+      void pasteText(text);
+      return;
+    }
+    const src = new DOMParser().parseFromString(data.getData('text/html'), 'text/html').querySelector('img, video, audio, source')?.getAttribute('src');
+    const url = src || (/^(https?:|data:)\S+$/i.test(text) ? text : '');
+    if (!url) return;
+    e.preventDefault();
+    void uploadFromUrl(url);
+  };
+  const pasteHandler = useRef(handlePaste);
+  pasteHandler.current = handlePaste;
+  useEffect(() => {
+    const listener = (e: ClipboardEvent) => pasteHandler.current(e);
+    document.addEventListener('paste', listener);
+    return () => document.removeEventListener('paste', listener);
+  }, []);
 
   const hasFiles = (e: DragEvent) => !isText && e.dataTransfer.types.includes('Files');
   const dropHandlers = {

@@ -249,6 +249,8 @@ const messages: V2Messages = {
     cards: '卡片',
     list: '列表',
     uploadingCount: '正在上传 {{done}}/{{total}}',
+    pastedText: '已粘贴为新条目',
+    pasteFetchFailed: '无法获取粘贴的链接，请直接复制文件',
     skipped_one: '已跳过 {{count}} 个文件：不是此资源库的类型',
     skipped_other: '已跳过 {{count}} 个文件：不是此资源库的类型',
     dropTitle: '松开即可添加到 {{name}}',
