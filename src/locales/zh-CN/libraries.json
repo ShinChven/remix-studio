@@ -8,6 +8,7 @@
     "allLibraries": "所有资源库",
     "searchPlaceholder": "搜索资源库名称或 ID...",
     "newLibrary": "新建资源库",
+    "typeAll": "全部",
     "noResultsFound": "未找到匹配的资源库",
     "new": "新建",
     "noLibraries": {

@@ -4,17 +4,26 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { deleteLibrary, duplicateLibrary, fetchLibraries, fetchLibraryReferences, setLibraryPinned } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { Button, Text, useSnackbar } from '../../m3';
-import type { Library } from '../../types';
-import { LibraryCard } from '../components/EntityCards';
+import type { Library, LibraryType } from '../../types';
+import { LibraryCard, LibraryRow } from '../components/EntityCards';
+import { useViewPref } from '../lib/viewPrefs';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EntityList } from '../ui/EntityList';
+import { kindMeta } from '../ui/entityMeta';
 import { EmptyState, LoadingState, Page } from '../ui/Page';
 import { PageHero } from '../ui/PageHero';
 import { Pagination } from '../ui/Pagination';
 import { PromptDialog } from '../ui/PromptDialog';
 import { SearchField } from '../ui/SearchField';
-import { CardGrid, ListToolbar, MobileFab } from '../ui/Toolbar';
+import { CardGrid, ListToolbar, MobileFab, Segmented } from '../ui/Toolbar';
 
 const MAX_PINNED_LIBRARIES = 6;
+const LAYOUTS = ['cards', 'list'] as const;
+type Layout = (typeof LAYOUTS)[number];
+type TypeFilter = LibraryType | 'all';
+const TYPE_FILTERS: TypeFilter[] = ['all', 'text', 'image', 'video', 'audio'];
+const TYPE_LABELS: Record<LibraryType, string> = { text: 'typeText', image: 'typeImage', video: 'typeVideo', audio: 'typeAudio' };
+const isTypeFilter = (value: string | null): value is TypeFilter => TYPE_FILTERS.includes(value as TypeFilter);
 
 export function Libraries() {
   const { t } = useTranslation();
@@ -23,6 +32,8 @@ export function Libraries() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
   const q = searchParams.get('q') || '';
+  const typeParam = searchParams.get('type');
+  const type: TypeFilter = isTypeFilter(typeParam) ? typeParam : 'all';
   const [libraries, setLibraries] = useState<Library[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -31,13 +42,14 @@ export function Libraries() {
   const [toDelete, setToDelete] = useState<Library | null>(null);
   const [checkingRefs, setCheckingRefs] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(q);
+  const [layout, setLayout] = useViewPref<Layout>('v2.libraries.layout', 'cards', LAYOUTS);
   const loadSeq = useRef(0);
 
   const loadLibraries = async (silent = false) => {
     const seq = ++loadSeq.current;
     if (!silent) setIsLoading(true);
     try {
-      const result = await fetchLibraries(page, 24, q);
+      const result = await fetchLibraries(page, 24, q, false, false, false, type === 'all' ? undefined : type);
       if (seq !== loadSeq.current) return;
       setLibraries(result.items);
       setTotal(result.total);
@@ -55,7 +67,7 @@ export function Libraries() {
       loadSeq.current++;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, q]);
+  }, [page, q, type]);
 
   useLiveRefresh((event) => event.resource === 'library', () => loadLibraries(true));
 
@@ -78,6 +90,11 @@ export function Libraries() {
     } catch (error) {
       snackbar.show((error as Error).message || 'Failed to update pin state');
     }
+  };
+
+  const startAssistantChat = (l: Library) => {
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', { state: { draftBoundContexts: [{ id: l.id, name: l.name, type: 'library', subType: l.type || 'text' }] } });
   };
 
   const handleDeleteClick = async (lib: Library) => {
@@ -108,6 +125,23 @@ export function Libraries() {
       />
 
       <ListToolbar title={t('libraries.allLibraries')} icon="grid_view" count={total}>
+        <Segmented<TypeFilter>
+          aria-label={t('libraryForm.typeLabel')}
+          className="v2-type-filter"
+          value={type}
+          onChange={(value) =>
+            updateParams((next) => {
+              if (value === 'all') next.delete('type');
+              else next.set('type', value);
+              next.set('page', '1');
+            })
+          }
+          options={TYPE_FILTERS.map((value) =>
+            value === 'all'
+              ? { value, label: t('libraries.typeAll') }
+              : { value, label: t(`libraryForm.${TYPE_LABELS[value]}`), icon: kindMeta(value).icon },
+          )}
+        />
         <SearchField
           value={searchInput}
           onChange={setSearchInput}
@@ -120,30 +154,54 @@ export function Libraries() {
             })
           }
         />
+        <Segmented<Layout>
+          aria-label={t('v2.library.layout')}
+          value={layout}
+          onChange={setLayout}
+          options={[
+            { value: 'cards', label: t('v2.library.cards'), icon: 'grid_view' },
+            { value: 'list', label: t('v2.library.list'), icon: 'view_agenda' },
+          ]}
+        />
       </ListToolbar>
 
       {isLoading ? (
         <LoadingState />
       ) : libraries.length === 0 ? (
-        <EmptyState icon="folder" shape="cookie-6" title={t('libraries.noLibraries.title')} description={q ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')} />
+        <EmptyState icon="folder" shape="cookie-6" title={t('libraries.noLibraries.title')} description={q || type !== 'all' ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')} />
       ) : (
         <>
-          <CardGrid min={260}>
-            {libraries.map((lib) => (
-              <LibraryCard
-                key={lib.id}
-                library={lib}
-                isCheckingRefs={checkingRefs === lib.id}
-                onTogglePin={handleTogglePin}
-                onStartAssistantChat={(l) => {
-                  localStorage.removeItem('assistant_last_conversation');
-                  navigate('/assistant', { state: { draftBoundContexts: [{ id: l.id, name: l.name, type: 'library', subType: l.type || 'text' }] } });
-                }}
-                onDuplicate={setToDuplicate}
-                onDelete={handleDeleteClick}
-              />
-            ))}
-          </CardGrid>
+          {layout === 'cards' ? (
+            <CardGrid min={260}>
+              {libraries.map((lib) => (
+                <LibraryCard
+                  key={lib.id}
+                  library={lib}
+                  isCheckingRefs={checkingRefs === lib.id}
+                  onTogglePin={handleTogglePin}
+                  onStartAssistantChat={startAssistantChat}
+                  onDuplicate={setToDuplicate}
+                  onDelete={handleDeleteClick}
+                />
+              ))}
+            </CardGrid>
+          ) : (
+            <div className="v2-erow-surface">
+              <EntityList>
+                {libraries.map((lib) => (
+                  <LibraryRow
+                    key={lib.id}
+                    library={lib}
+                    isCheckingRefs={checkingRefs === lib.id}
+                    onTogglePin={handleTogglePin}
+                    onStartAssistantChat={startAssistantChat}
+                    onDuplicate={setToDuplicate}
+                    onDelete={handleDeleteClick}
+                  />
+                ))}
+              </EntityList>
+            </div>
+          )}
           {pages > 1 && (
             <div className="v2-page-footer">
               <Pagination page={page} pages={pages} onPageChange={(p) => updateParams((next) => next.set('page', String(p)))} size="sm" />

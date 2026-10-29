@@ -11,6 +11,7 @@ import { TrashHero } from '../components/trash/TrashHero';
 import { TrashItemDialog } from '../components/trash/TrashItemDialog';
 import { groupItems, sortItems, TRASH_KINDS, TRASH_SORTS, trashBytes, trashFilename, trashKind, type TrashGroup, type TrashKind, type TrashSort } from '../components/trash/trashMeta';
 import { formatBytes } from '../lib/format';
+import { useRangeSelection } from '../lib/useRangeSelection';
 import { useViewPref } from '../lib/viewPrefs';
 import type { ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -136,29 +137,8 @@ export function Trash() {
   const shownBytes = useMemo(() => sorted.reduce((sum, item) => sum + trashBytes(item), 0), [sorted]);
 
   // Selection covers the items on the page; it clears whenever the list changes.
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const anchorId = useRef<string | null>(null);
-  useEffect(() => {
-    setSelected(new Set());
-    anchorId.current = null;
-  }, [q, view, project, sort, currentPage, pageSize]);
+  const { selected, setSelected, toggle, selectAll, clear: clearSelection } = useRangeSelection(pageItems, (item) => item.id, [q, view, project, sort, currentPage, pageSize]);
   const selectedItems = useMemo(() => pageItems.filter((item) => selected.has(item.id)), [pageItems, selected]);
-  const clearSelection = useCallback(() => setSelected(new Set()), []);
-
-  const toggle = (item: TrashItem, range: boolean) => {
-    setSelected((current) => {
-      const next = new Set(current);
-      const from = anchorId.current ? pageItems.findIndex((other) => other.id === anchorId.current) : -1;
-      const to = pageItems.findIndex((other) => other.id === item.id);
-      if (range && from >= 0 && to >= 0) {
-        const [start, end] = from < to ? [from, to] : [to, from];
-        for (const other of pageItems.slice(start, end + 1)) next.add(other.id);
-      } else if (next.has(item.id)) next.delete(item.id);
-      else next.add(item.id);
-      return next;
-    });
-    anchorId.current = item.id;
-  };
 
   const toggleGroup = (group: TrashGroup) =>
     setSelected((current) => {
@@ -316,7 +296,7 @@ export function Trash() {
     const kind = trashKind(item);
     return [
       { key: 'details', icon: 'info', label: t('v2.project.details'), onSelect: () => openDetails(item) },
-      { key: 'select', icon: selected.has(item.id) ? 'check_box' : 'check_box_outline_blank', label: t('v2.project.select'), type: 'checkbox', checked: selected.has(item.id), onSelect: () => toggle(item, false) },
+      { key: 'select', icon: selected.has(item.id) ? 'check_box' : 'check_box_outline_blank', label: t('v2.project.select'), type: 'checkbox', checked: selected.has(item.id), onSelect: () => toggle(item.id, false) },
       { key: 'restore', icon: 'restore', label: orphan ? t('v2.trash.orphanShort') : t('v2.trash.restore'), disabled: orphan, divider: true, onSelect: () => void restore([item]) },
       { key: 'project', icon: 'folder_open', label: t('v2.trash.openProject'), hidden: orphan, href: `/project/${item.projectId}?tab=album` },
       { key: 'filter', icon: 'filter_list', label: t('v2.trash.onlyThisProject'), hidden: project === item.projectId, onSelect: () => update({ project: item.projectId }) },
@@ -459,7 +439,7 @@ export function Trash() {
           nav={nav}
           totalCount={pageItems.length}
           selectedCount={selectedItems.length}
-          onToggleSelectAll={() => setSelected(new Set(pageItems.map((item) => item.id)))}
+          onToggleSelectAll={selectAll}
           onClearSelection={clearSelection}
           isLoading={loading && loaded}
           summary={sorted.length > 0 && `${t('v2.project.itemCount', { count: sorted.length })} · ${formatBytes(shownBytes)}`}
@@ -519,7 +499,7 @@ export function Trash() {
             leaving={leaving}
             menuItems={itemMenu}
             onOpen={open}
-            onToggle={toggle}
+            onToggle={(item, range) => toggle(item.id, range)}
             onToggleGroup={toggleGroup}
             onRestore={(item) => void restore([item])}
             onDelete={(item) => setPending({ kind: 'delete', items: [item] })}

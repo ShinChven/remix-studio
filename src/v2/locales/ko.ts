@@ -249,6 +249,8 @@ const messages: V2Messages = {
     cards: '카드',
     list: '목록',
     uploadingCount: '업로드 중 {{done}}/{{total}}',
+    pastedText: '새 항목으로 붙여넣었습니다',
+    pasteFetchFailed: '붙여넣은 링크를 가져올 수 없습니다. 파일 자체를 복사하세요',
     skipped_one: '파일 {{count}}개 건너뜀: 이 라이브러리의 유형이 아닙니다',
     skipped_other: '파일 {{count}}개 건너뜀: 이 라이브러리의 유형이 아닙니다',
     dropTitle: '놓아서 {{name}}에 추가',

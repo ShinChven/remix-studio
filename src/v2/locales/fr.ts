@@ -249,6 +249,8 @@ const messages: V2Messages = {
     cards: 'Cartes',
     list: 'Liste',
     uploadingCount: 'Envoi {{done}} sur {{total}}',
+    pastedText: 'Collé comme nouvel élément',
+    pasteFetchFailed: 'Impossible de récupérer le lien collé. Copiez plutôt le fichier.',
     skipped_one: '{{count}} fichier ignoré : pas du type de cette bibliothèque',
     skipped_other: '{{count}} fichiers ignorés : pas du type de cette bibliothèque',
     dropTitle: 'Déposez pour ajouter à {{name}}',

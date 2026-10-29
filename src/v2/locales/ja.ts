@@ -249,6 +249,8 @@ const messages: V2Messages = {
     cards: 'カード',
     list: 'リスト',
     uploadingCount: 'アップロード中 {{done}} / {{total}}',
+    pastedText: '新しいアイテムとして貼り付けました',
+    pasteFetchFailed: '貼り付けたリンクを取得できませんでした。ファイル自体をコピーしてください',
     skipped_one: '{{count}} 件のファイルをスキップしました（このライブラリの種類ではありません）',
     skipped_other: '{{count}} 件のファイルをスキップしました（このライブラリの種類ではありません）',
     dropTitle: 'ドロップして {{name}} に追加',

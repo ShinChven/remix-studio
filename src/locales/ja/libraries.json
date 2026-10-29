@@ -8,6 +8,7 @@
     "allLibraries": "すべてのライブラリ",
     "searchPlaceholder": "名前またはIDでライブラリを検索...",
     "newLibrary": "新規ライブラリ",
+    "typeAll": "すべて",
     "noResultsFound": "名称またはIDに一致するライブラリは見つかりませんでした。",
     "new": "新規",
     "noLibraries": {

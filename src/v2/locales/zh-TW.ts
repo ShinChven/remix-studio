@@ -249,6 +249,8 @@ const messages: V2Messages = {
     cards: '卡片',
     list: '清單',
     uploadingCount: '正在上傳 {{done}}/{{total}}',
+    pastedText: '已貼上為新項目',
+    pasteFetchFailed: '無法取得貼上的連結，請直接複製檔案',
     skipped_one: '已略過 {{count}} 個檔案：不是此資源庫的類型',
     skipped_other: '已略過 {{count}} 個檔案：不是此資源庫的類型',
     dropTitle: '放開即可加入 {{name}}',

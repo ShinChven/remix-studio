@@ -1,8 +1,18 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Provider } from '../../../types';
-import { PageHero, type PageHeroStat } from '../../ui/PageHero';
+import type { PageHeroStat } from '../../ui/PageHero';
+import { ShowcaseHero } from '../../ui/ShowcaseHero';
+import { ProviderMark } from './ProviderMark';
 import { activeJobCount, projectCount, providerHasCredentials } from './providerMeta';
+
+/** The connected services, one per service: ready before missing a key, busiest first. */
+function connectedTypes(providers: Provider[]) {
+  const ranked = [...providers].sort(
+    (a, b) => Number(providerHasCredentials(b)) - Number(providerHasCredentials(a)) || activeJobCount(b) - activeJobCount(a) || projectCount(b) - projectCount(a),
+  );
+  return [...new Set(ranked.map((provider) => provider.type))];
+}
 
 export interface ProvidersHeroProps {
   /** Every provider; null until they have loaded. */
@@ -10,7 +20,7 @@ export interface ProvidersHeroProps {
   actions: ReactNode;
 }
 
-/** The page's header: how many services are connected, ready and busy. */
+/** The page's header: how many services are connected, ready and busy, and the marks of the main ones. */
 export function ProvidersHero({ providers, actions }: ProvidersHeroProps) {
   const { t } = useTranslation();
   const all = providers ?? [];
@@ -28,5 +38,18 @@ export function ProvidersHero({ providers, actions }: ProvidersHeroProps) {
     if (projects > 0) stats.push({ key: 'projects', icon: 'folder', value: projects.toLocaleString(), label: t('v2.providers.statProjects', { count: projects }) });
   }
 
-  return <PageHero icon="key" shape="gem" title={t('providers.title')} description={t('v2.providers.description')} stats={stats} actions={actions} />;
+  return (
+    <ShowcaseHero
+      tone="secondary"
+      icon="key"
+      shape="gem"
+      backdrop="soft-boom"
+      kicker={t('v2.shell.sections.manage')}
+      title={t('providers.title')}
+      description={t('v2.providers.description')}
+      stats={stats}
+      actions={actions}
+      fan={connectedTypes(all).slice(0, 3).map((type, index) => <ProviderMark key={type} type={type} size={index === 0 ? 96 : 72} />)}
+    />
+  );
 }
