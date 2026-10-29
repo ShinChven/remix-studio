@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UserSummary } from '../../../types';
-import { PageHero, type PageHeroStat } from '../../ui/PageHero';
+import type { PageHeroStat } from '../../ui/PageHero';
+import { ShowcaseHero } from '../../ui/ShowcaseHero';
+import { UserAvatar } from './UserAvatar';
 
 export interface UsersOverview {
   total: number;
@@ -12,7 +14,7 @@ export interface UsersOverview {
   newest: UserSummary[];
 }
 
-/** The page's header: the numbers that matter to an admin and the actions. */
+/** The page's header: the numbers that matter to an admin, the actions, and the newest members. */
 export function UsersHero({ overview, actions }: { overview: UsersOverview | null; actions: ReactNode }) {
   const { t } = useTranslation();
 
@@ -24,5 +26,17 @@ export function UsersHero({ overview, actions }: { overview: UsersOverview | nul
     stats.push({ key: 'admins', icon: 'shield_person', value: overview.admins.toLocaleString(), label: t('v2.users.statAdmins', { count: overview.admins }) });
   }
 
-  return <PageHero icon="shield_person" shape="cookie-9" title={t('v2.users.title')} description={t('adminUsers.description')} stats={stats} actions={actions} />;
+  return (
+    <ShowcaseHero
+      icon="shield_person"
+      shape="cookie-9"
+      backdrop="clover-8"
+      kicker={t('v2.shell.sections.manage')}
+      title={t('v2.users.title')}
+      description={t('adminUsers.description')}
+      stats={stats}
+      actions={actions}
+      fan={overview?.newest.slice(0, 3).map((user, index) => <UserAvatar key={user.id} user={user} size={index === 0 ? 96 : 72} className="v2-users-face" />)}
+    />
+  );
 }
