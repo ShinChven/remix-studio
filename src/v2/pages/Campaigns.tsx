@@ -8,18 +8,22 @@ import { Button, Icon, IconButton, LinearProgress, Text } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { PostingTrendChart, lastNDaysRange } from '../components/campaigns/PostingTrendChart';
 import { fallbackExternalUrl } from '../lib/platform';
-import { ActionMenu } from '../ui/ActionMenu';
+import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EntityList, EntityRow } from '../ui/EntityList';
+import { useViewPref } from '../lib/viewPrefs';
 import { MediaCard } from '../ui/MediaCard';
 import { EmptyState, Page, Section } from '../ui/Page';
 import { PageHero } from '../ui/PageHero';
 import { Pagination } from '../ui/Pagination';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
-import { CardGrid, ListToolbar, MobileFab } from '../ui/Toolbar';
+import { CardGrid, ListToolbar, MobileFab, Segmented } from '../ui/Toolbar';
 import { useToast } from '../ui/useToast';
 
 type CampaignStatus = 'Active' | 'Inactive';
+const LAYOUTS = ['cards', 'list'] as const;
+type Layout = (typeof LAYOUTS)[number];
 
 interface CampaignCardModel {
   id: string;
@@ -72,6 +76,7 @@ export function Campaigns() {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<CampaignCardModel | null>(null);
   const [search, setSearch] = useState(searchParams.get('q') || '');
+  const [layout, setLayout] = useViewPref<Layout>('v2.campaigns.layout', 'cards', LAYOUTS);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -170,6 +175,12 @@ export function Campaigns() {
     }
   };
 
+  const campaignMenu = (c: CampaignCardModel): ActionMenuItem[] => [
+    { key: 'edit', label: t('menu.edit'), icon: 'edit', href: `/campaigns/edit/${c.id}` },
+    { key: 'status', label: c.status === 'Active' ? t('menu.pause') : t('menu.resume'), icon: c.status === 'Active' ? 'pause' : 'play_arrow', onSelect: () => void toggleStatus(c) },
+    { key: 'delete', label: t('menu.delete'), icon: 'delete', danger: true, divider: true, onSelect: () => setDeleteTarget(c) },
+  ];
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const campaignIdOf = (post: any) => post.campaignId || post.campaign?.id;
 
@@ -195,6 +206,15 @@ export function Campaigns() {
         <section className="flex min-w-0 flex-col gap-3">
           <ListToolbar title={t('allCampaigns')} icon="campaign" count={total}>
             <SearchField value={search} onChange={setSearch} placeholder={t('searchPlaceholder')} />
+            <Segmented<Layout>
+              aria-label={t('v2.library.layout')}
+              value={layout}
+              onChange={setLayout}
+              options={[
+                { value: 'cards', label: t('v2.library.cards'), icon: 'grid_view' },
+                { value: 'list', label: t('v2.library.list'), icon: 'view_agenda' },
+              ]}
+            />
           </ListToolbar>
           {loading ? (
             <CardGrid min={300}>
@@ -215,7 +235,7 @@ export function Campaigns() {
                 )
               }
             />
-          ) : (
+          ) : layout === 'cards' ? (
             <CardGrid min={300}>
               {campaigns.map((c) => {
                 const done = Math.min(c.postedPosts, c.totalPosts);
@@ -254,17 +274,72 @@ export function Campaigns() {
                       <ActionMenu
                         label={t('v2.common.more')}
                         variant="tonal"
-                        items={[
-                          { key: 'edit', label: t('menu.edit'), icon: 'edit', href: `/campaigns/edit/${c.id}` },
-                          { key: 'status', label: c.status === 'Active' ? t('menu.pause') : t('menu.resume'), icon: c.status === 'Active' ? 'pause' : 'play_arrow', onSelect: () => void toggleStatus(c) },
-                          { key: 'delete', label: t('menu.delete'), icon: 'delete', danger: true, divider: true, onSelect: () => setDeleteTarget(c) },
-                        ]}
+                        items={campaignMenu(c)}
                       />
                     }
                   />
                 );
               })}
             </CardGrid>
+          ) : (
+            <div className="v2-erow-surface">
+              <EntityList>
+                {campaigns.map((c) => {
+                  const done = Math.min(c.postedPosts, c.totalPosts);
+                  const active = c.status === 'Active';
+                  return (
+                    <EntityRow
+                      key={c.id}
+                      lead={() =>
+                        c.thumbnail ? (
+                          <span className="v2-erow-thumb">
+                            <img src={c.thumbnail} alt="" loading="lazy" decoding="async" />
+                          </span>
+                        ) : (
+                          <span className="v2-erow-thumb v2-erow-thumb--empty">
+                            <Icon name="campaign" size={22} aria-hidden />
+                          </span>
+                        )
+                      }
+                      title={c.name}
+                      badges={<StatusPill tone={active ? 'success' : 'neutral'}>{active ? t('status.active') : t('status.paused')}</StatusPill>}
+                      subtitle={c.description}
+                      cells={[
+                        {
+                          key: 'posts',
+                          width: '150px',
+                          narrow: 'below',
+                          children: (
+                            <span className="v2-campaign-progress">
+                              <Text as="span" variant="label-medium">
+                                {c.totalPosts > 0 ? `${done}/${c.totalPosts} posts` : t('status.setup')}
+                              </Text>
+                              {c.totalPosts > 0 && <LinearProgress value={done / c.totalPosts} max={1} aria-label={`${done}/${c.totalPosts}`} />}
+                            </span>
+                          ),
+                        },
+                        {
+                          key: 'dates',
+                          width: '200px',
+                          shrink: true,
+                          narrow: 'below',
+                          children: (
+                            <span className="v2-erow__value">
+                              <Icon name="event" size={16} aria-hidden />
+                              <span className="truncate">{c.startDate === c.endDate ? c.startDate : `${c.startDate} – ${c.endDate}`}</span>
+                            </span>
+                          ),
+                        },
+                      ]}
+                      onOpen={() => navigate(`/campaigns/${c.id}`)}
+                      ariaLabel={c.name}
+                      menuLabel={t('v2.common.more')}
+                      menuItems={campaignMenu(c)}
+                    />
+                  );
+                })}
+              </EntityList>
+            </div>
           )}
           {!loading && totalPages > 1 && (
             <div className="v2-paged-footer">

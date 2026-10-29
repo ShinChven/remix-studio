@@ -23,8 +23,10 @@ import {
 } from '../components/providers/providerMeta';
 import { ServiceGallery } from '../components/providers/ServiceGallery';
 import { clampParallel, useParallelSaver } from '../components/providers/useParallelSaver';
+import { useRangeSelection } from '../lib/useRangeSelection';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EntityList } from '../ui/EntityList';
 import { HoverMenuButton } from '../ui/HoverMenuButton';
 import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
 import { PromptDialog } from '../ui/PromptDialog';
@@ -127,29 +129,8 @@ export function Providers() {
   const shown = useMemo(() => scoped.filter((provider) => view === 'all' || providerKinds(provider).includes(view)).sort(PROVIDER_SORTS[sort].compare), [scoped, view, sort]);
 
   // Selection covers the providers in view; it clears whenever the list changes.
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const anchorId = useRef<string | null>(null);
-  useEffect(() => {
-    setSelected(new Set());
-    anchorId.current = null;
-  }, [q, view, status, sort]);
+  const { selected, toggle, selectAll, clear: clearSelection } = useRangeSelection(shown, (provider) => provider.id, [q, view, status, sort]);
   const selectedProviders = useMemo(() => shown.filter((provider) => selected.has(provider.id)), [shown, selected]);
-  const clearSelection = useCallback(() => setSelected(new Set()), []);
-
-  const toggle = (id: string, range: boolean) => {
-    setSelected((current) => {
-      const next = new Set(current);
-      const from = anchorId.current ? shown.findIndex((provider) => provider.id === anchorId.current) : -1;
-      const to = shown.findIndex((provider) => provider.id === id);
-      if (range && from >= 0 && to >= 0) {
-        const [start, end] = from < to ? [from, to] : [to, from];
-        for (const provider of shown.slice(start, end + 1)) next.add(provider.id);
-      } else if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-    anchorId.current = id;
-  };
 
   const [pendingDelete, setPendingDelete] = useState<Provider[] | null>(null);
   const [renameTarget, setRenameTarget] = useState<Provider | null>(null);
@@ -306,7 +287,7 @@ export function Providers() {
             nav={nav}
             totalCount={shown.length}
             selectedCount={selectedProviders.length}
-            onToggleSelectAll={() => setSelected(new Set(shown.map((provider) => provider.id)))}
+            onToggleSelectAll={selectAll}
             onClearSelection={clearSelection}
             isLoading={loading}
             tools={tools}
@@ -346,7 +327,7 @@ export function Providers() {
             }
           />
         ) : (
-          <ul className="v2-provider-list" data-selecting={selected.size > 0 ? '' : undefined} aria-busy={loading}>
+          <EntityList selecting={selected.size > 0} busy={loading}>
             {shown.map((provider) => (
               <ProviderItem
                 key={provider.id}
@@ -359,7 +340,7 @@ export function Providers() {
                 menuItems={itemMenu(provider)}
               />
             ))}
-          </ul>
+          </EntityList>
         )}
       </section>
 

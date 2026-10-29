@@ -5,16 +5,20 @@ import { deleteLibrary, duplicateLibrary, fetchLibraries, fetchLibraryReferences
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { Button, Text, useSnackbar } from '../../m3';
 import type { Library } from '../../types';
-import { LibraryCard } from '../components/EntityCards';
+import { LibraryCard, LibraryRow } from '../components/EntityCards';
+import { useViewPref } from '../lib/viewPrefs';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EntityList } from '../ui/EntityList';
 import { EmptyState, LoadingState, Page } from '../ui/Page';
 import { PageHero } from '../ui/PageHero';
 import { Pagination } from '../ui/Pagination';
 import { PromptDialog } from '../ui/PromptDialog';
 import { SearchField } from '../ui/SearchField';
-import { CardGrid, ListToolbar, MobileFab } from '../ui/Toolbar';
+import { CardGrid, ListToolbar, MobileFab, Segmented } from '../ui/Toolbar';
 
 const MAX_PINNED_LIBRARIES = 6;
+const LAYOUTS = ['cards', 'list'] as const;
+type Layout = (typeof LAYOUTS)[number];
 
 export function Libraries() {
   const { t } = useTranslation();
@@ -31,6 +35,7 @@ export function Libraries() {
   const [toDelete, setToDelete] = useState<Library | null>(null);
   const [checkingRefs, setCheckingRefs] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState(q);
+  const [layout, setLayout] = useViewPref<Layout>('v2.libraries.layout', 'cards', LAYOUTS);
   const loadSeq = useRef(0);
 
   const loadLibraries = async (silent = false) => {
@@ -80,6 +85,11 @@ export function Libraries() {
     }
   };
 
+  const startAssistantChat = (l: Library) => {
+    localStorage.removeItem('assistant_last_conversation');
+    navigate('/assistant', { state: { draftBoundContexts: [{ id: l.id, name: l.name, type: 'library', subType: l.type || 'text' }] } });
+  };
+
   const handleDeleteClick = async (lib: Library) => {
     setCheckingRefs(lib.id);
     try {
@@ -120,6 +130,15 @@ export function Libraries() {
             })
           }
         />
+        <Segmented<Layout>
+          aria-label={t('v2.library.layout')}
+          value={layout}
+          onChange={setLayout}
+          options={[
+            { value: 'cards', label: t('v2.library.cards'), icon: 'grid_view' },
+            { value: 'list', label: t('v2.library.list'), icon: 'view_agenda' },
+          ]}
+        />
       </ListToolbar>
 
       {isLoading ? (
@@ -128,22 +147,37 @@ export function Libraries() {
         <EmptyState icon="folder" shape="cookie-6" title={t('libraries.noLibraries.title')} description={q ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')} />
       ) : (
         <>
-          <CardGrid min={260}>
-            {libraries.map((lib) => (
-              <LibraryCard
-                key={lib.id}
-                library={lib}
-                isCheckingRefs={checkingRefs === lib.id}
-                onTogglePin={handleTogglePin}
-                onStartAssistantChat={(l) => {
-                  localStorage.removeItem('assistant_last_conversation');
-                  navigate('/assistant', { state: { draftBoundContexts: [{ id: l.id, name: l.name, type: 'library', subType: l.type || 'text' }] } });
-                }}
-                onDuplicate={setToDuplicate}
-                onDelete={handleDeleteClick}
-              />
-            ))}
-          </CardGrid>
+          {layout === 'cards' ? (
+            <CardGrid min={260}>
+              {libraries.map((lib) => (
+                <LibraryCard
+                  key={lib.id}
+                  library={lib}
+                  isCheckingRefs={checkingRefs === lib.id}
+                  onTogglePin={handleTogglePin}
+                  onStartAssistantChat={startAssistantChat}
+                  onDuplicate={setToDuplicate}
+                  onDelete={handleDeleteClick}
+                />
+              ))}
+            </CardGrid>
+          ) : (
+            <div className="v2-erow-surface">
+              <EntityList>
+                {libraries.map((lib) => (
+                  <LibraryRow
+                    key={lib.id}
+                    library={lib}
+                    isCheckingRefs={checkingRefs === lib.id}
+                    onTogglePin={handleTogglePin}
+                    onStartAssistantChat={startAssistantChat}
+                    onDuplicate={setToDuplicate}
+                    onDelete={handleDeleteClick}
+                  />
+                ))}
+              </EntityList>
+            </div>
+          )}
           {pages > 1 && (
             <div className="v2-page-footer">
               <Pagination page={page} pages={pages} onPageChange={(p) => updateParams((next) => next.set('page', String(p)))} size="sm" />

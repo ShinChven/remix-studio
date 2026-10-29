@@ -1,23 +1,20 @@
-import { useState, type KeyboardEvent, type MouseEvent, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Checkbox, Icon, IconButton, Ripple, Text } from '../../../m3';
+import { Icon, IconButton } from '../../../m3';
 import type { Provider } from '../../../types';
 import { formatDateTime } from '../../lib/format';
-import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
+import type { ActionMenuItem } from '../../ui/ActionMenu';
+import { EntityRow, keepInside } from '../../ui/EntityList';
 import { kindMeta } from '../../ui/entityMeta';
 import { StatusPill } from '../../ui/Stat';
 import { relativeTime } from '../users/userMeta';
 import { ProviderMark } from './ProviderMark';
 import { activeJobCount, modelCounts, projectCount, providerHasCredentials, providerKinds, serviceMeta, urlHost } from './providerMeta';
 
-/** Clicks and keys inside a control stay there instead of opening the provider. */
-const keep = (event: SyntheticEvent) => event.stopPropagation();
-
 /** How many tasks the provider runs at once, stepped in place. */
 export function ParallelStepper({ value, onChange, name }: { value: number; onChange: (value: number) => void; name: string }) {
   const { t } = useTranslation();
   return (
-    <span className="v2-parallel" role="group" aria-label={t('v2.providers.parallelFor', { name })} onClick={keep} onKeyDown={keep}>
+    <span className="v2-parallel" role="group" aria-label={t('v2.providers.parallelFor', { name })} onClick={keepInside} onKeyDown={keepInside}>
       <IconButton icon="remove" size="xs" label={t('v2.providers.fewer')} disabled={value <= 1} onClick={() => onChange(value - 1)} />
       <span className="v2-parallel__value" aria-live="polite">
         {value}
@@ -70,70 +67,28 @@ export interface ProviderItemProps {
 /** One connected service: its mark and name, what it makes, how many tasks it runs at once, and how much it is used. */
 export function ProviderItem({ provider, selected, selecting, onToggleSelect, onOpen, onConcurrencyChange, menuItems }: ProviderItemProps) {
   const { t, i18n } = useTranslation();
-  const [active, setActive] = useState(false);
   const ready = providerHasCredentials(provider);
-  const projects = projectCount(provider);
   const running = activeJobCount(provider);
   const service = serviceMeta(provider.type);
   const keyMissing = provider.type === 'KlingAI' ? t('providers.providerCard.missingCredentials') : t('providers.providerCard.noKey');
 
-  const activate = (event: MouseEvent | KeyboardEvent) => {
-    if (selecting || event.metaKey || event.ctrlKey || event.shiftKey) onToggleSelect(event.shiftKey);
-    else onOpen();
-  };
-
   return (
-    <li
-      className="v2-provider m3-focus-ring"
-      data-selected={selected ? '' : undefined}
-      data-ready={ready ? '' : undefined}
-      role="button"
-      tabIndex={0}
-      aria-label={`${provider.name}, ${service.label}`}
-      onClick={activate}
-      onPointerEnter={() => setActive(true)}
-      onPointerLeave={() => setActive(false)}
-      onFocus={(event) => event.target === event.currentTarget && setActive(true)}
-      onBlur={(event) => event.target === event.currentTarget && setActive(false)}
-      onKeyDown={(event) => {
-        if (event.target !== event.currentTarget) return;
-        if (event.key === 'Enter') activate(event);
-        if (event.key === ' ') {
-          event.preventDefault();
-          onToggleSelect(event.shiftKey);
-        }
-      }}
-    >
-      <Ripple />
-      <span className="v2-provider__lead">
-        <span
-          className="v2-provider__check"
-          onClick={(event) => {
-            event.stopPropagation();
-            if (event.target instanceof HTMLInputElement) onToggleSelect(event.shiftKey);
-          }}
-        >
-          <Checkbox checked={selected} aria-label={t('v2.providers.selectProvider', { name: provider.name })} onChange={() => undefined} />
-        </span>
-        <ProviderMark type={provider.type} size={44} active={active} className="v2-provider__mark" />
-      </span>
-
-      <span className="v2-provider__identity">
-        <span className="v2-provider__name-line">
-          <Text as="span" variant="title-small" emphasized className="v2-provider__name">
-            {provider.name}
-          </Text>
-          {ready ? (
-            <span className="v2-provider__ready" title={provider.type === 'KlingAI' ? t('providers.providerCard.credentialsStored') : t('providers.providerCard.keyStored')}>
-              <Icon name="verified" size={16} filled aria-label={t('providers.providerCard.keyStored')} />
-            </span>
-          ) : (
-            <StatusPill tone="warning" icon="key_off" className="v2-provider__missing-pill">
-              {keyMissing}
-            </StatusPill>
-          )}
-        </span>
-        <Text as="span" variant="body-small" className="v2-provider__service">
+    <EntityRow
+      lead={(active) => <ProviderMark type={provider.type} size={44} active={active} />}
+      title={provider.name}
+      badges={
+        ready ? (
+          <span className="v2-provider__ready" title={provider.type === 'KlingAI' ? t('providers.providerCard.credentialsStored') : t('providers.providerCard.keyStored')}>
+            <Icon name="verified" size={16} filled aria-label={t('providers.providerCard.keyStored')} />
+          </span>
+        ) : (
+          <StatusPill tone="warning" icon="key_off">
+            {keyMissing}
+          </StatusPill>
+        )
+      }
+      subtitle={
+        <span className="v2-provider__service">
           <span>{service.label}</span>
           {provider.apiUrl && (
             <span className="v2-provider__host" title={provider.apiUrl}>
@@ -141,47 +96,69 @@ export function ProviderItem({ provider, selected, selecting, onToggleSelect, on
               {urlHost(provider.apiUrl)}
             </span>
           )}
-        </Text>
-      </span>
-
-      <KindChips provider={provider} />
-
-      {/* Each figure is marked with an icon; its label stays for screen readers and the tooltip. */}
-      <span className="v2-provider__stats">
-        <span className="v2-provider__stat v2-provider__stat--parallel" title={t('v2.providers.parallel')}>
-          <span className="v2-provider__stat-label">{t('v2.providers.parallel')}</span>
-          <span className="v2-provider__stat-value">
-            <Icon name="speed" size={16} className="v2-provider__stat-icon" aria-hidden />
-            <ParallelStepper value={provider.concurrency || 1} onChange={onConcurrencyChange} name={provider.name} />
-          </span>
         </span>
-        <span className="v2-provider__stat v2-provider__stat--projects" title={t('v2.providers.projects')}>
-          <span className="v2-provider__stat-label">{t('v2.providers.projects')}</span>
-          <span className="v2-provider__stat-value">
-            <Icon name="folder" size={16} className="v2-provider__stat-icon" aria-hidden />
-            {projects.toLocaleString()}
-          </span>
-        </span>
-        <span className="v2-provider__stat v2-provider__stat--running" data-active={running > 0 ? '' : undefined} title={t('v2.providers.running')}>
-          <span className="v2-provider__stat-label">{t('v2.providers.running')}</span>
-          <span className="v2-provider__stat-value">
-            {running > 0 ? <span className="v2-provider__pulse" aria-hidden /> : <Icon name="progress_activity" size={16} className="v2-provider__stat-icon" aria-hidden />}
-            {running.toLocaleString()}
-          </span>
-        </span>
-        <span className="v2-provider__stat v2-provider__stat--added" title={formatDateTime(provider.createdAt)}>
-          <span className="v2-provider__stat-label">{t('v2.providers.added')}</span>
-          <span className="v2-provider__stat-value">
-            <Icon name="event" size={16} className="v2-provider__stat-icon" aria-hidden />
-            {relativeTime(provider.createdAt, i18n.language)}
-          </span>
-        </span>
-      </span>
-
-      <span className="v2-provider__menu" onClick={keep} onKeyDown={keep}>
-        <ActionMenu label={t('v2.providers.actionsFor', { name: provider.name })} items={menuItems} openOnHover />
-      </span>
-    </li>
+      }
+      cells={[
+        { key: 'kinds', width: '200px', shrink: true, narrow: 'below', children: <KindChips provider={provider} /> },
+        {
+          key: 'parallel',
+          width: '116px',
+          label: t('v2.providers.parallel'),
+          children: (
+            <span className="v2-erow__value">
+              <Icon name="speed" size={16} aria-hidden />
+              <ParallelStepper value={provider.concurrency || 1} onChange={onConcurrencyChange} name={provider.name} />
+            </span>
+          ),
+        },
+        {
+          key: 'projects',
+          width: '64px',
+          label: t('v2.providers.projects'),
+          drop: 3,
+          children: (
+            <span className="v2-erow__value">
+              <Icon name="folder" size={16} aria-hidden />
+              {projectCount(provider).toLocaleString()}
+            </span>
+          ),
+        },
+        {
+          key: 'running',
+          width: '64px',
+          label: t('v2.providers.running'),
+          drop: 5,
+          className: 'v2-provider-running',
+          children: (
+            <span className="v2-erow__value" data-active={running > 0 ? '' : undefined}>
+              {running > 0 ? <span className="v2-provider__pulse" aria-hidden /> : <Icon name="progress_activity" size={16} aria-hidden />}
+              {running.toLocaleString()}
+            </span>
+          ),
+        },
+        {
+          key: 'added',
+          width: '112px',
+          label: t('v2.providers.added'),
+          title: formatDateTime(provider.createdAt),
+          drop: 1,
+          className: 'v2-provider-added',
+          children: (
+            <span className="v2-erow__value">
+              <Icon name="event" size={16} aria-hidden />
+              {relativeTime(provider.createdAt, i18n.language)}
+            </span>
+          ),
+        },
+      ]}
+      selected={selected}
+      selecting={selecting}
+      onToggleSelect={onToggleSelect}
+      onOpen={onOpen}
+      ariaLabel={`${provider.name}, ${service.label}`}
+      selectLabel={t('v2.providers.selectProvider', { name: provider.name })}
+      menuLabel={t('v2.providers.actionsFor', { name: provider.name })}
+      menuItems={menuItems}
+    />
   );
 }
-

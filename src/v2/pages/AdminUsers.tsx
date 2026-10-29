@@ -12,8 +12,10 @@ import { UserSheet } from '../components/users/UserSheet';
 import { UsersHero, type UsersOverview } from '../components/users/UsersHero';
 import { STORAGE_TIERS, tierOf } from '../components/users/userMeta';
 import { formatBytes } from '../lib/format';
+import { useRangeSelection } from '../lib/useRangeSelection';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { EntityList } from '../ui/EntityList';
 import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
 import { SearchField } from '../ui/SearchField';
@@ -169,29 +171,8 @@ export function AdminUsers() {
   const shownDetail = detail && detail.id === openId ? detail : null;
 
   // Selection covers the accounts in view; it clears whenever the list changes.
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const anchorId = useRef<string | null>(null);
-  useEffect(() => {
-    setSelected(new Set());
-    anchorId.current = null;
-  }, [q, role, view, page, pageSize, sort]);
+  const { selected, toggle, selectAll, clear: clearSelection } = useRangeSelection(users, (user) => user.id, [q, role, view, page, pageSize, sort]);
   const selectedUsers = useMemo(() => users.filter((user) => selected.has(user.id)), [users, selected]);
-  const clearSelection = useCallback(() => setSelected(new Set()), []);
-
-  const toggle = (id: string, range: boolean) => {
-    setSelected((current) => {
-      const next = new Set(current);
-      const from = anchorId.current ? users.findIndex((user) => user.id === anchorId.current) : -1;
-      const to = users.findIndex((user) => user.id === id);
-      if (range && from >= 0 && to >= 0) {
-        const [start, end] = from < to ? [from, to] : [to, from];
-        for (const user of users.slice(start, end + 1)) next.add(user.id);
-      } else if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-    anchorId.current = id;
-  };
 
   const [pending, setPending] = useState<Pending | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -432,7 +413,7 @@ export function AdminUsers() {
           nav={nav}
           totalCount={users.length}
           selectedCount={selectedUsers.length}
-          onToggleSelectAll={() => setSelected(new Set(users.map((user) => user.id)))}
+          onToggleSelectAll={selectAll}
           onClearSelection={clearSelection}
           isLoading={loading && loaded}
           tools={tools}
@@ -478,7 +459,7 @@ export function AdminUsers() {
             }
           />
         ) : (
-          <ul className="v2-user-list" data-loading={loading ? '' : undefined} aria-busy={loading}>
+          <EntityList selecting={selected.size > 0} busy={loading}>
             {users.map((user) => (
               <UserRow
                 key={user.id}
@@ -491,7 +472,7 @@ export function AdminUsers() {
                 menuItems={rowMenu(user)}
               />
             ))}
-          </ul>
+          </EntityList>
         )}
 
         {loaded && total > 0 && (
