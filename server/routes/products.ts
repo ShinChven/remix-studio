@@ -137,19 +137,18 @@ export function createProductsRouter(prisma: PrismaClient, deliveryManager: Deli
         taxonomyId: parsed.taxonomyId,
         tags: parsed.tags ?? [],
         coverItems: parsed.coverItems ?? [],
+        publish: parsed.publishImmediately,
         status: 'draft',
       },
     });
 
-    if (parsed.publishImmediately) {
-      const deliveryTaskId = await deliveryManager.startDelivery(user.userId, exportTask.id, {
-        destination: 'gumroad',
-        productId: product.id,
-      });
-      return c.json({ product, deliveryTaskId }, 202);
-    }
-
-    return c.json({ product }, 201);
+    // The file goes up either way; `publish` only decides whether the Gumroad
+    // product is enabled at the end.
+    const deliveryTaskId = await deliveryManager.startDelivery(user.userId, exportTask.id, {
+      destination: 'gumroad',
+      productId: product.id,
+    });
+    return c.json({ product, deliveryTaskId }, 202);
   });
 
   // Manually trigger publish for an existing product (e.g. retry)

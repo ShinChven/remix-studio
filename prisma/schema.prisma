@@ -482,6 +482,7 @@ model Product {
   taxonomyId       String?
   tags             Json? // Array of tag strings
   coverItems       Json? // Array of { albumItemId, useRaw, watermarkSettings? }
+  publish          Boolean  @default(true) // Enable on Gumroad after upload; false leaves it unpublished there
   gumroadProductId String?
   gumroadFileUrl   String?  @db.Text
   gumroadShortUrl  String?

@@ -555,22 +555,25 @@ export class DeliveryManager {
       }
     }
 
-    // ── 5. Publish ───────────────────────────────────────────────────────
-    await this.repository.saveDeliveryTask(userId, taskId, {
-      ...task,
-      status: 'processing',
-      phase: 'publishing',
-      totalBytes,
-      bytesTransferred: uploaded,
-    });
-    const enabled = await gumroad.enableProduct(accessToken, created.id);
-    const externalUrl = enabled.short_url ?? null;
-    console.log(`[Gumroad] enabled product ${created.id} short_url=${externalUrl}`);
+    // ── 5. Publish (skipped when the product was created unpublished) ────
+    let externalUrl = created.short_url ?? null;
+    if (product.publish) {
+      await this.repository.saveDeliveryTask(userId, taskId, {
+        ...task,
+        status: 'processing',
+        phase: 'publishing',
+        totalBytes,
+        bytesTransferred: uploaded,
+      });
+      const enabled = await gumroad.enableProduct(accessToken, created.id);
+      externalUrl = enabled.short_url ?? null;
+      console.log(`[Gumroad] enabled product ${created.id} short_url=${externalUrl}`);
+    }
 
     await this.prisma.product.update({
       where: { id: product.id },
       data: {
-        status: 'published',
+        status: product.publish ? 'published' : 'draft',
         gumroadShortUrl: externalUrl,
       },
     });
@@ -594,7 +597,7 @@ export class DeliveryManager {
       targetUrl: externalUrl,
     }).catch((e) => console.warn('[DeliveryManager] Failed to record upload history:', e));
 
-    console.log(`[DeliveryManager] ${taskId} published Gumroad product ${created.id}`);
+    console.log(`[DeliveryManager] ${taskId} ${product.publish ? 'published' : 'uploaded unpublished'} Gumroad product ${created.id}`);
   }
 
   private async reap(): Promise<void> {
