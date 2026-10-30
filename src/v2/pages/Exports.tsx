@@ -16,13 +16,14 @@ import {
 import { Button, Checkbox, Dialog, Icon, IconButton, LinearProgress, Text, useSnackbar } from '../../m3';
 import type { DeliveryStatus, ExportTask } from '../../types';
 import { ExportReleaseHistoryDialog } from '../components/exports/ExportReleaseHistoryDialog';
+import { ExportsHero } from '../components/exports/ExportsHero';
 import { driveIcon } from '../components/exports/releaseMeta';
 import { formatDateTime } from '../lib/format';
 import { useRangeSelection } from '../lib/useRangeSelection';
 import { ChoiceTiles } from '../ui/ChoiceTiles';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EntityList, EntityRow } from '../ui/EntityList';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
+import { EmptyState, LoadingState, Page } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
 import { StatusPill } from '../ui/Stat';
 
@@ -272,10 +273,9 @@ export function Exports() {
 
   return (
     <Page>
-      <PageHeader
-        size="large"
-        title={t('exports.title')}
-        description={t('exports.description')}
+      <ExportsHero
+        total={loading ? null : total}
+        active={activeCount}
         actions={
           <>
             <Button variant="tonal" icon="rocket_launch" href="/exports/releases">
@@ -286,16 +286,7 @@ export function Exports() {
             </Button>
           </>
         }
-      >
-        <div className="flex flex-wrap gap-2">
-          <StatusPill icon="list">
-            {total} {t('exports.stats.total')}
-          </StatusPill>
-          <StatusPill tone={activeCount > 0 ? 'primary' : 'neutral'} icon={activeCount > 0 ? 'progress_activity' : 'check_circle'}>
-            {activeCount} {t('exports.stats.active')}
-          </StatusPill>
-        </div>
-      </PageHeader>
+      />
 
       {!loading && exports.length === 0 ? (
         <EmptyState

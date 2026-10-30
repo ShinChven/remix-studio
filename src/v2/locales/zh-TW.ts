@@ -514,16 +514,6 @@ const messages: V2Messages = {
       deleteMessage: '請求將不再使用 {{id}}。設為此變體的專案需要換一個模型。',
     },
   },
-  projects: {
-    statProjects_one: '個專案',
-    statProjects_other: '個專案',
-    statArchived_one: '已封存',
-    statArchived_other: '已封存',
-    statRunning: '執行中',
-    statQueued: '排隊中',
-    statFailed: '失敗',
-    newest: '最新專案',
-  },
 };
 
 export default messages;
