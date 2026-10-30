@@ -1461,6 +1461,8 @@
 .v2-number-field--stepper .m3-field__trailing { padding-inline-end: 4px; }
 
 /* ---------- Exports ---------- */
+.v2-exports { display: flex; flex-direction: column; gap: 8px; }
+.v2-page.v2-exports { padding-top: var(--md-sys-measurement-space200); }
 .v2-task {
   display: flex;
   flex-wrap: wrap;
