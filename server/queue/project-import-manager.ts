@@ -447,6 +447,8 @@ export class ProjectImportManager {
         // The originating jobs aren't carried over, so the album item stands
         // alone; keeping a dangling job id would only confuse "reuse".
         jobId: '',
+        // Nor are the libraries, so the source items would point at nothing.
+        sourceItems: undefined,
         imageUrl: this.remapValue(item.imageUrl, keyMap) ?? '',
         thumbnailUrl: this.remapValue(item.thumbnailUrl, keyMap),
         optimizedUrl: this.remapValue(item.optimizedUrl, keyMap),

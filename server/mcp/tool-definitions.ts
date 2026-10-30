@@ -645,6 +645,8 @@ function toToolAlbumItem<Text extends object>(item: AlbumItem, text: Text) {
     filename: item.imageUrl ? (basenameFromKey(item.imageUrl) || null) : null,
     ...text,
     tags: item.tags ?? [],
+    // The library items its job was drafted from: get_library_item reads each.
+    ...(item.sourceItems ? { sourceItems: item.sourceItems } : {}),
     storageKey: item.imageUrl || null,
     thumbnailKey: item.thumbnailUrl ?? null,
     optimizedKey: item.optimizedUrl ?? null,

@@ -85,6 +85,7 @@ export class ImageProcessor {
         jobId: job.id,
         prompt: job.prompt,
         tags: job.tags,
+        sourceItems: job.sourceItems,
         imageUrl: image.imageUrl,
         thumbnailUrl: image.thumbnailUrl,
         optimizedUrl: image.optimizedUrl,

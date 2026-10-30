@@ -29,6 +29,7 @@ export class TextProcessor {
         textContent: text,
         imageContexts: job.imageContexts,
         tags: job.tags,
+        sourceItems: job.sourceItems,
         imageUrl: '', // Not used for text generation
         providerId: providerId || job.providerId,
         modelConfigId: modelConfigId || job.modelConfigId,
