@@ -104,6 +104,7 @@ export class VideoProcessor {
         jobId: job.id,
         prompt: job.prompt,
         tags: job.tags,
+        sourceItems: job.sourceItems,
         imageUrl: videoKey,
         thumbnailUrl: thumbKey,
         optimizedUrl: optKey,

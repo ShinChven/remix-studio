@@ -186,6 +186,7 @@ export async function composeDraftJobs(
         format: project.format || 'png',
         filename: filename(combo),
         tags: combo.tags,
+        sourceItems: combo.sourceItems,
         workflowSnapshot: workflow,
         createdAt: now + index,
       };
@@ -212,6 +213,7 @@ export async function composeDraftJobs(
       ...civitaiDraftFields(project.civitaiConfig, combo, imageFormat),
       filename: filename(combo),
       tags: combo.tags,
+      sourceItems: combo.sourceItems,
       workflowSnapshot: workflow,
       createdAt: now + index,
     }));
@@ -231,6 +233,7 @@ export async function composeDraftJobs(
     ...settings,
     filename: filename(combo),
     tags: combo.tags,
+    sourceItems: combo.sourceItems,
     workflowSnapshot: workflow,
     createdAt: now + index,
   }));

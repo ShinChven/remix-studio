@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
-import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput, CivitaiGenerationConfig } from '../../src/types';
+import { Project, ProjectStatus, Job, WorkflowItem, AlbumItem, TrashItem, ComfyBinding, ComfyJobInput, CivitaiGenerationConfig, SourceLibraryItem } from '../../src/types';
 import { civitaiModelItemValue, sanitizeCivitaiBinding, sanitizeCivitaiConfig } from '../../src/lib/civitai';
 import { stripToKey } from '../utils/storage-keys';
 import type { AlbumItemSort } from '../../src/types';
@@ -77,6 +77,26 @@ function createStorageKeyRemapper(keyMap: Record<string, string>, bucket?: strin
 /** A JSON column read back from one row, in the shape a create on another row takes. */
 function copyJsonColumn(value: Prisma.JsonValue | null): Prisma.InputJsonValue | typeof Prisma.DbNull {
   return value === null ? Prisma.DbNull : (value as Prisma.InputJsonValue);
+}
+
+/**
+ * Keep the well-formed `{ libraryId, itemId }` entries of a stored or sent
+ * source list, each item once; none left reads as no sources.
+ */
+export function normalizeSourceItems(value: unknown): SourceLibraryItem[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = new Map<string, SourceLibraryItem>();
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue;
+    const { libraryId, itemId } = entry as Record<string, unknown>;
+    if (typeof libraryId !== 'string' || typeof itemId !== 'string' || !libraryId || !itemId) continue;
+    if (!items.has(itemId)) items.set(itemId, { libraryId, itemId });
+  }
+  return items.size > 0 ? Array.from(items.values()) : undefined;
+}
+
+function sourceItemsColumn(value: unknown): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  return (normalizeSourceItems(value) as unknown as Prisma.InputJsonValue | undefined) ?? Prisma.DbNull;
 }
 
 /** An album item carries at most this many tags, each at most this long. */
@@ -402,6 +422,7 @@ export class ProjectRepository {
       background: (job as any).background ?? null,
       filename: job.filename ?? null,
       tags: job.tags ?? null,
+      sourceItems: sourceItemsColumn(job.sourceItems),
       providerId: job.providerId ?? null,
       workflowSnapshot: job.workflowSnapshot ?? null,
       comfyInputs: job.comfyInputs ?? null,
@@ -752,6 +773,7 @@ export class ProjectRepository {
       videoContexts: this.toNullableJsonArray(item.videoContexts),
       audioContexts: this.toNullableJsonArray(item.audioContexts),
       tags: item.tags != null ? normalizeAlbumTags(item.tags) : Prisma.DbNull,
+      sourceItems: sourceItemsColumn(item.sourceItems),
       imageUrl: item.imageUrl ?? null,
       thumbnailUrl: item.thumbnailUrl ?? null,
       optimizedUrl: item.optimizedUrl ?? null,
@@ -1043,6 +1065,7 @@ export class ProjectRepository {
       comfyInputs: copyJsonColumn(job.comfyInputs),
       civitaiParams: copyJsonColumn(job.civitaiParams),
       tags: copyJsonColumn(job.tags),
+      sourceItems: copyJsonColumn(job.sourceItems),
     }));
 
     const itemRows: Prisma.AlbumItemCreateManyInput[] = items.map(({ id, ...item }) => ({
@@ -1057,6 +1080,7 @@ export class ProjectRepository {
       videoContexts: remapKeyList(item.videoContexts),
       audioContexts: remapKeyList(item.audioContexts),
       tags: copyJsonColumn(item.tags),
+      sourceItems: copyJsonColumn(item.sourceItems),
       civitaiParams: copyJsonColumn(item.civitaiParams),
     }));
 
@@ -1098,6 +1122,7 @@ export class ProjectRepository {
         videoContexts: this.toNullableJsonArray((item as any).videoContexts as string[] | null | undefined),
         audioContexts: this.toNullableJsonArray((item as any).audioContexts as string[] | null | undefined),
         tags: this.toNullableJsonArray((item as any).tags as string[] | null | undefined),
+        sourceItems: sourceItemsColumn(item.sourceItems),
         imageUrl: item.imageUrl ?? null,
         thumbnailUrl: item.thumbnailUrl ?? null,
         optimizedUrl: item.optimizedUrl ?? null,
@@ -1154,6 +1179,7 @@ export class ProjectRepository {
         videoContexts: this.toNullableJsonArray((trashItem as any).videoContexts as string[] | null | undefined),
         audioContexts: this.toNullableJsonArray((trashItem as any).audioContexts as string[] | null | undefined),
         tags: this.toNullableJsonArray((trashItem as any).tags as string[] | null | undefined),
+        sourceItems: sourceItemsColumn(trashItem.sourceItems),
         imageUrl: trashItem.imageUrl ?? null,
         thumbnailUrl: trashItem.thumbnailUrl ?? null,
         optimizedUrl: trashItem.optimizedUrl ?? null,
@@ -1722,6 +1748,7 @@ export class ProjectRepository {
       videoContexts: (t.videoContexts as string[]) ?? [],
       audioContexts: (t.audioContexts as string[]) ?? [],
       tags: (t.tags as string[]) ?? [],
+      sourceItems: normalizeSourceItems(t.sourceItems),
       imageUrl: t.imageUrl ?? '',
       thumbnailUrl: t.thumbnailUrl ?? undefined,
       optimizedUrl: t.optimizedUrl ?? undefined,
@@ -1830,6 +1857,9 @@ export class ProjectRepository {
         if (job.tags !== undefined) {
           updateData.tags = job.tags;
         }
+        if (job.sourceItems !== undefined) {
+          updateData.sourceItems = sourceItemsColumn(job.sourceItems);
+        }
         // Once a Civitai job has run, its params carry the seed the server
         // rolled; a client copy taken before that must not drop it.
         if (job.civitaiParams !== undefined && dbStatus === 'draft') {
@@ -1880,6 +1910,7 @@ export class ProjectRepository {
           taskId: job.taskId ?? null,
           filename: job.filename ?? null,
           tags: job.tags ?? null,
+          sourceItems: sourceItemsColumn(job.sourceItems),
           size: job.size != null ? BigInt(job.size) : null,
           createdAt: job.createdAt ? new Date(job.createdAt) : new Date(),
           providerId: job.providerId ?? null,
@@ -2066,6 +2097,10 @@ export class ProjectRepository {
     if (Array.isArray(j.tags)) {
       job.tags = j.tags as string[];
     }
+    const sourceItems = normalizeSourceItems(j.sourceItems);
+    if (sourceItems) {
+      job.sourceItems = sourceItems;
+    }
     return job;
   }
 
@@ -2095,6 +2130,7 @@ export class ProjectRepository {
       videoContexts: (a.videoContexts as string[]) ?? [],
       audioContexts: (a.audioContexts as string[]) ?? [],
       tags: (a.tags as string[]) ?? [],
+      sourceItems: normalizeSourceItems(a.sourceItems),
       imageUrl: a.imageUrl ?? '',
       thumbnailUrl: a.thumbnailUrl ?? undefined,
       optimizedUrl: a.optimizedUrl ?? undefined,

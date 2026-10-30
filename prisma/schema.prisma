@@ -259,6 +259,7 @@ model Job {
   taskId           String?
   filename         String?
   tags             Json? // String[]: the library item tags its album items start with
+  sourceItems      Json? // SourceLibraryItem[]: the library items it was drafted from
   size             BigInt?
   optimizedSize    BigInt?
   thumbnailSize    BigInt?
@@ -310,6 +311,7 @@ model AlbumItem {
   videoContexts Json? // String[]
   audioContexts Json? // String[]
   tags          Json? // String[]
+  sourceItems   Json? // SourceLibraryItem[]: the library items its job was drafted from
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?
@@ -331,6 +333,7 @@ model AlbumItem {
 
   @@index([projectId, createdAt])
   @@index([userId])
+  @@index([sourceItems(ops: JsonbPathOps)], type: Gin)
 }
 
 model TrashItem {
@@ -345,6 +348,7 @@ model TrashItem {
   videoContexts Json? // String[]
   audioContexts Json? // String[]
   tags          Json? // String[]
+  sourceItems   Json? // SourceLibraryItem[]
   imageUrl      String?
   thumbnailUrl  String?
   optimizedUrl  String?

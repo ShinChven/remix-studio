@@ -173,6 +173,8 @@ export function buildProjectBundleManifest(input: {
 
   const album: AlbumItem[] = input.album.map((item) => ({
     ...item,
+    // The libraries don't travel with the bundle, so neither do references to them.
+    sourceItems: undefined,
     imageUrl: media.rewrite(item.imageUrl, item.size) ?? item.imageUrl,
     thumbnailUrl: media.rewrite(item.thumbnailUrl, item.thumbnailSize),
     optimizedUrl: media.rewrite(item.optimizedUrl, item.optimizedSize),

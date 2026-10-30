@@ -2212,6 +2212,12 @@ export function resolveSupportedAspectRatio(value: string | undefined, allowed?:
   return closest || allowed[0];
 }
 
+/** A library item a job was drafted from. */
+export interface SourceLibraryItem {
+  libraryId: string;
+  itemId: string;
+}
+
 export interface Job {
   id: string;
   prompt: string;
@@ -2239,6 +2245,8 @@ export interface Job {
   filename?: string; // Custom filename for S3 storage (ProjectPrefix_Tags_Title_shortuuid)
   /** The tags of the library items this job was drafted from, which its album items start with. */
   tags?: string[];
+  /** The library items this job was drafted from, which its album items keep. */
+  sourceItems?: SourceLibraryItem[];
   // Video generation
   duration?: number; // seconds
   resolution?: string; // e.g. '720p', '1080p', '4k'
@@ -2278,6 +2286,8 @@ export interface AlbumItem {
   videoContexts?: string[];
   audioContexts?: string[];
   tags?: string[];
+  /** The library items the job that made this was drafted from. */
+  sourceItems?: SourceLibraryItem[];
   imageUrl: string; // S3 key (presigned on read) — for video projects this is the .mp4 key
   thumbnailUrl?: string; // S3 key
   optimizedUrl?: string; // S3 key
