@@ -1603,8 +1603,7 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
       return { project: existing, created: false };
     }
 
-    let targetProjectId = (destination.newProjectId || destination.newProjectName).replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 128)
-      || `project-${Date.now()}`;
+    let targetProjectId = destination.newProjectId.replace(/[^a-zA-Z0-9-_]/g, '_').slice(0, 128) || randomUUID();
     if (targetProjectId === sourceProject.id || await repository.getProject(userId, targetProjectId)) {
       targetProjectId = `${targetProjectId}-${randomUUID().slice(0, 8)}`.slice(0, 128);
     }

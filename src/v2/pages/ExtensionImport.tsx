@@ -29,7 +29,7 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
         snackbar.show('Library created successfully');
         onCreated(id, name.trim());
       } else {
-        const id = `project-${Date.now()}`;
+        const id = crypto.randomUUID();
         await createProject({ id, name: name.trim(), description: description.trim() || undefined, type, prefix: prefix.trim(), createdAt: Date.now(), workflow: [], jobs: [], album: [], shuffle: false } as Project);
         snackbar.show('Project created successfully');
         onCreated(id, name.trim());
