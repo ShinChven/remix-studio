@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
@@ -167,12 +167,13 @@ export function DraftsTab(props: DraftsTabProps) {
   );
 }
 
+// Each photo's place in the pile, and where it fans out to on hover: the front one lifts, the rest spread to either side.
 const STACK = [
-  { r: -7, x: -26, y: 10 },
-  { r: 5, x: 20, y: -4 },
-  { r: -2, x: -4, y: 2 },
-  { r: 8, x: 30, y: 16 },
-  { r: -4, x: -14, y: -10 },
+  { r: -7, x: -26, y: 10, fr: 0, fx: 0, fy: -12 },
+  { r: 5, x: 20, y: -4, fr: 10, fx: 58, fy: 2 },
+  { r: -2, x: -4, y: 2, fr: -10, fx: -58, fy: 2 },
+  { r: 8, x: 30, y: 16, fr: 18, fx: 104, fy: 20 },
+  { r: -4, x: -14, y: -10, fr: -18, fx: -104, fy: 20 },
 ];
 
 /** The empty drafts view: a stack of the newest results and a hint to build the workflow. */
@@ -185,7 +186,20 @@ function DraftsCanvas({ albumItems = [], onSwitchToAlbum, projectType = 'image',
       {visual && shown.length > 0 ? (
         <button type="button" className="v2-canvas__stack m3-focus-ring" onClick={onSwitchToAlbum} aria-label={t('projectViewer.drafts.openAlbum')}>
           {shown.map((item, idx) => (
-            <span key={item.id} className="v2-canvas__photo" style={{ transform: `rotate(${STACK[idx].r}deg) translate(${STACK[idx].x}px, ${STACK[idx].y}px)`, zIndex: shown.length - idx }}>
+            <span
+              key={item.id}
+              className="v2-canvas__photo"
+              style={{
+                '--r': `${STACK[idx].r}deg`,
+                '--x': `${STACK[idx].x}px`,
+                '--y': `${STACK[idx].y}px`,
+                '--fr': `${STACK[idx].fr}deg`,
+                '--fx': `${STACK[idx].fx}px`,
+                '--fy': `${STACK[idx].fy}px`,
+                '--i': idx,
+                zIndex: shown.length - idx,
+              } as CSSProperties}
+            >
               <img src={imageDisplayUrl(item.thumbnailUrl || item.imageUrl)} alt={item.prompt} />
             </span>
           ))}

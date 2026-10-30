@@ -3298,10 +3298,39 @@
   padding: 8px 8px 8px 0;
   overflow: hidden;
 }
-.v2-project[data-expanded] { grid-template-columns: 1fr; }
 /* Touch feedback comes from the ripples; the browser's own tap highlight is a square that ignores rounded shapes. */
 .v2-project :is(button, label, a, [role="button"]) { -webkit-tap-highlight-color: transparent; }
-.v2-project[data-expanded] .v2-project__results { display: none; }
+/* Side by side, the panes are flex items: expanding grows the workflow's basis to the full width and squeezes
+   the results to nothing, which animates both ways (grid track changes between fr values do not). */
+@media (min-width: 1024px) {
+  .v2-project {
+    display: flex;
+    transition: gap var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized);
+  }
+  .v2-project__workflow {
+    flex: 0 1 26rem;
+    min-width: 340px;
+    transition: flex-basis var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized);
+  }
+  .v2-project__results {
+    flex: 1 1 0;
+    transition:
+      opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized) 100ms,
+      visibility 0s;
+  }
+  .v2-project[data-expanded] { gap: 0; }
+  .v2-project[data-expanded] .v2-project__workflow { flex-basis: 100%; }
+  .v2-project[data-expanded] .v2-project__results {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-emphasized),
+      visibility 0s var(--md-sys-motion-duration-medium4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-project, .v2-project__results { transition: none !important; }
+}
 .v2-project__workflow,
 .v2-project__results {
   display: flex;
@@ -3327,7 +3356,8 @@
   .v2-project { grid-template-columns: 1fr; padding: 0; gap: 0; }
   .v2-project__workflow, .v2-project__results { border-radius: 0; }
   .v2-project__mobile-toggle { display: inline-flex; }
-  .v2-project[data-mobile-view="workflow"] .v2-project__results { display: none; }
+  .v2-project[data-mobile-view="workflow"] .v2-project__results,
+  .v2-project[data-expanded] .v2-project__results { display: none; }
   .v2-project[data-mobile-view="jobs"] .v2-project__workflow { display: none; }
   /* Room under the run dock for the floating switch, so it never covers Add to drafts. */
   .v2-project[data-floating-switch][data-mobile-view="workflow"] .v2-run-dock { bottom: 84px; max-height: calc(100% - 172px); }
@@ -4021,10 +4051,23 @@
   border-radius: var(--md-sys-shape-corner-extra-large);
   background: var(--md-sys-color-surface-container);
   box-shadow: var(--md-sys-elevation-level2);
-  transition: transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial);
+  transform: rotate(var(--r)) translate(var(--x), var(--y));
+  transition:
+    transform var(--md-sys-motion-spring-default-spatial-duration) var(--md-sys-motion-spring-default-spatial),
+    box-shadow var(--md-sys-motion-spring-default-effects-duration) var(--md-sys-motion-spring-default-effects);
+  transition-delay: calc(var(--i, 0) * 30ms);
 }
 .v2-canvas__photo img { width: 100%; height: 100%; object-fit: cover; }
-.v2-canvas__stack:hover .v2-canvas__photo:first-child { transform: rotate(0) translate(0, -8px) scale(1.04) !important; }
+/* Hovered or focused, the whole pile fans out, front photo first. */
+:is(.v2-canvas__stack:hover, .v2-canvas__stack:focus-visible) .v2-canvas__photo {
+  transform: rotate(var(--fr)) translate(var(--fx), var(--fy)) scale(0.92);
+  box-shadow: var(--md-sys-elevation-level3);
+}
+:is(.v2-canvas__stack:hover, .v2-canvas__stack:focus-visible) .v2-canvas__photo:first-child {
+  transform: rotate(var(--fr)) translate(var(--fx), var(--fy)) scale(1.04);
+}
+.v2-canvas__stack:active .v2-canvas__photo:first-child { transform: rotate(0) translate(0, -6px) scale(1); }
+@media (prefers-reduced-motion: reduce) { .v2-canvas__photo { transition: none; } }
 .v2-canvas__glyph {
   display: inline-flex;
   width: 88px;
