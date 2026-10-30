@@ -33,11 +33,12 @@
   row-gap: 14px;
   padding: 8px 0 12px;
 }
-.v2-page-hero__badge { display: grid; grid-area: badge; place-items: center; margin-top: 2px; }
+.v2-page-hero__badge { display: grid; grid-area: badge; place-items: center; }
 .v2-page-hero__badge > * { grid-area: 1 / 1; }
 .v2-page-hero__badge-shape { color: var(--md-sys-color-primary-container); }
 .v2-page-hero__badge-icon { position: relative; color: var(--md-sys-color-on-primary-container); }
-.v2-page-hero__titles { display: flex; min-width: 0; grid-area: titles; flex-direction: column; gap: 4px; }
+/* The 32dp title line is centred on the 48dp badge. */
+.v2-page-hero__titles { display: flex; min-width: 0; grid-area: titles; flex-direction: column; gap: 4px; padding-top: 8px; }
 .v2-page-hero .v2-page-hero__title { margin: 0; overflow-wrap: anywhere; }
 .v2-page-hero__description { max-width: 72ch; margin: 0; color: var(--md-sys-color-on-surface-variant); }
 .v2-page-hero__stats { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; margin: 4px 0 0; padding: 0; list-style: none; }
@@ -50,6 +51,13 @@
 .v2-page-hero__stats > [data-tone="running"] .v2-page-hero__dot { background: var(--md-sys-color-primary); animation: v2-pulse 1.4s ease-in-out infinite; }
 .v2-page-hero__actions { display: flex; grid-area: actions; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 @media (prefers-reduced-motion: reduce) { .v2-page-hero__dot { animation: none !important; } }
+/* Beside the rail, the badge row of the page's first hero shares the brand row's centre (36dp from the top). */
+@media (min-width: 600px) {
+  .v2-page:has(> .v2-page-hero:first-child) { padding-top: 4px; }
+}
+@media (min-width: 840px) {
+  .v2-page-hero__actions { min-height: 48px; }
+}
 @media (max-width: 839.98px) {
   .v2-page-hero { grid-template-areas: "badge titles" "actions actions"; grid-template-columns: 48px minmax(0, 1fr); column-gap: 12px; }
   .v2-page-hero__actions { justify-content: flex-start; }
@@ -5018,6 +5026,11 @@
   display: flex; flex: 0 0 auto; align-items: center; gap: 8px;
   padding: 8px 12px 8px 20px; min-height: 56px; box-sizing: border-box;
 }
+/* Beside the rail and the conversations sheet, share their 72dp header band so
+   the brand, the chat title and the sheet headline sit on one line. */
+@media (min-width: 600px) {
+  .v2-chat__header { min-height: 72px; }
+}
 .v2-chat__title { flex: 1 1 auto; }
 .v2-chat__header-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 2px; }
 .v2-chat__scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
@@ -5031,6 +5044,10 @@
 .v2-chat__hero > * { width: 100%; max-width: 860px; }
 .v2-chat__composer { flex: 0 0 auto; width: 100%; max-width: 860px; margin: 0 auto; padding: 0 16px 16px; box-sizing: border-box; }
 .v2-chat__sheet { border-inline-start: 1px solid var(--md-sys-color-outline-variant); }
+/* New chat follows the "Chats" headline; history search goes to the end of the row. */
+.v2-chat__sheet .m3-side-sheet__headline { flex: 0 0 auto; }
+.v2-chat__sheet .v2-chat__new { flex: 0 0 auto; margin-inline-start: 8px; }
+.v2-chat__sheet .v2-chat__history { margin-inline-start: auto; }
 
 .v2-chat-markdown > :first-child { margin-top: 0; }
 .v2-chat-markdown > :last-child { margin-bottom: 0; }
@@ -5103,8 +5120,6 @@
 @media (max-width: 599px) { .v2-chat-confirm { margin-inline-start: 0; } }
 
 .v2-chat-side { display: flex; flex-direction: column; gap: 8px; min-height: 100%; }
-.v2-chat-side__tools { display: flex; align-items: center; gap: 4px; }
-.v2-chat-side__tools > :first-child { flex: 1 1 auto; }
 .v2-chat-side__heading { display: block; padding: 4px 8px; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; }
 .v2-chat-side__empty { padding: 24px 8px; text-align: center; color: var(--md-sys-color-on-surface-variant); }
 .v2-chat-side__list { display: flex; flex-direction: column; gap: 2px; }
