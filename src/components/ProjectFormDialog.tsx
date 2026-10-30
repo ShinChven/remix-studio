@@ -148,7 +148,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
       let targetId: string;
 
       if (isNew) {
-        targetId = customId.trim().replace(/[^a-zA-Z0-9-_]/g, '_') || `project-${Date.now()}`;
+        targetId = customId.trim().replace(/[^a-zA-Z0-9-_]/g, '_') || crypto.randomUUID();
         await createProject({
           id: targetId,
           name: trimmedName,

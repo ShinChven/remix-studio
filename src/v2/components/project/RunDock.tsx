@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
 
@@ -66,18 +66,57 @@ function QuantityStepper({ value, onChange, max }: { value: number; onChange: (v
 export function RunDock({ title, chips, leading, attention, collapsed, onToggle, settings, inline, queueCount, setQueueCount, combinationsCount, notice, onAdd, addDisabled, uploading, isAddingDrafts, draftsProgress, addStep }: RunDockProps) {
   const { t } = useTranslation();
   const dockRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  // The dock's height as last laid out, so a toggle knows where it is animating from.
+  const heightRef = useRef(0);
   // The dock floats over the step list; the list keeps room under its last step for the dock's height.
   useLayoutEffect(() => {
     const dock = dockRef.current;
     const host = dock?.closest<HTMLElement>('.v2-workflow');
     if (!dock || !host) return;
-    const observer = new ResizeObserver(() => host.style.setProperty('--v2-dock-h', `${dock.offsetHeight}px`));
+    heightRef.current = dock.offsetHeight;
+    const observer = new ResizeObserver(() => {
+      heightRef.current = dock.offsetHeight;
+      host.style.setProperty('--v2-dock-h', `${dock.offsetHeight}px`);
+    });
     observer.observe(dock);
     return () => {
       observer.disconnect();
       host.style.removeProperty('--v2-dock-h');
     };
   }, []);
+
+  // The settings stay mounted while the dock shrinks shut, and only leave once it has.
+  const [settingsShown, setSettingsShown] = useState(!collapsed);
+  if (!collapsed && !settingsShown) setSettingsShown(true);
+  const wasCollapsed = useRef(collapsed);
+  const motion = useRef<Animation[]>([]);
+  useLayoutEffect(() => {
+    if (wasCollapsed.current === collapsed) return;
+    wasCollapsed.current = collapsed;
+    const dock = dockRef.current;
+    const panel = settingsRef.current;
+    const from = heightRef.current;
+    motion.current.forEach((animation) => animation.cancel());
+    motion.current = [];
+    if (!dock || !panel || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (collapsed) setSettingsShown(false);
+      return;
+    }
+    const timing = { duration: 340, easing: 'cubic-bezier(0.2, 0, 0, 1)' };
+    if (collapsed) {
+      const to = dock.offsetHeight - panel.offsetHeight - parseFloat(getComputedStyle(dock).rowGap || '0');
+      const shrink = dock.animate([{ height: `${from}px` }, { height: `${to}px` }], timing);
+      motion.current = [shrink, panel.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, fill: 'forwards' })];
+      shrink.onfinish = () => setSettingsShown(false);
+    } else {
+      const to = dock.offsetHeight;
+      motion.current = [
+        dock.animate([{ height: `${from}px` }, { height: `${to}px` }], timing),
+        panel.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 100, fill: 'backwards' }),
+      ];
+    }
+  }, [collapsed]);
   const busy = uploading || isAddingDrafts;
   const progress = uploading
     ? t('projectViewer.settings.uploadingImages')
@@ -101,7 +140,11 @@ export function RunDock({ title, chips, leading, attention, collapsed, onToggle,
             </span>
             <Icon name="expand_less" size={20} className="v2-run-dock__chevron" />
           </button>
-          {!collapsed && <div className="v2-run-dock__settings">{settings}</div>}
+          {settingsShown && (
+            <div ref={settingsRef} className="v2-run-dock__settings">
+              {settings}
+            </div>
+          )}
         </>
       )}
       {inline}

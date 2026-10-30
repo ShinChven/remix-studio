@@ -15,6 +15,8 @@ export interface SideSheetProps {
   headline?: ReactNode
   /** Shows a back button before the headline (multi-step sheets). */
   onBack?: () => void
+  /** Controls in the header row, after the headline and before the close button. */
+  headerActions?: ReactNode
   /** Footer actions, e.g. Save / Cancel. */
   actions?: ReactNode
   /** Sheet content. It scrolls between the header and the actions. */
@@ -39,6 +41,7 @@ export function SideSheet({
   onClose,
   headline,
   onBack,
+  headerActions,
   actions,
   children,
   modal = false,
@@ -73,6 +76,7 @@ export function SideSheet({
               {headline}
             </h2>
           )}
+          {headerActions}
           {!hideClose && <IconButton icon="close" label={messages.close} onClick={onClose} />}
         </div>
       )}

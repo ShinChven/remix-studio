@@ -514,16 +514,6 @@ const messages: V2Messages = {
       deleteMessage: 'Les requêtes n’utiliseront plus {{id}}. Les projets réglés sur cette variante devront choisir un autre modèle.',
     },
   },
-  projects: {
-    statProjects_one: 'projet',
-    statProjects_other: 'projets',
-    statArchived_one: 'archivé',
-    statArchived_other: 'archivés',
-    statRunning: 'en cours',
-    statQueued: 'en file',
-    statFailed: 'en échec',
-    newest: 'Dernier projet',
-  },
 };
 
 export default messages;

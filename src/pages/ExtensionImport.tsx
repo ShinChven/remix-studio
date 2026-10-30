@@ -89,7 +89,7 @@ function CreateProjectModal({ isOpen, onClose, type, onSuccess }: { isOpen: bool
     if (!name.trim()) return;
     setIsSubmitting(true);
     try {
-      const id = `project-${Date.now()}`;
+      const id = crypto.randomUUID();
       await createProject({ 
         id, 
         name: name.trim(), 

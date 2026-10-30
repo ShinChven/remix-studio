@@ -1454,12 +1454,6 @@ export function AssistantPage() {
 
   const conversationsPanel = (
     <div className="v2-chat-side">
-      <div className="v2-chat-side__tools">
-        <Button variant="tonal" size="sm" icon="add" onClick={handleNewConversationClick}>
-          {t('assistant.newChat')}
-        </Button>
-        <IconButton icon="manage_search" size="sm" label={t('assistant.searchHistory', { defaultValue: 'Search chat history' })} tooltip onClick={() => navigate('/assistant/history')} />
-      </div>
       <div className="v2-chat-side__list" role="list">
         {conversations.length === 0 ? (
           <Text variant="body-small" className="v2-chat-side__empty">{t('assistant.noConversations')}</Text>
@@ -1538,7 +1532,7 @@ export function AssistantPage() {
     <div className="v2-chat" data-docked={docked && rightPanelOpen ? '' : undefined}>
       <div className="v2-chat__main">
         <header className="v2-chat__header">
-          <Text variant="title-medium" className="v2-chat__title v2-ellipsis">{assistantTitle}</Text>
+          <Text variant="title-large" className="v2-chat__title v2-ellipsis">{assistantTitle}</Text>
           <div className="v2-chat__header-actions">
             {activeConversationId && (
               <IconButton icon="verified_user" label={t('assistant.approvedTools.title', 'Tool approvals')} tooltip onClick={() => setApprovedToolsModalOpen(true)} />
@@ -1627,8 +1621,23 @@ export function AssistantPage() {
         onClose={() => setRightPanelOpen(false)}
         modal={!docked}
         hideClose={docked}
-        width={300}
+        width={docked ? 300 : undefined}
         headline={t('assistant.conversations')}
+        headerActions={
+          <>
+            <Button variant="tonal" size="sm" icon="add" className="v2-chat__new" onClick={handleNewConversationClick}>
+              {t('assistant.newChat')}
+            </Button>
+            <IconButton
+              icon="manage_search"
+              size="sm"
+              className="v2-chat__history"
+              label={t('assistant.searchHistory', { defaultValue: 'Search chat history' })}
+              tooltip
+              onClick={() => navigate('/assistant/history')}
+            />
+          </>
+        }
         className="v2-chat__sheet"
       >
         {conversationsPanel}
