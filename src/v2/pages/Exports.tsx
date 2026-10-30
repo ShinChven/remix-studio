@@ -272,7 +272,7 @@ export function Exports() {
   const allSelected = exports.length > 0 && selected.size === exports.length;
 
   return (
-    <Page>
+    <Page className="v2-exports">
       <ExportsHero
         total={loading ? null : total}
         active={activeCount}
