@@ -171,7 +171,7 @@ These variables are consumed by the supplied compose files and helper scripts ra
 
 | Variable | Description |
 | :--- | :--- |
-| `REMIX_STUDIO_IMAGE` | Override the image tag in compose templates, e.g. `ghcr.io/shinchven/remix-studio:1.25.0`, or `:1.25` to follow patch releases. Defaults to `:latest`, which tracks `main`. |
+| `REMIX_STUDIO_IMAGE` | Override the image tag in compose templates, e.g. `ghcr.io/shinchven/remix-studio:1.26.0`, or `:1.26` to follow patch releases. Defaults to `:latest`, which tracks `main`. |
 
 ## Notes
 

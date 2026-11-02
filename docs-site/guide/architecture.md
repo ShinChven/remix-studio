@@ -7,7 +7,7 @@ Remix Studio is a single product made of several cooperating subsystems. This pa
 | Layer | Technology |
 | :--- | :--- |
 | Assistant orchestration | In-app assistant runner + shared MCP tool registry |
-| Frontend | React 19 + Vite + React Router |
+| Frontend | React 19 + Vite + React Router (classic interface and Material 3 Expressive interface at `/v2`, loaded on demand) |
 | Server | Hono on Node.js |
 | Database | PostgreSQL via Prisma |
 | Storage | S3-compatible object storage (AWS S3, MinIO, Cloudflare R2, GCS, Alibaba OSS) |
@@ -98,7 +98,7 @@ remix-studio/
 ├── public/      # Static assets
 ├── scripts/     # TV-mode build and LG webOS packaging
 ├── server/      # API, auth, storage, queue, generators, MCP, assistant, live feeds, media sharing
-├── src/         # React application (src/tv holds TV mode)
+├── src/         # React application (classic UI, Material 3 Expressive UI under src/v2 and src/m3, and TV mode under src/tv)
 ├── webos/       # LG webOS app wrapper for TV mode
 ├── server.ts    # Server entry point
 ├── docker-compose.yml       # Local services, and the app behind the `app` profile

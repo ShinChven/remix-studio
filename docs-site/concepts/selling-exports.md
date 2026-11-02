@@ -36,9 +36,9 @@ Deleting the export before publishing finishes can make the delivery task fail b
 | Tags | Comma-separated in the UI; the server keeps at most 30 non-empty tags |
 | Taxonomy ID | Optional Gumroad taxonomy/category identifier |
 | Covers | Up to eight owned image album items, in drag-reorderable order |
-| Publish immediately | Queue remote upload/product creation now; otherwise retain only the local draft record |
+| Publish immediately | Enable the listing on Gumroad once the archive and covers are uploaded; when off, the file and covers still upload and the Gumroad product stays unpublished |
 
-Creating the local draft stores a snapshot of the export, metadata, cover choices, and watermark settings. If **Publish immediately** is enabled, a delivery task is then queued and the product enters `publishing`.
+Creating the product stores a snapshot of the export, metadata, cover choices, watermark settings, and the `publish` flag, then queues a Gumroad delivery task.
 
 ## Cover Selection
 
@@ -57,7 +57,7 @@ During delivery, enabled covers are processed into temporary JPEG objects in the
 
 ## Publishing Pipeline
 
-For an immediate publish, the delivery worker:
+The delivery worker:
 
 1. Verifies the completed export and store/product ownership.
 2. Presigns a Gumroad multipart upload.
@@ -65,8 +65,8 @@ For an immediate publish, the delivery worker:
 4. Completes and verifies the remote upload.
 5. Creates the Gumroad product with title, price, description, tags, taxonomy, and uploaded file.
 6. Processes and uploads covers in order.
-7. Enables the product when immediate publishing was requested.
-8. Stores the remote product ID, file URL, short URL, and final status.
+7. Enables the product on Gumroad when **Publish immediately** was requested (skipped when off, leaving the uploaded product unpublished on Gumroad).
+8. Stores the remote product ID, file URL, short URL, and final status (`published` when enabled, or `draft` when uploaded unpublished).
 
 Product status moves through `draft`, `publishing`, `published`, or `failed`. Delivery phase/progress is also displayed on the Exports page.
 

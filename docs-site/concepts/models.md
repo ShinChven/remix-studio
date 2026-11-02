@@ -55,7 +55,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Kling AI** | `Kling Image O1`, `Kling V3 Omni`, `Kling V3 Standard`, `Kling V2.1 Standard`, `Kling V2 Standard`, `Kling V1.5 Standard`, `Kling V1 Standard` |
 | **Black Forest Labs** | `Flux 2 Max`, `Flux 2 Pro (Preview)`, `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Klein 9B (Preview)`, `Flux 2 Klein 9B`, `Flux 2 Klein 4B` |
 | **Replicate** | `Flux 2 Pro`, `Flux 2 Flex`, `Flux 2 Max` |
-| **APIMart** | `Nano Banana 2`, `Nano Banana Pro`, `Nano Banana`, `GPT Image 2.5 Sunburst`, `GPT Image 2.5 Flare`, `GPT Image 2`, `GPT-4o Image`, `Seedream 5.0 Lite`, `Seedream 4.5`, `FLUX.2 [pro]`, `FLUX.2 [max]`, `FLUX.2 [flex]`, `FLUX.1 Kontext [pro]`, `FLUX.1 Kontext [max]`, `Qwen Image 3.0`, `Imagen 4.0` |
+| **APIMart** | `Nano Banana 2`, `Nano Banana Pro`, `Nano Banana`, `GPT Image 2.5 Sunburst`, `GPT Image 2.5 Flare`, `GPT Image 2`, `GPT-4o Image`, `Seedream 5.0 Lite`, `Seedream 4.5`, `FLUX.2 Pro`, `FLUX.2 Max`, `FLUX.2 Flex`, `FLUX Kontext Pro`, `FLUX Kontext Max`, `Qwen Image 3.0`, `Imagen 4.0` |
 
 ## 4. Video Generation
 

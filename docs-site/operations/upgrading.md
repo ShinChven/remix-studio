@@ -11,7 +11,7 @@ In Docker deployments, the application container runs `prisma migrate deploy` au
 ## Pinning Versions
 
 - For default-branch tracking, use the `latest` image tag.
-- For stable production deployments, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:1.25.0`, or to `:1.25` to take patch releases automatically.
+- For stable production deployments, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:1.26.0`, or to `:1.26` to take patch releases automatically.
 
 See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 
@@ -22,6 +22,13 @@ See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 - Database migrations are forward operations. Restore the pre-upgrade database and matching object-storage snapshot if a rollback requires an older schema.
 
 ## Version Notes
+
+### 1.26.0
+
+Two migrations apply on startup: `sourceItems` on `Job`, `AlbumItem` and `TrashItem` with a GIN index (`AlbumItem_sourceItems_idx`) on `AlbumItem` (`20261030120000_add_source_items`), and the `publish` column on `Product` (`20261030130000_add_product_publish`).
+
+- The Material 3 Expressive interface is served under `/v2` alongside the classic interface. Switch between them with **New interface** in the classic sidebar footer or the switch button in the `/v2` rail footer; the choice is stored per browser.
+- Creating a Gumroad product with **Publish immediately** turned off now uploads the archive and covers to Gumroad and leaves the Gumroad product unpublished, rather than holding a local-only draft.
 
 ### 1.25.0
 

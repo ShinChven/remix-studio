@@ -8,6 +8,33 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.26.0 — Material 3 Expressive interface, APIMart image models, and source-linked results
+
+*Switch to a new Material 3 Expressive interface with a live theme editor and virtualized job queues, generate images through APIMart across 16 bundled models, and trace every album result back to the library items that produced it.*
+
+**Added**
+
+- **Material 3 Expressive interface (`/v2`)** — A complete second interface built on Material 3 Expressive sits alongside the classic UI at `/v2`. Click **New interface** in the sidebar footer to switch — your browser remembers the choice and opens bookmarks, sign-in redirects and shared links there automatically, with a one-click button in the rail footer to switch back whenever you like. It includes a command palette (`Cmd/Ctrl+K`) for jumping to pages, projects, libraries, campaigns or create actions, and a theme editor side sheet where you can pick a seed color (or extract a palette from an image), color style, contrast, motion, density, corner roundness, text size, status colors, and light/dark/system mode.
+  - **Quieter, faster project viewer** — Workflow steps sit above a floating run dock that expands smoothly into generation settings. Draft, Queue and Done lists are virtualized so thousands of jobs scroll effortlessly, and the lightbox pre-decodes neighbouring images so stepping through an album never flashes black.
+  - **Redesigned libraries, providers, recycle bin, exports and admin users** — The libraries list filters by type (**All**, **Text**, **Image**, **Video**, **Audio**) and switches between cards and rows. Inside a library, pressing `Cmd/Ctrl+V` outside a text field uploads clipboard files, adds pasted text or `.txt`/`.md` files to a text library, or fetches and uploads a copied image or media URL in a media library. Providers, the recycle bin, exports and admin users each get an expressive header with summary chips, inline controls and bulk selection bars.
+- **APIMart provider** — Connect an **APIMart** account to generate images across 16 bundled profiles — **Nano Banana 2**, **Nano Banana Pro**, **Nano Banana**, **GPT Image 2.5 Sunburst**, **GPT Image 2.5 Flare**, **GPT Image 2**, **GPT-4o Image**, **Seedream 5.0 Lite**, **Seedream 4.5**, **FLUX.2 Pro**, **FLUX.2 Max**, **FLUX.2 Flex**, **FLUX Kontext Pro**, **FLUX Kontext Max**, **Qwen Image 3.0** and **Imagen 4.0** — plus custom model variants that inherit a base model's options while calling any model ID APIMart serves. Reference images are uploaded automatically, and running tasks are checked every 5 seconds. See [Model Profiles](/concepts/models).
+- **Results remember which library items they came from** — Each drafted job and the album items it produces now record the `{ libraryId, itemId }` pairs of the library items their combination picked (`sourceItems`), preserved when jobs update, when results are copied to another project, and through the recycle bin, and returned by `get_album_items` and `get_album_item` over MCP.
+
+**Improved**
+
+- **Faster storage overview on large accounts** — Opening the storage overview without per-project breakdowns now totals usage in two SQL queries instead of reading every project and library in memory.
+- **Searchable library and project selectors in the media picker** — The dropdowns in the new interface's media picker can be searched by name and keep long titles tidy on narrow screens.
+
+**Fixed**
+
+- **Drafting from a workflow reused after a move** — Reusing the workflow of a result that had been moved or copied from another project could fail when drafting jobs if the source project still existed. Saved workflow steps now get fresh IDs whenever another project already holds them.
+- **S3 and MinIO buckets with more than 1,000 files under a prefix** — Object listings for orphan scans, project and campaign deletion, storage totals and folder renames now page through the whole prefix instead of stopping at the first 1,000 objects.
+- **Unpublished Gumroad products now upload their archive** — Creating a Gumroad product with **Publish immediately** turned off previously saved only a local draft without uploading the ZIP. The archive and covers now upload to Gumroad either way, and turning **Publish immediately** off simply leaves the Gumroad listing unpublished at the end. See [Selling Exports](/concepts/selling-exports).
+- **Full-screen media viewer in Campaign Batch Actions** — Clicking a post's thumbnail in Batch Actions now opens the same uncropped full-screen image and video viewer as the campaign page, with previous/next and arrow keys.
+- **Consistent UUIDs for new projects** — Creating a project without a custom ID from the project form, the browser extension or when sending album items to a new project now assigns a UUID, matching MCP and project bundle imports.
+
+---
+
 ## 1.25.0 — Civitai projects, auto-tagging, and pages that keep up with your agents
 
 *Generate images and videos with any model on Civitai, let a vision model tag your albums and libraries, see what an agent changes without reloading, and watermark or split a single image in a couple of clicks.*

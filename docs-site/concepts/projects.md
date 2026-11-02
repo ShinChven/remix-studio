@@ -143,9 +143,11 @@ Tags follow the item: they survive a move to the recycle bin and a restore, they
 
 Tags are normalised on write — trimmed, de-duplicated case-insensitively, capped at 64 characters each and 30 per item — so a stray space or a difference in capitalisation cannot split one tag into two entries in the filter list.
 
-### Tags From Library Items
+### Tags and Source Items From Libraries
 
 A result starts with the tags of the library items it was drafted from. If a draft picked a subject tagged `portrait` and a style tagged `film`, the result arrives in the album with both, so the album can be filtered by the same tags as its sources without tagging anything by hand. This applies to drafts made in the app and over MCP, in every project type.
+
+Each drafted job and the album items it creates also record the `{ libraryId, itemId }` pairs of the library items the combination picked (`sourceItems`, indexed on `AlbumItem`), so a result can be traced back to the exact library items it was made from and a library item to the results made from it. That record survives job updates, copying album items to another project, and a trip through the recycle bin, and is returned by `get_album_items` and `get_album_item` over MCP; project bundles leave it out because the referenced libraries are not inside the bundle.
 
 ### Auto-Tagging
 

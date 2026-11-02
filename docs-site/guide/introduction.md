@@ -31,7 +31,7 @@ The same shared tool layer also powers [MCP access](/integrations/mcp), so clien
 - Plan social campaigns, generate post copy in batches, attach reusable media, and schedule posts across connected channels.
 - Release completed export packages to connected drives (Google Drive, OneDrive) and storefronts.
 - Keep generated assets in S3-compatible storage such as AWS S3 or MinIO.
-- Operate the system through the UI, the in-app assistant, or external MCP clients.
+- Operate the system through the UI (switching freely between the classic interface and the Material 3 Expressive interface under `/v2`), the in-app assistant, or external MCP clients.
 - Protect access with auth, admin controls, 2FA, passkeys, and user storage limits.
 - Use the app in English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
 

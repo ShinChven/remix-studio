@@ -43,7 +43,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 docker compose -f docker/compose.minio.yml --env-file .env.docker up -d
 ```
 
-The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks successful builds from the default branch and may be newer than the latest tagged release. For stable deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a SemVer tag such as `ghcr.io/shinchven/remix-studio:1.25.0`, or `:1.25` to pick up patch releases.
+The compose templates default to `ghcr.io/shinchven/remix-studio:latest`, which tracks successful builds from the default branch and may be newer than the latest tagged release. For stable deployments, set `REMIX_STUDIO_IMAGE` in `.env.docker` to a SemVer tag such as `ghcr.io/shinchven/remix-studio:1.26.0`, or `:1.26` to pick up patch releases.
 
 This starts:
 
@@ -135,19 +135,19 @@ All templates expose:
 1. On `main`, bump the version in `package.json` and `package-lock.json` without tagging, date the release section in `CHANGELOG.md`, and add the release entry to `docs-site/whats-new.md`:
 
    ```bash
-   npm version 1.25.0 --no-git-tag-version
-   git commit -am "chore(release): v1.25.0"
+   npm version 1.26.0 --no-git-tag-version
+   git commit -am "chore(release): v1.26.0"
    git push origin main
    ```
 
 2. Tag the release commit and push the tag:
 
    ```bash
-   git tag -a v1.25.0 -m "Release v1.25.0"
-   git push origin v1.25.0
+   git tag -a v1.26.0 -m "Release v1.26.0"
+   git push origin v1.26.0
    ```
 
-The push to `main` rebuilds `latest` and redeploys the docs site. The tag push runs `.github/workflows/docker.yml` again, which publishes the `1.25.0`, `1.25` and `1` image tags and creates the GitHub Release with generated notes and the browser extension as `remix-studio-chrome-extension.zip`.
+The push to `main` rebuilds `latest` and redeploys the docs site. The tag push runs `.github/workflows/docker.yml` again, which publishes the `1.26.0`, `1.26` and `1` image tags and creates the GitHub Release with generated notes and the browser extension as `remix-studio-chrome-extension.zip`.
 
 ## Related
 

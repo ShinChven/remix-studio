@@ -17,7 +17,7 @@ The library type matters when a workflow is expanded: text items are joined into
 
 ## Browsing and Organizing
 
-The library list supports search, pagination, and pinning. Up to the UI's pin limit can be kept at the top for quick access.
+The library list supports search, filtering by type (**All**, **Text**, **Image**, **Video**, **Audio**), pagination, and pinning (plus a cards/list layout switch in the Material 3 interface). Up to the UI's pin limit can be kept at the top for quick access.
 
 Inside a library you can:
 
@@ -40,7 +40,7 @@ Titles make long prompts and opaque media keys easier to recognize. Tags serve t
 
 1. The library editor can filter the items you see.
 2. A workflow library step can select tags to restrict which items participate in generation.
-3. Results drafted from an item start with its tags in the album, so the album can be filtered by the same tags as the libraries behind it.
+3. Results drafted from an item start with its tags in the album, so the album can be filtered by the same tags as the libraries behind it, and keep a `sourceItems` record (`{ libraryId, itemId }`) pointing back to the library items that produced them.
 
 Workflow tag matching can use:
 
@@ -51,7 +51,7 @@ Matching is case-insensitive. Items without any selected tag are excluded. The f
 
 ## Adding and Reusing Items
 
-Text items can be created in the library editor, imported in batches, or created through the assistant/MCP tool layer. Media files can be uploaded directly, and an external MCP client can upload images, videos and audio into a library too (see [file uploads](/integrations/mcp#file-uploads)).
+Text items can be created in the library editor, imported in batches, or created through the assistant/MCP tool layer. Media files can be uploaded directly (or by dropping files anywhere onto a media library), and an external MCP client can upload images, videos and audio into a library too (see [file uploads](/integrations/mcp#file-uploads)). In the Material 3 interface (`/v2`), pressing `Cmd/Ctrl+V` outside a text field on a library page also uploads clipboard files, creates items from pasted text or `.txt`/`.md` files in a text library, or fetches and uploads a copied `<img>` or media URL in a media library.
 
 From a project you can also:
 
