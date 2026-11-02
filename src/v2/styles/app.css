@@ -3919,12 +3919,43 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.v2-jobrow__status[data-tone="running"] { color: var(--md-sys-color-primary); }
 .v2-jobrow__status[data-tone="error"] { color: var(--md-sys-color-error); }
 .v2-jobrow__inline-status { display: none; }
-.v2-jobrow__inline-status[data-tone="running"] { color: var(--md-sys-color-primary); }
 .v2-jobrow__inline-status[data-tone="error"] { color: var(--md-sys-color-error); }
 .v2-jobrow[data-selected] .v2-jobrow__inline-status { color: inherit; }
+.v2-jobrow__status[data-tone="running"],
+.v2-jobrow__inline-status[data-tone="running"] {
+  --_shimmer-color: var(--md-sys-color-primary);
+  --_shimmer-base: light-dark(
+    var(--_shimmer-color),
+    color-mix(in srgb, var(--_shimmer-color) 65%, var(--md-sys-color-surface))
+  );
+  --_shimmer-shine: color-mix(in srgb, var(--_shimmer-color) 22%, #ffffff);
+  background-image: linear-gradient(
+    105deg,
+    var(--_shimmer-base) 0%,
+    var(--_shimmer-base) 36%,
+    var(--_shimmer-shine) 50%,
+    var(--_shimmer-base) 64%,
+    var(--_shimmer-base) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: v2-shimmer 1.8s linear infinite;
+}
+.v2-jobrow[data-selected] :is(.v2-jobrow__status, .v2-jobrow__inline-status)[data-tone="running"] {
+  --_shimmer-color: var(--md-sys-color-on-secondary-container);
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-jobrow__status[data-tone="running"],
+  .v2-jobrow__inline-status[data-tone="running"] {
+    background: none;
+    color: var(--_shimmer-color);
+    animation: none;
+  }
+}
 .v2-jobrow__actions {
   display: flex;
   flex-shrink: 0;
