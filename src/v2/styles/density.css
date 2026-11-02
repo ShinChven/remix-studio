@@ -10,6 +10,9 @@
   --_icon-padding: 10px;
   min-width: 160px;
 }
+[data-density="compact"] .m3-field[data-full-width] {
+  min-width: 0;
+}
 [data-density="compact"] .m3-field__body {
   padding-block: 10px;
 }

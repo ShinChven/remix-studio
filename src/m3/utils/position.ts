@@ -121,8 +121,13 @@ export function useAnchorPosition(options: AnchorPositionOptions): AnchorPositio
       const vw = document.documentElement.clientWidth || window.innerWidth
       const vh = document.documentElement.clientHeight || window.innerHeight
       const rtl = getComputedStyle(floating).direction === 'rtl'
+      const maxAvailableWidth = Math.max(0, vw - padding * 2)
       const f = { width: floating.offsetWidth, height: floating.offsetHeight }
-      if (matchWidth) f.width = Math.max(f.width, a.width)
+      if (matchWidth) {
+        const clampedAnchorWidth = Math.min(a.width, maxAvailableWidth)
+        const maxMatchedWidth = Math.min(Math.max(clampedAnchorWidth, 200), maxAvailableWidth)
+        f.width = Math.min(Math.max(f.width, clampedAnchorWidth), maxMatchedWidth)
+      }
       const { top, left, side, available } = compute(
         a,
         f,
@@ -136,7 +141,11 @@ export function useAnchorPosition(options: AnchorPositionOptions): AnchorPositio
       const resolved = (side +
         (placement.includes('-') ? `-${placement.split('-')[1]}` : '')) as Placement
       const style: CSSProperties = { position: 'fixed', top, left }
-      if (matchWidth) style.minWidth = a.width
+      if (matchWidth) {
+        const clampedAnchorWidth = Math.min(a.width, maxAvailableWidth)
+        style.minWidth = clampedAnchorWidth
+        style.maxWidth = Math.min(Math.max(clampedAnchorWidth, 200), maxAvailableWidth)
+      }
       if (fitHeight) style.maxHeight = Math.max(available, 120)
       setState((prev) => {
         const p = prev.style
@@ -145,6 +154,7 @@ export function useAnchorPosition(options: AnchorPositionOptions): AnchorPositio
           p.top === style.top &&
           p.left === style.left &&
           p.minWidth === style.minWidth &&
+          p.maxWidth === style.maxWidth &&
           p.maxHeight === style.maxHeight &&
           p.visibility === undefined
         ) {
