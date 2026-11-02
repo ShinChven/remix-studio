@@ -824,8 +824,12 @@
 }
 .v2-choice-tile__check {
   position: absolute;
-  top: var(--md-sys-measurement-space100);
-  inset-inline-end: var(--md-sys-measurement-space100);
+  top: var(--md-sys-measurement-space150);
+  inset-inline-end: var(--md-sys-measurement-space150);
+}
+.v2-choice-tiles[data-size="compact"] .v2-choice-tile__check {
+  position: static;
+  margin-inline-start: auto;
 }
 
 /* ---------- Home ---------- */
