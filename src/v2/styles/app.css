@@ -1651,12 +1651,17 @@
 }
 .v2-picker .m3-dialog__content {
   display: flex;
+  min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
+  overflow-x: hidden;
   padding: 0;
 }
 .v2-picker__body {
   display: flex;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
   gap: var(--md-sys-measurement-space200);
@@ -1702,8 +1707,9 @@
 .v2-picker__main {
   display: flex;
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
-  flex: 1 1 auto;
+  flex: 1 1 0%;
   flex-direction: column;
   gap: var(--md-sys-measurement-space150);
 }
@@ -1756,13 +1762,16 @@
 .v2-pick__media--audio { min-height: 110px; }
 .v2-pick__text {
   display: flex;
+  min-width: 0;
   min-height: 120px;
   flex-direction: column;
   gap: 8px;
   padding: var(--md-sys-measurement-space150);
+  overflow-wrap: anywhere;
 }
 .v2-pick__caption {
   display: flex;
+  min-width: 0;
   padding: 8px 10px;
 }
 .v2-pick__check {

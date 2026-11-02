@@ -356,12 +356,12 @@ export function MediaPicker({
 
   const sources = activeKind === 'library' ? librarySources : albumSources;
   const filteredSources = useMemo(() => {
-    const q = sourceQuery.trim().toLowerCase();
+    const q = compact ? '' : sourceQuery.trim().toLowerCase();
     return sortSources(
       sources.filter((s) => fixedSourceId === s.id || (selectedTypes.has(s.type) && (!q || s.name.toLowerCase().includes(q) || s.description?.toLowerCase().includes(q)))),
       sourceSort,
     );
-  }, [sourceQuery, sourceSort, selectedTypes, sources, fixedSourceId]);
+  }, [compact, sourceQuery, sourceSort, selectedTypes, sources, fixedSourceId]);
 
   const activeSource = useMemo(() => filteredSources.find((s) => s.id === activeSourceId) || filteredSources[0] || null, [activeSourceId, filteredSources]);
 
@@ -626,16 +626,18 @@ export function MediaPicker({
             {activeSource ? `${kindLabel(activeSource.kind)} / ${activeSource.name} · ${activeSource.itemCount} items` : 'No source selected'}
           </Text>
           {!fixedSourceId && compact && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-col gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 {kindSwitch}
                 <Select
                   variant="outlined"
                   aria-label={`Select ${activeKind}`}
                   value={activeSource?.id ?? null}
                   placeholder="Select source..."
+                  searchable
+                  searchPlaceholder={`Search ${activeKind === 'library' ? 'libraries' : 'projects'}...`}
                   onChange={setActiveSourceId}
-                  options={filteredSources.map((s) => ({ value: s.id, label: s.name }))}
+                  options={filteredSources.map((s) => ({ value: s.id, label: s.name, keywords: s.description }))}
                   className="min-w-0 flex-1"
                   fullWidth
                 />

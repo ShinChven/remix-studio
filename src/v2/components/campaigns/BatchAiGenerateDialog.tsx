@@ -313,6 +313,8 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
           setSelectedPromptId('');
         }}
         options={libraries.map((l) => ({ value: l.id, label: l.name }))}
+        searchable
+        searchPlaceholder="Search libraries..."
         fullWidth
       />
       {libraryId && <SearchField shape="field" value={promptQuery} onChange={setPromptQuery} placeholder="Search prompts..." />}

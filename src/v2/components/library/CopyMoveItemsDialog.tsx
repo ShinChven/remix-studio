@@ -99,6 +99,7 @@ export function CopyMoveItemsDialog({ open, action, sourceLibraryId, libraryType
             value={target}
             onChange={setTarget}
             options={libraries.map((lib) => ({ value: lib.id, label: lib.name }))}
+            searchable
             fullWidth
           />
         )}
