@@ -123,10 +123,10 @@ export function ProjectOrphans() {
             const isSelected = selected.has(file.key);
             const name = file.key.split('/').pop() || 'file';
             return (
-              <div key={file.key} className="v2-trash-card" data-selected={isSelected ? '' : undefined}>
-                <button type="button" className="v2-trash-card__media" style={{ cursor: 'pointer' }} onClick={(e) => toggle(file.key, e.shiftKey)}>
+              <div key={file.key} className="v2-orphan-card" data-selected={isSelected ? '' : undefined}>
+                <button type="button" className="v2-orphan-card__media" style={{ cursor: 'pointer' }} onClick={(e) => toggle(file.key, e.shiftKey)}>
                   <img src={file.url} alt="" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
-                  <span className="v2-trash-card__scrim">
+                  <span className="v2-orphan-card__scrim">
                     <Text as="span" variant="label-small" className="truncate">
                       {name}
                     </Text>
@@ -135,7 +135,7 @@ export function ProjectOrphans() {
                     </Text>
                   </span>
                 </button>
-                <span className="v2-trash-card__check">
+                <span className="v2-orphan-card__check">
                   <Checkbox checked={isSelected} onChange={() => toggle(file.key, false)} aria-label={name} />
                 </span>
                 <div className="flex items-center justify-end gap-1 px-2 py-1">

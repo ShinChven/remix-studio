@@ -193,7 +193,7 @@ export function Campaigns() {
         description={t('description')}
         actions={
           <>
-            <Button variant="filled" icon="add" emphasized href="/campaigns/new" className="v2-hide-compact">
+            <Button variant="filled" icon="add" emphasized href="/campaigns/new" className="v2-hide-mobile">
               New Campaign
             </Button>
             <Button variant="tonal" icon="share" href="/campaigns/channels">

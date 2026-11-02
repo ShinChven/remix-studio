@@ -757,7 +757,7 @@ export function Account() {
               description={t('account.security.passkeysDesc')}
               actions={<StatusPill>{t('account.security.registered', { count: security.passkeys.length })}</StatusPill>}
             >
-              <div className="flex flex-col gap-3 md:flex-row md:items-start">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <TextField variant="outlined" label={t('account.security.placeholder')} value={passkeyName} onValueChange={setPasskeyName} className="flex-1" fullWidth />
                 <Button variant="filled" icon="fingerprint" loading={savingPasskey} onClick={() => void registerPasskey()} size="md">
                   {t('account.security.addPasskey')}
