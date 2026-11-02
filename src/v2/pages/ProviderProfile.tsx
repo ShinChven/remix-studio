@@ -20,7 +20,7 @@ import { ResultsSearch } from '../ui/ResultFilters';
 import { StatusPill } from '../ui/Stat';
 
 /** Providers whose model list is built in rather than fetched with credentials. */
-const STATIC_MODELS = new Set(['RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs', 'MiniMax', 'Civitai']);
+const STATIC_MODELS = new Set(['RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs', 'MiniMax', 'Civitai', 'APIMart']);
 const QUEUE_HREF = '/projects/queues?view=providers';
 const LIVE_REFRESH_MS = 15000;
 
@@ -202,7 +202,7 @@ export function ProviderProfile() {
         }
         actions={
           <>
-            {provider.type === 'BytePlus' && (
+            {(provider.type === 'BytePlus' || provider.type === 'APIMart') && (
               <Button variant="tonal" icon="layers" href={`/provider/${provider.id}/custom-models`}>
                 {t('providerProfile.customModels')}
               </Button>

@@ -21,6 +21,7 @@ const MONOGRAM: Partial<Record<ProviderType, string>> = {
   BlackForestLabs: 'BFL',
   Kimi: 'Ki',
   Civitai: 'C',
+  APIMart: 'AM',
 };
 
 /** The letters that stand in for a provider without a brand mark, or null when it has one. */

@@ -23,6 +23,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   Kimi:       { icon: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400', badge: 'bg-indigo-600/10 text-indigo-700 dark:text-indigo-400 border-indigo-600/20 dark:border-indigo-600/30' },
   MiniMax:    { icon: 'bg-red-500/10 text-red-600 dark:text-red-400', badge: 'bg-red-600/10 text-red-700 dark:text-red-400 border-red-600/20 dark:border-red-600/30' },
   Civitai:    { icon: 'bg-sky-500/10 text-sky-600 dark:text-sky-400', badge: 'bg-sky-600/10 text-sky-700 dark:text-sky-400 border-sky-600/20 dark:border-sky-600/30' },
+  APIMart:    { icon: 'bg-teal-500/10 text-teal-600 dark:text-teal-400', badge: 'bg-teal-600/10 text-teal-700 dark:text-teal-400 border-teal-600/20 dark:border-teal-600/30' },
 };
 const DEFAULT_TYPE_COLORS = {
   icon: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-300',

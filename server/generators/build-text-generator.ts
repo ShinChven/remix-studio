@@ -43,6 +43,7 @@ export function buildTextGenerator(
     case 'BytePlus':
     case 'Replicate':
     case 'BlackForestLabs':
+    case 'APIMart':
       throw new Error(`Provider type '${type}' does not support text generation`);
     default:
       throw new Error(`Provider type '${type}' does not support text generation`);

@@ -27,6 +27,7 @@ export const SERVICES: Record<ProviderType, ServiceMeta> = {
   Replicate: { label: 'Replicate', shape: 'puffy-diamond', tone: 'primary' },
   BlackForestLabs: { label: 'Black Forest Labs', shape: 'arch', tone: 'secondary' },
   Civitai: { label: 'Civitai', shape: 'clover-8', tone: 'tertiary' },
+  APIMart: { label: 'APIMart', shape: 'sunny', tone: 'primary' },
 };
 
 export const SERVICE_TYPES = Object.keys(SERVICES) as ProviderType[];
@@ -47,6 +48,7 @@ export const KEY_PAGES: Record<ProviderType, string> = {
   Replicate: 'https://replicate.com/account/api-tokens',
   BlackForestLabs: 'https://dashboard.bfl.ai',
   Civitai: 'https://civitai.com/user/account',
+  APIMart: 'https://apimart.ai/console/token',
 };
 
 export function serviceMeta(type: string): ServiceMeta {

@@ -29,6 +29,7 @@ export function buildAudioGenerator(
     case 'BlackForestLabs':
     case 'Alibabacloud':
     case 'Kimi':
+    case 'APIMart':
       throw new Error(`Provider type '${type}' does not support audio generation`);
     default:
       throw new Error(`Provider type '${type}' does not support audio generation`);

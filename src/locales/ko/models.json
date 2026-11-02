@@ -128,6 +128,22 @@
     "bfl-flux-2-flex": "스텝 수와 가이던스로 세밀하게 조정할 수 있는 FLUX.2 [flex].",
     "bfl-flux-2-klein-9b-preview": "Black Forest Labs가 계속 업데이트하는 작고 빠른 최신 FLUX.2 [klein] 9B.",
     "bfl-flux-2-klein-9b": "결과를 재현할 수 있도록 고정된 작고 빠른 FLUX.2 [klein] 9B 스냅샷.",
-    "bfl-flux-2-klein-4b": "가장 작고 빠른 FLUX.2 모델인 FLUX.2 [klein] 4B."
+    "bfl-flux-2-klein-4b": "가장 작고 빠른 FLUX.2 모델인 FLUX.2 [klein] 4B.",
+    "apimart-nano-banana-2": "APIMart를 통한 Google Gemini 3.1 Flash 이미지 모델(Nano Banana 2). 최대 14장의 참조 이미지로 0.5K, 1K, 2K, 4K 생성 및 편집을 지원합니다.",
+    "apimart-nano-banana-pro": "APIMart를 통한 Google Gemini 3 Pro 이미지 모델(Nano Banana Pro). 복잡한 구도와 이미지 내 텍스트 렌더링에 강하며 1K, 2K, 4K를 지원합니다.",
+    "apimart-nano-banana": "APIMart를 통한 Google Gemini 2.5 Flash 이미지 모델(Nano Banana). 빠르고 저렴한 1K 생성 및 편집을 지원합니다.",
+    "apimart-gpt-image-2-5-sunburst": "APIMart를 통한 OpenAI 품질 중심 GPT Image 2.5 Sunburst. Low, Medium, High 품질 등급을 지원합니다.",
+    "apimart-gpt-image-2-5-flare": "APIMart를 통한 OpenAI 속도 중심 GPT Image 2.5 Flare. Low, Medium, High 품질 등급을 지원합니다.",
+    "apimart-gpt-image-2": "APIMart를 통한 OpenAI GPT Image 2. Low, Medium, High 품질 등급을 지원합니다.",
+    "apimart-gpt-4o-image": "APIMart를 통한 OpenAI GPT-4o 이미지 생성 및 편집 모델. 최대 5장의 참조 이미지를 지원합니다.",
+    "apimart-seedream-5-0-lite": "APIMart를 통한 ByteDance Seedream 5.0 Lite. 최대 14장의 참조 이미지와 2K 또는 3K 출력을 지원합니다.",
+    "apimart-seedream-4-5": "APIMart를 통한 ByteDance Seedream 4.5. 최대 14장의 참조 이미지와 2K 또는 4K 출력을 지원합니다.",
+    "apimart-flux-2-pro": "APIMart를 통한 Black Forest Labs FLUX.2 [pro]. 1K 또는 2K를 지원합니다.",
+    "apimart-flux-2-max": "APIMart를 통한 Black Forest Labs 최고 화질 FLUX.2 [max]. 1K 또는 2K를 지원합니다.",
+    "apimart-flux-2-flex": "APIMart를 통한 Black Forest Labs FLUX.2 [flex]. 1K 또는 2K를 지원합니다.",
+    "apimart-flux-kontext-pro": "APIMart를 통한 Black Forest Labs FLUX.1 Kontext [pro]. 맥락 기반 이미지 생성 및 편집을 지원합니다.",
+    "apimart-flux-kontext-max": "APIMart를 통한 Black Forest Labs FLUX.1 Kontext [max]. 고정밀 맥락 기반 이미지 편집을 지원합니다.",
+    "apimart-qwen-image-3-0": "APIMart를 통한 Alibaba Qwen Image. 다국어 텍스트 렌더링과 이미지 생성에 뛰어납니다.",
+    "apimart-imagen-4-0": "APIMart를 통한 Google Imagen 4.0. 1K 또는 2K를 지원합니다."
   }
 }

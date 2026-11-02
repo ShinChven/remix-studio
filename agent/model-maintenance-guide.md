@@ -210,6 +210,7 @@ Used by `server/services/provider-model-lister.ts` to fetch available models fro
 | Grok (xAI) | `GET {base}/v1/models` | `Authorization: Bearer {apiKey}` |
 | RunningHub | No listing API | N/A |
 | MiniMax | No listing API | N/A |
+| APIMart | No listing API (static + custom models) | `Authorization: Bearer {apiKey}` |
 
 The lister fetches all models, then filters to only those whose `id` matches a `modelId` in `PROVIDER_MODELS_MAP`.
 

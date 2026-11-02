@@ -81,6 +81,13 @@ export function ProviderIcon({ type, className = "w-5 h-5" }: ProviderIconProps)
           <path d="M12 2 3.3 7v10L12 22l8.7-5V7L12 2Zm0 3.5 5.6 3.2-1.8 1.05A4.4 4.4 0 0 0 12 8a4 4 0 1 0 3.8 5.25l1.8 1.05L12 17.5l-5.6-3.2V9.7L12 6.5V5.5Z" />
         </svg>
       );
+    case 'APIMart':
+      // Stylized 'A' + hub mark for APIMart
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2.5 3.5 19.5h3.4l1.9-4h6.4l1.9 4h3.4L12 2.5Zm-1.9 10 1.9-4.1 1.9 4.1h-3.8Z" />
+        </svg>
+      );
     default:
       // Fallback key icon
       return (
