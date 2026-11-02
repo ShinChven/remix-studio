@@ -97,7 +97,12 @@ export function JobRow({ job, isExpanded, isSelected, selecting, tone = 'neutral
           {(meta || status) && (
             <Text as="span" variant="body-small" className="v2-jobrow__meta">
               {/* On a narrow pane the trailing status is hidden, so it leads the meta line instead. */}
-              {status && <span className="v2-jobrow__inline-status" data-tone={tone}>{status}{meta && ' · '}</span>}
+              {status && (
+                <>
+                  <span className="v2-jobrow__inline-status" data-tone={tone}>{status}</span>
+                  {meta && <span className="v2-jobrow__inline-status">{' · '}</span>}
+                </>
+              )}
               {meta}
             </Text>
           )}
