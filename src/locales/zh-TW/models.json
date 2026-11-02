@@ -128,6 +128,22 @@
     "bfl-flux-2-flex": "FLUX.2 [flex]，可調步數和引導強度進行微調。",
     "bfl-flux-2-klein-9b-preview": "最新的 FLUX.2 [klein] 9B，小而快，Black Forest Labs 會持續更新。",
     "bfl-flux-2-klein-9b": "FLUX.2 [klein] 9B 的固定快照，小而快，結果可重現。",
-    "bfl-flux-2-klein-4b": "FLUX.2 [klein] 4B，最小、最快的 FLUX.2 模型。"
+    "bfl-flux-2-klein-4b": "FLUX.2 [klein] 4B，最小、最快的 FLUX.2 模型。",
+    "apimart-nano-banana-2": "透過 APIMart 呼叫的 Google Gemini 3.1 Flash 圖像模型（Nano Banana 2）。支援最多 14 張參考圖生成與編輯，提供 0.5K、1K、2K 和 4K。",
+    "apimart-nano-banana-pro": "透過 APIMart 呼叫的 Google Gemini 3 Pro 圖像模型（Nano Banana Pro）。擅長複雜構圖與圖內文字渲染，支援 1K、2K 和 4K。",
+    "apimart-nano-banana": "透過 APIMart 呼叫的 Google Gemini 2.5 Flash 圖像模型（Nano Banana）。快速、低成本的 1K 圖像生成與編輯。",
+    "apimart-gpt-image-2-5-sunburst": "透過 APIMart 呼叫的 OpenAI 畫質取向 GPT Image 2.5 Sunburst，提供 Low、Medium、High 品質級別。",
+    "apimart-gpt-image-2-5-flare": "透過 APIMart 呼叫的 OpenAI 速度取向 GPT Image 2.5 Flare，提供 Low、Medium、High 品質級別。",
+    "apimart-gpt-image-2": "透過 APIMart 呼叫的 OpenAI GPT Image 2，提供 Low、Medium、High 品質級別。",
+    "apimart-gpt-4o-image": "透過 APIMart 呼叫的 OpenAI GPT-4o 圖像生成與編輯模型，支援最多 5 張參考圖。",
+    "apimart-seedream-5-0-lite": "透過 APIMart 呼叫的字節跳動 Seedream 5.0 Lite，支援 2K 或 3K 輸出及最多 14 張參考圖。",
+    "apimart-seedream-4-5": "透過 APIMart 呼叫的字節跳動 Seedream 4.5，支援 2K 或 4K 輸出及最多 14 張參考圖。",
+    "apimart-flux-2-pro": "透過 APIMart 呼叫的 Black Forest Labs FLUX.2 [pro]，支援 1K 或 2K。",
+    "apimart-flux-2-max": "透過 APIMart 呼叫的 Black Forest Labs 最高畫質 FLUX.2 [max]，支援 1K 或 2K。",
+    "apimart-flux-2-flex": "透過 APIMart 呼叫的 Black Forest Labs FLUX.2 [flex]，支援 1K 或 2K。",
+    "apimart-flux-kontext-pro": "透過 APIMart 呼叫的 Black Forest Labs FLUX.1 Kontext [pro]，用於脈絡感知的圖像生成與編輯。",
+    "apimart-flux-kontext-max": "透過 APIMart 呼叫的 Black Forest Labs FLUX.1 Kontext [max]，提供最高精度的脈絡感知圖像編輯。",
+    "apimart-qwen-image-3-0": "透過 APIMart 呼叫的阿里通義千問 Qwen Image，擅長中英雙語文字渲染與圖像生成。",
+    "apimart-imagen-4-0": "透過 APIMart 呼叫的 Google Imagen 4.0，支援 1K 或 2K。"
   }
 }

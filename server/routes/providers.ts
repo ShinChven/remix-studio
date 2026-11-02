@@ -7,7 +7,7 @@ import crypto from 'crypto';
 import { assertSafeProviderApiUrl } from '../utils/url-safety';
 import { listProviderModels } from '../services/provider-model-lister';
 
-const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate', 'BlackForestLabs', 'Alibabacloud', 'Kimi', 'MiniMax', 'Civitai'];
+const VALID_TYPES: ProviderType[] = ['GoogleAI', 'VertexAI', 'RunningHub', 'KlingAI', 'OpenAI', 'Grok', 'Claude', 'BytePlus', 'Replicate', 'BlackForestLabs', 'Alibabacloud', 'Kimi', 'MiniMax', 'Civitai', 'APIMart'];
 type Variables = { user: JwtPayload };
 
 function parseCustomModels(raw: unknown, providerType: ProviderType): CustomModelAlias[] | undefined {
@@ -181,7 +181,7 @@ export function createProviderRouter(repo: ProviderRepository) {
 
       const providerType = provider.type as ProviderType;
 
-      if (providerType === 'RunningHub' || providerType === 'KlingAI' || providerType === 'BytePlus' || providerType === 'Replicate' || providerType === 'BlackForestLabs') {
+      if (providerType === 'RunningHub' || providerType === 'KlingAI' || providerType === 'BytePlus' || providerType === 'Replicate' || providerType === 'BlackForestLabs' || providerType === 'APIMart') {
         const result = await listProviderModels(providerType, '', provider.apiUrl);
         return c.json(result);
       }

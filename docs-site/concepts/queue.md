@@ -48,7 +48,7 @@ Changing a provider's configured concurrency affects subsequent scheduling; it d
 
 ## Detached Polling and Timeouts
 
-Remote async jobs are checked every 30 seconds; Civitai jobs, which finish in seconds, are also checked every 5 seconds so a result shows up promptly. Every check re-reads the job first, so the two cycles never act on a job the other has finished. A remote task reaching a terminal state is passed to the image/video processor and then releases its provider slot.
+Remote async jobs are checked every 30 seconds; Civitai and APIMart jobs, which finish in seconds, are also checked every 5 seconds so a result shows up promptly. Every check re-reads the job first, so the two cycles never act on a job the other has finished. A remote task reaching a terminal state is passed to the image/video processor and then releases its provider slot.
 
 A task can return more than one image. A layer-decomposition model, for example, returns a base image and up to 16 transparent layers; each becomes its own album item, and a retried job overwrites its layers instead of adding a second set.
 

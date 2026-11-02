@@ -128,6 +128,22 @@
     "bfl-flux-2-flex": "FLUX.2 [flex]。ステップ数とガイダンスで細かく調整できます。",
     "bfl-flux-2-klein-9b-preview": "最新の FLUX.2 [klein] 9B。小型で高速なモデルで、Black Forest Labs が随時更新します。",
     "bfl-flux-2-klein-9b": "FLUX.2 [klein] 9B の固定スナップショット。小型・高速で、結果の再現性を保てます。",
-    "bfl-flux-2-klein-4b": "FLUX.2 [klein] 4B。最も小さく速い FLUX.2 モデルです。"
+    "bfl-flux-2-klein-4b": "FLUX.2 [klein] 4B。最も小さく速い FLUX.2 モデルです。",
+    "apimart-nano-banana-2": "APIMart 経由の Google Gemini 3.1 Flash 画像モデル（Nano Banana 2）。最大 14 枚の参考画像で 0.5K、1K、2K、4K の生成・編集が可能です。",
+    "apimart-nano-banana-pro": "APIMart 経由の Google Gemini 3 Pro 画像モデル（Nano Banana Pro）。複雑な構図や画像内テキストに強く、1K、2K、4K に対応します。",
+    "apimart-nano-banana": "APIMart 経由の Google Gemini 2.5 Flash 画像モデル（Nano Banana）。1K で高速・低コストの生成と編集が可能です。",
+    "apimart-gpt-image-2-5-sunburst": "APIMart 経由の OpenAI 画質重視モデル GPT Image 2.5 Sunburst。Low、Medium、High の品質ティアを選べます。",
+    "apimart-gpt-image-2-5-flare": "APIMart 経由の OpenAI 速度重視モデル GPT Image 2.5 Flare。Low、Medium、High の品質ティアを選べます。",
+    "apimart-gpt-image-2": "APIMart 経由の OpenAI GPT Image 2。Low、Medium、High の品質ティアを選べます。",
+    "apimart-gpt-4o-image": "APIMart 経由の OpenAI GPT-4o 画像生成・編集モデル。最大 5 枚の参考画像に対応します。",
+    "apimart-seedream-5-0-lite": "APIMart 経由の ByteDance Seedream 5.0 Lite。最大 14 枚の参考画像と 2K または 3K 出力に対応します。",
+    "apimart-seedream-4-5": "APIMart 経由の ByteDance Seedream 4.5。最大 14 枚の参考画像と 2K または 4K 出力に対応します。",
+    "apimart-flux-2-pro": "APIMart 経由の Black Forest Labs FLUX.2 [pro]。1K または 2K に対応します。",
+    "apimart-flux-2-max": "APIMart 経由の Black Forest Labs 最高品質モデル FLUX.2 [max]。1K または 2K に対応します。",
+    "apimart-flux-2-flex": "APIMart 経由の Black Forest Labs FLUX.2 [flex]。1K または 2K に対応します。",
+    "apimart-flux-kontext-pro": "APIMart 経由の Black Forest Labs FLUX.1 Kontext [pro]。文脈を考慮した画像生成・編集に対応します。",
+    "apimart-flux-kontext-max": "APIMart 経由の Black Forest Labs FLUX.1 Kontext [max]。高精度の文脈考慮型画像編集に対応します。",
+    "apimart-qwen-image-3-0": "APIMart 経由の Alibaba Qwen Image。中英バイリンガルの文字描画と画像生成に優れています。",
+    "apimart-imagen-4-0": "APIMart 経由の Google Imagen 4.0。1K または 2K に対応します。"
   }
 }

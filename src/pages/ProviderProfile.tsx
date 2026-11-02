@@ -26,6 +26,7 @@ const TYPE_COLORS: Record<ProviderType, { icon: string; badge: string }> = {
   Kimi:       { icon: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400', badge: 'bg-indigo-100 dark:bg-indigo-600/10 text-indigo-800 dark:text-indigo-400 border-indigo-200 dark:border-indigo-600/30' },
   MiniMax:    { icon: 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400', badge: 'bg-red-100 dark:bg-red-600/10 text-red-800 dark:text-red-400 border-red-200 dark:border-red-600/30' },
   Civitai:    { icon: 'bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400', badge: 'bg-sky-100 dark:bg-sky-600/10 text-sky-800 dark:text-sky-400 border-sky-200 dark:border-sky-600/30' },
+  APIMart:    { icon: 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400', badge: 'bg-teal-100 dark:bg-teal-600/10 text-teal-800 dark:text-teal-400 border-teal-200 dark:border-teal-600/30' },
 };
 const DEFAULT_TYPE_COLORS = {
   icon: 'bg-neutral-100 dark:bg-neutral-500/10 text-neutral-700 dark:text-neutral-300',
@@ -73,10 +74,10 @@ export function ProviderProfile() {
   }, [id, t]);
 
   useEffect(() => { loadProvider(); }, [loadProvider]);
-  // RunningHub/KlingAI/BytePlus/Replicate use static models; others require credentials.
+  // RunningHub/KlingAI/BytePlus/Replicate/BlackForestLabs/APIMart use static models; others require credentials.
   useEffect(() => {
     if (!provider) return;
-    if (provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.type === 'BlackForestLabs' || provider.hasKey) loadModels();
+    if (provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.type === 'BlackForestLabs' || provider.type === 'APIMart' || provider.hasKey) loadModels();
   }, [provider, loadModels]);
 
   if (isLoadingProvider) {
@@ -144,7 +145,7 @@ export function ProviderProfile() {
           backLink={{ to: '/providers', label: t('providers.title') }}
           actions={(
             <>
-              {provider.type === 'BytePlus' && (
+              {(provider.type === 'BytePlus' || provider.type === 'APIMart') && (
                 <button
                   onClick={() => navigate(`/provider/${id}/custom-models`)}
                   className="text-xs md:text-sm bg-cyan-600/10 text-cyan-400 hover:bg-cyan-600/20 px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-2 border border-cyan-600/30 font-medium"
@@ -176,7 +177,7 @@ export function ProviderProfile() {
             <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
               {t('providerProfile.supportedModels')}
             </h3>
-            {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && provider.type !== 'BlackForestLabs' && (
+            {provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && provider.type !== 'BlackForestLabs' && provider.type !== 'APIMart' && (
               <button
                 onClick={loadModels}
                 disabled={isLoadingModels}
@@ -187,7 +188,7 @@ export function ProviderProfile() {
             )}
           </div>
 
-          {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && provider.type !== 'BlackForestLabs' && (
+          {!provider.hasKey && provider.type !== 'RunningHub' && provider.type !== 'KlingAI' && provider.type !== 'BytePlus' && provider.type !== 'Replicate' && provider.type !== 'BlackForestLabs' && provider.type !== 'APIMart' && (
             <div className="p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl text-amber-700 dark:text-amber-400 text-sm flex items-center gap-2 shadow-sm font-medium">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {t('providerProfile.addKeyToFetch')}
@@ -205,7 +206,7 @@ export function ProviderProfile() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-6 h-6 text-neutral-500 dark:text-neutral-500 animate-spin" />
             </div>
-          ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.type === 'BlackForestLabs') && models.length === 0 && !modelsError ? (
+          ) : (provider.hasKey || provider.type === 'RunningHub' || provider.type === 'KlingAI' || provider.type === 'BytePlus' || provider.type === 'Replicate' || provider.type === 'BlackForestLabs' || provider.type === 'APIMart') && models.length === 0 && !modelsError ? (
             <div className="py-12 text-center text-neutral-500 dark:text-neutral-500 text-sm">
               {t('providerProfile.noModels')}
             </div>

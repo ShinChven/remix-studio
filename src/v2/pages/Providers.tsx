@@ -158,7 +158,7 @@ export function Providers() {
       { key: 'open', icon: 'arrow_forward', label: t('v2.providers.open'), onSelect: () => openProvider(provider) },
       { key: 'edit', icon: ready ? 'edit' : 'key', label: ready ? t('providerProfile.edit') : t('v2.providers.addKey'), href: `/provider/${provider.id}/edit` },
       { key: 'rename', icon: 'drive_file_rename_outline', label: t('v2.providers.rename'), onSelect: () => setRenameTarget(provider) },
-      { key: 'custom', icon: 'layers', label: t('providerProfile.customModels'), href: `/provider/${provider.id}/custom-models`, hidden: provider.type !== 'BytePlus' },
+      { key: 'custom', icon: 'layers', label: t('providerProfile.customModels'), href: `/provider/${provider.id}/custom-models`, hidden: provider.type !== 'BytePlus' && provider.type !== 'APIMart' },
       { key: 'queue', icon: 'monitoring', label: t('sidebar.queueMonitor'), href: QUEUE_HREF, hidden: activeJobCount(provider) === 0 },
       {
         key: 'select',

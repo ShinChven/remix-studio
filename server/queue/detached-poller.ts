@@ -15,7 +15,7 @@ const DEFAULT_STUCK_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 // Providers whose tasks finish in seconds are also checked on a short cycle,
 // so a result shows up promptly rather than up to 30 s after it is ready.
-const FAST_POLL_PROVIDER_TYPES = ['Civitai'];
+const FAST_POLL_PROVIDER_TYPES = ['Civitai', 'APIMart'];
 const FAST_POLL_INTERVAL_MS = 5_000;
 
 export class DetachedPoller {

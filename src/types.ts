@@ -2073,6 +2073,191 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   // Civitai projects pick their checkpoint from Civitai's catalog rather than a
   // fixed list, so the provider only holds the API token.
   Civitai: [],
+  APIMart: [
+    {
+      id: 'apimart-nano-banana-2',
+      name: 'nano banana 2',
+      generatorId: 'APIMart',
+      modelId: 'gemini-3.1-flash-image-preview',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-pro',
+      name: 'nano banana Pro',
+      generatorId: 'APIMart',
+      modelId: 'gemini-3-pro-image-preview',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana',
+      name: 'nano banana',
+      generatorId: 'APIMart',
+      modelId: 'gemini-2.5-flash-image-preview',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
+        qualities: ['1K'],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-2-5-sunburst',
+      name: 'GPT Image 2.5 Sunburst',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-2.5-sunburst',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
+        qualities: [
+          '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
+          '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',
+          '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max',
+        ],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-2-5-flare',
+      name: 'GPT Image 2.5 Flare',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-2.5-flare',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
+        qualities: [
+          '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
+          '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',
+          '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max',
+        ],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-2',
+      name: 'GPT Image 2',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-2',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '3:2', '2:3', '4:3', '3:4', '5:4', '4:5', '16:9', '9:16', '21:9'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-gpt-4o-image',
+      name: 'GPT-4o Image',
+      generatorId: 'APIMart',
+      modelId: 'gpt-4o-image',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '3:2', '2:3'],
+      },
+    },
+    {
+      id: 'apimart-seedream-5-0-lite',
+      name: 'Seedream 5.0 Lite',
+      generatorId: 'APIMart',
+      modelId: 'seedream-5-0-lite',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['2K', '3K'],
+      },
+    },
+    {
+      id: 'apimart-seedream-4-5',
+      name: 'Seedream 4.5',
+      generatorId: 'APIMart',
+      modelId: 'seedream-4.5',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        qualities: ['2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-flux-2-pro',
+      name: 'FLUX.2 Pro',
+      generatorId: 'APIMart',
+      modelId: 'flux-2-pro',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1MP', '2MP', '4MP'],
+      },
+    },
+    {
+      id: 'apimart-flux-2-max',
+      name: 'FLUX.2 Max',
+      generatorId: 'APIMart',
+      modelId: 'flux-2-max',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1MP', '2MP', '4MP'],
+      },
+    },
+    {
+      id: 'apimart-flux-2-flex',
+      name: 'FLUX.2 Flex',
+      generatorId: 'APIMart',
+      modelId: 'flux-2-flex',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        qualities: ['1MP', '2MP', '4MP'],
+      },
+    },
+    {
+      id: 'apimart-flux-kontext-pro',
+      name: 'FLUX Kontext Pro',
+      generatorId: 'APIMart',
+      modelId: 'flux-kontext-pro',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+      },
+    },
+    {
+      id: 'apimart-flux-kontext-max',
+      name: 'FLUX Kontext Max',
+      generatorId: 'APIMart',
+      modelId: 'flux-kontext-max',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+      },
+    },
+    {
+      id: 'apimart-qwen-image-3-0',
+      name: 'Qwen Image 3.0',
+      generatorId: 'APIMart',
+      modelId: 'qwen-image-3.0',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-imagen-4-0',
+      name: 'Imagen 4.0',
+      generatorId: 'APIMart',
+      modelId: 'imagen-4.0-apimart',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
+        qualities: ['1K', '2K'],
+      },
+    },
+  ],
 };
 
 /**
@@ -2366,7 +2551,7 @@ export interface Project {
   civitaiConfig?: CivitaiGenerationConfig;
 }
 
-export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax' | 'Civitai';
+export type ProviderType = 'GoogleAI' | 'VertexAI' | 'RunningHub' | 'KlingAI' | 'OpenAI' | 'Grok' | 'Claude' | 'BytePlus' | 'Replicate' | 'BlackForestLabs' | 'Alibabacloud' | 'Kimi' | 'MiniMax' | 'Civitai' | 'APIMart';
 
 /**
  * A custom model variant that inherits all options from a built-in base model

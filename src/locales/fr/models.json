@@ -128,6 +128,22 @@
     "bfl-flux-2-flex": "FLUX.2 [flex], avec réglage des étapes et du guidage pour affiner le rendu.",
     "bfl-flux-2-klein-9b-preview": "La dernière version de FLUX.2 [klein] 9B, un modèle petit et rapide que Black Forest Labs met à jour au fil du temps.",
     "bfl-flux-2-klein-9b": "Un instantané figé de FLUX.2 [klein] 9B, petit et rapide, pour des résultats reproductibles.",
-    "bfl-flux-2-klein-4b": "FLUX.2 [klein] 4B, le modèle FLUX.2 le plus petit et le plus rapide."
+    "bfl-flux-2-klein-4b": "FLUX.2 [klein] 4B, le modèle FLUX.2 le plus petit et le plus rapide.",
+    "apimart-nano-banana-2": "Le modèle d'image Gemini 3.1 Flash de Google (Nano Banana 2) via APIMart. Génère et édite avec jusqu'à 14 images de référence en 0.5K, 1K, 2K ou 4K.",
+    "apimart-nano-banana-pro": "Le modèle d'image Gemini 3 Pro de Google (Nano Banana Pro) via APIMart. Conçu pour les scènes complexes et le texte dans l'image en 1K, 2K ou 4K.",
+    "apimart-nano-banana": "Le modèle d'image Gemini 2.5 Flash de Google (Nano Banana) via APIMart. Génération et édition rapides et économiques en 1K.",
+    "apimart-gpt-image-2-5-sunburst": "Le niveau GPT Image 2.5 Sunburst axé sur la qualité d'OpenAI via APIMart, avec les niveaux Low, Medium et High.",
+    "apimart-gpt-image-2-5-flare": "Le niveau GPT Image 2.5 Flare axé sur la vitesse d'OpenAI via APIMart, avec les niveaux Low, Medium et High.",
+    "apimart-gpt-image-2": "GPT Image 2 d'OpenAI via APIMart, avec les niveaux de qualité Low, Medium et High.",
+    "apimart-gpt-4o-image": "Le modèle de génération et d'édition d'images GPT-4o d'OpenAI via APIMart, acceptant jusqu'à 5 images de référence.",
+    "apimart-seedream-5-0-lite": "Seedream 5.0 Lite de ByteDance via APIMart, en 2K ou 3K avec jusqu'à 14 images de référence.",
+    "apimart-seedream-4-5": "Seedream 4.5 de ByteDance via APIMart, en 2K ou 4K avec jusqu'à 14 images de référence.",
+    "apimart-flux-2-pro": "FLUX.2 [pro] de Black Forest Labs via APIMart, en 1K ou 2K.",
+    "apimart-flux-2-max": "Le niveau FLUX.2 [max] de plus haute qualité de Black Forest Labs via APIMart, en 1K ou 2K.",
+    "apimart-flux-2-flex": "FLUX.2 [flex] de Black Forest Labs via APIMart, en 1K ou 2K.",
+    "apimart-flux-kontext-pro": "FLUX.1 Kontext [pro] de Black Forest Labs via APIMart pour la génération et l'édition d'images sensibles au contexte.",
+    "apimart-flux-kontext-max": "FLUX.1 Kontext [max] de Black Forest Labs via APIMart pour l'édition d'images contextuelle haute fidélité.",
+    "apimart-qwen-image-3-0": "Qwen Image d'Alibaba via APIMart pour le rendu de texte bilingue et la génération d'images.",
+    "apimart-imagen-4-0": "Imagen 4.0 de Google via APIMart, en 1K ou 2K."
   }
 }
