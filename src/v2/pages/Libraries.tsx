@@ -118,7 +118,7 @@ export function Libraries() {
         title={t('libraries.title')}
         description={t('libraries.description')}
         actions={
-          <Button variant="filled" icon="add" emphasized href="/library/new" className="v2-hide-compact">
+          <Button variant="filled" icon="add" emphasized href="/library/new" className="v2-hide-mobile">
             {t('libraries.newLibrary')}
           </Button>
         }

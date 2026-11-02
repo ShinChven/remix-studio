@@ -300,7 +300,7 @@ export function ImageEditorDialog({ isOpen, onClose, onSave, imageUrl }: ImageEd
           {mode === 'draw' && (
             <span className="flex items-center gap-1">
               {COLORS.map((c) => (
-                <button key={c} type="button" className="v2-swatch m3-focus-ring" data-selected={drawColor === c ? '' : undefined} style={{ backgroundColor: c }} aria-label={c} onClick={() => setDrawColor(c)} />
+                <button key={c} type="button" className="v2-color-swatch m3-focus-ring" data-selected={drawColor === c ? '' : undefined} style={{ backgroundColor: c }} aria-label={c} onClick={() => setDrawColor(c)} />
               ))}
               <IconButton icon="ink_eraser" size="xs" label={t('imageEditor.clearDrawings', { defaultValue: 'Clear Drawings' })} tooltip onClick={() => setPaths([])} />
             </span>

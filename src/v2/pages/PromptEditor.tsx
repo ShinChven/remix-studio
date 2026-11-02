@@ -77,7 +77,7 @@ export function PromptEditor() {
         <span className="v2-kind-badge hidden bg-primary-container text-on-primary-container sm:inline-flex">
           <Icon name="sticky_note_2" />
         </span>
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="v2-editor__title-col flex min-w-0 flex-1 flex-col">
           <input className="v2-editor__title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={isNew ? t('promptEditor.titlePlaceholder') : t('promptEditor.itemTitlePlaceholder')} aria-label={t('promptEditor.titlePlaceholder')} />
           <div className="flex items-center gap-2">
             <Text as="span" variant="label-small" className="truncate uppercase tracking-widest text-on-surface-variant">
