@@ -2002,8 +2002,22 @@
 .v2-lightbox__ring {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: 1;
+  transform: rotate(-90deg);
   pointer-events: none;
+}
+.v2-lightbox__ring circle {
+  fill: none;
+  stroke-width: 2.5;
+}
+.v2-lightbox__ring-track {
+  stroke: var(--md-sys-color-outline-variant);
+}
+.v2-lightbox__ring-countdown {
+  stroke: var(--md-sys-color-primary);
+  stroke-linecap: round;
 }
 
 /* ---------- File cards (orphan files) ---------- */

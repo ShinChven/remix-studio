@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useWakeLock } from '../../hooks/useWakeLock';
-import { Button, CircularProgress, IconButton, ThemeScope } from '../../m3';
+import { Button, IconButton, ThemeScope } from '../../m3';
 import { NumberField } from '../ui/NumberField';
 
 export interface LightboxProps {
@@ -32,6 +32,8 @@ const TRANSITIONS = ['none', 'fade', 'slide', 'zoom', 'blur', 'ripple'] as const
 type Transition = (typeof TRANSITIONS)[number];
 const TRANSITION_KEY = 'imageLightbox.slideshowTransition';
 const TRANSITION_MS = 1100;
+const RING_RADIUS = 18;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 const clampIndex = (index: number, length: number) => (length <= 0 ? 0 : Math.min(Math.max(index, 0), length - 1));
 const clampInterval = (value: number) => Math.min(Math.max(Math.round(value), MIN_INTERVAL), MAX_INTERVAL);
@@ -234,10 +236,8 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
 
   // The countdown restarts once the next image is actually on screen.
   useEffect(() => {
-    if (!playing || images.length <= 1) {
-      setProgress(0);
-      return;
-    }
+    setProgress(0);
+    if (!playing || images.length <= 1) return;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -357,7 +357,6 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
           )}
           {images.length > 1 && (
             <div className="v2-lightbox__play">
-              {playing && <CircularProgress value={progress * 100} size={40} thickness={2.5} aria-hidden className="v2-lightbox__ring" />}
               <IconButton
                 icon={playing ? 'pause' : 'play_arrow'}
                 label={`${t(playing ? 'projectViewer.imageLightbox.stopSlideshow' : 'projectViewer.imageLightbox.startSlideshow')} (Space)`}
@@ -367,6 +366,19 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
                 shapeMorph={false}
                 onClick={() => setPlaying((p) => !p)}
               />
+              {playing && (
+                <svg className="v2-lightbox__ring" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+                  <circle className="v2-lightbox__ring-track" cx="20" cy="20" r={RING_RADIUS} />
+                  <circle
+                    className="v2-lightbox__ring-countdown"
+                    cx="20"
+                    cy="20"
+                    r={RING_RADIUS}
+                    strokeDasharray={RING_CIRCUMFERENCE}
+                    strokeDashoffset={RING_CIRCUMFERENCE * progress}
+                  />
+                </svg>
+              )}
             </div>
           )}
           {onReuse && <IconButton icon={reuseAction?.icon ?? 'refresh'} label={`${reuseAction?.label ?? t('projectViewer.album.reuseWorkflow')} (R)`} tooltip variant="tonal" onClick={() => requestReuse(bounded)} />}
