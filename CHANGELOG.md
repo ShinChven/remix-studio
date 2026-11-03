@@ -2,6 +2,21 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.26.1] - 2026-11-03
+
+### Added
+
+- **Expanded APIMart Image Catalog**: APIMart now includes 48 bundled image profiles, up from 16, adding Nano Banana 2.1, Official and Ext variants, GPT Image 1 and 1.5, Seedream 5.0 Pro and Flash, FLUX 3, HY Image, Muse, MAI, more Qwen and Grok models, Z Image Turbo, Wan 2.7 and Midjourney. Model explanations are available in all six locales.
+
+### Improved
+
+- **Unified Mobile Project Navigation**: In the new interface, one compact, icon-only segmented control switches directly between Workflow, Drafts, Queue, Done and Album, with accessible labels and queue status indicators, replacing the separate workflow/results toggle and results tabs on narrow screens.
+
+### Fixed
+
+- **APIMart Model-Specific Requests**: Generation now sends the appropriate aspect ratio, resolution and quality fields for each model family, uses Midjourney's dedicated endpoint, accepts asynchronous `202` responses, rejects reference images for text-only models before uploading, and respects Wan Pro and MAI editing limits. Nano Banana 2.1 is the default when no model is specified.
+- **New Interface Layout and Control Alignment**: Corrected compact library search fields, prompt editor title alignment and passkey form alignment; restored library and campaign create buttons on tablet screens; and resolved styling collisions affecting orphan-file cards, image editor color swatches, avatars and campaign progress indicators.
+
 ## [1.26.0] - 2026-11-03
 
 ### Added

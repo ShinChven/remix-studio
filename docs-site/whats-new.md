@@ -8,6 +8,25 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.26.1 — More APIMart models and simpler mobile project navigation
+
+*Choose from 48 APIMart image profiles and switch between your workflow and results directly from a compact mobile control.*
+
+**Added**
+
+- **48 APIMart image profiles** — The bundled catalog grows from 16 to 48, including Nano Banana 2.1, additional Official and Ext variants, GPT Image 1 and 1.5, Seedream 5.0 Pro and Flash, FLUX 3, HY Image, Muse, MAI, more Qwen and Grok models, Z Image Turbo, Wan 2.7 and Midjourney. Each has an explanation in all six interface languages. See [Model Profiles](/concepts/models).
+
+**Improved**
+
+- **One mobile project switcher** — In the new interface, an icon-only segmented control opens Workflow, Drafts, Queue, Done or Album directly, with accessible labels and queue status indicators.
+
+**Fixed**
+
+- **APIMart generation compatibility** — Requests now follow each model family's aspect ratio, resolution, quality and editing rules. Midjourney uses its dedicated endpoint, asynchronous `202` responses are accepted, and text-only models reject reference images before uploading them. Requests without a model now default to Nano Banana 2.1.
+- **New interface layout polish** — Search fields, prompt titles and passkey controls align correctly, library and campaign create buttons remain available on tablets, and orphan-file cards and image editor color swatches no longer inherit unrelated styles.
+
+---
+
 ## 1.26.0 — Material 3 Expressive interface, APIMart image models, and source-linked results
 
 *Switch to a new Material 3 Expressive interface with a live theme editor and virtualized job queues, generate images through APIMart across 16 bundled models, and trace every album result back to the library items that produced it.*
