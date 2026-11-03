@@ -19,7 +19,7 @@ export interface SectionNavItem<T extends string = ProjectSection> {
 const lastIndicators = new Map<string, { left: number; width: number }>();
 
 /** The results pane's sections, as one quiet segmented pill with counts and a sliding indicator. */
-export function SectionNav<T extends string = ProjectSection>({ items, value, onChange, label, scope = 'project' }: { items: SectionNavItem<T>[]; value: T; onChange: (value: T) => void; label?: string; scope?: string }) {
+export function SectionNav<T extends string = ProjectSection>({ items, value, onChange, label, scope = 'project', iconOnly = false }: { items: SectionNavItem<T>[]; value: T; onChange: (value: T) => void; label?: string; scope?: string; iconOnly?: boolean }) {
   const { t } = useTranslation();
   const navRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -64,12 +64,12 @@ export function SectionNav<T extends string = ProjectSection>({ items, value, on
   }, [value, scope]);
 
   return (
-    <nav ref={navRef} className="v2-section-nav" aria-label={label ?? t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}>
+    <nav ref={navRef} className="v2-section-nav" data-icon-only={iconOnly ? '' : undefined} aria-label={label ?? t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}>
       <span ref={indicatorRef} className="v2-section-nav__indicator" aria-hidden />
       {items.map((item) => {
         const active = item.value === value;
         return (
-          <button key={item.value} type="button" className="v2-section-nav__item m3-focus-ring" data-active={active ? '' : undefined} aria-current={active ? 'page' : undefined} title={item.label} onClick={() => onChange(item.value)}>
+          <button key={item.value} type="button" className="v2-section-nav__item m3-focus-ring" data-active={active ? '' : undefined} aria-current={active ? 'page' : undefined} aria-label={item.label} title={item.label} onClick={() => onChange(item.value)}>
             <Ripple />
             <Icon name={item.icon} size={18} filled={active} className="v2-section-nav__icon" />
             <span className="v2-section-nav__label">{item.label}</span>
