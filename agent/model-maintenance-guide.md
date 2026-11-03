@@ -214,6 +214,37 @@ Used by `server/services/provider-model-lister.ts` to fetch available models fro
 
 The lister fetches all models, then filters to only those whose `id` matches a `modelId` in `PROVIDER_MODELS_MAP`.
 
+### APIMart image catalog
+
+The APIMart catalog includes all image-generation model IDs documented in the
+[image API reference](https://docs.apimart.ai/en/api-reference/images/gemini-nano-banana-2.1/generation),
+including official and Ext channels. Compatibility aliases are not separate
+entries. Existing internal IDs and their API model selections stay intact;
+Nano Banana 2.1 and its Ext channel are new entries, and 2.1 is the generator's
+fallback. Unlike Nano Banana 2, 2.1 does not accept 0.5K.
+
+Most models send `size` and `resolution`, but the generator handles these
+exceptions:
+
+- GPT Image 1/1.5 use `quality` without `resolution`. GPT Image 2 Official and
+  2.5 combine resolution and quality in the picker, such as `2K High`.
+- GPT Image 2.5 Ext uses one model ID plus `version`. Its picker combines
+  resolution and version (`2K Flare` / `2K Sunburst`), and sends no `quality`.
+- Official Grok and FLUX 3 use `aspect_ratio`. Grok resolution is lowercase;
+  only Grok Image 2.0 takes a quality field, and only without reference images.
+- Muse has aspect-ratio control but no resolution control. Imagen 4.0, Z Image
+  Turbo and Grok 2.0 Ext only accept text-to-image requests in this integration.
+- Wan 2.7 Pro supports 4K for text-to-image; editing a reference at a selected
+  4K uses 2K. MAI editing lets the model determine output dimensions.
+- Midjourney submits to `/v1/midjourney/generations`, then uses the same task
+  poller. Native prompt flags select MJ versions and Niji. Its quality is not
+  an image resolution; stale values such as `1K` are omitted.
+
+Successful submissions can use either the legacy `200` array response or the
+unified `202` object response. Run the mocked request and polling checks with
+`node --import tsx --test scripts/test-apimart-generator.ts`; they require no
+credentials, database, or paid generation requests.
+
 ---
 
 ## Current Model Inventory (October 2026)
