@@ -104,6 +104,7 @@ export function DraftsTab(props: DraftsTabProps) {
       <ResultsBar
         nav={props.nav}
         totalCount={draftJobs.length}
+        mobileCount={draftJobs.length}
         selectedCount={selectedDraftIds.size}
         onToggleSelectAll={props.toggleSelectAllDrafts}
         onClearSelection={props.clearDraftSelection}
@@ -253,6 +254,7 @@ export function QueueTab(props: QueueTabProps) {
       <ResultsBar
         nav={props.nav}
         totalCount={queueJobs.length}
+        mobileCount={queueJobs.length}
         selectedCount={selectedQueueIds.size}
         onToggleSelectAll={props.toggleSelectAllQueue}
         onClearSelection={props.clearQueueSelection}
@@ -363,6 +365,7 @@ export function CompletedTab(props: CompletedTabProps) {
         nav={props.nav}
         isLoading={isLoading && completedJobs.length > 0}
         totalCount={completedJobs.length}
+        mobileCount={total}
         selectedCount={selectedCompletedIds.size}
         onToggleSelectAll={props.toggleSelectAllCompleted}
         onClearSelection={props.clearCompletedSelection}
