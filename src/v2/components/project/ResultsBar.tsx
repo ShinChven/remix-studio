@@ -86,6 +86,8 @@ export interface ResultsBarProps {
   /** The section switcher, shown while nothing is selected. */
   nav: ReactNode;
   totalCount: number;
+  /** Full section total on mobile, separate from the current page's selectable count. */
+  mobileCount?: number;
   selectedCount: number;
   onToggleSelectAll: () => void;
   onClearSelection: () => void;
@@ -104,7 +106,7 @@ export interface ResultsBarProps {
 }
 
 /** The results pane's top bar: sections and tools, turning into a contextual selection bar while anything is selected. */
-export function ResultsBar({ nav, totalCount, selectedCount, onToggleSelectAll, onClearSelection, selectionActions, tools, menuItems = [], summary, below, isLoading = false }: ResultsBarProps) {
+export function ResultsBar({ nav, totalCount, mobileCount, selectedCount, onToggleSelectAll, onClearSelection, selectionActions, tools, menuItems = [], summary, below, isLoading = false }: ResultsBarProps) {
   const { t } = useTranslation();
   const selecting = selectedCount > 0;
   const allSelected = selecting && selectedCount >= totalCount;
@@ -141,6 +143,7 @@ export function ResultsBar({ nav, totalCount, selectedCount, onToggleSelectAll, 
         ) : (
           <>
             {nav}
+            {mobileCount !== undefined && <span className="v2-results-bar__mobile-count">{t('v2.project.itemCount', { count: mobileCount })}</span>}
             {isLoading && <LoadingIndicator size={24} aria-label={t('projectViewer.common.loading')} />}
             <span className="v2-results-bar__spacer" />
             {summary && <span className="v2-results-bar__summary">{summary}</span>}

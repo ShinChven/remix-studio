@@ -490,6 +490,7 @@ export function AlbumTab(props: AlbumTabProps) {
         nav={props.nav}
         isLoading={isLoading && albumItems.length > 0}
         totalCount={albumItems.length}
+        mobileCount={total}
         selectedCount={selectedIds.length}
         onToggleSelectAll={() => toggleSelectAllAlbum(itemIds)}
         onClearSelection={props.clearAlbumSelection}

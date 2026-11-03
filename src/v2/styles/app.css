@@ -3779,6 +3779,17 @@
   color: var(--md-sys-color-on-secondary-container);
 }
 .v2-results-bar__count { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.v2-results-bar__mobile-count {
+  display: none;
+  flex-shrink: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@media (max-width: 1023.98px) {
+  .v2-project .v2-results-bar__mobile-count { display: inline; }
+}
 .v2-results-bar__spacer { flex: 1 1 0; min-width: 0; }
 .v2-results-bar__summary {
   overflow: hidden;
