@@ -3364,6 +3364,8 @@
 .v2-project__workflow { background: var(--md-sys-color-surface-container); }
 .v2-project__results { background: var(--md-sys-color-surface-container-lowest); }
 .v2-project__scroll { position: relative; display: flex; min-height: 0; flex: 1; flex-direction: column; overflow-y: auto; }
+.v2-project__section-nav { display: contents; }
+.v2-project__section-menu-label { display: flex; align-items: center; gap: 8px; }
 .v2-project__mobile-toggle {
   position: absolute;
   inset-block-end: 20px;
@@ -3377,6 +3379,7 @@
   .v2-project { grid-template-columns: 1fr; padding: 0; gap: 0; }
   .v2-project__workflow, .v2-project__results { border-radius: 0; }
   .v2-project__mobile-toggle { display: inline-flex; }
+  .v2-project__section-nav { display: none; }
   .v2-project[data-mobile-view="workflow"] .v2-project__results,
   .v2-project[data-expanded] .v2-project__results { display: none; }
   .v2-project[data-mobile-view="jobs"] .v2-project__workflow { display: none; }

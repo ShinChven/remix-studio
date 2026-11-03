@@ -74,10 +74,11 @@ import { LibrarySelectionDialog } from '../components/project/LibrarySelectionDi
 import { ModelSelectorDialog } from '../components/project/ModelSelectorDialog';
 import { PromptEditDialog } from '../components/project/PromptEditDialog';
 import { PromptLimitDialog } from '../components/project/PromptLimitDialog';
-import { ResultsBar, SectionNav } from '../components/project/ResultsBar';
+import { ResultsBar, SectionNav, type SectionNavItem } from '../components/project/ResultsBar';
 import { WorkflowPanel } from '../components/project/WorkflowPanel';
 import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { ActionMenu } from '../ui/ActionMenu';
 import { EmptyState, LoadingState } from '../ui/Page';
 import { useToast } from '../ui/useToast';
 
@@ -2605,28 +2606,62 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const clearAlbumSelection = useCallback(() => setSelectedAlbumIds(new Set()), []);
 
   const albumTabLabel = localProject.type === 'text' ? t('projectViewer.tabs.texts') : localProject.type === 'audio' ? t('projectViewer.tabs.audios') : t('projectViewer.tabs.album');
+  const sectionItems: SectionNavItem[] = [
+    { value: 'draft', label: t('v2.project.sections.drafts'), icon: 'edit_note', count: draftJobs.length },
+    {
+      value: 'queue',
+      label: t('projectViewer.tabs.queue'),
+      icon: 'pending_actions',
+      count: queueJobs.length,
+      signal: queueJobs.some((job) => job.status === 'failed') ? 'error' : queueJobs.some((job) => job.status === 'processing') ? 'running' : undefined,
+    },
+    { value: 'completed', label: t('projectViewer.tabs.done'), icon: 'task_alt', count: completedTotal },
+    { value: 'album', label: albumTabLabel, icon: localProject.type === 'text' ? 'article' : localProject.type === 'audio' ? 'library_music' : localProject.type === 'video' ? 'video_library' : 'photo_library', count: albumTotal },
+  ];
   const sectionNav = (
-    <SectionNav
-      value={activeTab}
-      onChange={setActiveTab}
-      items={[
-        { value: 'draft', label: t('v2.project.sections.drafts'), icon: 'edit_note', count: draftJobs.length },
-        {
-          value: 'queue',
-          label: t('projectViewer.tabs.queue'),
-          icon: 'pending_actions',
-          count: queueJobs.length,
-          signal: queueJobs.some((job) => job.status === 'failed') ? 'error' : queueJobs.some((job) => job.status === 'processing') ? 'running' : undefined,
-        },
-        { value: 'completed', label: t('projectViewer.tabs.done'), icon: 'task_alt', count: completedTotal },
-        { value: 'album', label: albumTabLabel, icon: localProject.type === 'text' ? 'article' : localProject.type === 'audio' ? 'library_music' : localProject.type === 'video' ? 'video_library' : 'photo_library', count: albumTotal },
-      ]}
-    />
+    <div className="v2-project__section-nav">
+      <SectionNav value={activeTab} onChange={setActiveTab} items={sectionItems} />
+    </div>
   );
   const workflowItem = (id: string | null) => (localProject.workflow || []).find((i) => i.id === id);
 
-  const toggleMobileView = () => setMobileView(mobileView === 'workflow' ? 'jobs' : 'workflow');
   const floatingSwitch = useContext(TopBarSlotContext) === null;
+  const mobileSections: SectionNavItem<'workflow' | SectionNavItem['value']>[] = [
+    { value: 'workflow', label: t('v2.project.workflow'), icon: 'account_tree', count: 0 },
+    ...sectionItems,
+  ];
+  const mobileSection = mobileView === 'workflow' ? 'workflow' : activeTab;
+  const currentMobileSection = mobileSections.find((item) => item.value === mobileSection) ?? mobileSections[0];
+  const mobileSectionMenu = (
+    <ActionMenu
+      label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}
+      trigger={(props) => (
+        <Button {...props} variant={floatingSwitch ? 'filled' : 'tonal'} size="sm" icon={currentMobileSection.icon} trailingIcon="expand_more" className={floatingSwitch ? 'v2-project__mobile-toggle' : undefined}>
+          {currentMobileSection.label}
+        </Button>
+      )}
+      items={mobileSections.map((item) => ({
+        key: item.value,
+        label: (
+          <span className="v2-project__section-menu-label">
+            {item.label}
+            {item.count > 0 && <span className="v2-section-nav__count">{item.count}</span>}
+            {item.signal && <span className="v2-section-nav__signal" data-signal={item.signal} />}
+          </span>
+        ),
+        icon: item.icon,
+        type: 'radio',
+        checked: item.value === mobileSection,
+        onSelect: () => {
+          if (item.value === 'workflow') setMobileView('workflow');
+          else {
+            setIsWorkflowExpanded(false);
+            setActiveTab(item.value);
+          }
+        },
+      }))}
+    />
+  );
 
   return (
     <div className="v2-project" data-mobile-view={mobileView} data-floating-switch={floatingSwitch ? '' : undefined} data-expanded={isWorkflowExpanded ? '' : undefined} data-density="compact">
@@ -2647,18 +2682,8 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         }}
       />
 
-      {/* Switching between the workflow and the results on narrow screens: in the phone top bar, or floating where there is none. */}
-      <TopBarActions
-        fallback={
-          <Button variant="filled" size="sm" icon={mobileView === 'workflow' ? 'view_list' : 'account_tree'} className="v2-project__mobile-toggle" onClick={toggleMobileView}>
-            {mobileView === 'workflow' ? t('projectViewer.main.mobileJobs') : t('projectViewer.common.back')}
-          </Button>
-        }
-      >
-        <Button variant="tonal" size="sm" icon={mobileView === 'workflow' ? 'view_list' : 'account_tree'} onClick={toggleMobileView}>
-          {mobileView === 'workflow' ? t('projectViewer.main.mobileJobs') : t('v2.project.workflow')}
-        </Button>
-      </TopBarActions>
+      {/* One section picker in the phone app bar, floating on narrow screens without an app bar. */}
+      <TopBarActions fallback={mobileSectionMenu}>{mobileSectionMenu}</TopBarActions>
 
       <aside className="v2-project__workflow">
         <WorkflowPanel
