@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useWakeLock } from '../../hooks/useWakeLock';
-import { Button, CircularProgress, IconButton, Text, ThemeScope, Toolbar } from '../../m3';
+import { Button, CircularProgress, IconButton, ThemeScope } from '../../m3';
 import { NumberField } from '../ui/NumberField';
 
 export interface LightboxProps {
@@ -355,6 +355,20 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
               </Button>
             </>
           )}
+          {images.length > 1 && (
+            <div className="v2-lightbox__play">
+              {playing && <CircularProgress value={progress * 100} size={40} thickness={2.5} aria-hidden className="v2-lightbox__ring" />}
+              <IconButton
+                icon={playing ? 'pause' : 'play_arrow'}
+                label={`${t(playing ? 'projectViewer.imageLightbox.stopSlideshow' : 'projectViewer.imageLightbox.startSlideshow')} (Space)`}
+                tooltip
+                variant="tonal"
+                shape="round"
+                shapeMorph={false}
+                onClick={() => setPlaying((p) => !p)}
+              />
+            </div>
+          )}
           {onReuse && <IconButton icon={reuseAction?.icon ?? 'refresh'} label={`${reuseAction?.label ?? t('projectViewer.album.reuseWorkflow')} (R)`} tooltip variant="tonal" onClick={() => requestReuse(bounded)} />}
           {onDelete && <IconButton icon={deleteAction?.icon ?? 'delete'} label={`${deleteAction?.label ?? t('projectViewer.imageLightbox.deleteImage')} (D)`} tooltip variant="tonal" className="v2-button-danger" onClick={() => requestDelete(bounded)} />}
           <IconButton
@@ -367,6 +381,18 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
           <IconButton icon="close" label={`${t('projectViewer.imageLightbox.close')} (Esc)`} tooltip variant="filled" onClick={onClose} />
         </div>
 
+        {images.length > 1 && (
+          <IconButton
+            icon="chevron_left"
+            label={`${t('projectViewer.imageLightbox.previous')} (←)`}
+            tooltip
+            variant="tonal"
+            size="md"
+            onClick={prev}
+            className="v2-lightbox__nav v2-lightbox__nav--prev v2-lightbox__chrome m3-mirror-rtl"
+          />
+        )}
+
         {prevSrc && <img src={prevSrc} alt="" aria-hidden className="v2-lightbox__image v2-lightbox__image--prev" />}
         <img
           key={playing && transition !== 'none' ? `${shownSrc}-${transition}` : 'static'}
@@ -378,30 +404,22 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
         />
 
         {images.length > 1 && (
+          <IconButton
+            icon="chevron_right"
+            label={`${t('projectViewer.imageLightbox.next')} (→)`}
+            tooltip
+            variant="tonal"
+            size="md"
+            onClick={next}
+            className="v2-lightbox__nav v2-lightbox__nav--next v2-lightbox__chrome m3-mirror-rtl"
+          />
+        )}
+
+        {images.length > 1 && (
           <div className="v2-lightbox__bottom v2-lightbox__chrome" onClick={stop}>
-            <div className="v2-lightbox__dock">
-              <IconButton icon="chevron_left" label={`${t('projectViewer.imageLightbox.previous')} (←)`} tooltip size="sm" onClick={prev} className="m3-mirror-rtl" />
-              <div className="v2-lightbox__play">
-                {playing && <CircularProgress value={progress * 100} size={40} thickness={2.5} aria-hidden className="v2-lightbox__ring" />}
-                <IconButton
-                  icon={playing ? 'pause' : 'play_arrow'}
-                  label={`${t(playing ? 'projectViewer.imageLightbox.stopSlideshow' : 'projectViewer.imageLightbox.startSlideshow')} (Space)`}
-                  tooltip
-                  size="sm"
-                  variant="tonal"
-                  shape="round"
-                  shapeMorph={false}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPlaying((p) => !p);
-                  }}
-                />
-              </div>
-              <span className="v2-lightbox__counter">
-                {bounded + 1} / {images.length}
-              </span>
-              <IconButton icon="chevron_right" label={`${t('projectViewer.imageLightbox.next')} (→)`} tooltip size="sm" onClick={next} className="m3-mirror-rtl" />
-            </div>
+            <span className="v2-lightbox__counter">
+              {bounded + 1} / {images.length}
+            </span>
           </div>
         )}
       </div>

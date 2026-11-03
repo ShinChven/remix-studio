@@ -1875,6 +1875,7 @@
   position: absolute;
   top: var(--md-sys-measurement-space200);
   inset-inline-end: var(--md-sys-measurement-space200);
+  max-width: calc(100% - 2 * var(--md-sys-measurement-space200));
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1961,23 +1962,38 @@
 @keyframes v2-slide-zoom { from { transform: scale(1); } to { transform: scale(1.12); } }
 @keyframes v2-slide-blur { from { opacity: 0; filter: blur(16px); } to { opacity: 1; filter: blur(0); } }
 @keyframes v2-slide-ripple { from { clip-path: circle(0% at 50% 50%); opacity: 0.55; } to { clip-path: circle(80% at 50% 50%); opacity: 1; } }
-.v2-lightbox__dock {
+.v2-lightbox__nav {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+}
+.v2-lightbox__nav--prev { left: 8px; }
+.v2-lightbox__nav--next { right: 8px; }
+@media (min-width: 768px) {
+  .v2-lightbox__nav--prev { left: 32px; }
+  .v2-lightbox__nav--next { right: 32px; }
+}
+.v2-lightbox__counter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  height: 48px;
-  padding-inline: 8px 12px;
+  min-width: 48px;
+  padding: 6px 16px;
   border-radius: 9999px;
   background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 85%, transparent);
   backdrop-filter: blur(16px);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  box-shadow: var(--md-sys-elevation-level3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--md-sys-color-on-surface);
+  user-select: none;
 }
 .v2-lightbox__play {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1985,18 +2001,9 @@
 }
 .v2-lightbox__ring {
   position: absolute;
-  inset: -2px;
+  inset: 0;
+  z-index: 1;
   pointer-events: none;
-}
-.v2-lightbox__counter {
-  min-width: 48px;
-  padding-inline: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  color: var(--md-sys-color-on-surface);
-  user-select: none;
 }
 
 /* ---------- File cards (orphan files) ---------- */
