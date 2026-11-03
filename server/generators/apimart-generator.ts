@@ -7,11 +7,11 @@ import {
 } from './image-generator';
 
 const DEFAULT_BASE_URL = 'https://api.apimart.ai/v1';
-const DEFAULT_MODEL = 'gemini-3.1-flash-image-preview';
+const DEFAULT_MODEL = 'gemini-nano-banana-2.1';
 
 const GPT_IMAGE_RESOLUTIONS = ['1k', '2k', '4k'];
 const GPT_IMAGE_25_QUALITIES = ['auto', 'low', 'medium', 'high', 'xhigh', 'max'];
-const GPT_IMAGE_2_QUALITIES = ['low', 'medium', 'high'];
+const GPT_IMAGE_2_QUALITIES = ['auto', 'low', 'medium', 'high'];
 
 type APIMartSubmitResponse = {
   code?: number;
@@ -90,6 +90,11 @@ function omitsResolution(model: string): boolean {
   const lower = model.toLowerCase();
   return (
     lower === 'gpt-4o-image' ||
+    lower === 'imagen-4.0-apimart' ||
+    lower === 'muse-image-ext' ||
+    lower === 'grok-imagine-2.0-ext' ||
+    lower === 'grok-imagine-1.5-apimart' ||
+    lower === 'grok-imagine-1.5-ext' ||
     lower.startsWith('flux-kontext') ||
     lower.startsWith('gemini-2.5-flash-image') ||
     lower === 'nano-banana' ||
@@ -120,6 +125,7 @@ export class APIMartGenerator extends ImageGenerator {
       const parsed = new URL(apiUrl);
       let pathname = parsed.pathname.replace(/\/+$/, '');
       pathname = pathname
+        .replace(/\/midjourney\/generations(?:\/imagine)?$/i, '')
         .replace(/\/v1\/images\/generations$/i, '/v1')
         .replace(/\/images\/generations$/i, '')
         .replace(/\/v1\/tasks$/i, '/v1')
@@ -196,23 +202,44 @@ export class APIMartGenerator extends ImageGenerator {
 
   private buildPayload(req: GenerateRequest, imageUrls: string[]): Record<string, unknown> {
     const model = req.modelId || DEFAULT_MODEL;
+    const isMidjourney = model === 'midjourney';
+    const isGptExt = model === 'gpt-image-2.5-ext';
+    const isGptImage1 = model === 'gpt-image-1-official' || model === 'gpt-image-1.5-official';
+    const isGrokOfficial = model.startsWith('grok-imagine-image');
     const payload: Record<string, unknown> = {
-      model,
       prompt: req.prompt,
-      n: 1,
+      ...(!isMidjourney ? { model, n: 1 } : {}),
     };
 
     const aspectRatio = req.aspectRatio;
-    if (aspectRatio && (aspectRatio !== 'auto' || isGptImage25(model))) {
-      payload.size = aspectRatio;
+    if (aspectRatio && aspectRatio !== 'auto') {
+      const ratioField = isGrokOfficial || model.startsWith('flux-3-image') || model === 'muse-image-ext'
+        ? 'aspect_ratio' : 'size';
+      payload[ratioField] = aspectRatio;
+    } else if (aspectRatio === 'auto' && !isMidjourney && model !== 'muse-image-ext' &&
+      (!model.startsWith('seedream-') || imageUrls.length > 0 || /^seedream-5-0-(pro|flash)$/.test(model))) {
+      payload[isGrokOfficial || model.startsWith('flux-3-image') ? 'aspect_ratio' : 'size'] = 'auto';
     }
 
-    if (isGptImage25(model)) {
+    if (isMidjourney) {
+      // A project may retain a previous model's resolution as its quality value.
+      if (['0.25', '0.5', '1', '2'].includes(req.imageSize)) payload.quality = req.imageSize;
+    } else if (isGptImage1) {
+      if (req.imageSize) payload.quality = req.imageSize.toLowerCase();
+    } else if (isGptExt) {
+      const parts = (req.imageSize || '').toLowerCase().split(/\s+/);
+      payload.resolution = (parts.find((part) => GPT_IMAGE_RESOLUTIONS.includes(part)) || '1k').toUpperCase();
+      payload.version = parts.includes('sunburst') ? 'sunburst' : 'flare';
+    } else if (isGrokOfficial) {
+      const { resolution, quality } = resolveTieredSize(req.imageSize, ['low', 'medium'], 'medium');
+      payload.resolution = resolution;
+      if (model === 'grok-imagine-image-2.0' && imageUrls.length === 0) payload.quality = quality;
+    } else if (isGptImage25(model)) {
       const { resolution, quality } = resolveTieredSize(req.imageSize, GPT_IMAGE_25_QUALITIES, 'auto');
       payload.resolution = resolution;
       payload.quality = quality;
     } else if (isGptImage2Official(model)) {
-      const { resolution, quality } = resolveTieredSize(req.imageSize, GPT_IMAGE_2_QUALITIES, 'medium');
+      const { resolution, quality } = resolveTieredSize(req.imageSize, GPT_IMAGE_2_QUALITIES, 'auto');
       payload.resolution = resolution;
       payload.quality = quality;
     } else if (isGptImage2(model)) {
@@ -221,6 +248,16 @@ export class APIMartGenerator extends ImageGenerator {
       }
     } else if (!omitsResolution(model) && req.imageSize) {
       payload.resolution = req.imageSize.toUpperCase();
+    }
+
+    // Wan Pro only permits 4K for text-to-image; editing is limited to 2K.
+    if (model === 'wan2.7-image-pro' && imageUrls.length > 0 && payload.resolution === '4K') {
+      payload.resolution = '2K';
+    }
+    // MAI chooses editing dimensions itself rather than accepting text-to-image sizes.
+    if (model.startsWith('mai-image-2.6') && imageUrls.length > 0) {
+      delete payload.size;
+      delete payload.resolution;
     }
 
     if (imageUrls.length > 0) {
@@ -232,15 +269,18 @@ export class APIMartGenerator extends ImageGenerator {
 
   async generate(req: GenerateRequest): Promise<GenerateResult> {
     try {
+      const textOnlyModel = ['imagen-4.0-apimart', 'z-image-turbo', 'grok-imagine-2.0-ext'].includes(req.modelId);
+      if (textOnlyModel && (req.refImagesBase64?.length || req.refImageUrls?.length)) {
+        return { ok: false, error: `APIMart ${req.modelId} supports text-to-image only; remove reference images.` };
+      }
       const resolvedRefs = await this.resolveImageUrls(req);
       if (resolvedRefs.ok === false) {
         return { ok: false, error: resolvedRefs.error };
       }
 
       const payload = this.buildPayload(req, resolvedRefs.urls);
-      const submitUrl = req.apiUrl
-        ? `${this.normalizeBaseUrl(req.apiUrl)}/images/generations`
-        : `${this.baseUrl}/images/generations`;
+      const base = req.apiUrl ? this.normalizeBaseUrl(req.apiUrl) : this.baseUrl;
+      const submitUrl = `${base}/${req.modelId === 'midjourney' ? 'midjourney' : 'images'}/generations`;
 
       const res = await fetch(submitUrl, {
         method: 'POST',
@@ -266,7 +306,7 @@ export class APIMartGenerator extends ImageGenerator {
         return { ok: false, error: `APIMart HTTP ${res.status}: ${errMsg}` };
       }
 
-      if (typeof json.code === 'number' && json.code !== 200 && json.code !== 0) {
+      if (typeof json.code === 'number' && json.code !== 200 && json.code !== 202 && json.code !== 0) {
         const errMsg = this.extractErrorMessage(json) || `API code ${json.code}`;
         return { ok: false, error: `APIMart error: ${errMsg}` };
       }

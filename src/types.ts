@@ -2075,14 +2075,69 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   Civitai: [],
   APIMart: [
     {
+      id: 'apimart-nano-banana-2-1',
+      name: 'nano banana 2.1',
+      generatorId: 'APIMart',
+      modelId: 'gemini-nano-banana-2.1',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '1:4', '4:1', '1:8', '8:1', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-2-1-ext',
+      name: 'nano banana 2.1 Ext',
+      generatorId: 'APIMart',
+      modelId: 'gemini-nano-banana-2.1-ext',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '1:4', '4:1', '1:8', '8:1', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
       id: 'apimart-nano-banana-2',
       name: 'nano banana 2',
       generatorId: 'APIMart',
       modelId: 'gemini-3.1-flash-image-preview',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '1:4', '4:1', '1:8', '8:1', '4:5', '5:4', '21:9'],
-        qualities: ['1K', '2K', '4K'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '1:4', '4:1', '1:8', '8:1', 'auto'],
+        qualities: ['1K', '0.5K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-2-official',
+      name: 'nano banana 2 Official',
+      generatorId: 'APIMart',
+      modelId: 'gemini-3.1-flash-image-preview-official',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '1:4', '4:1', '1:8', '8:1', 'auto'],
+        qualities: ['1K', '0.5K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-2-lite',
+      name: 'nano banana 2 Lite',
+      generatorId: 'APIMart',
+      modelId: 'gemini-3.1-flash-lite-image',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
+        qualities: ['1K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-2-lite-ext',
+      name: 'nano banana 2 Lite Ext',
+      generatorId: 'APIMart',
+      modelId: 'gemini-3.1-flash-lite-image-ext',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
+        qualities: ['1K'],
       },
     },
     {
@@ -2092,7 +2147,18 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'gemini-3-pro-image-preview',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-pro-official',
+      name: 'nano banana Pro Official',
+      generatorId: 'APIMart',
+      modelId: 'gemini-3-pro-image-preview-official',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
         qualities: ['1K', '2K', '4K'],
       },
     },
@@ -2102,8 +2168,21 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'APIMart',
       modelId: 'gemini-2.5-flash-image-preview',
       category: 'image',
+      promptLimit: { value: 1000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
+        qualities: ['1K'],
+      },
+    },
+    {
+      id: 'apimart-nano-banana-official',
+      name: 'nano banana Official',
+      generatorId: 'APIMart',
+      modelId: 'gemini-2.5-flash-image-preview-official',
+      category: 'image',
+      promptLimit: { value: 1000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
         qualities: ['1K'],
       },
     },
@@ -2115,12 +2194,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       promptLimit: { value: 32000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
-        qualities: [
-          '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
-          '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',
-          '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max',
-        ],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '2:1', '1:2', '9:21', '3:1', '1:3', 'auto'],
+        qualities: ['1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max', '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max', '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max'],
       },
     },
     {
@@ -2131,12 +2206,19 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       promptLimit: { value: 32000, unit: 'characters' },
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9', 'auto'],
-        qualities: [
-          '1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max',
-          '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max',
-          '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max',
-        ],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '2:1', '1:2', '9:21', '3:1', '1:3', 'auto'],
+        qualities: ['1K Auto', '1K Low', '1K Medium', '1K High', '1K XHigh', '1K Max', '2K Auto', '2K Low', '2K Medium', '2K High', '2K XHigh', '2K Max', '4K Auto', '4K Low', '4K Medium', '4K High', '4K XHigh', '4K Max'],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-2-5-ext',
+      name: 'GPT Image 2.5 Ext',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-2.5-ext',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
+        qualities: ['1K Flare', '1K Sunburst', '2K Flare', '2K Sunburst', '4K Flare', '4K Sunburst'],
       },
     },
     {
@@ -2146,8 +2228,41 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'gpt-image-2',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '3:2', '2:3', '4:3', '3:4', '5:4', '4:5', '16:9', '9:16', '21:9'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '2:1', '1:2', '9:21', '3:1', '1:3', 'auto'],
         qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-2-official',
+      name: 'GPT Image 2 Official',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-2-official',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '2:1', '1:2', '9:21', '3:1', '1:3', 'auto'],
+        qualities: ['1K Auto', '1K Low', '1K Medium', '1K High', '2K Auto', '2K Low', '2K Medium', '2K High', '4K Auto', '4K Low', '4K Medium', '4K High'],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-1-official',
+      name: 'GPT Image 1 Official',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-1-official',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '3:2', '2:3'],
+        qualities: ['auto', 'low', 'medium', 'high'],
+      },
+    },
+    {
+      id: 'apimart-gpt-image-1-5-official',
+      name: 'GPT Image 1.5 Official',
+      generatorId: 'APIMart',
+      modelId: 'gpt-image-1.5-official',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '3:2', '2:3'],
+        qualities: ['auto', 'low', 'medium', 'high'],
       },
     },
     {
@@ -2161,14 +2276,36 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'apimart-seedream-5-0-pro',
+      name: 'Seedream 5.0 Pro',
+      generatorId: 'APIMart',
+      modelId: 'seedream-5-0-pro',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '2:1', '1:2', '21:9', 'auto'],
+        qualities: ['1K', '1.5K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-seedream-5-0-flash',
+      name: 'Seedream 5.0 Flash',
+      generatorId: 'APIMart',
+      modelId: 'seedream-5-0-flash',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '2:1', '1:2', '21:9', 'auto'],
+        qualities: ['1K', '1.5K', '2K'],
+      },
+    },
+    {
       id: 'apimart-seedream-5-0-lite',
       name: 'Seedream 5.0 Lite',
       generatorId: 'APIMart',
       modelId: 'seedream-5-0-lite',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
-        qualities: ['2K', '3K'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '2:1', '1:2', '21:9', 'auto'],
+        qualities: ['2K', '3K', '4K'],
       },
     },
     {
@@ -2178,8 +2315,42 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'seedream-4.5',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '2:1', '1:2', '21:9', '9:21', 'auto'],
         qualities: ['2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-seedream-4-0',
+      name: 'Seedream 4.0',
+      generatorId: 'APIMart',
+      modelId: 'seedream-4.0',
+      category: 'image',
+      promptLimit: { value: 1000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '2:1', '1:2', '21:9', '9:21', 'auto'],
+        qualities: ['2K', '1K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-flux-3-image',
+      name: 'FLUX 3 Image',
+      generatorId: 'APIMart',
+      modelId: 'flux-3-image',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '21:9', '2:1', '16:9', '3:2', '7:5', '4:3', '5:4', '4:5', '3:4', '5:7', '2:3', '9:16', '1:2', '9:21', 'auto'],
+        qualities: ['1K', '768sq', '1.5K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-flux-3-image-klein',
+      name: 'FLUX 3 Image Klein',
+      generatorId: 'APIMart',
+      modelId: 'flux-3-image-klein',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '21:9', '2:1', '16:9', '3:2', '7:5', '4:3', '5:4', '4:5', '3:4', '5:7', '2:3', '9:16', '1:2', '9:21', 'auto'],
+        qualities: ['1K', '768sq', '1.5K', '2K', '4K'],
       },
     },
     {
@@ -2189,8 +2360,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'flux-2-pro',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
-        qualities: ['1MP', '2MP', '4MP'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', 'auto'],
+        qualities: ['1MP', '2MP', '3MP', '4MP'],
       },
     },
     {
@@ -2200,8 +2371,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'flux-2-max',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
-        qualities: ['1MP', '2MP', '4MP'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', 'auto'],
+        qualities: ['1MP', '2MP', '3MP', '4MP'],
       },
     },
     {
@@ -2211,8 +2382,8 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'flux-2-flex',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
-        qualities: ['1MP', '2MP', '4MP'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', 'auto'],
+        qualities: ['1MP', '2MP', '3MP', '4MP'],
       },
     },
     {
@@ -2222,7 +2393,7 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'flux-kontext-pro',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', 'auto'],
       },
     },
     {
@@ -2232,7 +2403,52 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       modelId: 'flux-kontext-max',
       category: 'image',
       options: {
-        aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'],
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', 'auto'],
+      },
+    },
+    {
+      id: 'apimart-hy-image-v3-5-preview',
+      name: 'HY Image 3.5 Preview',
+      generatorId: 'APIMart',
+      modelId: 'hy-image-v3.5-preview',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
+        qualities: ['1K', '2K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-muse-image-ext',
+      name: 'Muse Image Ext',
+      generatorId: 'APIMart',
+      modelId: 'muse-image-ext',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', 'auto'],
+      },
+    },
+    {
+      id: 'apimart-mai-image-2-6',
+      name: 'MAI Image 2.6',
+      generatorId: 'APIMart',
+      modelId: 'mai-image-2.6',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '1:4', '4:1', '1:2', '2:1', 'auto'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-mai-image-2-6-flash',
+      name: 'MAI Image 2.6 Flash',
+      generatorId: 'APIMart',
+      modelId: 'mai-image-2.6-flash',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', '1:4', '4:1', '1:2', '2:1', 'auto'],
+        qualities: ['1K', '2K'],
       },
     },
     {
@@ -2241,9 +2457,140 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       generatorId: 'APIMart',
       modelId: 'qwen-image-3.0',
       category: 'image',
+      promptLimit: { value: 4500, unit: 'tokens' },
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
         qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-qwen-image-3-0-pro',
+      name: 'Qwen Image 3.0 Pro',
+      generatorId: 'APIMart',
+      modelId: 'qwen-image-3.0-pro',
+      category: 'image',
+      promptLimit: { value: 4500, unit: 'tokens' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-qwen-image-2-0',
+      name: 'Qwen Image 2.0',
+      generatorId: 'APIMart',
+      modelId: 'qwen-image-2.0',
+      category: 'image',
+      promptLimit: { value: 800, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-qwen-image-2-0-pro',
+      name: 'Qwen Image 2.0 Pro',
+      generatorId: 'APIMart',
+      modelId: 'qwen-image-2.0-pro',
+      category: 'image',
+      promptLimit: { value: 800, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-z-image-turbo',
+      name: 'Z Image Turbo',
+      generatorId: 'APIMart',
+      modelId: 'z-image-turbo',
+      category: 'image',
+      promptLimit: { value: 800, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['1K', '2K'],
+        supportsReferenceImages: false,
+      },
+    },
+    {
+      id: 'apimart-grok-imagine-image-2-0',
+      name: 'Grok Imagine Image 2.0',
+      generatorId: 'APIMart',
+      modelId: 'grok-imagine-image-2.0',
+      category: 'image',
+      promptLimit: { value: 8000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
+        qualities: ['1K Medium', '1K Low', '2K Medium', '2K Low'],
+      },
+    },
+    {
+      id: 'apimart-grok-imagine-2-0-ext',
+      name: 'Grok Imagine 2.0 Ext',
+      generatorId: 'APIMart',
+      modelId: 'grok-imagine-2.0-ext',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        supportsReferenceImages: false,
+      },
+    },
+    {
+      id: 'apimart-grok-imagine-image',
+      name: 'Grok Imagine Image',
+      generatorId: 'APIMart',
+      modelId: 'grok-imagine-image',
+      category: 'image',
+      promptLimit: { value: 8000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-grok-imagine-image-quality',
+      name: 'Grok Imagine Image Quality',
+      generatorId: 'APIMart',
+      modelId: 'grok-imagine-image-quality',
+      category: 'image',
+      promptLimit: { value: 8000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
+        qualities: ['1K', '2K'],
+      },
+    },
+    {
+      id: 'apimart-grok-imagine-1-5',
+      name: 'Grok Imagine 1.5',
+      generatorId: 'APIMart',
+      modelId: 'grok-imagine-1.5-apimart',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3'],
+      },
+    },
+    {
+      id: 'apimart-wan-2-7-image-pro',
+      name: 'Wan 2.7 Image Pro',
+      generatorId: 'APIMart',
+      modelId: 'wan2.7-image-pro',
+      category: 'image',
+      promptLimit: { value: 5000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['2K', '1K', '4K'],
+      },
+    },
+    {
+      id: 'apimart-wan-2-7-image',
+      name: 'Wan 2.7 Image',
+      generatorId: 'APIMart',
+      modelId: 'wan2.7-image',
+      category: 'image',
+      promptLimit: { value: 5000, unit: 'characters' },
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3'],
+        qualities: ['2K', '1K'],
       },
     },
     {
@@ -2254,7 +2601,17 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       category: 'image',
       options: {
         aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4'],
-        qualities: ['1K', '2K'],
+        supportsReferenceImages: false,
+      },
+    },
+    {
+      id: 'apimart-midjourney',
+      name: 'Midjourney',
+      generatorId: 'APIMart',
+      modelId: 'midjourney',
+      category: 'image',
+      options: {
+        aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
       },
     },
   ],
