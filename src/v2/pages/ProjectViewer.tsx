@@ -2455,11 +2455,17 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       if (nextEntries.length === current.images.length) return current;
       if (nextEntries.length === 0) return null;
 
+      const nextIndex = Math.min(current.index, nextEntries.length - 1);
+      const nextItemId = nextEntries[nextIndex]?.albumItemId;
+      if (nextItemId) {
+        document.getElementById(`album-item-${nextItemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
       return {
         ...current,
         images: nextEntries.map((entry) => entry.image),
         albumItemIds: current.albumItemIds ? nextEntries.map((entry) => entry.albumItemId || '') : undefined,
-        index: Math.min(current.index, nextEntries.length - 1),
+        index: nextIndex,
       };
     });
   };
@@ -3067,7 +3073,12 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
           }
           onIndexChange={(index) => {
             setLightboxData((current) => (current && current.index !== index ? { ...current, index } : current));
-            lightboxData.onIndexChange?.(index);
+            if (lightboxData.albumItemIds) {
+              const albumItemId = lightboxData.albumItemIds[index];
+              if (albumItemId) document.getElementById(`album-item-${albumItemId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+              lightboxData.onIndexChange?.(index);
+            }
           }}
         />
       )}
