@@ -725,6 +725,7 @@ export function MediaPicker({
           </div>
           {activeSource && (
             <PagedFooter
+              scrollToTop={false}
               page={itemPage}
               pageSize={itemPageSize}
               total={itemTotal}
