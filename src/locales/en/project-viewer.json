@@ -170,7 +170,8 @@
       "itemsCount": "{{count}} items",
       "filteredTags": "Filtered: {{count}} tags",
       "wait": "Wait",
-      "allItemsHidden": "All items are hidden"
+      "allItemsHidden": "All items are hidden",
+      "dropAtEnd": "Drop here to move to the end"
     },
     "modelSelector": {
       "title": "Select Model",
