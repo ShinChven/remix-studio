@@ -1,4 +1,4 @@
-import { useState, type DragEvent, type RefObject } from 'react';
+import { useRef, useState, type DragEvent, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { civitaiModelItems, civitaiVideoEngine, isCivitaiVideo } from '../../../lib/civitai';
 import { Button, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuItem, Ripple, Text } from '../../../m3';
@@ -81,6 +81,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
   const { t } = useTranslation();
   const [infoOpen, setInfoOpen] = useState(false);
   const [dragOverFiles, setDragOverFiles] = useState(false);
+  const endDropRef = useRef<HTMLDivElement>(null);
   const isComfy = localProject.type === 'comfyui';
   const isCivitai = localProject.type === 'civitai';
 
@@ -95,6 +96,19 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
   const model = allModels.find((m) => m.id === props.selectedModelId);
   const supportsImageInput = localProject.type !== 'audio' || model?.options.supportsReferenceImages === true;
   const items = localProject.workflow || [];
+  const isReordering = props.draggedIndex !== null;
+  // The list's trailing space must accept drops too, including the padding above the run dock.
+  const onEndDragOver = (e: DragEvent) => {
+    if (!isReordering || e.dataTransfer.types.includes('Files')) return;
+    props.onDragOver(e, items.length);
+  };
+  const onEndDrop = (e: DragEvent) => {
+    if (!isReordering || e.dataTransfer.types.includes('Files')) return;
+    props.onDrop(e, items.length);
+  };
+  const isTrailingSpace = (e: DragEvent) => e.target === e.currentTarget
+    && endDropRef.current !== null
+    && e.clientY >= endDropRef.current.getBoundingClientRect().top;
   const disabledCount = items.filter((item) => item.disabled).length;
   // Keep each item's index in the full workflow: drag and drop reorders by index.
   const visible = items.map((item, index) => ({ item, index })).filter(({ item }) => props.showDisabledItems || !item.disabled);
@@ -284,7 +298,14 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
         </>
       ) : (
         <>
-          <div ref={workflowListRef} className="v2-workflow__list" data-grid={isExpanded ? '' : undefined}>
+          <div
+            ref={workflowListRef}
+            className="v2-workflow__list"
+            data-grid={isExpanded ? '' : undefined}
+            data-reordering={isReordering ? '' : undefined}
+            onDragOver={(e) => { if (isTrailingSpace(e)) onEndDragOver(e); }}
+            onDrop={(e) => { if (isTrailingSpace(e)) onEndDrop(e); }}
+          >
             {isLoading && (
               <div className="flex justify-center py-10">
                 <LoadingIndicator />
@@ -340,6 +361,18 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
                   />
                 ),
               )}
+            {!isLoading && isReordering && (
+              <div
+                ref={endDropRef}
+                className="v2-workflow__end-drop"
+                data-drop-target={props.dragOverIndex === items.length ? '' : undefined}
+                onDragOver={onEndDragOver}
+                onDrop={onEndDrop}
+              >
+                <Icon name="vertical_align_bottom" size={18} />
+                <Text variant="label-medium">{t('projectViewer.workflow.dropAtEnd')}</Text>
+              </div>
+            )}
             {!isLoading && visible.length === 0 && (
               <div className="v2-workflow__empty">
                 <Icon name={items.length === 0 ? 'account_tree' : 'visibility_off'} size={28} />

@@ -3407,6 +3407,7 @@
   /* Room under the run dock for the floating switch, so it never covers Add to drafts. */
   .v2-project[data-floating-switch][data-mobile-view="workflow"] .v2-run-dock { bottom: 84px; max-height: calc(100% - 172px); }
   .v2-project[data-floating-switch][data-mobile-view="workflow"] .v2-workflow__list { padding-bottom: calc(var(--v2-dock-h, 0px) + 96px); }
+  .v2-project[data-floating-switch][data-mobile-view="workflow"] .v2-workflow__list[data-reordering] { margin-bottom: calc(var(--v2-dock-h, 0px) + 84px); padding-bottom: 24px; }
   .v2-hide-compact { display: none; }
 }
 @media (max-width: 599.98px) {
@@ -3469,6 +3470,29 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   align-content: start;
+}
+/* Keep the native drag-to-scroll edge and the end drop target above the floating dock. */
+.v2-workflow__list[data-reordering] {
+  margin-bottom: calc(var(--v2-dock-h, 0px) + 12px);
+  padding-bottom: 24px;
+}
+.v2-workflow__end-drop {
+  display: flex;
+  min-height: 48px;
+  flex: 1 0 48px;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed var(--md-sys-color-outline-variant);
+  border-radius: var(--md-sys-shape-corner-large);
+  color: var(--md-sys-color-on-surface-variant);
+}
+.v2-workflow__end-drop[data-drop-target] {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  box-shadow: 0 -3px 0 0 var(--md-sys-color-primary);
 }
 .v2-workflow__empty {
   display: flex;

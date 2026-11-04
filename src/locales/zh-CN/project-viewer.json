@@ -170,7 +170,8 @@
       "itemsCount": "{{count}} 项",
       "filteredTags": "已筛选：{{count}} 个标签",
       "wait": "等待",
-      "allItemsHidden": "所有项目已隐藏"
+      "allItemsHidden": "所有项目已隐藏",
+      "dropAtEnd": "拖到此处移至末尾"
     },
     "modelSelector": {
       "title": "选择模型",

@@ -170,7 +170,8 @@
       "itemsCount": "{{count}} 件",
       "filteredTags": "フィルター済み: {{count}} タグ",
       "wait": "待機",
-      "allItemsHidden": "すべての項目が非表示です"
+      "allItemsHidden": "すべての項目が非表示です",
+      "dropAtEnd": "ここにドロップして末尾に移動"
     },
     "modelSelector": {
       "title": "モデルを選択",
