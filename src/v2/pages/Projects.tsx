@@ -8,6 +8,7 @@ import type { Project } from '../../types';
 import { ProjectCard } from '../components/EntityCards';
 import { ProjectFormDialog } from '../components/ProjectFormDialog';
 import { ProjectsHero } from '../components/projects/ProjectsHero';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState, Page } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
@@ -23,6 +24,7 @@ export function Projects() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
+  const paginationRef = usePaginationScroll({ page });
   const q = searchParams.get('q') || '';
   const statusParam = searchParams.get('status');
   const status: StatusFilter = isStatusFilter(statusParam) ? statusParam : 'active';
@@ -100,7 +102,7 @@ export function Projects() {
   };
 
   return (
-    <Page className="v2-projects">
+    <Page ref={paginationRef} className="v2-projects" aria-busy={isLoading}>
       <ProjectsHero
         actions={
           <>
@@ -117,7 +119,7 @@ export function Projects() {
         }
       />
 
-      <ListToolbar title={t(`projects.statusHeading.${status}`)} icon="schedule" count={total}>
+      <ListToolbar title={t(`projects.statusHeading.${status}`)} icon="schedule" count={total} isLoading={isLoading && projects.length > 0}>
         <Segmented<StatusFilter>
           aria-label={t('projects.title')}
           value={status}
@@ -144,7 +146,7 @@ export function Projects() {
         />
       </ListToolbar>
 
-      {isLoading ? (
+      {isLoading && projects.length === 0 ? (
         <LoadingState />
       ) : projects.length === 0 ? (
         <EmptyState icon="play_circle" shape="clover-8" title={t('projects.noProjects.title')} description={q ? t('projects.noResultsFound') : t('projects.noProjects.description')} />

@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchReleaseHistory, type ReleaseHistoryItem } from '../../api';
 import { Button, Dialog, Icon, IconButton, Text, useSnackbar } from '../../m3';
 import { platformMeta } from '../components/exports/releaseMeta';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { formatDateTime } from '../lib/format';
 import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
@@ -16,6 +17,7 @@ export function ReleaseHistory() {
   const snackbar = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+  const paginationRef = usePaginationScroll({ page });
   const [items, setItems] = useState<ReleaseHistoryItem[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -41,7 +43,7 @@ export function ReleaseHistory() {
   }, [page, t]);
 
   return (
-    <Page>
+    <Page ref={paginationRef}>
       <PageHeader
         title={t('releases.history.title')}
         description={t('releases.history.description')}

@@ -75,6 +75,7 @@ import { PromptEditDialog } from '../components/project/PromptEditDialog';
 import { PromptLimitDialog } from '../components/project/PromptLimitDialog';
 import { ResultsBar, SectionNav, type SectionNavItem } from '../components/project/ResultsBar';
 import { WorkflowPanel } from '../components/project/WorkflowPanel';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState } from '../ui/Page';
@@ -454,10 +455,8 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const [isLoadingCompleted, setIsLoadingCompleted] = useState(true);
 
   const tabContentRef = useRef<HTMLDivElement | null>(null);
-  const scrollTabContentTop = useCallback(() => {
-    const el = tabContentRef.current;
-    if (el) el.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  usePaginationScroll({ page: albumPage, pageSize: albumPageSize, containerRef: tabContentRef, enabled: activeTab === 'album' });
+  usePaginationScroll({ page: completedPage, pageSize: completedPageSize, containerRef: tabContentRef, enabled: activeTab === 'completed' });
   const albumFetchTokenRef = useRef(0);
   const jobsFetchTokenRef = useRef(0);
   const isClearingFailedJobsRef = useRef(false);
@@ -643,14 +642,12 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
 
   const handleAlbumPageChange = useCallback((p: number) => {
     updateAlbumParams({ page: p });
-    scrollTabContentTop();
-  }, [updateAlbumParams, scrollTabContentTop]);
+  }, [updateAlbumParams]);
   const handleAlbumPageSizeChange = useCallback((size: number | 'all') => {
     rememberAlbumPageSize(project.id, size);
     setRememberedAlbumPageSize({ projectId: project.id, size });
     updateAlbumParams({ pageSize: size });
-    scrollTabContentTop();
-  }, [project.id, updateAlbumParams, scrollTabContentTop]);
+  }, [project.id, updateAlbumParams]);
   const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => {
     updateAlbumParams({ sort });
   }, [updateAlbumParams]);
@@ -669,13 +666,11 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
 
   const handleCompletedPageChange = useCallback((p: number) => {
     setCompletedPage(p);
-    scrollTabContentTop();
-  }, [scrollTabContentTop]);
+  }, []);
   const handleCompletedPageSizeChange = useCallback((size: number | 'all') => {
     setCompletedPageSize(size);
     setCompletedPage(1);
-    scrollTabContentTop();
-  }, [scrollTabContentTop]);
+  }, []);
   const handleCompletedSortChange = useCallback((sort: 'newest' | 'oldest') => {
     setCompletedSort(sort);
     setCompletedPage(1);

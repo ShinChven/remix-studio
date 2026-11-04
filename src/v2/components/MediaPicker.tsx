@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../../api';
 import { getLastMediaPickerSource, setLastMediaPickerSource } from '../../lib/media-picker-memory';
 import { projectMediaType } from '../../lib/project-media';
 import { Button, Dialog, FilterChip, Icon, MenuButton, MenuItem, Select, Text, useMediaQuery } from '../../m3';
 import type { AlbumItem, AlbumItemSort, AspectRatioCount, Library, LibraryItem, LibraryType, Project, ProjectType } from '../../types';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { kindMeta } from '../ui/entityMeta';
 import { KindBadge } from '../ui/KindBadge';
 import { EmptyState, LoadingState } from '../ui/Page';
@@ -447,7 +448,7 @@ export function MediaPicker({
   const byKey = useMemo(() => new Map(items.map((item) => [keyOf(item), item])), [items]);
   const selectedItems = useMemo(() => Object.values(selectedMap), [selectedMap]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const scrollTop = useCallback(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), []);
+  usePaginationScroll({ page: itemPage, pageSize: itemPageSize, containerRef: scrollRef, enabled: isOpen });
   const allSelected = keys.length > 0 && keys.every((k) => selectedKeys.has(k));
   const showVersion = enableImageVersionSelection && activeSource?.kind === 'album' && activeSource.type === 'image';
   const showRatios = activeSource?.kind === 'album' && (activeSource.type === 'image' || activeSource.type === 'video') && ratioCounts.length > 0;
@@ -663,7 +664,7 @@ export function MediaPicker({
               value={itemPageSize}
               onChange={(size) => {
                 setItemPageSize(size);
-                scrollTop();
+                setItemPage(1);
               }}
             />
             {multiple && (
@@ -726,18 +727,14 @@ export function MediaPicker({
           </div>
           {activeSource && (
             <PagedFooter
-              scrollToTop={false}
               page={itemPage}
               pageSize={itemPageSize}
               total={itemTotal}
               pages={itemPages}
-              onPageChange={(p) => {
-                setItemPage(p);
-                scrollTop();
-              }}
+              onPageChange={setItemPage}
               onPageSizeChange={(size) => {
                 setItemPageSize(size);
-                scrollTop();
+                setItemPage(1);
               }}
             />
           )}

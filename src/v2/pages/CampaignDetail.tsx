@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { batchUnschedulePosts, deleteCampaign, deletePost, fetchBatchGeneratePostTextStatus, fetchCampaign, fetchCampaignPosts, sendPostNow, updateCampaign, updatePost, type BatchGenerateTextResult } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
@@ -8,6 +8,7 @@ import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { BatchAiGenerateDialog } from '../components/campaigns/BatchAiGenerateDialog';
 import { mediaFullUrl, mediaPosterUrl, PostMediaViewer, type ViewerMedia } from '../components/campaigns/PostMediaViewer';
 import { CopyRefButton } from '../components/CopyRefButton';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { formatBytes } from '../lib/format';
 import { PlatformIcon } from '../lib/platform';
 import { postStatusLabel, postStatusTone, toDatetimeLocal } from '../lib/posts';
@@ -87,6 +88,7 @@ export function CampaignDetail() {
   const sortKey = parseSortKey(searchParams.get('sort'));
   const page = parsePositiveInt(searchParams.get('page'), 1);
   const pageSize = parsePageSize(searchParams.get('pageSize') || searchParams.get('limit'));
+  const paginationRef = usePaginationScroll({ page, pageSize });
   const [quickId, setQuickId] = useState<string | null>(null);
   const [quickDate, setQuickDate] = useState('');
   const [quickSavingId, setQuickSavingId] = useState<string | null>(null);
@@ -124,11 +126,14 @@ export function CampaignDetail() {
     }
   };
 
+  const postsRequest = useRef(0);
   const loadPosts = async (silent = false) => {
     if (!id) return;
+    const request = ++postsRequest.current;
     if (!silent) setPostsLoading(true);
     try {
       const data = await fetchCampaignPosts(id, { page, pageSize, q: searchQuery, status: statusFilter, sort: sortKey });
+      if (request !== postsRequest.current) return;
       const pages = Math.max(1, data.totalPages || 1);
       if (page > pages) {
         updateQuery({ page: String(pages) }, true);
@@ -142,9 +147,10 @@ export function CampaignDetail() {
       setSummary({ mediaSize: data.summary?.mediaSize || 0, mediaCount: data.summary?.mediaCount || 0, scheduledStart: data.summary?.scheduledStart || null, scheduledEnd: data.summary?.scheduledEnd || null });
       setError(null);
     } catch (err) {
+      if (request !== postsRequest.current) return;
       toast.error((err as Error)?.message || 'Failed to load campaign posts');
     } finally {
-      if (!silent) setPostsLoading(false);
+      if (request === postsRequest.current) setPostsLoading(false);
     }
   };
 
@@ -171,6 +177,7 @@ export function CampaignDetail() {
 
   useEffect(() => {
     void loadPosts();
+    return () => { postsRequest.current++; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, page, pageSize, searchQuery, statusFilter, sortKey]);
 
@@ -318,7 +325,7 @@ export function CampaignDetail() {
   ];
 
   return (
-    <Page density="compact">
+    <Page ref={paginationRef} density="compact">
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
@@ -425,10 +432,9 @@ export function CampaignDetail() {
           </Section>
         </aside>
 
-        <main className="flex min-w-0 flex-col gap-3">
-          {postsLoading && <LoadingState label="Loading posts..." minHeight={200} />}
-          {!postsLoading &&
-            posts.map((post) => {
+        <main className="flex min-w-0 flex-col gap-3" aria-busy={postsLoading}>
+          {postsLoading && posts.length === 0 && <LoadingState label="Loading posts..." minHeight={200} />}
+          {posts.map((post) => {
               const externalUrl = post.executions?.find((e) => e.externalUrl)?.externalUrl;
               return (
                 <article key={post.id} className="v2-post-card">

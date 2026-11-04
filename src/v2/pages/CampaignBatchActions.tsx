@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { batchUnschedulePosts, deletePost, fetchBatchGeneratePostTextStatus, fetchCampaign, fetchCampaignPostIds, fetchCampaignPosts, sendPostNow, type BatchGenerateTextResult } from '../../api';
 import { Button, Checkbox, Icon, IconButton, LinearProgress, Select, Text } from '../../m3';
 import { BatchAiGenerateDialog } from '../components/campaigns/BatchAiGenerateDialog';
 import { BatchScheduleDialog, BatchSetTextDialog } from '../components/campaigns/BatchPostDialogs';
 import { PostMediaViewer } from '../components/campaigns/PostMediaViewer';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { postStatusLabel, postStatusTone } from '../lib/posts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
@@ -81,6 +82,7 @@ export function CampaignBatchActions() {
   const sortKey = (searchParams.get('sort') || 'scheduled_desc') as SortKey;
   const page = Math.max(1, Number(searchParams.get('page') || 1));
   const pageSize = parsePageSize(searchParams.get('pageSize') || searchParams.get('limit'));
+  const paginationRef = usePaginationScroll({ page, pageSize });
 
   const updateQuery = (updates: Record<string, string>) => {
     const params = new URLSearchParams(searchParams);
@@ -97,14 +99,17 @@ export function CampaignBatchActions() {
     setSearchParams(params);
   };
 
+  const listRequest = useRef(0);
   const loadData = async (silent = false, preserveSelection = true) => {
     if (!id) return;
+    const request = ++listRequest.current;
     if (!silent) setIsLoading(true);
     try {
       const [campaignData, postData] = await Promise.all([
         campaign ? Promise.resolve(campaign) : fetchCampaign(id, false),
         fetchCampaignPosts(id, { page, pageSize, q: searchQuery, status: statusFilter, sort: sortKey }),
       ]);
+      if (request !== listRequest.current) return;
       setCampaign(campaignData);
       setPosts(postData.items || []);
       setTotalPosts(postData.total || 0);
@@ -114,14 +119,16 @@ export function CampaignBatchActions() {
         setAllMatchingSelected(false);
       }
     } catch (error) {
+      if (request !== listRequest.current) return;
       toast.error((error as Error)?.message || 'Failed to load batch actions');
     } finally {
-      if (!silent) setIsLoading(false);
+      if (request === listRequest.current) setIsLoading(false);
     }
   };
 
   useEffect(() => {
     void loadData(false, true);
+    return () => { listRequest.current++; };
   }, [id, page, pageSize, searchQuery, statusFilter, sortKey]);
 
   useEffect(() => {
@@ -315,7 +322,7 @@ export function CampaignBatchActions() {
   const none = selectedPostIds.length === 0;
 
   return (
-    <Page density="compact">
+    <Page ref={paginationRef} density="compact">
       <PageHeader
         title="Batch Actions"
         description={

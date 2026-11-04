@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createLibraryItem, deleteLibraryItem, fetchAssistantProviders, fetchAssistantTools, fetchLibraryItems, updateLibraryItem, type AssistantToolMetadata } from '../../api';
@@ -8,6 +8,7 @@ import { Button, ChipSet, Dialog, FilterChip, Icon, Tab, Tabs, Text, TextField }
 import { getTextModelsForProvider, type Library, type LibraryItem, type Provider } from '../../types';
 import { McpConnections } from '../components/assistant/McpConnections';
 import { ProviderLogo } from '../components/ProviderLogo';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
@@ -110,6 +111,7 @@ export function AssistantSettings() {
   const [skillsLibrary, setSkillsLibrary] = useState<Library | null>(null);
   const [skillItems, setSkillItems] = useState<LibraryItem[]>([]);
   const [skillPage, setSkillPage] = useState(1);
+  const paginationRef = usePaginationScroll({ page: skillPage, enabled: activeTab === 'skills' });
   const [skillPages, setSkillPages] = useState(1);
   const [skillTotal, setSkillTotal] = useState(0);
   const [isLoadingSkills, setIsLoadingSkills] = useState(false);
@@ -237,12 +239,15 @@ export function AssistantSettings() {
     };
   }, [activeTab, t, tools.length]);
 
+  const skillsRequest = useRef(0);
   const loadSkills = useCallback(async (page: number) => {
     if (!skillsLibrary) return;
+    const request = ++skillsRequest.current;
 
     setIsLoadingSkills(true);
     try {
       const result = await fetchLibraryItems(skillsLibrary.id, page, SKILLS_PAGE_SIZE);
+      if (request !== skillsRequest.current) return;
       setSkillItems(result.items);
       setSkillTotal(result.total);
       setSkillPages(result.pages);
@@ -251,16 +256,18 @@ export function AssistantSettings() {
         setSkillPage(result.page);
       }
     } catch (error) {
+      if (request !== skillsRequest.current) return;
       console.error('Failed to load assistant skills:', error);
       toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
     } finally {
-      setIsLoadingSkills(false);
+      if (request === skillsRequest.current) setIsLoadingSkills(false);
     }
   }, [skillsLibrary, t]);
 
   useEffect(() => {
     if (activeTab !== 'skills' || !skillsLibrary) return;
     void loadSkills(skillPage);
+    return () => { skillsRequest.current++; };
   }, [activeTab, loadSkills, skillPage, skillsLibrary]);
 
   const handleTabChange = (tab: AssistantSettingsTab) => {
@@ -409,7 +416,7 @@ export function AssistantSettings() {
   };
 
   return (
-    <Page width="default" density="compact">
+    <Page ref={paginationRef} width="default" density="compact">
       <PageHeader
         title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
         description={t('assistant.chatSettingsDescription', { defaultValue: 'Enable the providers available to chat across the app and manage the preset prompts shown from the composer.' })}
@@ -482,6 +489,7 @@ export function AssistantSettings() {
 
       {activeTab === 'skills' && (
         <Section
+          aria-busy={isLoadingSkills}
           variant="plain"
           title={t('assistant.presetPromptsTitle', { defaultValue: 'Composer skills' })}
           description={
@@ -500,7 +508,7 @@ export function AssistantSettings() {
             </Button>
           }
         >
-          {isLoadingSkills ? (
+          {isLoadingSkills && skillItems.length === 0 ? (
             <LoadingState minHeight={200} />
           ) : skillItems.length === 0 ? (
             <EmptyState icon="auto_awesome" shape="sunny" title={t('assistant.emptySkillsTitle', { defaultValue: 'No preset prompts yet' })} description={t('assistant.emptySkillsDescription', { defaultValue: 'Create a skill here, then type ` in the composer to insert it into the chat draft.' })} />

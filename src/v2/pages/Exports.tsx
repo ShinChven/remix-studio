@@ -18,6 +18,7 @@ import type { DeliveryStatus, ExportTask } from '../../types';
 import { ExportReleaseHistoryDialog } from '../components/exports/ExportReleaseHistoryDialog';
 import { ExportsHero } from '../components/exports/ExportsHero';
 import { driveIcon } from '../components/exports/releaseMeta';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { formatDateTime } from '../lib/format';
 import { useRangeSelection } from '../lib/useRangeSelection';
 import { ChoiceTiles } from '../ui/ChoiceTiles';
@@ -43,6 +44,7 @@ export function Exports() {
   const snackbar = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+  const paginationRef = usePaginationScroll({ page });
   const [exports, setExports] = useState<ExportTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -272,9 +274,9 @@ export function Exports() {
   const allSelected = exports.length > 0 && selected.size === exports.length;
 
   return (
-    <Page className="v2-exports">
+    <Page ref={paginationRef} className="v2-exports">
       <ExportsHero
-        total={loading ? null : total}
+        total={loading && exports.length === 0 ? null : total}
         active={activeCount}
         actions={
           <>
@@ -441,7 +443,7 @@ export function Exports() {
               })}
             </EntityList>
           </div>
-          {loading && <LoadingState minHeight={120} />}
+          {loading && exports.length === 0 && <LoadingState minHeight={120} />}
           {pages > 1 && (
             <div className="v2-page-footer">
               <Pagination page={page} pages={pages} onPageChange={changePage} size="sm" />

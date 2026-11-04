@@ -7,6 +7,7 @@ import { formatShortDate, formatTimeOrDate } from '../../lib/date';
 import { Button, Icon, IconButton, LinearProgress, Text } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { PostingTrendChart, lastNDaysRange } from '../components/campaigns/PostingTrendChart';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { fallbackExternalUrl } from '../lib/platform';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -72,6 +73,7 @@ export function Campaigns() {
   const queryParam = searchParams.get('q')?.trim() || '';
   const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const pageSize = Math.max(1, Math.min(100, parseInt(searchParams.get('pageSize') || '12', 10) || 12));
+  const paginationRef = usePaginationScroll({ page, pageSize });
   const [campaigns, setCampaigns] = useState<CampaignCardModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<CampaignCardModel | null>(null);
@@ -185,7 +187,7 @@ export function Campaigns() {
   const campaignIdOf = (post: any) => post.campaignId || post.campaign?.id;
 
   return (
-    <Page>
+    <Page ref={paginationRef}>
       <PageHero
         icon="send"
         shape="burst"
@@ -203,8 +205,8 @@ export function Campaigns() {
         }
       />
       <div className="v2-campaigns">
-        <section className="flex min-w-0 flex-col gap-3">
-          <ListToolbar title={t('allCampaigns')} icon="campaign" count={total}>
+        <section className="flex min-w-0 flex-col gap-3" aria-busy={loading}>
+          <ListToolbar title={t('allCampaigns')} icon="campaign" count={total} isLoading={loading && campaigns.length > 0}>
             <SearchField value={search} onChange={setSearch} placeholder={t('searchPlaceholder')} />
             <Segmented<Layout>
               aria-label={t('v2.library.layout')}
@@ -216,7 +218,7 @@ export function Campaigns() {
               ]}
             />
           </ListToolbar>
-          {loading ? (
+          {loading && campaigns.length === 0 ? (
             <CardGrid min={300}>
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="v2-skeleton" style={{ height: 300 }} />
@@ -341,7 +343,7 @@ export function Campaigns() {
               </EntityList>
             </div>
           )}
-          {!loading && totalPages > 1 && (
+          {totalPages > 1 && (
             <div className="v2-paged-footer">
               <Text variant="label-medium" className="text-on-surface-variant">
                 {t('pagination.range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, total), total })}

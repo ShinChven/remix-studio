@@ -10,6 +10,7 @@ import { TrashGrid, type Leaving, type TileSize } from '../components/trash/Tras
 import { TrashHero } from '../components/trash/TrashHero';
 import { TrashItemDialog } from '../components/trash/TrashItemDialog';
 import { groupItems, sortItems, TRASH_KINDS, TRASH_SORTS, trashBytes, trashFilename, trashKind, type TrashGroup, type TrashKind, type TrashSort } from '../components/trash/trashMeta';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { formatBytes } from '../lib/format';
 import { useRangeSelection } from '../lib/useRangeSelection';
 import { useViewPref } from '../lib/viewPrefs';
@@ -131,6 +132,7 @@ export function Trash() {
   const sorted = useMemo(() => sortItems(view === 'all' ? scoped : scoped.filter((item) => trashKind(item) === view), sort, lang), [scoped, view, sort, lang]);
   const pages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(sorted.length / pageSize));
   const currentPage = Math.min(page, pages);
+  const paginationRef = usePaginationScroll({ page: currentPage, pageSize });
   const pageItems = useMemo(() => (pageSize === 'all' ? sorted : sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize)), [sorted, pageSize, currentPage]);
   const groups = useMemo(() => groupItems(pageItems, sort, lang), [pageItems, sort, lang]);
   const totalBytes = useMemo(() => items.reduce((sum, item) => sum + trashBytes(item), 0), [items]);
@@ -417,7 +419,7 @@ export function Trash() {
   const selectedOrphans = selectedItems.filter((item) => item.projectExists === false).length;
 
   return (
-    <Page className="v2-trash" density="compact">
+    <Page ref={paginationRef} className="v2-trash" density="compact">
       <TrashHero
         items={loaded ? items : null}
         actions={

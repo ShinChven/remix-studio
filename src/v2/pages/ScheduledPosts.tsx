@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { fetchScheduledPostCounts, fetchScheduledPosts } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { formatShortDate } from '../../lib/date';
 import { Button, cx, Icon, IconButton, Text } from '../../m3';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
 import { Row, RowList } from '../ui/Rows';
@@ -56,26 +57,31 @@ export function ScheduledPosts() {
   const [total, setTotal] = useState(0);
   const [totalScheduled, setTotalScheduled] = useState<number | null>(null);
   const [totalPages, setTotalPages] = useState(1);
+  const paginationRef = usePaginationScroll({ page, enabled: viewMode === 'list' });
   const [searchQuery, setSearchQuery] = useState(q);
 
   // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  const postsRequest = useRef(0);
   const loadPosts = async (silent = false) => {
     if (viewMode === 'calendar') return;
+    const request = ++postsRequest.current;
     if (!silent) setIsLoading(true);
     try {
       const data = await fetchScheduledPosts(page, 25, q);
+      if (request !== postsRequest.current) return;
       setPosts(data.items);
       setTotal(data.total);
       setTotalPages(data.totalPages);
       // Without a search filter the list total is already the overall total.
       if (!q) setTotalScheduled(data.total);
     } catch (error) {
+      if (request !== postsRequest.current) return;
       console.error('[ScheduledPosts] loadPosts error:', error);
       toast.error((error as Error).message || 'Failed to load scheduled posts');
     } finally {
-      setIsLoading(false);
+      if (request === postsRequest.current) setIsLoading(false);
     }
   };
 
@@ -124,6 +130,7 @@ export function ScheduledPosts() {
     } else {
       void loadCounts();
     }
+    return () => { postsRequest.current++; };
   }, [viewMode, page, q, currentMonth]);
 
   useEffect(() => {
@@ -228,7 +235,7 @@ export function ScheduledPosts() {
   );
 
   return (
-    <Page density="compact">
+    <Page ref={paginationRef} density="compact" aria-busy={isLoading}>
       <PageHeader
         title={
           <span className="flex flex-wrap items-center gap-3">
@@ -256,13 +263,13 @@ export function ScheduledPosts() {
             <Button variant="tonal" size="sm" icon="search" onClick={applySearch}>
               Search
             </Button>
-            {!isLoading && total > 0 && (
+            {total > 0 && (
               <Text variant="label-medium" className="ms-auto text-on-surface-variant">
                 {`Showing ${(page - 1) * 25 + 1}–${(page - 1) * 25 + posts.length} of ${total}${q ? ' matching' : ''} ${total === 1 ? 'post' : 'posts'}`}
               </Text>
             )}
           </div>
-          {isLoading ? (
+          {isLoading && posts.length === 0 ? (
             <LoadingState minHeight={200} />
           ) : posts.length === 0 ? (
             <EmptyState icon="schedule" shape="clover-4" title="No scheduled posts" description={q ? 'No results found for your search.' : 'Your scheduled posts will appear here.'} />
