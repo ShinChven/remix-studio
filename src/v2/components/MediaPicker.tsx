@@ -374,6 +374,7 @@ export function MediaPicker({
   }, [filteredSources, loadingSources]);
 
   useEffect(() => {
+    setItems([]);
     setRatios((current) => (current.length === 0 ? current : []));
     setRatioCounts([]);
   }, [activeSource?.id, activeSource?.kind]);
@@ -446,7 +447,7 @@ export function MediaPicker({
   const byKey = useMemo(() => new Map(items.map((item) => [keyOf(item), item])), [items]);
   const selectedItems = useMemo(() => Object.values(selectedMap), [selectedMap]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const scrollTop = useCallback(() => scrollRef.current?.scrollTo({ top: 0 }), []);
+  const scrollTop = useCallback(() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), []);
   const allSelected = keys.length > 0 && keys.every((k) => selectedKeys.has(k));
   const showVersion = enableImageVersionSelection && activeSource?.kind === 'album' && activeSource.type === 'image';
   const showRatios = activeSource?.kind === 'album' && (activeSource.type === 'image' || activeSource.type === 'video') && ratioCounts.length > 0;
@@ -672,10 +673,10 @@ export function MediaPicker({
             )}
           </div>
 
-          <div ref={scrollRef} className="v2-picker__grid-scroll">
+          <div ref={scrollRef} className="v2-picker__grid-scroll" aria-busy={loadingItems}>
             {!activeSource ? (
               <EmptyState icon="layers" title="No source selected" description="Choose a library or album first." />
-            ) : loadingItems ? (
+            ) : loadingItems && items.length === 0 ? (
               <LoadingState label="Loading items..." />
             ) : items.length === 0 ? (
               <EmptyState icon="search" title="No items found" description="Try a different filter or search." />
