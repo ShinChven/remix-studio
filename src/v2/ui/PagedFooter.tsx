@@ -26,13 +26,11 @@ export interface PagedFooterProps {
   pages: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number | 'all') => void;
-  /** Disable when the caller scrolls a separate results pane itself. */
-  scrollToTop?: boolean;
   className?: string;
 }
 
 /** Range, page size and page navigation under a paged list; hidden when everything fits. */
-export function PagedFooter({ page, pageSize, total, pages, onPageChange, onPageSizeChange, scrollToTop = true, className }: PagedFooterProps) {
+export function PagedFooter({ page, pageSize, total, pages, onPageChange, onPageSizeChange, className }: PagedFooterProps) {
   const { t } = useTranslation();
   if (pageSize === 'all' || total <= pageSize) return null;
   const effective = Math.max(1, pages);
@@ -49,7 +47,7 @@ export function PagedFooter({ page, pageSize, total, pages, onPageChange, onPage
         <Text variant="label-medium" className="text-on-surface-variant">
           {t('pagination.pageOf', { page: current, pages: effective })}
         </Text>
-        <Pagination page={current} pages={effective} onPageChange={onPageChange} scrollToTop={scrollToTop} />
+        <Pagination page={current} pages={effective} onPageChange={onPageChange} />
       </div>
     </div>
   );

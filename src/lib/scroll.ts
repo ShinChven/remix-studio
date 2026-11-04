@@ -33,8 +33,13 @@ function findScrollableAncestor(from: HTMLElement | null): HTMLElement | null {
  */
 export function scrollListToTop(element: HTMLElement | null): void {
   if (typeof window === 'undefined') return;
-  const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
   const scroller = findScrollableAncestor(element);
-  if (scroller) scroller.scrollTo({ top: 0, behavior });
-  else window.scrollTo({ top: 0, behavior });
+  scrollElementToTop(scroller ?? window);
+}
+
+/** Smoothly reset a known pane, respecting the system's reduced-motion setting. */
+export function scrollElementToTop(element: HTMLElement | Window | null): void {
+  if (typeof window === 'undefined' || !element) return;
+  const behavior: ScrollBehavior = prefersReducedMotion() ? 'auto' : 'smooth';
+  element.scrollTo({ top: 0, behavior });
 }

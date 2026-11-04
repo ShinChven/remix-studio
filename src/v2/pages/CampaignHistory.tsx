@@ -6,6 +6,7 @@ import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { Button, ChipSet, FilterChip, IconButton, Text, TextField } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { PostingTrendChart, lastNDaysRange } from '../components/campaigns/PostingTrendChart';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { fallbackExternalUrl } from '../lib/platform';
 import { EmptyState, Page, PageHeader, Section } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
@@ -65,6 +66,7 @@ export function CampaignHistory() {
 
   const page = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('pageSize') || '25', 10);
+  const paginationRef = usePaginationScroll({ page, pageSize, enabled: searchParams.get('view') !== 'chart' });
   const startDateParam = searchParams.get('startDate') || '';
   const endDateParam = searchParams.get('endDate') || '';
   const qParam = searchParams.get('q') || '';
@@ -157,7 +159,9 @@ export function CampaignHistory() {
     setSearchParams(params);
   };
 
+  const historyRequest = useRef(0);
   const loadHistory = async (silent = false) => {
+    const request = ++historyRequest.current;
     if (!silent) setIsLoading(true);
     try {
       const data = await fetchCampaignHistory(
@@ -168,14 +172,16 @@ export function CampaignHistory() {
         qParam,
         new Date().getTimezoneOffset(),
       );
+      if (request !== historyRequest.current) return;
       setHistory(data.items);
       setTotal(data.total);
       setTotalPages(data.totalPages);
     } catch (error) {
+      if (request !== historyRequest.current) return;
       console.error('[CampaignHistory] error:', error);
       toast.error((error as Error).message || 'Failed to load campaign history');
     } finally {
-      setIsLoading(false);
+      if (request === historyRequest.current) setIsLoading(false);
     }
   };
 
@@ -183,6 +189,7 @@ export function CampaignHistory() {
     // The chart pulls its own aggregates, so skip the list request while it is shown.
     if (view === 'list') void loadHistory();
     setSearchQuery(qParam);
+    return () => { historyRequest.current++; };
   }, [page, pageSize, range.apiStart, range.apiEnd, qParam, view]);
 
   // Posts published or edited elsewhere (another tab, an MCP agent, the scheduler).
@@ -236,7 +243,7 @@ export function CampaignHistory() {
 
 
   return (
-    <Page density="compact">
+    <Page ref={paginationRef} density="compact" aria-busy={view === 'list' && isLoading}>
       <PageHeader title="History" description="Audit log of your posts." backLink={{ to: '/campaigns', label: 'Back' }} />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -280,7 +287,7 @@ export function CampaignHistory() {
           <Section variant="card">
             <PostingTrendChart from={range.from} to={range.to} height={280} />
           </Section>
-        ) : isLoading ? (
+        ) : isLoading && history.length === 0 ? (
           <RowList>
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="v2-skeleton" style={{ height: 56 }} />
@@ -336,7 +343,7 @@ export function CampaignHistory() {
             })}
           </RowList>
         )}
-        {view === 'list' && !isLoading && totalPages > 1 && (
+        {view === 'list' && totalPages > 1 && (
           <div className="v2-paged-footer">
             <Text variant="label-medium" className="text-on-surface-variant">
               Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}

@@ -1,7 +1,8 @@
-import type { HTMLAttributes, ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode, Ref } from 'react';
 import { Button, cx, Icon, LoadingIndicator, Shape, Text, type MaterialShapeName } from '../../m3';
 
 export interface PageProps extends HTMLAttributes<HTMLDivElement> {
+  ref?: Ref<HTMLDivElement>;
   /** `wide` uses the full width of the window; `default` caps the line length of forms and lists. */
   width?: 'default' | 'wide' | 'narrow' | 'full';
   /** `compact` tightens every control on the page (busy editors and tables). */

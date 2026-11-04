@@ -11,6 +11,7 @@ import { UserRow } from '../components/users/UserRow';
 import { UserSheet } from '../components/users/UserSheet';
 import { UsersHero, type UsersOverview } from '../components/users/UsersHero';
 import { STORAGE_TIERS, tierOf } from '../components/users/userMeta';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { formatBytes } from '../lib/format';
 import { useRangeSelection } from '../lib/useRangeSelection';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
@@ -54,6 +55,7 @@ export function AdminUsers() {
   const sort = pick(params.get('sort'), Object.keys(SORTS) as SortKey[], 'newest');
   const pageSize = PAGE_SIZES.includes(Number(params.get('size'))) ? Number(params.get('size')) : PAGE_SIZES[0];
   const page = Math.max(1, Math.floor(Number(params.get('page'))) || 1);
+  const paginationRef = usePaginationScroll({ page, pageSize });
   const openId = params.get('user');
 
   const update = useCallback(
@@ -393,7 +395,7 @@ export function AdminUsers() {
   };
 
   return (
-    <Page className="v2-users" density="compact">
+    <Page ref={paginationRef} className="v2-users" density="compact">
       <UsersHero
         overview={overview}
         actions={

@@ -6,6 +6,7 @@ import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { Button, Text, useSnackbar } from '../../m3';
 import type { Library, LibraryType } from '../../types';
 import { LibraryCard, LibraryRow } from '../components/EntityCards';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { useViewPref } from '../lib/viewPrefs';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EntityList } from '../ui/EntityList';
@@ -31,6 +32,7 @@ export function Libraries() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
+  const paginationRef = usePaginationScroll({ page });
   const q = searchParams.get('q') || '';
   const typeParam = searchParams.get('type');
   const type: TypeFilter = isTypeFilter(typeParam) ? typeParam : 'all';
@@ -111,7 +113,7 @@ export function Libraries() {
   };
 
   return (
-    <Page>
+    <Page ref={paginationRef} aria-busy={isLoading}>
       <PageHero
         icon="folder"
         shape="cookie-6"
@@ -124,7 +126,7 @@ export function Libraries() {
         }
       />
 
-      <ListToolbar title={t('libraries.allLibraries')} icon="grid_view" count={total}>
+      <ListToolbar title={t('libraries.allLibraries')} icon="grid_view" count={total} isLoading={isLoading && libraries.length > 0}>
         <Segmented<TypeFilter>
           aria-label={t('libraryForm.typeLabel')}
           className="v2-type-filter"
@@ -165,7 +167,7 @@ export function Libraries() {
         />
       </ListToolbar>
 
-      {isLoading ? (
+      {isLoading && libraries.length === 0 ? (
         <LoadingState />
       ) : libraries.length === 0 ? (
         <EmptyState icon="folder" shape="cookie-6" title={t('libraries.noLibraries.title')} description={q || type !== 'all' ? t('libraries.noResultsFound') : t('libraries.noLibraries.description')} />

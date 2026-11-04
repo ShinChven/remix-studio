@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { searchAssistantConversations, type AssistantConversation } from '../../api';
 import { Icon, Text } from '../../m3';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
 import { Pagination } from '../ui/Pagination';
 import { Row, RowList } from '../ui/Rows';
@@ -16,6 +17,7 @@ export function ChatHistory() {
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') || '';
   const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1);
+  const paginationRef = usePaginationScroll({ page });
   const [items, setItems] = useState<AssistantConversation[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
@@ -58,7 +60,7 @@ export function ChatHistory() {
     });
 
   return (
-    <Page width="default">
+    <Page ref={paginationRef} width="default" aria-busy={loading}>
       <PageHeader
         title={t('chatHistory.title', { defaultValue: 'Chat History' })}
         description={t('chatHistory.description', { defaultValue: 'Search across conversation titles and message content.' })}
@@ -69,7 +71,7 @@ export function ChatHistory() {
         <Text variant="label-medium" className="text-on-surface-variant">
           {q ? t('chatHistory.resultsCount', { defaultValue: '{{total}} result(s) for "{{q}}"', total, q }) : t('chatHistory.totalCount', { defaultValue: '{{total}} conversation(s)', total })}
         </Text>
-        {loading ? (
+        {loading && items.length === 0 ? (
           <LoadingState minHeight={240} />
         ) : items.length === 0 ? (
           <EmptyState icon="forum" shape="clover-4" title={q ? t('chatHistory.noResults', { defaultValue: 'No conversations match your search.' }) : t('chatHistory.empty', { defaultValue: 'No conversations yet.' })} />

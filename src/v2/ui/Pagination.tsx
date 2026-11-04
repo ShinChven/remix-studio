@@ -1,6 +1,4 @@
-import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { scrollListToTop } from '../../lib/scroll';
 import { Button, cx, IconButton, useMediaQuery } from '../../m3';
 
 const ELLIPSIS_JUMP = 5;
@@ -24,15 +22,12 @@ export interface PaginationProps {
   onPageChange: (page: number) => void;
   size?: 'xs' | 'sm';
   siblings?: number;
-  /** Scroll the list back to its top after paging. */
-  scrollToTop?: boolean;
   className?: string;
 }
 
-/** Page navigation: first/previous, numbered pages with jump gaps, next/last. */
-export function Pagination({ page, pages, onPageChange, size = 'xs', siblings = 1, scrollToTop = true, className }: PaginationProps) {
+/** Page navigation. The list owns scrolling through usePaginationScroll. */
+export function Pagination({ page, pages, onPageChange, size = 'xs', siblings = 1, className }: PaginationProps) {
   const { t } = useTranslation();
-  const ref = useRef<HTMLElement>(null);
   const compact = useMediaQuery('(max-width: 599.98px)');
   const total = Math.max(1, pages);
   const current = Math.min(Math.max(1, page), total);
@@ -41,13 +36,12 @@ export function Pagination({ page, pages, onPageChange, size = 'xs', siblings = 
     const next = Math.min(Math.max(1, p), total);
     if (next === current) return;
     onPageChange(next);
-    if (scrollToTop) scrollListToTop(ref.current);
   };
 
   const items = buildPageItems(current, total, compact ? 0 : siblings);
 
   return (
-    <nav ref={ref} className={cx('v2-pagination', className)} aria-label={t('pagination.label', 'Pagination')}>
+    <nav className={cx('v2-pagination', className)} aria-label={t('pagination.label', 'Pagination')}>
       {!compact && (
         <IconButton icon="first_page" label={t('pagination.first')} size={size} disabled={current <= 1} onClick={() => goTo(1)} />
       )}

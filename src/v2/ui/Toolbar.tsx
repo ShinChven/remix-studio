@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react';
-import { Button, ButtonGroup, cx, Fab, Icon, Text, type ButtonSize } from '../../m3';
+import { Button, ButtonGroup, cx, Fab, Icon, LoadingIndicator, Text, type ButtonSize } from '../../m3';
 
 /** A row of list controls (title with count, filters, search, actions) that wraps on narrow windows. */
-export function ListToolbar({ title, icon, count, children, className }: { title?: ReactNode; icon?: string; count?: number; children?: ReactNode; className?: string }) {
+export function ListToolbar({ title, icon, count, isLoading = false, children, className }: { title?: ReactNode; icon?: string; count?: number; isLoading?: boolean; children?: ReactNode; className?: string }) {
   return (
     <div className={cx('v2-list-toolbar', className)}>
       {title && (
         <div className="v2-list-toolbar__title">
-          {icon && <Icon name={icon} className="text-primary" />}
+          {isLoading ? <LoadingIndicator size={24} /> : icon && <Icon name={icon} className="text-primary" />}
           <Text as="h2" variant="title-large" emphasized>
             {title}
           </Text>

@@ -34,6 +34,7 @@ import { LibraryTextItems, type TextView } from '../components/library/LibraryTe
 import { Lightbox } from '../components/Lightbox';
 import { DangerAction, ResultsBar } from '../components/project/ResultsBar';
 import { TagDialog } from '../components/TagDialog';
+import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { useViewPref } from '../lib/viewPrefs';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -142,6 +143,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const searchTerm = searchParams.get('q') || '';
   const pageSize = parsePageSize(searchParams.get('size'));
+  const paginationRef = usePaginationScroll({ page: currentPage, pageSize });
   const sortBy = (searchParams.get('sortBy') as 'time' | 'name') || 'time';
   const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
   const filterTags = searchParams.getAll('tag');
@@ -773,7 +775,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   }
 
   return (
-    <Page className="v2-lib" data-kind={type} {...dropHandlers}>
+    <Page ref={paginationRef} className="v2-lib" data-kind={type} {...dropHandlers}>
       <LibraryHero library={library} itemCount={libraryCount} primary={primaryAction} actions={heroActions} />
 
       <section className="v2-lib-pane v2-pane" data-density="compact">
