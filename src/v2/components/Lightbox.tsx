@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useWakeLock } from '../../hooks/useWakeLock';
-import { Button, IconButton, ThemeScope } from '../../m3';
+import { Button, CircularProgress, IconButton, ThemeScope } from '../../m3';
 import { NumberField } from '../ui/NumberField';
 
 export interface LightboxProps {
@@ -34,6 +34,8 @@ const TRANSITION_KEY = 'imageLightbox.slideshowTransition';
 const TRANSITION_MS = 1100;
 const RING_RADIUS = 18;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+/** If the incoming image hasn't loaded by then, it is shown anyway and finishes loading in place. */
+const SWAP_TIMEOUT_MS = 1500;
 
 const clampIndex = (index: number, length: number) => (length <= 0 ? 0 : Math.min(Math.max(index, 0), length - 1));
 const clampInterval = (value: number) => Math.min(Math.max(Math.round(value), MIN_INTERVAL), MAX_INTERVAL);
@@ -86,6 +88,7 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
   const lastSrc = useRef<string | undefined>(images[clampIndex(startIndex, images.length)]);
   const [shownSrc, setShownSrc] = useState(lastSrc.current);
   const preloaded = useRef<HTMLImageElement[]>([]);
+  const loader = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     onIndexChangeRef.current = onIndexChange;
@@ -189,23 +192,36 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
   useWakeLock(playing, WAKE_LOCK_MAX_MS);
 
   const currentSrc = images[clampIndex(index, images.length)];
-  // The incoming image is swapped in only once decoded, so the current one stays on screen meanwhile.
+  // The incoming image is swapped in only once loaded, so the current one stays on screen meanwhile.
+  // The loader is held in a ref (a detached, unreferenced image can be collected and its decode()
+  // never settle), and a timeout guarantees the swap even if loading stalls.
   useEffect(() => {
     if (!currentSrc || currentSrc === shownSrc) return;
-    let cancelled = false;
+    let done = false;
     const img = new Image();
+    loader.current = img;
+    const show = () => {
+      if (done) return;
+      done = true;
+      setShownSrc(currentSrc);
+    };
+    img.onload = () => {
+      img.decode().then(show, show);
+    };
+    img.onerror = show;
     img.src = currentSrc;
-    img
-      .decode()
-      .catch(() => {})
-      .then(() => {
-        if (!cancelled) setShownSrc(currentSrc);
-      });
+    if (img.complete && img.naturalWidth > 0) show();
+    const timer = window.setTimeout(show, SWAP_TIMEOUT_MS);
     return () => {
-      cancelled = true;
+      done = true;
+      window.clearTimeout(timer);
+      img.onload = null;
+      img.onerror = null;
+      if (loader.current === img) loader.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSrc]);
+  const swapping = !!currentSrc && currentSrc !== shownSrc;
 
   // Neighbours are decoded ahead so stepping either way is instant.
   useEffect(() => {
@@ -414,6 +430,7 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
           data-transition={playing && transition !== 'none' ? transition : undefined}
           onClick={stop}
         />
+        {swapping && <CircularProgress size={40} aria-hidden className="v2-lightbox__loading" />}
 
         {images.length > 1 && (
           <IconButton
