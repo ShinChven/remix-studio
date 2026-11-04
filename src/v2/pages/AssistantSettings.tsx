@@ -537,7 +537,7 @@ export function AssistantSettings() {
               <Text variant="label-medium" className="text-on-surface-variant">
                 {t('assistant.skillPageLabel', { defaultValue: 'Page {{page}} of {{pages}}', page: skillPage, pages: skillPages })}
               </Text>
-              <Pagination page={skillPage} pages={skillPages} onPageChange={setSkillPage} scrollToTop={false} />
+              <Pagination page={skillPage} pages={skillPages} onPageChange={setSkillPage} />
             </div>
           )}
         </Section>

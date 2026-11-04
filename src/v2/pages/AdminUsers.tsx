@@ -489,7 +489,7 @@ export function AdminUsers() {
                 options={PAGE_SIZES.map((size) => ({ value: String(size), label: t('adminUsers.pageSize', { count: size }) }))}
                 className="v2-inline-select v2-page-size"
               />
-              {pages > 1 && <Pagination page={Math.min(page, pages)} pages={pages} onPageChange={(next) => update({ page: next })} scrollToTop={false} />}
+              {pages > 1 && <Pagination page={Math.min(page, pages)} pages={pages} onPageChange={(next) => update({ page: next })} />}
             </div>
           </footer>
         )}
