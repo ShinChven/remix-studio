@@ -949,11 +949,17 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
         title={t('libraryEditor.confirm.removeItem.title')}
         message={t('libraryEditor.confirm.removeItem.message')}
         confirmLabel={t('libraryEditor.confirm.removeItem.confirm')}
+        dismissKeys={['d', 'D']}
         onClose={() => setRemoveItem(null)}
         onConfirm={async () => {
           if (!removeItem) return;
           try {
             await deleteLibraryItem(library.id, removeItem.id);
+            setLightboxIndex((prev) => {
+              if (prev === null) return null;
+              const remaining = items.length - 1;
+              return remaining <= 0 ? null : Math.min(prev, remaining - 1);
+            });
             await refresh();
           } catch (e) {
             console.error('Failed to delete item:', e);
@@ -975,10 +981,10 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
         }}
       />
 
-      {lightboxIndex !== null && items[lightboxIndex] && (
+      {lightboxIndex !== null && items.length > 0 && (
         <Lightbox
           images={items.map((item) => imageDisplayUrl(item.optimizedUrl || item.content))}
-          startIndex={lightboxIndex}
+          startIndex={Math.min(lightboxIndex, items.length - 1)}
           onClose={() => setLightboxIndex(null)}
           onDelete={(index) => items[index] && setRemoveItem(items[index])}
           onIndexChange={(index) => {

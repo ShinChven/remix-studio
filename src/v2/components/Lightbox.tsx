@@ -192,11 +192,14 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
   useWakeLock(playing, WAKE_LOCK_MAX_MS);
 
   const currentSrc = images[clampIndex(index, images.length)];
+  const shownSrcRef = useRef(shownSrc);
+  shownSrcRef.current = shownSrc;
+
   // The incoming image is swapped in only once loaded, so the current one stays on screen meanwhile.
   // The loader is held in a ref (a detached, unreferenced image can be collected and its decode()
   // never settle), and a timeout guarantees the swap even if loading stalls.
   useEffect(() => {
-    if (!currentSrc || currentSrc === shownSrc) return;
+    if (!currentSrc || currentSrc === shownSrcRef.current) return;
     let done = false;
     const img = new Image();
     loader.current = img;
@@ -219,7 +222,6 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
       img.onerror = null;
       if (loader.current === img) loader.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentSrc]);
   const swapping = !!currentSrc && currentSrc !== shownSrc;
 
@@ -271,6 +273,9 @@ export function Lightbox({ images, startIndex, onClose, onDelete, onReuse, onInd
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      // Do not handle shortcuts when a dialog (e.g. delete confirmation) is open on top of the lightbox.
+      if (document.querySelector('.m3-dialog-root')) return;
       if (e.key === 'Escape') {
         if (document.fullscreenElement) return;
         e.preventDefault();

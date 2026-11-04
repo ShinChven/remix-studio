@@ -304,10 +304,6 @@ export function AlbumTab(props: AlbumTabProps) {
       index: idx >= 0 ? idx : 0,
       albumItemIds: valid.map((a) => a.id),
       onDelete: (i) => valid[i] && deleteItems([valid[i]]),
-      onIndexChange: (i) => {
-        const next = valid[i];
-        if (next) document.getElementById(`album-item-${next.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      },
     });
   };
 
