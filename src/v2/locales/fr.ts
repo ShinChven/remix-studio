@@ -167,6 +167,17 @@ const messages: V2Messages = {
     },
   },
   project: {
+    albumDetails: {
+      title: 'Détails de l’élément de l’album',
+      preview: 'Aperçu du résultat',
+      filterHint: 'Sélectionnez un tag pour filtrer l’album.',
+      inputs: 'Médias de référence',
+      inputsFailed: 'Impossible de charger les médias de référence.',
+      imageUnavailable: 'Image indisponible',
+      emptyPrompt: 'Aucun prompt texte',
+      referenceVideo: 'Vidéo de référence {{index}}',
+      referenceAudio: 'Audio de référence {{index}}',
+    },
     workflow: 'Workflow',
     addStep: 'Ajouter une étape',
     sections: {

@@ -167,6 +167,17 @@ const messages: V2Messages = {
     },
   },
   project: {
+    albumDetails: {
+      title: '相册详情',
+      preview: '生成结果预览',
+      filterHint: '点击标签筛选相册。',
+      inputs: '参考素材',
+      inputsFailed: '无法加载参考素材。',
+      imageUnavailable: '图片无法显示',
+      emptyPrompt: '没有文本提示词',
+      referenceVideo: '参考视频 {{index}}',
+      referenceAudio: '参考音频 {{index}}',
+    },
     workflow: '工作流',
     addStep: '添加步骤',
     sections: {

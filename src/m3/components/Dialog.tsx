@@ -18,8 +18,12 @@ export interface DialogProps {
   headline?: ReactNode
   /** Hero icon above a centered headline. */
   icon?: IconSource
+  /** Show a close button in the basic dialog header. Full-screen dialogs always show one. */
+  showCloseButton?: boolean
   /** Body content. It scrolls when the dialog is taller than the window. */
   children?: ReactNode
+  /** Use the whole body as the accessible description. Disable for structured or interactive content. */
+  describeContent?: boolean
   /** Buttons, end-aligned. In full-screen dialogs pass the confirm action as `confirmAction`. */
   actions?: ReactNode
   /** `true`, or `'compact'` to go full-screen only on compact windows (< 600dp). */
@@ -46,7 +50,9 @@ export function Dialog({
   onClose,
   headline,
   icon,
+  showCloseButton = false,
   children,
+  describeContent = true,
   actions,
   fullScreen = false,
   confirmAction,
@@ -104,7 +110,7 @@ export function Dialog({
           aria-modal="true"
           aria-labelledby={headline ? headlineId : undefined}
           aria-label={headline ? undefined : ariaLabel}
-          aria-describedby={children ? contentId : undefined}
+          aria-describedby={describeContent && children ? contentId : undefined}
           tabIndex={-1}
           className={cx('m3-dialog', className)}
           data-state={state}
@@ -127,8 +133,16 @@ export function Dialog({
               {confirmAction && <div className="m3-dialog__confirm">{confirmAction}</div>}
             </div>
           ) : (
-            (icon || headline) && (
-              <div className="m3-dialog__header">
+            (icon || headline || showCloseButton) && (
+              <div className="m3-dialog__header" data-close={showCloseButton ? '' : undefined}>
+                {showCloseButton && (
+                  <IconButton
+                    className="m3-dialog__close"
+                    icon="close"
+                    label={messages.close}
+                    onClick={() => onClose('close-button')}
+                  />
+                )}
                 {icon && <span className="m3-dialog__icon">{renderIcon(icon)}</span>}
                 {headline && (
                   <h2 id={headlineId} className="m3-dialog__headline">

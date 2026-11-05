@@ -746,6 +746,31 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.get('/api/projects/:id/album/:itemId/inputs', authMiddleware, async (c) => {
+    try {
+      const { userId } = c.get('user') as JwtPayload;
+      const { id: projectId, itemId } = c.req.param();
+      const item = await repository.getAlbumItem(userId, projectId, itemId);
+      if (!item) return c.json({ error: 'Album item not found' }, 404);
+
+      // Older album rows may only have the media references on their job.
+      const job = item.jobId && !(item.imageContexts?.length && item.videoContexts?.length && item.audioContexts?.length)
+        ? await repository.getJob(userId, projectId, item.jobId)
+        : null;
+      const signContexts = (saved?: string[], original?: string[]) =>
+        Promise.all((saved?.length ? saved : original ?? []).filter(Boolean).map((url) => presignIfKey(url, storage)));
+      const [imageContexts, videoContexts, audioContexts] = await Promise.all([
+        signContexts(item.imageContexts, job?.imageContexts),
+        signContexts(item.videoContexts, job?.videoContexts),
+        signContexts(item.audioContexts, job?.audioContexts),
+      ]);
+      return c.json({ imageContexts, videoContexts, audioContexts });
+    } catch (e) {
+      console.error('[GET /api/projects/:id/album/:itemId/inputs]', e);
+      return c.json({ error: 'Failed to get album inputs' }, 500);
+    }
+  });
+
   router.delete('/api/projects/:id/jobs/:jobId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

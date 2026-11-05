@@ -714,6 +714,13 @@ export async function fetchProjectAlbumItemConfiguration(
   return handleResponse<import('./types').JobConfiguration>(res, 'Failed to get album item configuration');
 }
 
+export type AlbumItemInputs = Required<Pick<import('./types').AlbumItem, 'imageContexts' | 'videoContexts' | 'audioContexts'>>;
+
+export async function fetchAlbumItemInputs(projectId: string, itemId: string, signal?: AbortSignal): Promise<AlbumItemInputs> {
+  const res = await apiFetch(`/api/projects/${encodeURIComponent(projectId)}/album/${encodeURIComponent(itemId)}/inputs`, { headers: getHeaders(false), signal });
+  return handleResponse<AlbumItemInputs>(res, 'Failed to get album inputs');
+}
+
 export async function deleteProjectJob(id: string, jobId: string): Promise<void> {
   const res = await apiFetch(`/api/projects/${id}/jobs/${jobId}`, {
     method: 'DELETE',

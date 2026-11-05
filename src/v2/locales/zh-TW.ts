@@ -167,6 +167,17 @@ const messages: V2Messages = {
     },
   },
   project: {
+    albumDetails: {
+      title: '相簿詳細資訊',
+      preview: '生成結果預覽',
+      filterHint: '點選標籤以篩選相簿。',
+      inputs: '參考素材',
+      inputsFailed: '無法載入參考素材。',
+      imageUnavailable: '無法顯示圖片',
+      emptyPrompt: '沒有文字提示詞',
+      referenceVideo: '參考影片 {{index}}',
+      referenceAudio: '參考音訊 {{index}}',
+    },
     workflow: '工作流程',
     addStep: '新增步驟',
     sections: {

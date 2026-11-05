@@ -166,6 +166,17 @@ const en = {
     },
   },
   project: {
+    albumDetails: {
+      title: 'Album item details',
+      preview: 'Result preview',
+      filterHint: 'Select a tag to filter the album.',
+      inputs: 'Reference media',
+      inputsFailed: 'Could not load reference media.',
+      imageUnavailable: 'Image unavailable',
+      emptyPrompt: 'No text prompt',
+      referenceVideo: 'Reference video {{index}}',
+      referenceAudio: 'Reference audio {{index}}',
+    },
     workflow: 'Workflow',
     addStep: 'Add step',
     sections: {
