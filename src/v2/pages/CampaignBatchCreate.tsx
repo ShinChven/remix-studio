@@ -379,11 +379,11 @@ export function CampaignBatchCreate() {
                       <IconButton icon="delete" size="xs" variant="filled" className="v2-button-danger v2-batch-item__remove" label="Remove" onClick={() => removeQueueItem(item.id)} />
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Text variant="label-large" emphasized className="truncate" title={name}>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Text variant="label-large" emphasized className="min-w-0 flex-[1_1_120px] truncate" title={name}>
                           {name}
                         </Text>
-                        <span className="v2-info-chip">
+                        <span className="v2-info-chip shrink-0">
                           {item.kind} · {mediaSourceLabel(item.mediaType)}
                         </span>
                       </div>
