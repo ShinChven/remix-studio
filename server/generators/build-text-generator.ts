@@ -1,3 +1,4 @@
+import { APIMartTextGenerator } from './apimart-text-generator';
 import type { ProviderType } from '../../src/types';
 import { TextGenerator } from './text-generator';
 import { GoogleAITextGenerator } from './google-ai-text-generator';
@@ -22,6 +23,8 @@ export function buildTextGenerator(
   const safeApiUrl = assertSafeProviderApiUrl(type, apiUrl);
 
   switch (type) {
+    case 'APIMart':
+      return new APIMartTextGenerator(apiKey, safeApiUrl);
     case 'GoogleAI':
       return new GoogleAITextGenerator(apiKey, safeApiUrl);
     case 'VertexAI':
@@ -43,7 +46,6 @@ export function buildTextGenerator(
     case 'BytePlus':
     case 'Replicate':
     case 'BlackForestLabs':
-    case 'APIMart':
       throw new Error(`Provider type '${type}' does not support text generation`);
     default:
       throw new Error(`Provider type '${type}' does not support text generation`);

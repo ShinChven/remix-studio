@@ -1,3 +1,5 @@
+import { buildAudioGenerator } from '../generators/build-audio-generator';
+import { AudioProcessor } from './audio-processor';
 import { PrismaClient } from '@prisma/client';
 import { ProviderRepository } from '../db/provider-repository';
 import { ProjectRepository } from '../db/project-repository';
@@ -38,7 +40,8 @@ export class DetachedPoller {
     private projectRepo: ProjectRepository,
     private imageProcessor: ImageProcessor,
     private videoProcessor: VideoProcessor,
-    private projectEvents?: ProjectEventPublisher
+    private projectEvents?: ProjectEventPublisher,
+    private audioProcessor?: AudioProcessor
   ) {
     const raw = process.env.JOB_PROCESSING_TIMEOUT_MS;
     const parsed = raw ? parseInt(raw, 10) : NaN;
@@ -236,6 +239,26 @@ export class DetachedPoller {
         : null;
       if (providerRecord.type === 'KlingAI' && !apiSecret) {
         if (this.isStuck(job.id)) await this.markStuck(userId, projectId, job);
+        return;
+      }
+
+      if (projectType === 'audio') {
+        const generator = buildAudioGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
+        if (!generator.checkStatus || !this.audioProcessor) throw new Error('Audio task polling is unavailable');
+        const res = await generator.checkStatus(job.taskId!);
+        if (res.status === 'completed' && res.audioBytes) {
+          await this.audioProcessor.processCompletedAudio({
+            userId, projectId, job, audioBytes: res.audioBytes,
+            mimeType: res.mimeType, text: res.text,
+            modelConfigId: job.modelConfigId, providerId: job.providerId,
+          });
+          this.finalize(job.providerId, job.id);
+        } else if (res.status === 'failed') {
+          await this.updateJobStatus(userId, projectId, job.id, { status: 'failed', error: res.error || 'Audio task failed', taskId: null as any });
+          this.finalize(job.providerId, job.id);
+        } else if (this.isStuck(job.id)) {
+          await this.markStuck(userId, projectId, job);
+        }
         return;
       }
 

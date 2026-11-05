@@ -210,11 +210,73 @@ Used by `server/services/provider-model-lister.ts` to fetch available models fro
 | Grok (xAI) | `GET {base}/v1/models` | `Authorization: Bearer {apiKey}` |
 | RunningHub | No listing API | N/A |
 | MiniMax | No listing API | N/A |
-| APIMart | No listing API (static + custom models) | `Authorization: Bearer {apiKey}` |
+| APIMart | `GET {base}/v1/models?expand=category` | `Authorization: Bearer {apiKey}` |
 
 The lister fetches all models, then filters to only those whose `id` matches a `modelId` in `PROVIDER_MODELS_MAP`.
 
-### APIMart image catalog
+### APIMart catalog (verified November 5, 2026)
+
+The APIMart entries in `src/types.ts` include the text, video and audio
+subcatalogs from `src/lib/apimart-models.ts`. Together they expose 232 selectable
+configurations: 51 image, 121 text, 54 video and 6 audio. Existing image IDs are
+preserved. Suno V6 / Wild / Mini and Flow Music Lyria 3.5 use `modelVariant` to
+send `version` while keeping their real API `model` value (`suno` / `flowmusic`).
+
+Sources used for the inventory and request contracts:
+
+- [Public marketplace](https://apimart.ai/api/marketplace/models?page_size=100&page=1)
+  (all three pages, 213 entries); the compact snapshot is
+  `scripts/fixtures/apimart-catalog.json`.
+- [Public pricing metadata](https://apimart.ai/api/pricing/models/all) for text
+  input/output limits. A pricing entry alone is not evidence of a supported
+  generation endpoint.
+- [Official API manual index](https://docs.apimart.ai/_llms/en/api-manual.txt),
+  including official / Ext channels, TTS, Suno versions and Flow Music Lyria 3.5.
+- Official workspaces for [GPT Image 2.6](https://apimart.ai/model/gpt-image-2-6),
+  [MAI Image 2.7](https://apimart.ai/model/mai-image-2-7),
+  [Seedream 5.5](https://apimart.ai/model/seedream-5-5), and
+  [Gemini Omni 1.2 Flash](https://apimart.ai/model/gemini-omni-1-2-flash).
+
+The snapshot contains three embedding models and two transcription models.
+They are explicitly excluded because Remix Studio has generation projects,
+not embedding or transcription tasks. Announcements without an available API
+(such as Kling 4.0 Flash) are also excluded. Compatibility aliases such as
+`Omni-Flash-Ext` and `grok-imagine-1.5-video-apimart` resolve to their documented
+canonical IDs rather than separate model cards. The model-list endpoint respects
+the configured key’s group/model restrictions, retains only implemented models,
+and deduplicates versions that share one API model ID.
+
+Text projects and assistant chat both use APIMart Chat Completions. Image input
+is declared per model. Reasoning and newer Gemini models omit temperature
+when their catalog entry does not expose sampling controls. The video adapter
+maps per-family field names (`size` / `aspect_ratio`, frame images, motion-control
+inputs, SkyReels tags and audio fields); models that require source media fail
+before a paid generation submission when it is missing. Hailuo 1080p requires
+its shorter duration. Gemini Omni omits duration unless using the Ext channel;
+Ext editing omits it when a source video is present.
+
+APIMart music submits to `/v1/music/generations` and persists its task ID.
+`DetachedPoller` queries `/v1/music/tasks/{id}` and hands completed audio to the
+audio processor, retaining the concurrency slot until completion or failure.
+Recovered music tasks continue polling without another paid submission. The
+current audio pipeline stores the first returned track; music operations such
+as extension, separation and custom voice training are not model entries.
+Suno interprets section-tagged prompts as custom lyrics (5,000 characters);
+inspiration descriptions have a separate 3,000-character limit. TTS uses
+`/v1/audio/speech`, one speaker and six voices. Voice settings survive saving
+and reconcile against the selected model’s supported voices.
+
+Run all APIMart contract tests without credentials, a database or paid requests:
+
+```sh
+node --import tsx --test scripts/test-apimart-generator.ts scripts/test-apimart-models.ts
+```
+
+The tests cover inventory completeness, all text/video submissions, API/model
+version routing, image upload, field mappings, invalid media combinations,
+completed/failed tasks and asynchronous music handoff/recovery.
+
+#### Image catalog
 
 The APIMart catalog includes all image-generation model IDs documented in the
 [image API reference](https://docs.apimart.ai/en/api-reference/images/gemini-nano-banana-2.1/generation),

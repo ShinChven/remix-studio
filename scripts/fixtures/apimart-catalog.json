@@ -1,0 +1,863 @@
+{
+  "checkedAt": "2026-11-05",
+  "source": "https://apimart.ai/api/marketplace/models?page_size=100&page=1",
+  "models": [
+    {
+      "id": "muse-video-ext",
+      "category": "video"
+    },
+    {
+      "id": "muse-image-ext",
+      "category": "image"
+    },
+    {
+      "id": "gpt-6.1-terra",
+      "category": "chat"
+    },
+    {
+      "id": "pixverse-v6-max",
+      "category": "video"
+    },
+    {
+      "id": "kling-v4",
+      "category": "video"
+    },
+    {
+      "id": "hy-image-v3.5-preview",
+      "category": "image"
+    },
+    {
+      "id": "flux-3-image-klein",
+      "category": "image"
+    },
+    {
+      "id": "gemini-4-argon",
+      "category": "chat"
+    },
+    {
+      "id": "viduq4-preview",
+      "category": "video"
+    },
+    {
+      "id": "claude-haiku-5-5",
+      "category": "chat"
+    },
+    {
+      "id": "mai-image-2.6",
+      "category": "image"
+    },
+    {
+      "id": "mai-image-2.6-flash",
+      "category": "image"
+    },
+    {
+      "id": "flux-3-image",
+      "category": "image"
+    },
+    {
+      "id": "gemini-nano-banana-2.1",
+      "category": "image"
+    },
+    {
+      "id": "gpt-6.1-sol",
+      "category": "chat"
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "category": "chat"
+    },
+    {
+      "id": "seedream-5-0-flash",
+      "category": "image"
+    },
+    {
+      "id": "gpt-6-luna",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-6-sol",
+      "category": "chat"
+    },
+    {
+      "id": "claude-opus-5-5",
+      "category": "chat"
+    },
+    {
+      "id": "grok-4.7",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-v4.1-flash",
+      "category": "chat"
+    },
+    {
+      "id": "wan3.0-video-prime",
+      "category": "video"
+    },
+    {
+      "id": "gpt-image-2.5-flare",
+      "category": "image"
+    },
+    {
+      "id": "gpt-image-2.5-sunburst",
+      "category": "image"
+    },
+    {
+      "id": "qwen3.8-max-0902",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.8-flash",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.8-27b",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.7-flash",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.8-2.4t-a95b",
+      "category": "chat"
+    },
+    {
+      "id": "glm-5.3",
+      "category": "chat"
+    },
+    {
+      "id": "glm-5.3-flash",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-6-astra",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-omni-1.1-flash",
+      "category": "video"
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "category": "chat"
+    },
+    {
+      "id": "claude-fable-5.1",
+      "category": "chat"
+    },
+    {
+      "id": "MiniMax-H3-Max",
+      "category": "video"
+    },
+    {
+      "id": "grok-imagine-video",
+      "category": "video"
+    },
+    {
+      "id": "grok-imagine-image-quality",
+      "category": "image"
+    },
+    {
+      "id": "gemini-3.7-flash",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.8-max",
+      "category": "chat"
+    },
+    {
+      "id": "grok-4.6",
+      "category": "chat"
+    },
+    {
+      "id": "grok-imagine-2.0-ext",
+      "category": "image"
+    },
+    {
+      "id": "wan3.0-video",
+      "category": "video"
+    },
+    {
+      "id": "seedance-2.5",
+      "category": "video"
+    },
+    {
+      "id": "flux-3-video",
+      "category": "video"
+    },
+    {
+      "id": "qwen-image-3.0-pro",
+      "category": "image"
+    },
+    {
+      "id": "qwen-image-3.0",
+      "category": "image"
+    },
+    {
+      "id": "MiniMax-H3",
+      "category": "video"
+    },
+    {
+      "id": "flux-2-max",
+      "category": "image"
+    },
+    {
+      "id": "kimi-k3",
+      "category": "chat"
+    },
+    {
+      "id": "claude-opus-5",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3.5-flash-lite",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3.6-flash",
+      "category": "chat"
+    },
+    {
+      "id": "suno",
+      "category": "audio"
+    },
+    {
+      "id": "kimi-k2.7-code-highspeed",
+      "category": "chat"
+    },
+    {
+      "id": "glm-5.2",
+      "category": "chat"
+    },
+    {
+      "id": "grok-4.3",
+      "category": "chat"
+    },
+    {
+      "id": "grok-4.5",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.6-plus",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.7-plus",
+      "category": "chat"
+    },
+    {
+      "id": "step-3.7-flash",
+      "category": "chat"
+    },
+    {
+      "id": "minimax-m2.7",
+      "category": "chat"
+    },
+    {
+      "id": "kimi-k2.7-code",
+      "category": "chat"
+    },
+    {
+      "id": "minimax-m3",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.6-flash",
+      "category": "chat"
+    },
+    {
+      "id": "mimo-v2.5-pro",
+      "category": "chat"
+    },
+    {
+      "id": "kimi-k2.6",
+      "category": "chat"
+    },
+    {
+      "id": "qwen3.7-max",
+      "category": "chat"
+    },
+    {
+      "id": "grok-build-0.1",
+      "category": "chat"
+    },
+    {
+      "id": "flowmusic",
+      "category": "audio"
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-2.5-flash-image-preview",
+      "category": "image"
+    },
+    {
+      "id": "seedream-5-0-pro",
+      "category": "image"
+    },
+    {
+      "id": "claude-sonnet-5",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3.1-flash-lite-image",
+      "category": "image"
+    },
+    {
+      "id": "gemini-omni-flash-preview",
+      "category": "video"
+    },
+    {
+      "id": "seedance-2.0-mini",
+      "category": "video"
+    },
+    {
+      "id": "happyhorse-1.1",
+      "category": "video"
+    },
+    {
+      "id": "kling-3.0-turbo",
+      "category": "video"
+    },
+    {
+      "id": "midjourney",
+      "category": "image"
+    },
+    {
+      "id": "claude-fable-5",
+      "category": "chat"
+    },
+    {
+      "id": "pixverse-v6",
+      "category": "video"
+    },
+    {
+      "id": "claude-opus-4-8",
+      "category": "chat"
+    },
+    {
+      "id": "Omni-Flash-Ext",
+      "category": "video"
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "category": "chat"
+    },
+    {
+      "id": "kling-v2-6-motion-control",
+      "category": "video"
+    },
+    {
+      "id": "kling-v3-motion-control",
+      "category": "video"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "category": "chat"
+    },
+    {
+      "id": "happyhorse-1.0",
+      "category": "video"
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.1-codex-max",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.4-nano",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.4-pro",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.5",
+      "category": "chat"
+    },
+    {
+      "id": "wan2.7-image-pro",
+      "category": "image"
+    },
+    {
+      "id": "wan2.7-image",
+      "category": "image"
+    },
+    {
+      "id": "gpt-image-2",
+      "category": "image"
+    },
+    {
+      "id": "wan2.7-r2v",
+      "category": "video"
+    },
+    {
+      "id": "skyreels-v4-fast",
+      "category": "video"
+    },
+    {
+      "id": "skyreels-v4-std",
+      "category": "video"
+    },
+    {
+      "id": "wan2.7-videoedit",
+      "category": "video"
+    },
+    {
+      "id": "wan2.7",
+      "category": "video"
+    },
+    {
+      "id": "claude-opus-4-7",
+      "category": "chat"
+    },
+    {
+      "id": "viduq3",
+      "category": "video"
+    },
+    {
+      "id": "viduq3-mix",
+      "category": "video"
+    },
+    {
+      "id": "wan2.6-i2v",
+      "category": "video"
+    },
+    {
+      "id": "wan2.6-i2v-flash",
+      "category": "video"
+    },
+    {
+      "id": "glm-5.1",
+      "category": "chat"
+    },
+    {
+      "id": "seedance-2.0-fast",
+      "category": "video"
+    },
+    {
+      "id": "seedance-2.0",
+      "category": "video"
+    },
+    {
+      "id": "wan2.5-preview",
+      "category": "video"
+    },
+    {
+      "id": "kling-v3-omni",
+      "category": "video"
+    },
+    {
+      "id": "gpt-image-1.5-official",
+      "category": "image"
+    },
+    {
+      "id": "z-image-turbo",
+      "category": "image"
+    },
+    {
+      "id": "grok-imagine-1.5-video-apimart",
+      "category": "video"
+    },
+    {
+      "id": "viduq3-turbo",
+      "category": "video"
+    },
+    {
+      "id": "kling-video-o1",
+      "category": "video"
+    },
+    {
+      "id": "grok-imagine-1.5-edit-apimart",
+      "category": "image"
+    },
+    {
+      "id": "kling-v3",
+      "category": "video"
+    },
+    {
+      "id": "qwen-image-2.0-pro",
+      "category": "image"
+    },
+    {
+      "id": "gpt-image-1-official",
+      "category": "image"
+    },
+    {
+      "id": "qwen-image-2.0",
+      "category": "image"
+    },
+    {
+      "id": "MiniMax-Hailuo-2.3-Fast",
+      "category": "video"
+    },
+    {
+      "id": "deepseek-ocr",
+      "category": "chat"
+    },
+    {
+      "id": "glm-4.6",
+      "category": "chat"
+    },
+    {
+      "id": "minimax-m2.1",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-v3.2-exp",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-v3.1-terminus",
+      "category": "chat"
+    },
+    {
+      "id": "glm-4.7",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.3-codex",
+      "category": "chat"
+    },
+    {
+      "id": "viduq3-pro",
+      "category": "video"
+    },
+    {
+      "id": "gpt-5.4",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-r1-0528",
+      "category": "chat"
+    },
+    {
+      "id": "claude-sonnet-4-6-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "claude-opus-4-6",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3.1-pro-preview",
+      "category": "chat"
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "category": "chat"
+    },
+    {
+      "id": "claude-opus-4-6-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "MiniMax-Hailuo-2.3",
+      "category": "video"
+    },
+    {
+      "id": "gemini-3.1-flash-image-preview",
+      "category": "image"
+    },
+    {
+      "id": "kling-v2-6",
+      "category": "video"
+    },
+    {
+      "id": "minimax-m2.5",
+      "category": "chat"
+    },
+    {
+      "id": "glm-5",
+      "category": "chat"
+    },
+    {
+      "id": "kimi-k2.5",
+      "category": "chat"
+    },
+    {
+      "id": "seedream-5-0-lite",
+      "category": "image"
+    },
+    {
+      "id": "seedream-4-5",
+      "category": "image"
+    },
+    {
+      "id": "gpt-5.2-codex",
+      "category": "chat"
+    },
+    {
+      "id": "seedance-1-5-pro",
+      "category": "video"
+    },
+    {
+      "id": "seedance-1-0-pro-fast",
+      "category": "video"
+    },
+    {
+      "id": "gemini-3-flash-preview-nothinking",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4.1-mini-2025-04-14",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.1",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4o-transcribe",
+      "category": "chat",
+      "excluded": "Transcription requires an audio-input task"
+    },
+    {
+      "id": "gpt-5.1-2025-11-13",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.2-pro",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.1-codex-mini",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-2025-08-07",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-v3.2",
+      "category": "chat"
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4o-mini-transcribe",
+      "category": "chat",
+      "excluded": "Transcription requires an audio-input task"
+    },
+    {
+      "id": "seedream-4-0",
+      "category": "image"
+    },
+    {
+      "id": "claude-opus-4-5-20251101-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "qwen-turbo",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-pro-2025-10-06",
+      "category": "chat"
+    },
+    {
+      "id": "flux-2-pro",
+      "category": "image"
+    },
+    {
+      "id": "gpt-5-mini-2025-08-07",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.2",
+      "category": "chat"
+    },
+    {
+      "id": "wan2.6",
+      "category": "video"
+    },
+    {
+      "id": "flux-2-flex",
+      "category": "image"
+    },
+    {
+      "id": "gpt-5-nano-2025-08-07",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-search-api",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-r1-250528",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-v3-0324",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3-pro-preview-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5.1-codex",
+      "category": "chat"
+    },
+    {
+      "id": "MiniMax-Hailuo-02",
+      "category": "video"
+    },
+    {
+      "id": "gpt-5-search-api-2025-10-14",
+      "category": "chat"
+    },
+    {
+      "id": "seedance-1-0-pro-quality",
+      "category": "video"
+    },
+    {
+      "id": "o3-2025-04-16",
+      "category": "chat"
+    },
+    {
+      "id": "gemini-3-pro-image-preview",
+      "category": "image"
+    },
+    {
+      "id": "flux-kontext-pro",
+      "category": "image"
+    },
+    {
+      "id": "claude-3-7-sonnet-20250219-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001-thinking",
+      "category": "chat"
+    },
+    {
+      "id": "flux-kontext-max",
+      "category": "image"
+    },
+    {
+      "id": "gemini-3-flash-preview",
+      "category": "chat"
+    },
+    {
+      "id": "claude-opus-4-5-20251101",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4.1-2025-04-14",
+      "category": "chat"
+    },
+    {
+      "id": "veo3.1-fast",
+      "category": "video"
+    },
+    {
+      "id": "text-embedding-ada-002",
+      "category": "chat",
+      "excluded": "Embedding is not a generation project"
+    },
+    {
+      "id": "text-embedding-3-small",
+      "category": "chat",
+      "excluded": "Embedding is not a generation project"
+    },
+    {
+      "id": "text-embedding-3-large",
+      "category": "chat",
+      "excluded": "Embedding is not a generation project"
+    },
+    {
+      "id": "o4-mini",
+      "category": "chat"
+    },
+    {
+      "id": "o3-mini",
+      "category": "chat"
+    },
+    {
+      "id": "o1",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-pro",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-nano",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-mini",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5-codex",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-5",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4o-2024-11-20",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4o",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4.1-nano",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4.1-mini",
+      "category": "chat"
+    },
+    {
+      "id": "gpt-4.1",
+      "category": "chat"
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929",
+      "category": "chat"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "category": "chat"
+    },
+    {
+      "id": "deepseek-r1",
+      "category": "chat"
+    }
+  ]
+}

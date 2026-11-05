@@ -1,3 +1,5 @@
+import { APIMART_TEXT_MODELS, APIMART_VIDEO_MODELS, APIMART_AUDIO_MODELS } from './lib/apimart-models';
+
 export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio' | 'model';
 
 export interface WorkflowItem {
@@ -195,6 +197,7 @@ export interface ModelConfig {
   name: string; // Display name e.g. "nano banana 2.1"
   generatorId: ProviderType; // Which generator type to use
   modelId: string; // The actual API model string (e.g. 'gemini-nano-banana-2.1')
+  modelVariant?: string; // Provider version selector when variants share an API model ID
   category: Exclude<ProjectType, 'comfyui' | 'civitai'>; // 'image' | 'text' | 'video' | 'audio'
   apiUrl?: string; // Optional override
   promptLimit?: PromptLimitMeta;
@@ -265,12 +268,13 @@ export const GEMINI_TTS_VOICES = [
 ] as const;
 
 export type GeminiTtsVoiceName = typeof GEMINI_TTS_VOICES[number];
+export const APIMART_TTS_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'] as const;
 export type AudioGenerationKind = 'tts' | 'music';
 export type AudioMusicMode = 'with-lyrics' | 'instrumental';
 
 export interface AudioSpeakerConfig {
   name: string;
-  voice: GeminiTtsVoiceName;
+  voice: GeminiTtsVoiceName | typeof APIMART_TTS_VOICES[number];
 }
 
 export interface AudioTtsProjectConfig {
@@ -314,8 +318,15 @@ export function getAudioGenerationKindFromConfig(config: AudioProjectConfig): Au
   return config.kind === 'remix-audio-music' ? 'music' : 'tts';
 }
 
-export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
-  if (!value) return DEFAULT_AUDIO_PROJECT_CONFIG;
+export function parseAudioProjectConfig(value?: string, model?: Pick<ModelConfig, 'options'>): AudioProjectConfig {
+  const voices = model?.options.voices || [...GEMINI_TTS_VOICES, ...APIMART_TTS_VOICES];
+  const primaryVoice = voices.includes('Kore') ? 'Kore' : voices[0] || 'Kore';
+  const secondaryVoice = voices.includes('Puck') ? 'Puck' : voices[1] || primaryVoice;
+  const defaultConfig = createDefaultAudioProjectConfig(resolveAudioGenerationKind(model));
+  if (defaultConfig.kind === 'remix-audio-tts' && model?.options.voices?.length) {
+    defaultConfig.speakers = [{ name: 'Narrator', voice: primaryVoice as AudioSpeakerConfig['voice'] }];
+  }
+  if (!value) return defaultConfig;
 
   try {
     const parsed = JSON.parse(value);
@@ -327,7 +338,7 @@ export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
       };
     }
 
-    if (parsed?.kind !== 'remix-audio-tts') return DEFAULT_AUDIO_PROJECT_CONFIG;
+    if (parsed?.kind !== 'remix-audio-tts') return defaultConfig;
 
     const speakers = Array.isArray(parsed.speakers)
       ? parsed.speakers.slice(0, 2).map((speaker: any, index: number) => ({
@@ -336,25 +347,25 @@ export function parseAudioProjectConfig(value?: string): AudioProjectConfig {
             : index === 0
               ? 'Narrator'
               : `Speaker ${index + 1}`,
-          voice: GEMINI_TTS_VOICES.includes(speaker?.voice)
+          voice: voices.includes(speaker?.voice)
             ? speaker.voice
             : index === 0
-              ? 'Kore'
-              : 'Puck',
+              ? primaryVoice
+              : secondaryVoice,
         }))
-      : DEFAULT_AUDIO_TTS_PROJECT_CONFIG.speakers;
+      : defaultConfig.kind === 'remix-audio-tts' ? defaultConfig.speakers : DEFAULT_AUDIO_TTS_PROJECT_CONFIG.speakers;
 
     if (speakers.length === 0) {
-      return DEFAULT_AUDIO_PROJECT_CONFIG;
+      return defaultConfig;
     }
 
     return {
       kind: 'remix-audio-tts',
-      mode: parsed.mode === 'multi' && speakers.length > 1 ? 'multi' : 'single',
+      mode: parsed.mode === 'multi' && speakers.length > 1 && model?.options.supportsMultiSpeaker !== false ? 'multi' : 'single',
       speakers: speakers as [AudioSpeakerConfig, AudioSpeakerConfig?],
     };
   } catch {
-    return DEFAULT_AUDIO_PROJECT_CONFIG;
+    return defaultConfig;
   }
 }
 
@@ -2614,6 +2625,29 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '4:5', '5:4', '21:9', 'auto'],
       },
     },
+    {
+      id: 'apimart-gpt-image-2-6', name: 'GPT Image 2.6', generatorId: 'APIMart',
+      modelId: 'gpt-image-2.6', category: 'image',
+      options: {
+        aspectRatios: ['auto', '1:1', '3:2', '2:3', '16:9', '9:16', '4:3', '3:4', '4:5', '5:4'],
+        qualities: ['1K Auto', '1K Low', '1K Medium', '1K High', '2K Auto', '2K Low', '2K Medium', '2K High', '4K Auto', '4K Low', '4K Medium', '4K High'],
+      },
+    },
+    {
+      id: 'apimart-mai-image-2-7', name: 'MAI Image 2.7', generatorId: 'APIMart',
+      modelId: 'mai-image-2.7', category: 'image', options: { supportsReferenceImages: true },
+    },
+    {
+      id: 'apimart-seedream-5-5', name: 'Seedream 5.5', generatorId: 'APIMart',
+      modelId: 'seedream-5.5', category: 'image',
+      options: {
+        aspectRatios: ['1:1', 'auto', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '2:1', '1:2', '21:9'],
+        qualities: ['1K', '1.5K', '2K'],
+      },
+    },
+    ...APIMART_TEXT_MODELS,
+    ...APIMART_VIDEO_MODELS,
+    ...APIMART_AUDIO_MODELS,
   ],
 };
 
@@ -2629,7 +2663,7 @@ export function getTextModelsForProvider(providerType: ProviderType): ModelConfi
  * their text models can read an image. Keep in step with
  * `server/generators/*-text-generator.ts`.
  */
-export const IMAGE_INPUT_TEXT_PROVIDER_TYPES: readonly ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'MiniMax'];
+export const IMAGE_INPUT_TEXT_PROVIDER_TYPES: readonly ProviderType[] = ['GoogleAI', 'VertexAI', 'OpenAI', 'Claude', 'Grok', 'MiniMax', 'APIMart'];
 
 export function providerAcceptsImageInput(providerType: ProviderType): boolean {
   return IMAGE_INPUT_TEXT_PROVIDER_TYPES.includes(providerType);

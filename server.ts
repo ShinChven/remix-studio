@@ -152,7 +152,7 @@ async function startServer() {
   const textProcessor = new TextProcessor(projectRepository, projectEvents);
   const videoProcessor = new VideoProcessor(projectRepository, storage, userRepository, exportStorage, projectEvents);
   const audioProcessor = new AudioProcessor(projectRepository, storage, userRepository, exportStorage, projectEvents);
-  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor, projectEvents);
+  const detachedPoller = new DetachedPoller(prisma, providerRepository, projectRepository, imageProcessor, videoProcessor, projectEvents, audioProcessor);
   const queueManager = new QueueManager(prisma, providerRepository, projectRepository, storage, imageProcessor, textProcessor, videoProcessor, audioProcessor, detachedPoller, projectEvents);
   const comfyUIRunner = new ComfyUIRunner(projectRepository, storage, imageProcessor, videoProcessor, projectEvents);
   queueManager.setComfyRunner(comfyUIRunner);

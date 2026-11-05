@@ -1,3 +1,4 @@
+import { APIMartChatProvider } from './providers/apimart';
 import type { ProviderType } from '../../src/types';
 import { ChatProvider } from './providers/types';
 import { OpenAIChatProvider } from './providers/openai';
@@ -16,6 +17,7 @@ export const ASSISTANT_SUPPORTED_PROVIDER_TYPES: ProviderType[] = [
   'Alibabacloud',
   'Kimi',
   'MiniMax',
+  'APIMart',
 ];
 
 export function isAssistantCapableProviderType(type: ProviderType): boolean {
@@ -25,6 +27,8 @@ export function isAssistantCapableProviderType(type: ProviderType): boolean {
 export function buildChatProvider(type: ProviderType, apiKey: string, apiUrl?: string | null): ChatProvider {
   const safeApiUrl = assertSafeProviderApiUrl(type, apiUrl ?? undefined);
   switch (type) {
+    case 'APIMart':
+      return new APIMartChatProvider(apiKey, safeApiUrl);
     case 'OpenAI':
       return new OpenAIChatProvider(apiKey, safeApiUrl);
     case 'Claude':

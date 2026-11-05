@@ -1,3 +1,4 @@
+import { APIMartVideoGenerator } from './apimart-video-generator';
 import type { ProviderType } from '../../src/types';
 import { VideoGenerator } from './video-generator';
 import { GoogleAIVideoGenerator } from './google-ai-video-generator';
@@ -22,6 +23,8 @@ export function buildVideoGenerator(
   const safeApiUrl = assertSafeProviderApiUrl(type, apiUrl);
 
   switch (type) {
+    case 'APIMart':
+      return new APIMartVideoGenerator(apiKey, safeApiUrl);
     case 'GoogleAI':
       return new GoogleAIVideoGenerator(apiKey, safeApiUrl);
     case 'VertexAI':
@@ -48,8 +51,6 @@ export function buildVideoGenerator(
       throw new Error(`Provider type 'Alibabacloud' does not support video generation`);
     case 'Kimi':
       throw new Error(`Provider type 'Kimi' does not support video generation`);
-    case 'APIMart':
-      throw new Error(`Provider type 'APIMart' does not support video generation`);
     default:
       throw new Error(`Unknown provider type: ${type}`);
   }
