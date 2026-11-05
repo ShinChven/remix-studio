@@ -1,5 +1,6 @@
 import type { ProviderType } from '../../src/types';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
+import { APIMartClient } from '../utils/apimart';
 
 export interface ProviderModel {
   id: string;
@@ -54,14 +55,15 @@ export async function listProviderModels(
     case 'Kimi':
       result = await listKimiModels(apiKey, apiUrl);
       break;
+    case 'APIMart':
+      return listAPIMartModels(apiKey, apiUrl);
     case 'RunningHub':
     case 'KlingAI':
     case 'BytePlus':
     case 'Replicate':
     case 'BlackForestLabs':
     case 'MiniMax':
-    case 'Civitai':
-    case 'APIMart': {
+    case 'Civitai': {
       // These providers have no model listing API — return our static supported models
       const staticModels: ProviderModel[] = (PROVIDER_MODELS_MAP[type] || []).map(c => ({
         id: c.modelId,
@@ -82,6 +84,30 @@ export async function listProviderModels(
     .filter(m => m.supported);
 
   return result;
+}
+
+async function listAPIMartModels(apiKey: string, apiUrl?: string | null): Promise<ProviderModelsResult> {
+  try {
+    const json = await new APIMartClient(apiKey, apiUrl).json('models?expand=category');
+    const available = new Set<string>((json.data || []).map((m: any) => m.id));
+    // The public marketplace and API manual use these equivalent channel IDs.
+    const aliases: Record<string, string[]> = {
+      'seedream-4.0': ['seedream-4-0'], 'seedream-4.5': ['seedream-4-5'],
+      'grok-imagine-1.5-apimart': ['grok-imagine-1.5-edit-apimart', 'grok-imagine-1.5-ext'],
+      'grok-imagine-1.5-video-ext': ['grok-imagine-1.5-video-apimart'],
+      'gemini-omni-1.1-flash-ext': ['Omni-Flash-Ext'],
+    };
+    const seen = new Set<string>();
+    const models = PROVIDER_MODELS_MAP.APIMart.filter((m) => {
+      if (seen.has(m.modelId)) return false;
+      const found = [m.modelId, ...(aliases[m.modelId] || [])].some((id) => available.has(id));
+      if (found) seen.add(m.modelId);
+      return found;
+    }).map((m) => ({ id: m.modelId, name: m.name, category: m.category, supported: true }));
+    return { models };
+  } catch (e: any) {
+    return { models: [], error: e.message || 'Failed to list APIMart models' };
+  }
 }
 
 // ---------------------------------------------------------------------------

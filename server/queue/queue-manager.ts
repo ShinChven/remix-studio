@@ -768,8 +768,7 @@ export class QueueManager {
         await this.executeTextJob(userId, projectId, job, queued, providerRecord, apiKey);
         return false;
       } else if (queued.projectType === 'audio') {
-        await this.executeAudioJob(userId, projectId, job, queued, providerRecord, apiKey);
-        return false;
+        return await this.executeAudioJob(userId, projectId, job, queued, providerRecord, apiKey);
       } else if (queued.projectType === 'video') {
         const videoGenerator = buildVideoGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl, apiSecret);
         return await this.executeVideoJob(userId, projectId, job, queued, videoGenerator, providerRecord);
@@ -985,7 +984,9 @@ export class QueueManager {
     try {
       const audioGenerator = buildAudioGenerator(providerRecord.type as ProviderType, apiKey, providerRecord.apiUrl);
       const modelConfig = getAllModels(providerRecord).find((m) => m.id === job.modelConfigId);
-      const audioConfig = parseAudioProjectConfig(queued.systemPrompt);
+      // A recovered music task stays on the poller; never submit it again.
+      if (job.taskId && audioGenerator.checkStatus) return true;
+      const audioConfig = parseAudioProjectConfig(queued.systemPrompt, modelConfig);
       let refImages: Array<{ data: string; mimeType: string }> | undefined;
 
       if (job.imageContexts && job.imageContexts.length > 0) {
@@ -1024,6 +1025,7 @@ export class QueueManager {
         modelId: modelConfig?.modelId,
         apiUrl: modelConfig?.apiUrl,
         audioConfig,
+        modelVariant: modelConfig?.modelVariant,
         outputFormat: job.format === 'wav' || job.format === 'mp3' || job.format === 'aac' ? job.format : undefined,
         refImages,
       });
@@ -1032,6 +1034,11 @@ export class QueueManager {
         throw new Error(result.error);
       }
 
+      if ('status' in result && result.status === 'processing') {
+        await this.updateJobStatus(userId, projectId, job.id, { taskId: result.taskId });
+        return true;
+      }
+      if (!('audioBytes' in result)) throw new Error('Audio generator returned no audio bytes');
       await this.audioProcessor.processCompletedAudio({
         userId,
         projectId,
@@ -1050,6 +1057,7 @@ export class QueueManager {
         taskId: null as any,
       });
     }
+    return false;
   }
 
   /**

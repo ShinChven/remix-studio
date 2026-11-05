@@ -92,6 +92,7 @@ function omitsResolution(model: string): boolean {
     lower === 'gpt-4o-image' ||
     lower === 'imagen-4.0-apimart' ||
     lower === 'muse-image-ext' ||
+    lower === 'mai-image-2.7' ||
     lower === 'grok-imagine-2.0-ext' ||
     lower === 'grok-imagine-1.5-apimart' ||
     lower === 'grok-imagine-1.5-ext' ||
@@ -217,7 +218,7 @@ export class APIMartGenerator extends ImageGenerator {
         ? 'aspect_ratio' : 'size';
       payload[ratioField] = aspectRatio;
     } else if (aspectRatio === 'auto' && !isMidjourney && model !== 'muse-image-ext' &&
-      (!model.startsWith('seedream-') || imageUrls.length > 0 || /^seedream-5-0-(pro|flash)$/.test(model))) {
+      (!model.startsWith('seedream-') || imageUrls.length > 0 || /^(seedream-5-0-(pro|flash)|seedream-5\.5)$/.test(model))) {
       payload[isGrokOfficial || model.startsWith('flux-3-image') ? 'aspect_ratio' : 'size'] = 'auto';
     }
 
@@ -238,7 +239,7 @@ export class APIMartGenerator extends ImageGenerator {
       const { resolution, quality } = resolveTieredSize(req.imageSize, GPT_IMAGE_25_QUALITIES, 'auto');
       payload.resolution = resolution;
       payload.quality = quality;
-    } else if (isGptImage2Official(model)) {
+    } else if (isGptImage2Official(model) || model === 'gpt-image-2.6') {
       const { resolution, quality } = resolveTieredSize(req.imageSize, GPT_IMAGE_2_QUALITIES, 'auto');
       payload.resolution = resolution;
       payload.quality = quality;
@@ -255,7 +256,7 @@ export class APIMartGenerator extends ImageGenerator {
       payload.resolution = '2K';
     }
     // MAI chooses editing dimensions itself rather than accepting text-to-image sizes.
-    if (model.startsWith('mai-image-2.6') && imageUrls.length > 0) {
+    if (model === 'mai-image-2.7' || (model.startsWith('mai-image-2.6') && imageUrls.length > 0)) {
       delete payload.size;
       delete payload.resolution;
     }
@@ -278,6 +279,9 @@ export class APIMartGenerator extends ImageGenerator {
         return { ok: false, error: resolvedRefs.error };
       }
 
+      if (req.modelId === 'mai-image-2.7' && resolvedRefs.urls.length !== 1) {
+        return { ok: false, error: 'MAI Image 2.7 requires exactly one source image to edit.' };
+      }
       const payload = this.buildPayload(req, resolvedRefs.urls);
       const base = req.apiUrl ? this.normalizeBaseUrl(req.apiUrl) : this.baseUrl;
       const submitUrl = `${base}/${req.modelId === 'midjourney' ? 'midjourney' : 'images'}/generations`;

@@ -81,7 +81,7 @@ export function SettingsPanel({
   const isVideoProject = localProject.type === 'video';
   const isAudioProject = localProject.type === 'audio';
   const audioGenerationKind = resolveAudioGenerationKind(selectedModel);
-  const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
+  const audioConfig = isAudioProject ? parseAudioProjectConfig(localProject.systemPrompt, selectedModel) : DEFAULT_AUDIO_PROJECT_CONFIG;
   const isMusicAudio = audioConfig.kind === 'remix-audio-music';
   const audioFormats = (selectedModel?.options.audioFormats
     || (audioGenerationKind === 'music' ? ['mp3'] : ['wav', 'mp3', 'aac'])) as Array<'wav' | 'mp3' | 'aac'>;

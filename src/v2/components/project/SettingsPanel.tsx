@@ -42,7 +42,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const isVideo = localProject.type === 'video';
   const isAudio = localProject.type === 'audio';
   const audioKind = resolveAudioGenerationKind(model);
-  const audioConfig = isAudio ? parseAudioProjectConfig(localProject.systemPrompt) : DEFAULT_AUDIO_PROJECT_CONFIG;
+  const audioConfig = isAudio ? parseAudioProjectConfig(localProject.systemPrompt, model) : DEFAULT_AUDIO_PROJECT_CONFIG;
   const isMusic = audioConfig.kind === 'remix-audio-music';
   const audioFormats = (model?.options.audioFormats || (audioKind === 'music' ? ['mp3'] : ['wav', 'mp3', 'aac'])) as Array<'wav' | 'mp3' | 'aac'>;
   const voices = model?.options.voices || [...GEMINI_TTS_VOICES];

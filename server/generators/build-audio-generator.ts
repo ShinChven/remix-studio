@@ -1,3 +1,4 @@
+import { APIMartAudioGenerator } from './apimart-audio-generator';
 import type { ProviderType } from '../../src/types';
 import { AudioGenerator } from './audio-generator';
 import { GoogleAIAudioGenerator } from './google-ai-audio-generator';
@@ -13,6 +14,8 @@ export function buildAudioGenerator(
   const safeApiUrl = assertSafeProviderApiUrl(type, apiUrl);
 
   switch (type) {
+    case 'APIMart':
+      return new APIMartAudioGenerator(apiKey, safeApiUrl);
     case 'GoogleAI':
       return new GoogleAIAudioGenerator(apiKey, safeApiUrl);
     case 'VertexAI':
@@ -29,7 +32,6 @@ export function buildAudioGenerator(
     case 'BlackForestLabs':
     case 'Alibabacloud':
     case 'Kimi':
-    case 'APIMart':
       throw new Error(`Provider type '${type}' does not support audio generation`);
     default:
       throw new Error(`Provider type '${type}' does not support audio generation`);
