@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { imageDisplayUrl, type AlbumExportVersion } from '../../../api';
-import { Button, ChipSet, Dialog, Icon, IconButton, InputChip, SuggestionChip, Text, TextField } from '../../../m3';
+import { fetchAlbumItemInputs, imageDisplayUrl, type AlbumExportVersion, type AlbumItemInputs } from '../../../api';
+import type { ProjectMediaType } from '../../../lib/project-media';
+import { Button, ChipSet, Dialog, FilterChip, Icon, IconButton, InputChip, SuggestionChip, Text, TextField } from '../../../m3';
 import type { AlbumItem, AlbumTagCount } from '../../../types';
 import { ChoiceTiles } from '../../ui/ChoiceTiles';
 import { Segmented } from '../../ui/Toolbar';
 import { useToast } from '../../ui/useToast';
-import { CivitaiParamsTable, type OpenLightbox } from './JobDetails';
+import { CivitaiParamsTable, ParamTable, type OpenLightbox } from './JobDetails';
 
 async function copyWithToast(value: string, ok: string, fail: string, toast: ReturnType<typeof useToast>) {
   try {
@@ -17,47 +18,163 @@ async function copyWithToast(value: string, ok: string, fail: string, toast: Ret
   }
 }
 
-/** The full prompt of an album result, with the Civitai settings it ran with and anything else it is given to show. */
-export function AlbumPromptDialog({ item, onClose, headline, children }: { item: AlbumItem | null; onClose: () => void; headline?: ReactNode; children?: ReactNode }) {
+interface AlbumDetailDialogProps {
+  projectId: string;
+  item: AlbumItem | null;
+  mediaType: ProjectMediaType;
+  rows: Array<{ label: string; value: ReactNode }>;
+  selectedTags: string[];
+  onTagClick: (tag: string) => void;
+  onClose: () => void;
+}
+
+export function AlbumDetailDialog({ projectId, item, mediaType, rows, selectedTags, onTagClick, onClose }: AlbumDetailDialogProps) {
   const { t } = useTranslation();
   const toast = useToast();
   return (
     <Dialog
       open={item !== null}
       onClose={onClose}
-      icon="text_fields"
-      headline={headline ?? t('projectViewer.albumPrompt.title')}
+      headline={t('v2.project.albumDetails.title')}
+      showCloseButton
+      describeContent={false}
       fullScreen="compact"
-      maxWidth={880}
-      actions={
-        item && (
-          <>
-            <Text variant="label-small" className="me-auto uppercase tracking-widest text-on-surface-variant">
-              {t('projectViewer.albumPrompt.characterCount', { count: item.prompt.length })}
-            </Text>
-            <Button variant="tonal" icon="content_copy" onClick={() => void copyWithToast(item.prompt, t('projectViewer.albumPrompt.promptCopied'), t('projectViewer.albumPrompt.copyFailed'), toast)}>
-              {t('projectViewer.common.copy')}
-            </Button>
-            <Button variant="filled" onClick={onClose}>
-              {t('projectViewer.common.close')}
-            </Button>
-          </>
-        )
-      }
+      maxWidth={1120}
+      className="v2-album-detail"
     >
       {item && (
-        <div className="flex flex-col gap-4">
-          <Text variant="label-small" className="uppercase tracking-widest text-on-surface-variant">
-            {t('projectViewer.albumPrompt.description')}
-          </Text>
-          <Text variant="body-large" className="v2-quote-block">
-            {item.prompt}
-          </Text>
-          {item.civitaiParams && <CivitaiParamsTable params={item.civitaiParams} sourceCount={item.imageContexts?.length ?? 0} />}
-          {children}
+        <div className="v2-album-detail__layout" data-split={mediaType !== 'text' && item.imageUrl ? '' : undefined}>
+          {mediaType !== 'text' && item.imageUrl && <AlbumResultPreview key={item.imageUrl} item={item} mediaType={mediaType} />}
+          <div className="v2-album-detail__info">
+            <ParamTable label={t('v2.project.details')} rows={rows} />
+            {!!item.tags?.length && (
+              <section className="v2-album-detail__tags" aria-label={t('projectViewer.album.tagFilter')}>
+                <Text as="h3" variant="title-small">{t('projectViewer.album.tagFilter')}</Text>
+                <Text variant="body-small" className="text-on-surface-variant">{t('v2.project.albumDetails.filterHint')}</Text>
+                <ChipSet>
+                  {item.tags.map((tag) => (
+                    <FilterChip key={tag} label={<span title={tag}>#{tag}</span>} selected={selectedTags.includes(tag)} onClick={() => onTagClick(tag)} />
+                  ))}
+                </ChipSet>
+              </section>
+            )}
+            <section className="v2-album-detail__prompt">
+              <div className="v2-album-detail__section-heading">
+                <Text as="h3" variant="title-small">{t('projectViewer.common.prompt')}</Text>
+                {item.prompt && (
+                  <Button variant="tonal" size="sm" icon="content_copy" onClick={() => void copyWithToast(item.prompt, t('projectViewer.albumPrompt.promptCopied'), t('projectViewer.albumPrompt.copyFailed'), toast)}>
+                    {t('projectViewer.common.copy')}
+                  </Button>
+                )}
+              </div>
+              <AlbumPromptContent key={`${projectId}:${item.id}`} projectId={projectId} item={item} />
+            </section>
+          </div>
         </div>
       )}
     </Dialog>
+  );
+}
+
+function AlbumResultPreview({ item, mediaType }: { item: AlbumItem; mediaType: Exclude<ProjectMediaType, 'text'> }) {
+  const { t } = useTranslation();
+  const [useOriginal, setUseOriginal] = useState(false);
+  const [unavailable, setUnavailable] = useState(false);
+  const original = imageDisplayUrl(item.imageUrl);
+  const preview = !useOriginal && item.optimizedUrl ? imageDisplayUrl(item.optimizedUrl) : original;
+  const label = t('v2.project.albumDetails.preview');
+
+  return (
+    <section className="v2-album-detail__preview">
+      <Text as="h3" variant="label-small" className="v2-detail-block__label">{label}</Text>
+      <div className="v2-album-detail__frame">
+        {mediaType === 'video' ? (
+          <video src={original} poster={imageDisplayUrl(item.optimizedUrl || item.thumbnailUrl || '') || undefined} aria-label={label} controls playsInline preload="metadata" />
+        ) : mediaType === 'audio' ? (
+          <audio src={original} aria-label={label} controls preload="none" />
+        ) : unavailable ? (
+          <span className="v2-album-detail__unavailable">
+            <Icon name="broken_image" size={32} />
+            {t('v2.project.albumDetails.imageUnavailable')}
+          </span>
+        ) : (
+          <img src={preview} alt={label} referrerPolicy="no-referrer" onError={() => preview === original ? setUnavailable(true) : setUseOriginal(true)} />
+        )}
+      </div>
+      <Button variant="text" size="sm" icon="open_in_new" href={original} target="_blank" rel="noreferrer">
+        {t('projectViewer.album.openOriginal')}
+      </Button>
+    </section>
+  );
+}
+
+function AlbumPromptContent({ projectId, item }: { projectId: string; item: AlbumItem }) {
+  const { t } = useTranslation();
+  const [inputs, setInputs] = useState<AlbumItemInputs>();
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchAlbumItemInputs(projectId, item.id, controller.signal).then(setInputs).catch(() => {
+      if (!controller.signal.aborted) setFailed(true);
+    });
+    return () => controller.abort();
+  }, [projectId, item.id]);
+
+  const images = inputs?.imageContexts ?? item.imageContexts ?? [];
+  const videos = inputs?.videoContexts ?? [];
+  const audio = inputs?.audioContexts ?? [];
+  const label = t('v2.project.albumDetails.inputs');
+
+  return (
+    <>
+      {(!inputs || images.length > 0 || videos.length > 0 || audio.length > 0) && (
+        <div className="v2-album-detail__inputs">
+          <Text as="h4" variant="label-large">{label}</Text>
+          {!inputs && (
+            <Text as="p" variant="body-small" role="status" className="text-on-surface-variant">
+              {failed ? t('v2.project.albumDetails.inputsFailed') : t('apiKeyCheck.loading')}
+            </Text>
+          )}
+          {images.length > 0 && (
+            <div className="v2-context-grid">
+              {images.map((src, index) => {
+                const name = t('projectViewer.textDetail.referenceAlt', { index: index + 1 });
+                const url = imageDisplayUrl(src);
+                return (
+                  <a key={index} className="v2-context-thumb m3-focus-ring" href={url} target="_blank" rel="noreferrer" title={name}>
+                    <img src={url} alt={name} referrerPolicy="no-referrer" loading="lazy" />
+                  </a>
+                );
+              })}
+            </div>
+          )}
+          {videos.length > 0 && (
+            <div className="v2-album-detail__videos">
+              {videos.map((src, index) => {
+                const name = t('v2.project.albumDetails.referenceVideo', { index: index + 1 });
+                return (
+                  <figure key={index} className="v2-album-detail__input-player">
+                    <figcaption><Text as="span" variant="label-medium">{name}</Text></figcaption>
+                    <video src={src} aria-label={name} className="v2-media-player" controls playsInline preload="metadata" />
+                  </figure>
+                );
+              })}
+            </div>
+          )}
+          {audio.map((src, index) => {
+            const name = t('v2.project.albumDetails.referenceAudio', { index: index + 1 });
+            return (
+              <figure key={index} className="v2-album-detail__input-player">
+                <figcaption><Text as="span" variant="label-medium">{name}</Text></figcaption>
+                <audio src={src} aria-label={name} controls preload="none" />
+              </figure>
+            );
+          })}
+        </div>
+      )}
+      <Text variant="body-medium" className="v2-album-detail__prompt-text">{item.prompt || t('v2.project.albumDetails.emptyPrompt')}</Text>
+      <CivitaiParamsTable params={item.civitaiParams} sourceCount={images.length} />
+    </>
   );
 }
 

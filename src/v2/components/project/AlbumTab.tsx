@@ -19,9 +19,8 @@ import { useToast } from '../../ui/useToast';
 import { AutoTagDialog } from '../AutoTagDialog';
 import { AutoTagProgress } from '../AutoTagProgress';
 import { TagDialog } from '../TagDialog';
-import { AlbumBatchTagDialog, AlbumPromptDialog, ExportPackageDialog, TextAlbumCompareDialog, TextAlbumDetailDialog, type AlbumBatchTagMode } from './AlbumDialogs';
+import { AlbumBatchTagDialog, AlbumDetailDialog, ExportPackageDialog, TextAlbumCompareDialog, TextAlbumDetailDialog, type AlbumBatchTagMode } from './AlbumDialogs';
 import { AlbumTransferDialog, albumFilename, type AlbumTransferAction } from './AlbumTransferDialog';
-import { ParamTable } from './JobDetails';
 import { shortDate } from './JobRow';
 import { DangerAction, ResultsBar } from './ResultsBar';
 
@@ -445,7 +444,7 @@ export function AlbumTab(props: AlbumTabProps) {
 
   const infoRows = (item: AlbumItem) =>
     [
-      { label: t('v2.project.filename'), value: albumFilename(item) },
+      item.imageUrl ? { label: t('v2.project.filename'), value: albumFilename(item) } : null,
       { label: t('projectViewer.common.model'), value: `${getProviderName(item.providerId)} · ${getModelName(item.providerId, item.modelConfigId)}` },
       item.createdAt ? { label: t('v2.project.created'), value: new Date(item.createdAt).toLocaleString() } : null,
       item.aspectRatio ? { label: t('projectViewer.settings.aspectRatio'), value: item.aspectRatio } : null,
@@ -464,7 +463,6 @@ export function AlbumTab(props: AlbumTabProps) {
               .join(' · '),
           }
         : null,
-      item.tags && item.tags.length > 0 ? { label: t('projectViewer.album.tagFilter'), value: item.tags.map((tag) => `#${tag}`).join('  ') } : null,
     ].filter(Boolean) as Array<{ label: string; value: ReactNode }>;
 
   const selecting = hasSelection;
@@ -627,7 +625,7 @@ export function AlbumTab(props: AlbumTabProps) {
                   </span>
                 </div>
                 <div className="v2-shot__caption">
-                  <button type="button" className="v2-shot__name" title={`${filename}\n${t('projectViewer.album.viewFullPrompt')}`} onClick={() => setInfoItem(item)}>
+                  <button type="button" className="v2-shot__name" title={`${filename}\n${t('v2.project.albumDetails.title')}`} onClick={() => setInfoItem(item)}>
                     {filename}
                   </button>
                   <span className="v2-shot__sub">{[getModelName(item.providerId, item.modelConfigId), shortDate(item.createdAt)].filter(Boolean).join(' · ')}</span>
@@ -653,9 +651,18 @@ export function AlbumTab(props: AlbumTabProps) {
           />
         )}
       </Dialog>
-      <AlbumPromptDialog item={infoItem} headline={infoItem ? albumFilename(infoItem) : undefined} onClose={() => setInfoItem(null)}>
-        {infoItem && <ParamTable label={t('v2.project.details')} rows={infoRows(infoItem)} />}
-      </AlbumPromptDialog>
+      <AlbumDetailDialog
+        projectId={projectId}
+        item={infoItem}
+        mediaType={mediaType}
+        rows={infoItem ? infoRows(infoItem) : []}
+        selectedTags={selectedTags}
+        onTagClick={(tag) => {
+          toggleTag(tag);
+          setInfoItem(null);
+        }}
+        onClose={() => setInfoItem(null)}
+      />
       <PromptDialog
         open={renameItem !== null}
         icon="edit"

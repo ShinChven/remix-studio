@@ -167,6 +167,17 @@ const messages: V2Messages = {
     },
   },
   project: {
+    albumDetails: {
+      title: '앨범 항목 세부정보',
+      preview: '생성 결과 미리보기',
+      filterHint: '태그를 선택하여 앨범을 필터링하세요.',
+      inputs: '참조 미디어',
+      inputsFailed: '참조 미디어를 불러오지 못했습니다.',
+      imageUnavailable: '이미지를 표시할 수 없음',
+      emptyPrompt: '텍스트 프롬프트 없음',
+      referenceVideo: '참조 동영상 {{index}}',
+      referenceAudio: '참조 오디오 {{index}}',
+    },
     workflow: '워크플로',
     addStep: '단계 추가',
     sections: {

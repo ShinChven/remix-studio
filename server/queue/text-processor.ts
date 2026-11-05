@@ -28,6 +28,8 @@ export class TextProcessor {
         prompt: job.prompt,
         textContent: text,
         imageContexts: job.imageContexts,
+        videoContexts: job.videoContexts,
+        audioContexts: job.audioContexts,
         tags: job.tags,
         sourceItems: job.sourceItems,
         imageUrl: '', // Not used for text generation

@@ -56,6 +56,17 @@
   align-items: center;
   text-align: center;
 }
+.m3-dialog__header[data-close] {
+  position: relative;
+  justify-content: center;
+  min-height: 56px;
+  padding-inline-end: 64px;
+}
+.m3-dialog__close {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 16px;
+}
 .m3-dialog__icon {
   display: inline-flex;
   color: var(--md-sys-color-secondary);
