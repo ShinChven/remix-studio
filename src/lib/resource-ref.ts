@@ -14,6 +14,17 @@ export const resourceRef = {
 };
 
 /**
+ * Opens a fresh assistant conversation with `reference` pre-filled in the composer.
+ */
+export function startResourceChat(
+  navigate: (to: string, options?: { state?: unknown }) => void,
+  reference: string,
+): void {
+  localStorage.removeItem('assistant_last_conversation');
+  navigate('/assistant', { state: { draftMessage: `${reference} ` } });
+}
+
+/**
  * Writes text to the clipboard. The async Clipboard API only exists in secure
  * contexts, and the app is also served over plain HTTP on a LAN, so fall back
  * to a hidden textarea and execCommand there.

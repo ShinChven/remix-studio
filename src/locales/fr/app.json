@@ -126,7 +126,8 @@
   "resourceRef": {
     "copy": "Copier l'ID pour l'IA",
     "copied": "Référence copiée",
-    "copyFailed": "Impossible de copier la référence"
+    "copyFailed": "Impossible de copier la référence",
+    "startChat": "Démarrer un chat avec l'IA"
   },
   "autoTag": {
     "dialogTitle_one": "Étiqueter automatiquement {{count}} élément",

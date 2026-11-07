@@ -523,6 +523,12 @@ export function Composer({
     [],
   );
 
+  useEffect(() => {
+    if (initialInputText || initialBoundContexts.length > 0 || initialAttachedImages.length > 0) {
+      focusAt(initialInputText.length);
+    }
+  }, []);
+
   const selectResource = (option: BoundContext | undefined) => {
     if (!option) return;
     if (!boundContexts.find((c) => c.id === option.id)) setBoundContexts((current) => [...current, option]);

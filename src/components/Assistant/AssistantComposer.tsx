@@ -669,6 +669,12 @@ export function AssistantComposer({
     focus: () => editorRef.current?.focus(),
   }), []);
 
+  useEffect(() => {
+    if (initialInputText || initialBoundContexts.length > 0 || initialAttachedImages.length > 0) {
+      editorRef.current?.focus();
+    }
+  }, []);
+
   // ─── Mention / skill pickers ───
 
   const selectResource = (option: BoundContext) => {

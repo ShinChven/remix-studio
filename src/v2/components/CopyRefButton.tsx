@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { IconButton, useSnackbar, type ButtonSize, type IconButtonVariant } from '../../m3';
-import { copyText } from '../../lib/resource-ref';
+import { copyText, startResourceChat } from '../../lib/resource-ref';
 
 /** Copies an item's AI reference (built with `resourceRef`) without opening or selecting the item. */
 export function CopyRefButton({ reference, size = 'xs', variant = 'standard', className }: { reference: string; size?: ButtonSize; variant?: IconButtonVariant; className?: string }) {
@@ -37,6 +38,28 @@ export function CopyRefButton({ reference, size = 'xs', variant = 'standard', cl
         } catch {
           snackbar.show(`${t('resourceRef.copyFailed')} · ${reference}`);
         }
+      }}
+    />
+  );
+}
+
+/** Starts a new Assistant chat pre-populated with an item's AI reference. */
+export function StartChatRefButton({ reference, size = 'xs', variant = 'standard', className }: { reference: string; size?: ButtonSize; variant?: IconButtonVariant; className?: string }) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  return (
+    <IconButton
+      icon="chat"
+      label={t('resourceRef.startChat')}
+      tooltip
+      size={size}
+      variant={variant}
+      className={className}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startResourceChat(navigate, reference);
       }}
     />
   );

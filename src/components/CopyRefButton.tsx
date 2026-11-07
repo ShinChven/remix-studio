@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Hash } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Check, Hash, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { copyText } from '../lib/resource-ref';
+import { copyText, startResourceChat } from '../lib/resource-ref';
 
 interface CopyRefButtonProps {
   /** The reference to copy, built with `resourceRef`. */
@@ -45,6 +46,31 @@ export function CopyRefButton({ reference, className, iconClassName = 'w-3.5 h-3
       aria-label={label}
     >
       {copied ? <Check className={iconClassName} /> : <Hash className={iconClassName} />}
+    </button>
+  );
+}
+
+/** Starts a new Assistant chat pre-populated with an item's AI reference. */
+export function StartChatRefButton({ reference, className, iconClassName = 'w-3.5 h-3.5' }: CopyRefButtonProps) {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const label = t('resourceRef.startChat');
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startResourceChat(navigate, reference);
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className={className}
+      title={`${label}\n${reference}`}
+      aria-label={label}
+    >
+      <MessageCircle className={iconClassName} />
     </button>
   );
 }

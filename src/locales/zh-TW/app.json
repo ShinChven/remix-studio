@@ -126,7 +126,8 @@
   "resourceRef": {
     "copy": "複製 ID 給 AI",
     "copied": "已複製引用",
-    "copyFailed": "無法複製引用"
+    "copyFailed": "無法複製引用",
+    "startChat": "用此資源開始對話"
   },
   "autoTag": {
     "dialogTitle_one": "為 {{count}} 個項目自動加上標籤",

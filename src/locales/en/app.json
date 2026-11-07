@@ -126,7 +126,8 @@
   "resourceRef": {
     "copy": "Copy ID for AI",
     "copied": "Reference copied",
-    "copyFailed": "Could not copy the reference"
+    "copyFailed": "Could not copy the reference",
+    "startChat": "Start chat with AI"
   },
   "autoTag": {
     "dialogTitle_one": "Auto-tag {{count}} item",

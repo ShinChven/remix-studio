@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { imageDisplayUrl, startAlbumExport, startAutoTag, type AlbumExportVersion } from '../../../api';
 import type { ProjectMediaType } from '../../../lib/project-media';
-import { copyText, resourceRef } from '../../../lib/resource-ref';
+import { copyText, resourceRef, startResourceChat } from '../../../lib/resource-ref';
 import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, SubMenu, Text, useSnackbar } from '../../../m3';
 import type { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../../types';
 import { withBase } from '../../app/paths';
@@ -326,6 +326,7 @@ export function AlbumTab(props: AlbumTabProps) {
       { key: 'rename', hidden: !opts.media, label: t('projectViewer.album.editFilename'), icon: 'edit', onSelect: () => setRenameItem(item) },
       { key: 'tags', label: t('projectViewer.album.editTags'), icon: 'sell', onSelect: () => setTagItem(item) },
       { key: 'reuse', hidden: !onReuseWorkflow, disabled: Boolean(reusingAlbumItemId), label: t('projectViewer.album.reuseWorkflow'), icon: 'history', onSelect: () => onReuseWorkflow?.(item) },
+      { key: 'chat', label: t('resourceRef.startChat'), icon: 'chat', onSelect: () => startResourceChat(navigate, resourceRef.albumItem(projectId, item.id)) },
       { key: 'ref', label: t('resourceRef.copy'), icon: 'tag', onSelect: () => void copyReference(item) },
       { key: 'original', hidden: !opts.media, divider: true, label: t('projectViewer.album.openOriginal'), icon: 'open_in_new', href: imageDisplayUrl(item.imageUrl), target: '_blank' },
       { key: 'watermark', hidden: !opts.media || isVideo, label: t('projectViewer.album.quickWatermark'), icon: 'approval', href: withBase(`/project/${projectId}/album/${item.id}/watermark`), target: '_blank' },
