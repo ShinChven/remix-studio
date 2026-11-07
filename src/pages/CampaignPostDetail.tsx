@@ -28,7 +28,7 @@ import {
 } from '../api';
 import { BatchAiGenerateModal } from '../components/BatchAiGenerateModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { CopyRefButton } from '../components/CopyRefButton';
+import { CopyRefButton, StartChatRefButton } from '../components/CopyRefButton';
 import { useLiveRefresh } from '../hooks/useLiveRefresh';
 import { PageHeader } from '../components/PageHeader';
 import { cn } from '../lib/utils';
@@ -313,6 +313,11 @@ export function CampaignPostDetail() {
         backLink={backCampaignId ? { to: `/campaigns/${backCampaignId}`, label: 'Back to Campaign' } : undefined}
         actions={(
           <div className="flex flex-wrap items-center gap-2">
+            <StartChatRefButton
+              reference={resourceRef.post(post.campaignId, post.id)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 text-neutral-700 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"
+              iconClassName="h-4 w-4"
+            />
             <CopyRefButton
               reference={resourceRef.post(post.campaignId, post.id)}
               className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-neutral-200 text-neutral-700 transition hover:bg-neutral-50 dark:border-white/10 dark:text-neutral-200 dark:hover:bg-white/10"

@@ -126,7 +126,8 @@
   "resourceRef": {
     "copy": "AI 用に ID をコピー",
     "copied": "参照をコピーしました",
-    "copyFailed": "参照をコピーできませんでした"
+    "copyFailed": "参照をコピーできませんでした",
+    "startChat": "AI とチャットを開始"
   },
   "autoTag": {
     "dialogTitle_one": "{{count}} 件を自動タグ付け",

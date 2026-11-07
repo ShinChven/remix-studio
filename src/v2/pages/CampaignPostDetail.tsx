@@ -7,7 +7,7 @@ import { Button, Icon, IconButton, Text, TextField } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { BatchAiGenerateDialog } from '../components/campaigns/BatchAiGenerateDialog';
 import { mediaFullUrl, mediaPosterUrl, PostMediaViewer, type ViewerMedia } from '../components/campaigns/PostMediaViewer';
-import { CopyRefButton } from '../components/CopyRefButton';
+import { CopyRefButton, StartChatRefButton } from '../components/CopyRefButton';
 import { PlatformIcon } from '../lib/platform';
 import { postStatusLabel, postStatusTone, toDatetimeLocal } from '../lib/posts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -173,6 +173,7 @@ export function CampaignPostDetail() {
         backLink={backCampaignId ? { to: `/campaigns/${backCampaignId}`, label: 'Back to Campaign' } : undefined}
         actions={
           <>
+            <StartChatRefButton reference={resourceRef.post(post.campaignId, post.id)} size="sm" variant="tonal" />
             <CopyRefButton reference={resourceRef.post(post.campaignId, post.id)} size="sm" variant="tonal" />
             <Button variant="tonal" icon="edit" href={`/campaigns/${backCampaignId}/posts/edit/${post.id}`}>
               Edit

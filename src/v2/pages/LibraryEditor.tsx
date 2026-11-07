@@ -20,7 +20,7 @@ import {
   updateLibraryItem,
 } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { copyText, resourceRef } from '../../lib/resource-ref';
+import { copyText, resourceRef, startResourceChat } from '../../lib/resource-ref';
 import { Button, Dialog, Icon, IconButton, LinearProgress, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, Shape, SubMenu, Text, useMediaQuery, useSnackbar } from '../../m3';
 import type { Library, LibraryItem } from '../../types';
 import { withBase } from '../app/paths';
@@ -527,6 +527,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   const itemMenu = (item: LibraryItem): ActionMenuItem[] => [
     { key: 'rename', hidden: isText, label: t('libraryEditor.renameItem'), icon: 'edit', onSelect: () => setRenaming(item) },
     { key: 'tags', label: t('libraryEditor.editTags'), icon: 'sell', onSelect: () => setTagItemId(item.id) },
+    { key: 'chat', label: t('resourceRef.startChat'), icon: 'chat', onSelect: () => startResourceChat(navigate, resourceRef.libraryItem(library.id, item.id)) },
     { key: 'ref', label: t('resourceRef.copy'), icon: 'tag', onSelect: () => void copyReference(item) },
     { key: 'original', hidden: isText, divider: true, label: t('projectViewer.album.openOriginal'), icon: 'open_in_new', href: isText ? undefined : imageDisplayUrl(item.content), target: '_blank' },
     { key: 'watermark', hidden: type !== 'image', label: t('libraryEditor.quickWatermark'), icon: 'approval', href: withBase(`/library/${library.id}/items/${item.id}/watermark`), target: '_blank' },

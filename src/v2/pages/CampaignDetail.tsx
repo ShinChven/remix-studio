@@ -7,7 +7,7 @@ import { Button, Icon, IconButton, LinearProgress, Select, Text, TextField } fro
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { BatchAiGenerateDialog } from '../components/campaigns/BatchAiGenerateDialog';
 import { mediaFullUrl, mediaPosterUrl, PostMediaViewer, type ViewerMedia } from '../components/campaigns/PostMediaViewer';
-import { CopyRefButton } from '../components/CopyRefButton';
+import { CopyRefButton, StartChatRefButton } from '../components/CopyRefButton';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { formatBytes } from '../lib/format';
 import { PlatformIcon } from '../lib/platform';
@@ -461,6 +461,7 @@ export function CampaignDetail() {
                       </Text>
                     </div>
                     <span className="flex items-center">
+                      <StartChatRefButton reference={resourceRef.post(campaign.id, post.id)} />
                       <CopyRefButton reference={resourceRef.post(campaign.id, post.id)} />
                       <IconButton icon="open_in_new" size="xs" label="View Post" tooltip href={`/campaigns/${id}/posts/${post.id}`} />
                       <IconButton icon="edit" size="xs" label="Edit Post" tooltip href={`/campaigns/${id}/posts/edit/${post.id}`} />
