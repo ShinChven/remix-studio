@@ -388,13 +388,43 @@ async function startServer() {
       });
     });
 
-    // Serve static assets with correct MIME types
-    app.use('*', serveStatic({ root: './dist' }));
-
-    // SPA fallback: return index.html for all non-file routes
-    app.get('*', async (c) => {
+    const serveIndexHtml = () => {
       const html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
-      return c.html(html);
+      return new Response(html, {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+    };
+
+    // Serve static assets with correct MIME types
+    const staticAssetMiddleware = serveStatic({ root: './dist' });
+    app.use('*', async (c, next) => {
+      const reqPath = c.req.path;
+      if (reqPath === '/' || reqPath === '/index.html') {
+        return serveIndexHtml();
+      }
+      const res = await staticAssetMiddleware(c, next);
+      const response = res ?? c.res;
+      if (reqPath.startsWith('/assets/') && response && response.status === 200) {
+        response.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      return res;
+    });
+
+    // SPA fallback: return index.html for navigation routes, 404 for missing static files
+    app.get('*', async (c) => {
+      const reqPath = c.req.path;
+      const lastSegment = reqPath.slice(reqPath.lastIndexOf('/') + 1);
+      if (reqPath.startsWith('/assets/') || lastSegment.includes('.')) {
+        return c.text('Not found', 404, {
+          'Cache-Control': 'no-store',
+        });
+      }
+      return serveIndexHtml();
     });
 
     const server = serve({ fetch: app.fetch, port }, () => {
