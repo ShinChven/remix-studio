@@ -5,6 +5,7 @@ import { fetchStorageAnalysis } from '../api';
 import { StorageAnalysis, StorageCategory } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { storageTierForLimit } from '../lib/storage-tiers';
 
 const COLORS: Record<string, string> = {
   projects: '#3b82f6',
@@ -22,12 +23,6 @@ export function StorageView() {
   const [analysis, setAnalysis] = useState<StorageAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
-
-  const TIER_NAMES: Record<number, string> = {
-    [5 * 1024 * 1024 * 1024]: t('storageView.tiers.free'),
-    [100 * 1024 * 1024 * 1024]: t('storageView.tiers.professional'),
-    [500 * 1024 * 1024 * 1024]: t('storageView.tiers.premium'),
-  };
 
   useEffect(() => {
     const load = async () => {
@@ -63,6 +58,7 @@ export function StorageView() {
   }
 
   if (!analysis) return null;
+  const tier = storageTierForLimit(analysis.limit);
 
   // Pie Chart Data
   const categories = analysis.categories.filter(c => c.size > 0);
@@ -124,7 +120,7 @@ export function StorageView() {
                     <span className="text-[10px] text-neutral-500 dark:text-neutral-500 uppercase font-black tracking-tight mb-1">{t('storageView.totalLimit')}</span>
                     <div className="flex items-baseline gap-2">
                        <span className="text-xl font-black text-neutral-700 dark:text-neutral-300">{formatSize(analysis.limit)}</span>
-                       <span className="text-[10px] font-bold text-blue-500 uppercase">{TIER_NAMES[analysis.limit] || t('storageView.tiers.custom')}</span>
+                       <span className="text-[10px] font-bold text-blue-500 uppercase">{t(`storageView.tiers.${tier?.key ?? 'custom'}`)}</span>
                     </div>
                   </div>
                 </div>

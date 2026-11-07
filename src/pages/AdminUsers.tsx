@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { adminResetUserPassword, createUser, getUserDetail, getUsers, updateUserRole, updateUserStatus, updateUserStorageLimit } from '../api';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../contexts/AuthContext';
+import { formatStorageTierOption, FREE_STORAGE_TIER, storageTierForLimit, STORAGE_TIERS } from '../lib/storage-tiers';
 import { UserDetail, UserRole, UserStatus, UserSummary } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { toast } from 'sonner';
@@ -50,12 +51,6 @@ export function AdminUsers() {
   const { t } = useTranslation();
   const { user: currentUser } = useAuth();
 
-  const STORAGE_TIERS = useMemo(() => [
-    { name: 'Free (5GB)', value: 5 * 1024 * 1024 * 1024 },
-    { name: 'Professional (100GB)', value: 100 * 1024 * 1024 * 1024 },
-    { name: 'Premium (500GB)', value: 500 * 1024 * 1024 * 1024 },
-  ], []);
-
   const [filters, setFilters] = useState<UserFilters>(initialFilters);
   const [searchInput, setSearchInput] = useState('');
   const [users, setUsers] = useState<UserSummary[]>([]);
@@ -74,7 +69,7 @@ export function AdminUsers() {
     password: '',
     role: 'user' as UserRole,
     status: 'disabled' as UserStatus,
-    storageLimit: STORAGE_TIERS[0].value,
+    storageLimit: FREE_STORAGE_TIER.bytes,
   });
   const [resetPassword, setResetPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
@@ -100,8 +95,8 @@ export function AdminUsers() {
   };
 
   const storageTierName = (limit?: number) => {
-    const matched = STORAGE_TIERS.find((tier) => Math.abs(tier.value - (limit || 0)) < 1000);
-    return matched?.name || 'Custom';
+    const matched = storageTierForLimit(limit, 999);
+    return matched ? formatStorageTierOption(matched) : 'Custom';
   };
 
   const canResetPassword = useMemo(
@@ -219,7 +214,7 @@ export function AdminUsers() {
         password: '',
         role: 'user',
         status: 'disabled',
-        storageLimit: STORAGE_TIERS[0].value,
+        storageLimit: FREE_STORAGE_TIER.bytes,
       });
       setFilters((current) => ({ ...current, page: 1 }));
       await loadUsers();
@@ -495,7 +490,7 @@ export function AdminUsers() {
                     className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                   >
                     {STORAGE_TIERS.map((tier) => (
-                      <option key={tier.value} value={tier.value}>{tier.name}</option>
+                      <option key={tier.key} value={tier.bytes}>{formatStorageTierOption(tier)}</option>
                     ))}
                   </select>
                 </label>
@@ -604,12 +599,12 @@ export function AdminUsers() {
                       <label className="space-y-2">
                         <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('adminUsers.detail.limit')}</span>
                         <select
-                          value={activeUser.storageLimit || STORAGE_TIERS[0].value}
+                          value={activeUser.storageLimit || FREE_STORAGE_TIER.bytes}
                           onChange={(e) => void handleStorageLimitChange(activeUser.id, Number(e.target.value))}
                           className="w-full rounded-card border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 font-bold outline-none"
                         >
                           {STORAGE_TIERS.map((tier) => (
-                            <option key={tier.value} value={tier.value}>{tier.name}</option>
+                            <option key={tier.key} value={tier.bytes}>{formatStorageTierOption(tier)}</option>
                           ))}
                         </select>
                       </label>

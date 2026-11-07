@@ -121,6 +121,8 @@ const en = {
       free: 'Free',
       professional: 'Professional',
       premium: 'Premium',
+      ultra: 'Ultra',
+      max: 'Max',
       custom: 'Custom',
     },
     noMatches: 'No one matches',

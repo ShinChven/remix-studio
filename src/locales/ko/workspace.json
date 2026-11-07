@@ -4,6 +4,8 @@
       "free": "무료",
       "professional": "프로페셔널",
       "premium": "프리미엄",
+      "ultra": "울트라",
+      "max": "맥스",
       "custom": "커스텀"
     },
     "analyzing": "스토리지 사용량 분석 중...",

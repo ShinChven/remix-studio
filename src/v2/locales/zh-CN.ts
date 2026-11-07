@@ -122,6 +122,8 @@ const messages: V2Messages = {
       free: '免费版',
       professional: '专业版',
       premium: '高级版',
+      ultra: '旗舰版',
+      max: '至尊版',
       custom: '自定义',
     },
     noMatches: '没有匹配的用户',

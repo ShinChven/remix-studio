@@ -4,6 +4,8 @@
       "free": "Free",
       "professional": "Professional",
       "premium": "Premium",
+      "ultra": "Ultra",
+      "max": "Max",
       "custom": "Custom"
     },
     "analyzing": "Analyzing storage usage...",

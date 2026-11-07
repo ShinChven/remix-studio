@@ -1,4 +1,5 @@
 import { APIMART_TEXT_MODELS, APIMART_VIDEO_MODELS, APIMART_AUDIO_MODELS } from './lib/apimart-models';
+import type { StorageTierKey } from './lib/storage-tiers';
 
 export type WorkflowItemType = 'text' | 'library' | 'image' | 'video' | 'audio' | 'model';
 
@@ -3116,7 +3117,7 @@ export interface InviteCode {
   id: string;
   code: string;
   note?: string | null;
-  membershipTier: 'free' | 'professional' | 'premium';
+  membershipTier: StorageTierKey;
   maxUses: number;
   usedCount: number;
   lastUsedAt?: number;

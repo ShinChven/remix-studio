@@ -21,6 +21,7 @@ import {
 } from '../../api';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../../lib/passkey';
 import { disablePushNotifications, enablePushNotifications, getCurrentPushSubscription, getPushSupport } from '../../lib/push-notifications';
+import { storageTierForLimit } from '../../lib/storage-tiers';
 import { Avatar, Button, ButtonGroup, Dialog, Icon, LinearProgress, Select, Shape, Switch, Tab, Tabs, Text, TextField, useSnackbar, useTheme, type ThemeMode } from '../../m3';
 import { AUTO_TAG_CONCURRENCY_LIMIT, providerAcceptsImageInput, type AutoTagSettings, type Provider, type SecuritySettings, type StorageAnalysis, type User } from '../../types';
 import { useAuth } from '../app/auth';
@@ -341,22 +342,10 @@ export function Account() {
     return isAccountTab(tab) ? tab : 'overview';
   });
 
-  const tierNames: Record<number, string> = useMemo(
-    () => ({
-      [5 * 1024 ** 3]: t('account.storage.tierFree'),
-      [100 * 1024 ** 3]: t('account.storage.tierProfessional'),
-      [500 * 1024 ** 3]: t('account.storage.tierPremium'),
-    }),
-    [t],
-  );
-  const formatTier = useCallback(
-    (limit?: number) => {
-      if (!limit) return t('account.storage.tierCustom');
-      const match = Object.keys(tierNames).find((k) => Math.abs(Number(k) - limit) < 1000);
-      return match ? tierNames[Number(match)] : t('account.storage.tierCustom');
-    },
-    [t, tierNames],
-  );
+  const formatTier = (limit?: number, tolerance = 0) => {
+    const tier = storageTierForLimit(limit, tolerance);
+    return tier ? t(`storageView.tiers.${tier.key}`) : t('account.storage.tierCustom');
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -572,7 +561,7 @@ export function Account() {
               </Text>
               <div className="flex flex-wrap gap-2">
                 <StatusPill tone="primary">{user.role === 'admin' ? t('account.overview.administrator') : t('account.overview.user')}</StatusPill>
-                <StatusPill>{t('account.overview.plan', { tier: formatTier(user.storageLimit) })}</StatusPill>
+                <StatusPill>{t('account.overview.plan', { tier: formatTier(user.storageLimit, 999) })}</StatusPill>
               </div>
               <Text variant="body-small" className="opacity-75">
                 {t('account.overview.memberSince', { date: new Date(user.createdAt).toLocaleDateString() })}
@@ -641,7 +630,7 @@ export function Account() {
                 <StatTile label={t('account.storage.consumption')} value={formatBytes(storage.totalSize)} />
                 <StatTile label={t('account.storage.planLimit')} value={formatBytes(storage.limit)} />
                 <StatTile label={t('account.storage.usage')} value={`${usagePercent.toFixed(1)}%`} tone={usagePercent >= 90 ? 'error' : usagePercent >= 70 ? 'warning' : 'primary'} />
-                <StatTile label={t('account.storage.tier')} value={tierNames[storage.limit] || t('account.storage.tierCustom')} />
+                <StatTile label={t('account.storage.tier')} value={formatTier(storage.limit)} />
               </div>
             </Section>
 

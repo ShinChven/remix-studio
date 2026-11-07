@@ -1,10 +1,11 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import { FREE_STORAGE_TIER, storageTierForKey, type StorageTierKey } from '../../src/lib/storage-tiers';
 import type { InviteCode, PaginatedResult, UserDetail, UserRole, UserStatus, UserSummary } from '../../src/types';
 import type { UserRecord } from './auth';
 import { decrypt, encrypt } from '../utils/crypto';
 
-const DEFAULT_STORAGE_LIMIT = 5 * 1024 * 1024 * 1024;
+const DEFAULT_STORAGE_LIMIT = FREE_STORAGE_TIER.bytes;
 const DEFAULT_INVITE_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
@@ -19,11 +20,6 @@ export const SESSION_ROTATION_GRACE_MS = 5 * 60 * 1000;
 
 /** How long rotation tombstones are kept before housekeeping removes them. */
 const ROTATION_TOMBSTONE_TTL_MS = 60 * 60 * 1000;
-const INVITE_TIER_STORAGE_LIMITS = {
-  free: 5 * 1024 * 1024 * 1024,
-  professional: 100 * 1024 * 1024 * 1024,
-  premium: 500 * 1024 * 1024 * 1024,
-} as const;
 
 type ListUsersParams = {
   q?: string;
@@ -547,7 +543,7 @@ export class UserRepository {
     expiresAt?: Date,
     note?: string,
     maxUses: number = 1,
-    membershipTier: keyof typeof INVITE_TIER_STORAGE_LIMITS = 'free',
+    membershipTier: StorageTierKey = 'free',
   ): Promise<InviteCode> {
     const plainCode = this.generateInviteCode();
     const invite = await this.prisma.inviteCode.create({
@@ -717,7 +713,7 @@ export class UserRepository {
           role: data.role ?? 'user',
           status: data.status ?? 'active',
           createdByUserId: invite.createdByUserId,
-          storageLimit: BigInt(INVITE_TIER_STORAGE_LIMITS[invite.membershipTier as keyof typeof INVITE_TIER_STORAGE_LIMITS] ?? DEFAULT_STORAGE_LIMIT),
+          storageLimit: BigInt(storageTierForKey(invite.membershipTier).bytes),
         },
       });
 

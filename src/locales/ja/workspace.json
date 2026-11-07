@@ -4,6 +4,8 @@
       "free": "無料",
       "professional": "プロフェッショナル",
       "premium": "プレミアム",
+      "ultra": "ウルトラ",
+      "max": "マックス",
       "custom": "カスタム"
     },
     "analyzing": "ストレージ使用状況を分析中...",
