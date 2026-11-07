@@ -4,6 +4,8 @@
       "free": "免费",
       "professional": "专业",
       "premium": "高级",
+      "ultra": "旗舰",
+      "max": "至尊",
       "custom": "自定义"
     },
     "analyzing": "正在分析存储使用情况...",

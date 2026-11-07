@@ -122,6 +122,8 @@ const messages: V2Messages = {
       free: 'Gratuit',
       professional: 'Professionnel',
       premium: 'Premium',
+      ultra: 'Ultra',
+      max: 'Max',
       custom: 'Personnalisé',
     },
     noMatches: 'Aucun résultat',

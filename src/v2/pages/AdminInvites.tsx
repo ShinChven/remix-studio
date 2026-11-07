@@ -3,16 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { createAdminInvite, deleteAdminInvite, getAdminInvites } from '../../api';
 import { Button, DataTable, Dialog, IconButton, Select, Text, TextField, useSnackbar } from '../../m3';
 import type { InviteCode } from '../../types';
+import { formatStorageTierOption, storageTierForKey, STORAGE_TIERS } from '../../lib/storage-tiers';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, Page, PageHeader } from '../ui/Page';
 import { NumberField } from '../ui/NumberField';
 import { StatusPill } from '../ui/Stat';
 
-const TIERS = [
-  { value: 'free', label: 'Free (5GB)' },
-  { value: 'professional', label: 'Professional (100GB)' },
-  { value: 'premium', label: 'Premium (500GB)' },
-] as const;
+const TIERS = STORAGE_TIERS.map((tier) => ({ value: tier.key, label: formatStorageTierOption(tier) }));
 
 export function AdminInvites() {
   const { t } = useTranslation();
@@ -29,7 +26,7 @@ export function AdminInvites() {
   const inviteBase = useMemo(() => `${window.location.origin}/login`, []);
 
   const formatDate = (value?: number) => (value ? new Date(value).toLocaleString() : t('adminUsers.never'));
-  const tierLabel = (value: InviteCode['membershipTier']) => TIERS.find((x) => x.value === value)?.label || 'Free (5GB)';
+  const tierLabel = (value: InviteCode['membershipTier']) => formatStorageTierOption(storageTierForKey(value));
 
   useEffect(() => {
     (async () => {
@@ -176,7 +173,7 @@ export function AdminInvites() {
           <Text variant="body-medium" className="text-on-surface-variant">
             {t('adminInvites.createModal.description')}
           </Text>
-          <Select variant="outlined" label={t('adminInvites.createModal.tier')} value={tier} onChange={(v) => setTier(v as InviteCode['membershipTier'])} options={[...TIERS]} fullWidth />
+          <Select variant="outlined" label={t('adminInvites.createModal.tier')} value={tier} onChange={(v) => setTier(v as InviteCode['membershipTier'])} options={TIERS} fullWidth />
           <NumberField label={t('adminInvites.createModal.uses')} min={1} max={1000} integer stepper value={maxUses} onValueChange={setMaxUses} fullWidth />
           <TextField
             variant="outlined"

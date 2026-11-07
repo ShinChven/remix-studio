@@ -122,6 +122,8 @@ const messages: V2Messages = {
       free: '무료',
       professional: '프로',
       premium: '프리미엄',
+      ultra: '울트라',
+      max: '맥스',
       custom: '사용자 지정',
     },
     noMatches: '일치하는 사용자가 없습니다',

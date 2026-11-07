@@ -122,6 +122,8 @@ const messages: V2Messages = {
       free: '無料',
       professional: 'プロ',
       premium: 'プレミアム',
+      ultra: 'ウルトラ',
+      max: 'マックス',
       custom: 'カスタム',
     },
     noMatches: '該当するユーザーはいません',

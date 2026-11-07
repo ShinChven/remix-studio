@@ -1,22 +1,12 @@
 import type { MaterialShapeName } from '../../../m3';
+import { storageTierForLimit, type StorageTierKey } from '../../../lib/storage-tiers';
 
-const GB = 1024 ** 3;
-
-/** Storage tiers an admin can give an account; they match the invite membership tiers. */
-export const STORAGE_TIERS = [
-  { key: 'free', bytes: 5 * GB },
-  { key: 'professional', bytes: 100 * GB },
-  { key: 'premium', bytes: 500 * GB },
-] as const;
-
-export type StorageTierKey = (typeof STORAGE_TIERS)[number]['key'];
+export { GIGABYTE, STORAGE_TIERS, type StorageTierKey } from '../../../lib/storage-tiers';
 
 /** The tier a limit belongs to, or null for a custom limit. */
 export function tierOf(limit: number | undefined): StorageTierKey | null {
-  return STORAGE_TIERS.find((tier) => Math.abs(tier.bytes - (limit || 0)) < 1000)?.key ?? null;
+  return storageTierForLimit(limit, 999)?.key ?? null;
 }
-
-export const GIGABYTE = GB;
 
 /** Share of the limit in use, from 0 to 1. */
 export function usageRatio(used: number, limit: number | undefined): number {

@@ -5,6 +5,7 @@ import { SESSION_ROTATION_GRACE_MS, UserRepository } from '../auth/user-reposito
 import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
+import { FREE_STORAGE_TIER, storageTierForKey } from '../../src/lib/storage-tiers';
 import type { UserRole, UserStatus } from '../../src/types';
 import { decrypt, encrypt } from '../utils/crypto';
 import { buildAuthenticationOptions, buildRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse } from '../auth/webauthn';
@@ -12,7 +13,7 @@ import { generateOtpAuthUri, generateTotpSecret, verifyTotpCode } from '../auth/
 
 const VALID_ROLES: UserRole[] = ['admin', 'user'];
 const VALID_STATUSES: UserStatus[] = ['active', 'disabled'];
-const DEFAULT_STORAGE_LIMIT = 5 * 1024 * 1024 * 1024;
+const DEFAULT_STORAGE_LIMIT = FREE_STORAGE_TIER.bytes;
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 60_000;
 const TWO_FACTOR_MAX_ATTEMPTS = 5;
@@ -851,7 +852,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const note = typeof body?.note === 'string' && body.note.trim() ? body.note.trim().slice(0, 200) : undefined;
       const maxUsesValue = Number(body?.maxUses);
       const maxUses = Number.isInteger(maxUsesValue) && maxUsesValue > 0 ? Math.min(maxUsesValue, 1000) : 1;
-      const membershipTier = body?.membershipTier === 'professional' || body?.membershipTier === 'premium' ? body.membershipTier : 'free';
+      const membershipTier = storageTierForKey(body?.membershipTier).key;
       const invite = await userRepository.createInviteCode(currentUser.userId, undefined, note, maxUses, membershipTier);
       return c.json({ invite }, 201);
     } catch (e) {

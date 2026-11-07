@@ -11,6 +11,7 @@ import { AUTO_TAG_CONCURRENCY_LIMIT, AutoTagSettings, Provider, SecuritySettings
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../lib/passkey';
+import { storageTierForLimit } from '../lib/storage-tiers';
 import { toast } from 'sonner';
 import { disablePushNotifications, enablePushNotifications, getCurrentPushSubscription, getPushSupport } from '../lib/push-notifications';
 
@@ -438,19 +439,10 @@ export function Account() {
     return isAccountTab(tab) ? tab : 'overview';
   });
 
-  const formatTier = useCallback((limit?: number) => {
-    if (!limit) return t('account.storage.tierCustom');
-    if (Math.abs(limit - 5 * 1024 * 1024 * 1024) < 1000) return t('account.storage.tierFree');
-    if (Math.abs(limit - 100 * 1024 * 1024 * 1024) < 1000) return t('account.storage.tierProfessional');
-    if (Math.abs(limit - 500 * 1024 * 1024 * 1024) < 1000) return t('account.storage.tierPremium');
-    return t('account.storage.tierCustom');
-  }, [t]);
-
-  const TIER_NAMES: Record<number, string> = useMemo(() => ({
-    [5 * 1024 * 1024 * 1024]: t('account.storage.tierFree'),
-    [100 * 1024 * 1024 * 1024]: t('account.storage.tierProfessional'),
-    [500 * 1024 * 1024 * 1024]: t('account.storage.tierPremium'),
-  }), [t]);
+  const formatTier = (limit?: number, tolerance = 0) => {
+    const tier = storageTierForLimit(limit, tolerance);
+    return tier ? t(`storageView.tiers.${tier.key}`) : t('account.storage.tierCustom');
+  };
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -801,7 +793,7 @@ export function Account() {
                       {user.role === 'admin' ? t('account.overview.administrator') : t('account.overview.user')}
                     </span>
                     <span className="rounded-full border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-sm px-3 py-1 text-xs font-semibold text-neutral-800 dark:text-neutral-300">
-                      {t('account.overview.plan', { tier: formatTier(user.storageLimit) })}
+                      {t('account.overview.plan', { tier: formatTier(user.storageLimit, 999) })}
                     </span>
                   </div>
                   <p className="text-sm text-neutral-500 dark:text-neutral-500">
@@ -977,7 +969,7 @@ export function Account() {
                     </div>
                     <div className="rounded-card border border-neutral-200/50 dark:border-white/5 bg-white dark:bg-neutral-900 backdrop-blur-xl p-5 transition-ui hover:shadow-lg hover:-translate-y-1 relative overflow-hidden group">
                       <span className="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500 dark:text-neutral-400">{t('account.storage.tier')}</span>
-                      <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{TIER_NAMES[storage.limit] || t('account.storage.tierCustom')}</p>
+                      <p className="mt-4 text-3xl font-black text-neutral-900 dark:text-white">{formatTier(storage.limit)}</p>
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-neutral-500/10 to-transparent group-hover:via-amber-500/20 transition-all" />
                     </div>
                   </div>

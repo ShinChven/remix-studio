@@ -5,16 +5,11 @@ import { createAdminInvite, deleteAdminInvite, getAdminInvites } from '../api';
 import type { InviteCode } from '../types';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { PageHeader } from '../components/PageHeader';
+import { formatStorageTierOption, storageTierForKey, STORAGE_TIERS } from '../lib/storage-tiers';
 import { toast } from 'sonner';
 
 export function AdminInvites() {
   const { t } = useTranslation();
-
-  const MEMBERSHIP_TIERS = useMemo(() => [
-    { value: 'free', label: 'Free (5GB)' },
-    { value: 'professional', label: 'Professional (100GB)' },
-    { value: 'premium', label: 'Premium (500GB)' },
-  ] as const, []);
 
   const formatDate = (value?: number) => {
     if (!value) return t('adminUsers.never');
@@ -22,7 +17,7 @@ export function AdminInvites() {
   };
 
   const membershipTierLabel = (value: InviteCode['membershipTier']) => {
-    return MEMBERSHIP_TIERS.find((tier) => tier.value === value)?.label || 'Free (5GB)';
+    return formatStorageTierOption(storageTierForKey(value));
   };
 
   const [invites, setInvites] = useState<InviteCode[]>([]);
@@ -244,8 +239,8 @@ export function AdminInvites() {
                 onChange={(event) => setMembershipTier(event.target.value as InviteCode['membershipTier'])}
                 className="w-full rounded-card border border-neutral-300 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950 px-4 py-3 text-sm text-neutral-900 dark:text-neutral-100 outline-none"
               >
-                {MEMBERSHIP_TIERS.map((tier) => (
-                  <option key={tier.value} value={tier.value}>{tier.label}</option>
+                {STORAGE_TIERS.map((tier) => (
+                  <option key={tier.key} value={tier.key}>{formatStorageTierOption(tier)}</option>
                 ))}
               </select>
             </label>

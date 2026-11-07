@@ -4,6 +4,8 @@
       "free": "免費",
       "professional": "專業",
       "premium": "高級",
+      "ultra": "旗艦",
+      "max": "至尊",
       "custom": "自定義"
     },
     "analyzing": "正在分析存儲使用情況...",

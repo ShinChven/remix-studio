@@ -1129,7 +1129,7 @@ export async function getAdminInvites(): Promise<InviteCode[]> {
   return data.items;
 }
 
-export async function createAdminInvite(input?: { note?: string; maxUses?: number; membershipTier?: 'free' | 'professional' | 'premium' }): Promise<InviteCode> {
+export async function createAdminInvite(input?: { note?: string; maxUses?: number; membershipTier?: InviteCode['membershipTier'] }): Promise<InviteCode> {
   const res = await apiFetch('/api/admin/invites', {
     method: 'POST',
     headers: getHeaders(),

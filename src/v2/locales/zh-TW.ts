@@ -122,6 +122,8 @@ const messages: V2Messages = {
       free: '免費版',
       professional: '專業版',
       premium: '進階版',
+      ultra: '旗艦版',
+      max: '至尊版',
       custom: '自訂',
     },
     noMatches: '沒有符合的使用者',
