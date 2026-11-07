@@ -11,7 +11,17 @@ import { LoadingState } from './ui/Page';
 
 /** Lazy route module whose page is a named export. */
 function page<T>(load: () => Promise<T>, name: keyof T) {
-  return lazy(async () => ({ default: (await load())[name] as unknown as ComponentType<any> }));
+  return lazy(async () => {
+    try {
+      return { default: (await load())[name] as unknown as ComponentType<any> };
+    } catch (error) {
+      const reload = (window as { __remixReloadOnStaleAsset?: () => boolean }).__remixReloadOnStaleAsset;
+      if (reload?.()) {
+        return new Promise<never>(() => {});
+      }
+      throw error;
+    }
+  });
 }
 
 const Home = page(() => import('./pages/Home'), 'Home');
