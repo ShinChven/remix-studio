@@ -153,8 +153,26 @@ model Provider {
 
   jobs            Job[]
   autoTagSettings AutoTagSetting[]
+  uploadCache     ProviderUploadCache[]
 
   @@index([userId])
+}
+
+/// A reference image already uploaded to a provider's own storage, so later
+/// jobs with the same bytes send the provider's URL instead of uploading again.
+model ProviderUploadCache {
+  providerId  String
+  endpoint    String
+  contentHash String
+  url         String   @db.Text
+  expiresAt   DateTime
+  servedSize  Int
+  createdAt   DateTime @default(now())
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, endpoint, contentHash])
+  @@index([expiresAt])
 }
 
 model Library {

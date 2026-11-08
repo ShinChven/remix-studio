@@ -37,6 +37,7 @@ import { createProductsRouter } from './server/routes/products';
 import { createMcpRouter } from './server/mcp/mcp-server';
 import { createStagedUploadRouter } from './server/routes/staged-uploads';
 import { cleanupExpiredStagedUploads } from './server/services/staged-uploads';
+import { cleanupExpiredProviderUploads } from './server/services/provider-upload-cache';
 import { createAssistantRouter } from './server/routes/assistant';
 import { AssistantRepository } from './server/db/assistant-repository';
 import { AssistantRunner } from './server/assistant/assistant-runner';
@@ -211,6 +212,12 @@ async function startServer() {
       if (deleted > 0) console.log(`[StagedUploads] Removed ${deleted} expired upload(s).`);
     } catch (e) {
       console.error('[StagedUploads] Failed to clean up expired uploads:', e);
+    }
+    try {
+      const deleted = await cleanupExpiredProviderUploads(prisma);
+      if (deleted > 0) console.log(`[UploadCache] Removed ${deleted} expired provider upload(s).`);
+    } catch (e) {
+      console.error('[UploadCache] Failed to clean up expired provider uploads:', e);
     }
   };
   runStagedUploadCleanup();

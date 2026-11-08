@@ -44,6 +44,7 @@ import {
 import { ImageGenerator } from '../generators/image-generator';
 import { VideoGenerator } from '../generators/video-generator';
 import { assertSafeReferenceImageUrl } from '../utils/url-safety';
+import { createProviderUploadCache } from '../services/provider-upload-cache';
 import type { ProjectEventPublisher, ProjectLiveEventReason } from '../live/project-live-hub';
 
 export interface QueuedJob {
@@ -1187,6 +1188,7 @@ export class QueueManager {
       refImageUrls,
       refVideoUrls,
       refAudioUrls,
+      uploadCache: createProviderUploadCache(this.prisma, providerRecord.id),
     };
   }
 
@@ -1242,6 +1244,7 @@ export class QueueManager {
       refImagesBase64: refImages,
       refImageUrls,
       civitai,
+      uploadCache: createProviderUploadCache(this.prisma, providerRecord.id),
     };
   }
 

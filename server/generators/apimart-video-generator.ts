@@ -23,7 +23,7 @@ export class APIMartVideoGenerator extends VideoGenerator {
       if (audios.length && !options?.supportsReferenceAudio) throw new Error(`${model} does not support reference audio`);
       const rawImages = req.refImageUrls?.length ? req.refImageUrls : (req.refImagesBase64 || []).map((s) => `data:image/png;base64,${s}`);
       const images: string[] = [];
-      for (const raw of rawImages) images.push(raw.startsWith('data:') ? await client.uploadImage(raw) : raw);
+      for (const raw of rawImages) images.push(raw.startsWith('data:') ? await client.uploadImage(raw, req.uploadCache) : raw);
       const payload: Record<string, unknown> = { model, prompt: req.prompt };
       const ratio = resolveSupportedAspectRatio(req.aspectRatio, options?.aspectRatios);
       const resolution = options?.resolutions ? resolveSupportedOption(req.resolution, options.resolutions) || options.resolutions[0] : undefined;
