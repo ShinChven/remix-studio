@@ -1,5 +1,7 @@
 import type { CivitaiGenerationConfig } from '../../src/types';
 
+import type { UploadCache } from './upload-cache';
+
 export interface GenerateRequest {
   prompt: string;
   modelId?: string;       // The actual API model string
@@ -17,6 +19,8 @@ export interface GenerateRequest {
   promptUpsampling?: boolean;
   /** Civitai projects: the checkpoint, resources and parameters, seed included. */
   civitai?: CivitaiGenerationConfig;
+  /** Reuses images already uploaded to the provider (RunningHub, APIMart). */
+  uploadCache?: UploadCache;
 }
 
 export type GenerateResult =

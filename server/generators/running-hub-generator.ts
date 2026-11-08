@@ -1,3 +1,4 @@
+import { cachedUpload } from './upload-cache';
 import { ImageGenerator, GenerateRequest, GenerateResult, CheckStatusResult, CheckStatusContext } from './image-generator';
 
 const SUBMIT_URL = 'https://www.runninghub.ai/openapi/v2/rhart-image-n-g31-flash/image-to-image';
@@ -250,12 +251,16 @@ export class RunningHubGenerator extends ImageGenerator {
       return { ok: false, error: 'Layer decomposition needs a source image. Add one image to the workflow.' };
     }
     const imageUrls: string[] = [];
-    for (const base64 of refImages) {
-      const up = await this.uploadImage(base64);
-      if (up.ok === false) {
-        return { ok: false, error: up.error };
+    try {
+      for (const base64 of refImages) {
+        imageUrls.push(await cachedUpload(req.uploadCache, UPLOAD_URL, Buffer.from(base64, 'base64'), async () => {
+          const up = await this.uploadImage(base64);
+          if (up.ok === false) throw new Error(up.error);
+          return up.url;
+        }));
       }
-      imageUrls.push(up.url);
+    } catch (e: any) {
+      return { ok: false, error: e?.message || String(e) };
     }
 
     const isTextToImage = imageUrls.length === 0;

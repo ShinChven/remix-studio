@@ -1,3 +1,4 @@
+import { base64ImageBytes, cachedUpload } from './upload-cache';
 import {
   CheckStatusContext,
   CheckStatusResult,
@@ -182,10 +183,16 @@ export class APIMartGenerator extends ImageGenerator {
     const urls: string[] = [];
 
     if (req.refImagesBase64 && req.refImagesBase64.length > 0) {
-      for (const base64 of req.refImagesBase64) {
-        const up = await this.uploadImage(base64);
-        if (up.ok === false) return up;
-        urls.push(up.url);
+      try {
+        for (const base64 of req.refImagesBase64) {
+          urls.push(await cachedUpload(req.uploadCache, `${this.baseUrl}/uploads/images`, base64ImageBytes(base64), async () => {
+            const up = await this.uploadImage(base64);
+            if (up.ok === false) throw new Error(up.error);
+            return up.url;
+          }));
+        }
+      } catch (e: any) {
+        return { ok: false, error: e?.message || String(e) };
       }
       return { ok: true, urls };
     }

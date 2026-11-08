@@ -1,3 +1,5 @@
+import type { UploadCache } from './upload-cache';
+
 export interface VideoGenerateRequest {
   prompt: string;
   modelId?: string;         // The actual API model string (e.g. 'veo-3.1-generate-preview', 'grok-imagine-video-1.5')
@@ -11,6 +13,8 @@ export interface VideoGenerateRequest {
   refVideoUrls?: string[];
   refAudioUrls?: string[];
   seed?: number;
+  /** Reuses images already uploaded to the provider (APIMart). */
+  uploadCache?: UploadCache;
 }
 
 export type VideoGenerateResult =

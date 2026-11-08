@@ -1,3 +1,4 @@
+import { base64ImageBytes, cachedUpload, type UploadCache } from '../generators/upload-cache';
 /** Shared APIMart transport; a configured proxy path is preserved for every endpoint. */
 export function apimartBaseUrl(apiUrl?: string | null): string {
   const url = new URL(apiUrl || 'https://api.apimart.ai/v1');
@@ -57,7 +58,12 @@ export class APIMartClient {
     return json;
   }
 
-  async uploadImage(base64: string): Promise<string> {
+  /** Upload a reference image, reusing an earlier upload of the same bytes when a cache is given. */
+  uploadImage(base64: string, cache?: UploadCache): Promise<string> {
+    return cachedUpload(cache, `${this.baseUrl}/uploads/images`, base64ImageBytes(base64), () => this.sendImage(base64));
+  }
+
+  private async sendImage(base64: string): Promise<string> {
     const clean = base64.replace(/^data:[^;]+;base64,/, '');
     const form = new FormData();
     form.append('file', new Blob([Buffer.from(clean, 'base64')], { type: 'image/png' }), 'reference.png');
