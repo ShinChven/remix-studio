@@ -973,32 +973,34 @@ export function CampaignDetail() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white px-5 py-4 text-sm font-medium text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span>
-                    Showing {matchingPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matchingPosts)} of {matchingPosts}
-                  </span>
-                  <select
-                    value={pageSize}
-                    onChange={(event) => updateQuery({ pageSize: event.target.value })}
-                    className="h-9 rounded-lg border border-neutral-200 bg-white px-2 text-xs font-bold text-neutral-700 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200"
-                  >
-                    {PAGE_SIZE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option} / page</option>
-                    ))}
-                  </select>
+              {posts.length > 0 && (
+                <div className="flex flex-col gap-3 rounded-card border border-neutral-200/50 bg-white px-5 py-4 text-sm font-medium text-neutral-500 shadow-sm backdrop-blur-xl dark:border-white/5 dark:bg-neutral-900 dark:text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span>
+                      Showing {matchingPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matchingPosts)} of {matchingPosts}
+                    </span>
+                    <select
+                      value={pageSize}
+                      onChange={(event) => updateQuery({ pageSize: event.target.value })}
+                      className="h-9 rounded-lg border border-neutral-200 bg-white px-2 text-xs font-bold text-neutral-700 outline-none dark:border-white/10 dark:bg-neutral-950 dark:text-neutral-200"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((option) => (
+                        <option key={option} value={option}>{option} / page</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+                    <span className="px-2 text-xs font-black uppercase tracking-widest">
+                      Page {page} / {Math.max(1, totalPages)}
+                    </span>
+                    <PageNav
+                      page={page}
+                      pages={Math.max(1, totalPages)}
+                      onPageChange={(nextPage) => updateQuery({ page: String(nextPage) })}
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-                  <span className="px-2 text-xs font-black uppercase tracking-widest">
-                    Page {page} / {Math.max(1, totalPages)}
-                  </span>
-                  <PageNav
-                    page={page}
-                    pages={Math.max(1, totalPages)}
-                    onPageChange={(nextPage) => updateQuery({ page: String(nextPage) })}
-                  />
-                </div>
-              </div>
+              )}
             </div>
           </main>
         </div>

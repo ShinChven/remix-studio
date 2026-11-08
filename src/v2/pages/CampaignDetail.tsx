@@ -585,27 +585,29 @@ export function CampaignDetail() {
               }
             />
           )}
-          <div className="v2-paged-footer">
-            <span className="flex items-center gap-3">
-              <Text variant="label-medium" className="text-on-surface-variant">
-                Showing {matching === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matching)} of {matching}
-              </Text>
-              <Select
-                variant="outlined"
-                aria-label="Page size"
-                value={String(pageSize)}
-                onChange={(v) => updateQuery({ pageSize: v })}
-                options={PAGE_SIZE_OPTIONS.map((o) => ({ value: String(o), label: `${o} / page` }))}
-                className="v2-inline-select"
-              />
-            </span>
-            <span className="flex items-center gap-2">
-              <Text variant="label-medium" className="text-on-surface-variant">
-                Page {page} / {Math.max(1, totalPages)}
-              </Text>
-              <Pagination page={page} pages={Math.max(1, totalPages)} onPageChange={(next) => updateQuery({ page: String(next) })} />
-            </span>
-          </div>
+          {posts.length > 0 && (
+            <div className="v2-paged-footer">
+              <span className="flex items-center gap-3">
+                <Text variant="label-medium" className="text-on-surface-variant">
+                  Showing {matching === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matching)} of {matching}
+                </Text>
+                <Select
+                  variant="outlined"
+                  aria-label="Page size"
+                  value={String(pageSize)}
+                  onChange={(v) => updateQuery({ pageSize: v })}
+                  options={PAGE_SIZE_OPTIONS.map((o) => ({ value: String(o), label: `${o} / page` }))}
+                  className="v2-inline-select"
+                />
+              </span>
+              <span className="flex items-center gap-2">
+                <Text variant="label-medium" className="text-on-surface-variant">
+                  Page {page} / {Math.max(1, totalPages)}
+                </Text>
+                <Pagination page={page} pages={Math.max(1, totalPages)} onPageChange={(next) => updateQuery({ page: String(next) })} />
+              </span>
+            </div>
+          )}
         </main>
       </div>
 
