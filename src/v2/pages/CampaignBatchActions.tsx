@@ -326,6 +326,8 @@ export function CampaignBatchActions() {
   const none = selectedPostIds.length === 0;
   const campaignEmpty = !isLoading && (counts.all || 0) === 0 && !searchQuery && statusFilter === 'all';
   const inactive = campaign?.status !== 'active';
+  // Selecting across pages is offered whenever the list is longer than what is selected on this page.
+  const everyMatchingSelectable = !allMatchingSelected && totalPosts > visiblePosts.length;
   const statusChips: Array<[string, string]> = [
     ['all', 'All'],
     ['draft', 'Draft'],
@@ -447,9 +449,9 @@ export function CampaignBatchActions() {
                     {allMatchingSelected ? `All ${selectedPostIds.length} matching posts selected` : allVisibleSelected ? `All ${visiblePosts.length} on this page selected` : 'Select all on this page'}
                   </Text>
                 </label>
-                {allVisibleSelected && totalPosts > visiblePosts.length && !allMatchingSelected && (
-                  <Button variant="text" size="xs" icon="select_all" onClick={() => void selectAllMatchingPosts()}>
-                    Select all {totalPosts} matching
+                {everyMatchingSelectable && (
+                  <Button variant="tonal" size="xs" icon="select_all" onClick={() => void selectAllMatchingPosts()}>
+                    Select all {totalPosts}
                   </Button>
                 )}
                 <Text as="span" variant="label-medium" className="ms-auto tabular-nums text-on-surface-variant">
@@ -523,6 +525,14 @@ export function CampaignBatchActions() {
               <Text as="span" variant="label-large" emphasized className="tabular-nums whitespace-nowrap">
                 {selectedPostIds.length} selected
               </Text>
+              {everyMatchingSelectable &&
+                (compact ? (
+                  <IconButton icon="select_all" size="sm" label={`Select all ${totalPosts}`} tooltip onClick={() => void selectAllMatchingPosts()} />
+                ) : (
+                  <Button variant="tonal" size="sm" icon="select_all" onClick={() => void selectAllMatchingPosts()}>
+                    Select all {totalPosts}
+                  </Button>
+                ))}
               <span className="v2-float-bar__actions">
                 {actions.map((action) =>
                   compact ? (
