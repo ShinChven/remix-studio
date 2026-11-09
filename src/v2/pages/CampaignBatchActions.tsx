@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { batchUnschedulePosts, deletePost, fetchBatchGeneratePostTextStatus, fetchCampaign, fetchCampaignPostIds, fetchCampaignPosts, sendPostNow, type BatchGenerateTextResult } from '../../api';
-import { Button, Checkbox, Icon, IconButton, LinearProgress, Select, Text } from '../../m3';
+import { Button, Checkbox, ChipSet, FilterChip, Icon, IconButton, LinearProgress, Select, Text, useMediaQuery } from '../../m3';
 import { BatchAiGenerateDialog } from '../components/campaigns/BatchAiGenerateDialog';
 import { BatchScheduleDialog, BatchSetTextDialog } from '../components/campaigns/BatchPostDialogs';
 import { PostMediaViewer } from '../components/campaigns/PostMediaViewer';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
+import { formatPostTime } from '../components/campaigns/PostCard';
 import { postStatusLabel, postStatusTone } from '../lib/posts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { Row, RowList } from '../ui/Rows';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
@@ -60,6 +61,8 @@ export function CampaignBatchActions() {
   const [posts, setPosts] = useState<BatchPost[]>([]);
   const [totalPosts, setTotalPosts] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const compact = useMediaQuery('(max-width: 899.98px)');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPostIds, setSelectedPostIds] = useState<string[]>([]);
   const [allMatchingSelected, setAllMatchingSelected] = useState(false);
@@ -114,6 +117,7 @@ export function CampaignBatchActions() {
       setPosts(postData.items || []);
       setTotalPosts(postData.total || 0);
       setTotalPages(postData.totalPages || 1);
+      setCounts(postData.statusCounts || {});
       if (!preserveSelection) {
         setSelectedPostIds([]);
         setAllMatchingSelected(false);
@@ -320,6 +324,26 @@ export function CampaignBatchActions() {
 
   if (isLoading && !campaign) return <LoadingState label="Loading batch actions..." minHeight={400} />;
   const none = selectedPostIds.length === 0;
+  const campaignEmpty = !isLoading && (counts.all || 0) === 0 && !searchQuery && statusFilter === 'all';
+  const inactive = campaign?.status !== 'active';
+  // Selecting across pages is offered whenever the list is longer than what is selected on this page.
+  const everyMatchingSelectable = !allMatchingSelected && totalPosts > visiblePosts.length;
+  const statusChips: Array<[string, string]> = [
+    ['all', 'All'],
+    ['draft', 'Draft'],
+    ['scheduled', 'Scheduled'],
+    ['queued', 'Queued'],
+    ['completed', 'Posted'],
+    ['failed', 'Failed'],
+  ];
+  const actions: Array<{ key: string; label: string; icon: string; onClick: () => void; variant?: 'filled' | 'tonal'; danger?: boolean; disabled?: boolean; title?: string }> = [
+    { key: 'ai', label: 'AI Generate', icon: 'auto_awesome', onClick: () => setAiOpen(true) },
+    { key: 'text', label: 'Set Text', icon: 'text_fields', onClick: () => setSetTextOpen(true) },
+    { key: 'schedule', label: 'Schedule', icon: 'schedule', onClick: () => setScheduleOpen(true) },
+    { key: 'unschedule', label: 'Unschedule', icon: 'event_busy', onClick: handleBatchUnschedule },
+    { key: 'send', label: 'Send Now', icon: 'send', onClick: handleBatchSend, variant: 'filled', disabled: inactive || sending, title: inactive ? 'Resume the campaign to send posts' : undefined },
+    { key: 'delete', label: 'Delete', icon: 'delete', onClick: () => setDeleteOpen(true), danger: true },
+  ];
 
   return (
     <Page ref={paginationRef} density="compact">
@@ -327,7 +351,7 @@ export function CampaignBatchActions() {
         title="Batch Actions"
         description={
           <>
-            Manage multiple posts for <strong className="text-on-surface">{campaign?.name}</strong>
+            Select posts of <strong className="text-on-surface">{campaign?.name}</strong> and act on them together.
           </>
         }
         backLink={{ to: `/campaigns/${id}`, label: 'Back to Campaign' }}
@@ -337,179 +361,193 @@ export function CampaignBatchActions() {
           </Button>
         }
       />
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <SearchField value={searchQuery} onChange={(v) => updateQuery({ q: v })} placeholder="Search posts by content..." className="v2-header-search" />
-          <Select
-            variant="outlined"
-            aria-label="Status"
-            leadingIcon="filter_list"
-            value={statusFilter}
-            onChange={(v) => updateQuery({ status: v })}
-            options={[
-              { value: 'all', label: 'All Status' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'scheduled', label: 'Scheduled' },
-              { value: 'completed', label: 'Posted' },
-              { value: 'failed', label: 'Failed' },
-            ]}
-            className="v2-inline-select"
-          />
-          <Select<SortKey>
-            variant="outlined"
-            aria-label="Sort"
-            leadingIcon="sort"
-            value={sortKey}
-            onChange={(v) => updateQuery({ sort: v })}
-            options={[
-              { value: 'scheduled_asc', label: 'Scheduled (Soonest First)' },
-              { value: 'scheduled_desc', label: 'Scheduled (Latest First)' },
-              { value: 'created_desc', label: 'Created (Newest First)' },
-              { value: 'created_asc', label: 'Created (Oldest First)' },
-            ]}
-            className="v2-inline-select"
-          />
-          <Select variant="outlined" aria-label="Page size" value={String(pageSize)} onChange={(v) => updateQuery({ pageSize: v })} options={PAGE_SIZE_OPTIONS.map((o) => ({ value: String(o), label: `${o} / page` }))} className="v2-inline-select" />
-        </div>
+      {campaignEmpty ? (
+        <EmptyState
+          icon="stacks"
+          shape="cookie-9"
+          title="No posts to act on yet"
+          description="Queue media from uploads, libraries or albums to create many posts at once."
+          action={
+            <Button variant="filled" icon="add" href={`/campaigns/${id}/batch/create`}>
+              Create Batch
+            </Button>
+          }
+        />
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="v2-campaign-filters">
+            <ChipSet scroll aria-label="Filter by status">
+              {statusChips
+                .filter(([key]) => key === 'all' || (counts[key] || 0) > 0 || statusFilter === key)
+                .map(([key, label]) => (
+                  <FilterChip
+                    key={key}
+                    selected={statusFilter === key}
+                    label={
+                      <>
+                        {label} <span className="v2-chip-count">{counts[key] || 0}</span>
+                      </>
+                    }
+                    onClick={() => updateQuery({ status: key === 'all' ? '' : key })}
+                  />
+                ))}
+            </ChipSet>
+            <div className="v2-campaign-filters__tools">
+              <SearchField value={searchQuery} onChange={(v) => updateQuery({ q: v })} placeholder="Search posts" aria-label="Search posts by content" className="v2-header-search" />
+              <Select<SortKey>
+                variant="outlined"
+                aria-label="Sort"
+                leadingIcon="sort"
+                value={sortKey}
+                onChange={(v) => updateQuery({ sort: v })}
+                options={[
+                  { value: 'scheduled_asc', label: 'Scheduled (Soonest First)' },
+                  { value: 'scheduled_desc', label: 'Scheduled (Latest First)' },
+                  { value: 'created_desc', label: 'Created (Newest First)' },
+                  { value: 'created_asc', label: 'Created (Oldest First)' },
+                ]}
+                className="v2-inline-select v2-inline-select--sort"
+              />
+            </div>
+          </div>
 
-        <div className="v2-selection-bar" data-active={none ? undefined : ''}>
-          <div className="v2-selection-bar__lead">
-            <Checkbox checked={allVisibleSelected} indeterminate={!none && !allVisibleSelected} onChange={toggleSelectAll} aria-label="Select all" />
-            <Text as="span" variant="label-large" emphasized={!none}>
-              {selectedPostIds.length} selected
-            </Text>
-          </div>
-          <div className="v2-selection-bar__actions">
-            <Button variant="text" size="xs" icon="auto_awesome" disabled={none} onClick={() => setAiOpen(true)}>
-              AI Generate
-            </Button>
-            <Button variant="text" size="xs" icon="text_fields" disabled={none} onClick={() => setSetTextOpen(true)}>
-              Set Text
-            </Button>
-            <Button variant="text" size="xs" icon="schedule" disabled={none} onClick={() => setScheduleOpen(true)}>
-              Schedule
-            </Button>
-            <Button variant="text" size="xs" icon="event_busy" disabled={none} onClick={handleBatchUnschedule}>
-              Unschedule
-            </Button>
-            <Button variant="tonal" size="xs" icon="send" disabled={none || campaign?.status !== 'active' || sending} onClick={handleBatchSend}>
-              Send Now
-            </Button>
-            <Button variant="filled" size="xs" icon="delete" className="v2-button-danger" disabled={none} onClick={() => setDeleteOpen(true)}>
-              Delete
-            </Button>
-          </div>
-        </div>
-
-        {allVisibleSelected && totalPosts > visiblePosts.length && !allMatchingSelected && (
-          <div className="v2-notice">
-            <Icon name="select_all" />
-            <Text variant="body-small" className="flex-1">
-              All {visiblePosts.length} posts on this page are selected.
-            </Text>
-            <Button variant="text" size="xs" onClick={() => void selectAllMatchingPosts()}>
-              Select all {totalPosts} matching posts
-            </Button>
-          </div>
-        )}
-        {allMatchingSelected && (
-          <div className="v2-notice">
-            <Icon name="done_all" />
-            <Text variant="body-small" className="flex-1">
-              All {selectedPostIds.length} matching posts are selected.
-            </Text>
-            <Button
-              variant="text"
-              size="xs"
-              onClick={() => {
-                setSelectedPostIds([]);
-                setAllMatchingSelected(false);
-              }}
-            >
-              Clear selection
-            </Button>
-          </div>
-        )}
-        {aiTask && (
-          <div className="v2-autotag" data-tone={aiFailureMessage ? 'warning' : undefined}>
-            <Icon name={aiTask.status === 'queued' || aiTask.status === 'running' ? 'progress_activity' : 'auto_awesome'} size={18} />
-            <Text as="span" variant="label-medium">
-              AI text generation {aiTask.status} · {aiTask.completed} of {aiTask.total} posts processed
-            </Text>
-            <LinearProgress value={aiTask.total > 0 ? aiTask.completed / aiTask.total : 0} max={1} className="v2-autotag__bar" aria-label="AI text generation" />
-            <Button variant="text" size="xs" onClick={() => setAiTask(null)}>
-              Dismiss
-            </Button>
-            {aiFailureMessage && (
-              <Text variant="body-small" className="w-full truncate" title={aiFailureMessage}>
-                {aiFailedResults.length} post{aiFailedResults.length === 1 ? '' : 's'} failed · {aiFailureMessage}
+          {aiTask && (
+            <div className="v2-autotag" data-tone={aiFailureMessage ? 'warning' : undefined}>
+              <Icon name={aiTask.status === 'queued' || aiTask.status === 'running' ? 'progress_activity' : 'auto_awesome'} size={18} />
+              <Text as="span" variant="label-medium">
+                AI text generation {aiTask.status} · {aiTask.completed} of {aiTask.total} posts processed
               </Text>
-            )}
-          </div>
-        )}
+              <LinearProgress value={aiTask.total > 0 ? aiTask.completed / aiTask.total : 0} max={1} className="v2-autotag__bar" aria-label="AI text generation" />
+              <Button variant="text" size="xs" onClick={() => setAiTask(null)}>
+                Dismiss
+              </Button>
+              {aiFailureMessage && (
+                <Text variant="body-small" className="w-full truncate" title={aiFailureMessage}>
+                  {aiFailedResults.length} post{aiFailedResults.length === 1 ? '' : 's'} failed · {aiFailureMessage}
+                </Text>
+              )}
+            </div>
+          )}
 
-        {visiblePosts.length === 0 && !isLoading ? (
-          <EmptyState icon="search_off" title="No posts found" description="Try adjusting filters or search query." />
-        ) : (
-          <RowList>
-            {visiblePosts.map((post, index) => {
-              const selected = selectedPostIds.includes(post.id);
-              const mediaUrls = (post.media || []).map(mediaPreviewUrl).filter(Boolean);
-              return (
-                <Row
-                  key={post.id}
-                  selected={selected}
-                  onClick={(e) => toggleSelectPost(post.id, index, 'shiftKey' in e ? e.shiftKey : false)}
-                  lead={
-                    <span
-                      className="v2-row__check"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleSelectPost(post.id, index, e.shiftKey);
-                      }}
-                    >
-                      <Checkbox checked={selected} onChange={() => undefined} tabIndex={-1} aria-label="Select post" />
-                    </span>
-                  }
-                  title={post.textContent || <em className="text-on-surface-variant">No content</em>}
-                  meta={
-                    <>
-                      <StatusPill tone={postStatusTone(post.status)}>{postStatusLabel(post.status)}</StatusPill>
-                      <span className="tabular-nums">{post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : 'Not scheduled'}</span>
-                    </>
-                  }
-                  actions={
-                    <>
-                      {mediaUrls.length > 0 ? (
-                        <button type="button" className="v2-batch-thumb m3-focus-ring" title={`View ${mediaUrls.length} media item${mediaUrls.length === 1 ? '' : 's'}`} onClick={() => setLightbox({ media: post.media || [], index: 0 })}>
-                          <img src={mediaUrls[0]} alt="" loading="lazy" referrerPolicy="no-referrer" />
-                          {mediaUrls.length > 1 && <span className="v2-transfer-strip__more">+{mediaUrls.length - 1}</span>}
-                        </button>
-                      ) : (
-                        <Text as="span" variant="label-small" className="text-on-surface-variant">
-                          No media
-                        </Text>
-                      )}
-                      <IconButton icon="edit" size="xs" label="Edit post" tooltip href={`/campaigns/${id}/posts/edit/${post.id}`} />
-                    </>
-                  }
-                />
-              );
-            })}
-          </RowList>
-        )}
-        <div className="v2-paged-footer">
-          <Text variant="label-medium" className="text-on-surface-variant">
-            Showing {totalPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalPosts)} of {totalPosts}
-          </Text>
-          <span className="flex items-center gap-2">
-            <Text variant="label-medium" className="text-on-surface-variant">
-              Page {page} / {Math.max(1, totalPages)}
-            </Text>
-            <Pagination page={page} pages={Math.max(1, totalPages)} onPageChange={(next) => updateQuery({ page: String(next) })} />
-          </span>
+          {visiblePosts.length === 0 && !isLoading ? (
+            <EmptyState
+              icon="search_off"
+              title="No posts match"
+              description="Try another status or search."
+              action={
+                <Button variant="tonal" icon="filter_alt_off" onClick={() => updateQuery({ q: '', status: '' })}>
+                  Clear filters
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              <div className="v2-batch-head">
+                <label className="v2-batch-head__all">
+                  <Checkbox checked={allVisibleSelected} indeterminate={!none && !allVisibleSelected} onChange={toggleSelectAll} aria-label="Select all on this page" />
+                  <Text as="span" variant="label-large">
+                    {allMatchingSelected ? `All ${selectedPostIds.length} matching posts selected` : allVisibleSelected ? `All ${visiblePosts.length} on this page selected` : 'Select all on this page'}
+                  </Text>
+                </label>
+                {everyMatchingSelectable && (
+                  <Button variant="tonal" size="xs" icon="select_all" onClick={() => void selectAllMatchingPosts()}>
+                    Select all {totalPosts}
+                  </Button>
+                )}
+                <Text as="span" variant="label-medium" className="ms-auto tabular-nums text-on-surface-variant">
+                  {totalPosts} {totalPosts === 1 ? 'post' : 'posts'}
+                  <span className="v2-hide-mobile"> · Shift-click selects a range</span>
+                </Text>
+              </div>
+              <RowList>
+                {visiblePosts.map((post, index) => {
+                  const selected = selectedPostIds.includes(post.id);
+                  const mediaUrls = (post.media || []).map(mediaPreviewUrl).filter(Boolean);
+                  return (
+                    <Row
+                      key={post.id}
+                      selected={selected}
+                      className="v2-batch-row"
+                      onClick={(e) => toggleSelectPost(post.id, index, 'shiftKey' in e ? e.shiftKey : false)}
+                      lead={
+                        <span
+                          className="v2-row__check"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSelectPost(post.id, index, e.shiftKey);
+                          }}
+                        >
+                          <Checkbox checked={selected} onChange={() => undefined} tabIndex={-1} aria-label="Select post" />
+                        </span>
+                      }
+                      title={
+                        <span className="flex min-w-0 items-center gap-3">
+                          {mediaUrls.length > 0 ? (
+                            <button type="button" className="v2-batch-thumb m3-focus-ring" title={`View ${mediaUrls.length} media item${mediaUrls.length === 1 ? '' : 's'}`} onClick={() => setLightbox({ media: post.media || [], index: 0 })}>
+                              <img src={mediaUrls[0]} alt="" loading="lazy" referrerPolicy="no-referrer" />
+                              {mediaUrls.length > 1 && <span className="v2-transfer-strip__more">+{mediaUrls.length - 1}</span>}
+                            </button>
+                          ) : (
+                            <span className="v2-batch-thumb v2-batch-thumb--empty" aria-hidden>
+                              <Icon name="notes" size={20} />
+                            </span>
+                          )}
+                          <span className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span className="truncate">{post.textContent?.trim() || <em className="font-normal text-on-surface-variant">No text yet</em>}</span>
+                            <span className="v2-row__meta">
+                              <StatusPill tone={postStatusTone(post.status)}>{postStatusLabel(post.status)}</StatusPill>
+                              <span className="tabular-nums">{formatPostTime(post.scheduledAt)}</span>
+                            </span>
+                          </span>
+                        </span>
+                      }
+                      actions={<IconButton icon="edit" size="xs" label="Edit post" tooltip href={`/campaigns/${id}/posts/edit/${post.id}`} />}
+                    />
+                  );
+                })}
+              </RowList>
+            </>
+          )}
+          <PagedFooter page={page} pageSize={pageSize} total={totalPosts} pages={totalPages} onPageChange={(next) => updateQuery({ page: String(next) })} pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={(next) => updateQuery({ pageSize: String(next) })} />
+
+          {!none && (
+            <div className="v2-float-bar" role="toolbar" aria-label="Actions for selected posts">
+              <IconButton
+                icon="close"
+                size="sm"
+                label="Clear selection"
+                tooltip
+                onClick={() => {
+                  setSelectedPostIds([]);
+                  setAllMatchingSelected(false);
+                }}
+              />
+              <Text as="span" variant="label-large" emphasized className="tabular-nums whitespace-nowrap">
+                {selectedPostIds.length} selected
+              </Text>
+              {everyMatchingSelectable &&
+                (compact ? (
+                  <IconButton icon="select_all" size="sm" label={`Select all ${totalPosts}`} tooltip onClick={() => void selectAllMatchingPosts()} />
+                ) : (
+                  <Button variant="tonal" size="sm" icon="select_all" onClick={() => void selectAllMatchingPosts()}>
+                    Select all {totalPosts}
+                  </Button>
+                ))}
+              <span className="v2-float-bar__actions">
+                {actions.map((action) =>
+                  compact ? (
+                    <IconButton key={action.key} icon={action.icon} size="sm" variant={action.variant} label={action.label} tooltip disabled={action.disabled} className={action.danger ? 'v2-icon-danger' : undefined} onClick={action.onClick} />
+                  ) : (
+                    <Button key={action.key} variant={action.variant ?? 'text'} size="sm" icon={action.icon} disabled={action.disabled} title={action.title} className={action.danger ? 'v2-button-danger' : undefined} onClick={action.onClick}>
+                      {action.label}
+                    </Button>
+                  ),
+                )}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {lightbox && <PostMediaViewer media={lightbox.media} index={lightbox.index} onIndexChange={(index) => setLightbox((c) => (c ? { ...c, index } : c))} onClose={() => setLightbox(null)} />}
       <ConfirmDialog

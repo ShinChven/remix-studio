@@ -7,7 +7,7 @@
     "title": "プロジェクト",
     "description": "AI ワークフローと生成タスクを管理・追跡します。",
     "allProjects": "すべてのプロジェクト",
-    "searchPlaceholder": "名前またはIDでプロジェクトを検索...",
+    "searchPlaceholder": "プロジェクトを検索",
     "newProject": "新規プロジェクト",
     "noResultsFound": "名称またはIDに一致するプロジェクトは見つかりませんでした。",
     "archiveProject": "プロジェクトをアーカイブ",

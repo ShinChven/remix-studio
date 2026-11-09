@@ -16,7 +16,7 @@ import { useViewPref } from '../lib/viewPrefs';
 import { MediaCard } from '../ui/MediaCard';
 import { EmptyState, Page, Section } from '../ui/Page';
 import { PageHero } from '../ui/PageHero';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
 import { CardGrid, ListToolbar, MobileFab, Segmented } from '../ui/Toolbar';
@@ -343,14 +343,7 @@ export function Campaigns() {
               </EntityList>
             </div>
           )}
-          {totalPages > 1 && (
-            <div className="v2-paged-footer">
-              <Text variant="label-medium" className="text-on-surface-variant">
-                {t('pagination.range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, total), total })}
-              </Text>
-              <Pagination page={page} pages={totalPages} onPageChange={setPage} />
-            </div>
-          )}
+          <PagedFooter page={page} pageSize={pageSize} total={total} pages={totalPages} onPageChange={setPage} />
         </section>
 
         <aside className="v2-campaigns__aside" data-density="compact">

@@ -85,7 +85,7 @@ export function CampaignChannels() {
   }, []);
 
   return (
-    <Page width="default">
+    <Page>
       <PageHeader title="Channels" description="Connect and manage the accounts campaigns publish to." backLink={{ to: '/campaigns', label: 'Back to Campaigns' }} actions={<ConnectButtons />} />
       <Section variant="plain" icon="share" title="Connected Channels" description="These channels are available when creating or editing campaigns.">
         {loading ? (

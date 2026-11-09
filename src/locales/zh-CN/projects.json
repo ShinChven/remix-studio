@@ -7,7 +7,7 @@
     "title": "项目",
     "description": "管理并跟踪您的 AI 工作流和生成任务。",
     "allProjects": "所有项目",
-    "searchPlaceholder": "搜索项目名称或 ID...",
+    "searchPlaceholder": "搜索项目",
     "newProject": "新建项目",
     "noResultsFound": "未找到匹配的项目",
     "archiveProject": "归档项目",

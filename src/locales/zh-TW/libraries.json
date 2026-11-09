@@ -6,7 +6,7 @@
     "title": "資源庫",
     "description": "建立、管理和復用提示詞提示詞與媒體集合，以優化您的 AI 內容生成工作流。",
     "allLibraries": "所有資源庫",
-    "searchPlaceholder": "搜尋資源庫名稱或 ID...",
+    "searchPlaceholder": "搜尋資源庫",
     "newLibrary": "新建資源庫",
     "typeAll": "全部",
     "noResultsFound": "未找到相符的資源庫",

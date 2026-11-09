@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { batchUnschedulePosts, deletePost, fetchBatchGeneratePostTextStatus, fetchPost, sendPostNow, updatePost, type BatchGenerateTextResult } from '../../api';
+import { deletePost, fetchBatchGeneratePostTextStatus, fetchPost, sendPostNow, type BatchGenerateTextResult } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { resourceRef } from '../../lib/resource-ref';
-import { Button, Icon, IconButton, Text, TextField } from '../../m3';
+import { copyText, resourceRef, startResourceChat } from '../../lib/resource-ref';
+import { Button, Icon, Text } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { BatchAiGenerateDialog } from '../components/campaigns/BatchAiGenerateDialog';
+import { formatPostTime, PostActions, usePostSchedule } from '../components/campaigns/PostCard';
 import { mediaFullUrl, mediaPosterUrl, PostMediaViewer, type ViewerMedia } from '../components/campaigns/PostMediaViewer';
-import { CopyRefButton, StartChatRefButton } from '../components/CopyRefButton';
-import { PlatformIcon } from '../lib/platform';
-import { postStatusLabel, postStatusTone, toDatetimeLocal } from '../lib/posts';
+import { postStatusLabel, postStatusTone } from '../lib/posts';
+import { ActionMenu } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
-import { Row, RowList } from '../ui/Rows';
+import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { StatusPill } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
 
@@ -42,11 +42,9 @@ export function CampaignPostDetail() {
   const { campaignId, postId } = useParams<{ campaignId: string; postId: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  const { t } = useTranslation();
   const [post, setPost] = useState<CampaignPost | null>(null);
   const [loading, setLoading] = useState(true);
-  const [quickDate, setQuickDate] = useState('');
-  const [quickScheduling, setQuickScheduling] = useState(false);
-  const [quickSaving, setQuickSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -112,50 +110,22 @@ export function CampaignPostDetail() {
   const active = post?.campaign?.status === 'active';
   const backCampaignId = campaignId || post?.campaignId || post?.campaign?.id;
 
-  const quickSchedule = async () => {
-    if (!post || !quickDate) {
-      toast.error('Please select a schedule time');
-      return;
-    }
-    try {
-      setQuickSaving(true);
-      await updatePost(post.id, { textContent: post.textContent || '', status: 'scheduled', scheduledAt: new Date(quickDate).toISOString() });
-      toast.success('Post scheduled');
-      setQuickScheduling(false);
-      setQuickDate('');
-      await loadPost(true);
-    } catch (error) {
-      toast.error((error as Error)?.message || 'Failed to schedule post');
-    } finally {
-      setQuickSaving(false);
-    }
-  };
-
-  const unschedule = async () => {
-    if (!post) return;
-    try {
-      await batchUnschedulePosts([post.id]);
-      toast.success('Post unscheduled');
-      await loadPost(true);
-    } catch (error) {
-      toast.error((error as Error)?.message || 'Failed to unschedule post');
-    }
-  };
+  const schedule = usePostSchedule(post ?? { id: postId || '', status: 'draft' }, () => loadPost(true));
 
   if (loading && !post) return <LoadingState label="Loading post..." minHeight={400} />;
   if (!post) {
     return (
-      <EmptyState
-        icon="error"
-        title="Post not found"
-        action={
-          backCampaignId && (
-            <Button variant="tonal" icon="arrow_back" href={`/campaigns/${backCampaignId}`}>
-              Back to Campaign
+      <Page width="narrow">
+        <EmptyState
+          icon="error"
+          title="Post not found"
+          action={
+            <Button variant="tonal" icon="arrow_back" href={backCampaignId ? `/campaigns/${backCampaignId}` : '/campaigns'}>
+              {backCampaignId ? 'Back to Campaign' : 'Back to Campaigns'}
             </Button>
-          )
-        }
-      />
+          }
+        />
+      </Page>
     );
   }
 
@@ -165,160 +135,160 @@ export function CampaignPostDetail() {
       ? `This post was already published${accounts.length > 0 ? ` to ${accounts.length} channel${accounts.length === 1 ? '' : 's'}` : ''}. Sending it again posts a duplicate that cannot be unsent.`
       : `Publish this post${accounts.length > 0 ? ` to ${accounts.length} connected channel${accounts.length === 1 ? '' : 's'}` : ''} right now? It goes live immediately and cannot be unsent.`;
 
+  const reference = resourceRef.post(post.campaignId, post.id);
+  const text = post.textContent?.trim();
+  const executions = post.executions || [];
+  const delivered = new Set(executions.map((e) => e.socialAccount?.id).filter(Boolean));
+  const pending = accounts.filter((a) => !delivered.has(a.id));
+
   return (
-    <Page width="default" density="compact">
+    <Page density="compact">
       <PageHeader
-        title="Post Detail"
-        description={post.campaign?.name || 'Campaign post'}
+        title="Post"
+        description={
+          post.campaign?.name ? (
+            <>
+              In <strong className="text-on-surface">{post.campaign.name}</strong>
+            </>
+          ) : undefined
+        }
         backLink={backCampaignId ? { to: `/campaigns/${backCampaignId}`, label: 'Back to Campaign' } : undefined}
         actions={
           <>
-            <StartChatRefButton reference={resourceRef.post(post.campaignId, post.id)} size="sm" variant="tonal" />
-            <CopyRefButton reference={resourceRef.post(post.campaignId, post.id)} size="sm" variant="tonal" />
-            <Button variant="tonal" icon="edit" href={`/campaigns/${backCampaignId}/posts/edit/${post.id}`}>
-              Edit
-            </Button>
             <Button variant="tonal" icon="auto_awesome" onClick={() => setAiOpen(true)}>
               AI Generate
             </Button>
-            <Button variant="text" icon="delete" className="v2-button-danger" onClick={() => setDeleteOpen(true)}>
-              Delete
+            <Button variant="filled" icon="edit" href={`/campaigns/${backCampaignId}/posts/edit/${post.id}`}>
+              Edit
             </Button>
+            <ActionMenu
+              label="Post options"
+              variant="tonal"
+              items={[
+                { key: 'chat', label: t('resourceRef.startChat'), icon: 'chat', onSelect: () => startResourceChat(navigate, reference) },
+                {
+                  key: 'ref',
+                  label: t('resourceRef.copy'),
+                  icon: 'tag',
+                  onSelect: () => {
+                    copyText(reference).then(
+                      () => toast.success(`${t('resourceRef.copied')} · ${reference}`),
+                      () => toast.error(`${t('resourceRef.copyFailed')} · ${reference}`),
+                    );
+                  },
+                },
+                { key: 'delete', label: 'Delete Post', icon: 'delete', danger: true, divider: true, onSelect: () => setDeleteOpen(true) },
+              ]}
+            />
           </>
         }
       />
-      <article className="v2-post-card">
-        <header className="flex flex-wrap items-center gap-3">
-          {accounts.length > 0 && (
-            <span className="v2-avatar-stack">
-              {accounts.map((a) => (
-                <AccountAvatar key={a.id} account={{ ...a, platform: undefined }} size={32} refreshOn={['twitter', 'x', 'threads']} />
-              ))}
-            </span>
-          )}
-          <div className="flex flex-col">
-            <span className="flex items-center gap-2">
-              <Text as="span" variant="label-medium" className="text-on-surface-variant">
-                {accounts.length} {accounts.length === 1 ? 'Channel' : 'Channels'}
-              </Text>
-              <StatusPill tone={postStatusTone(post.status)} icon={post.status === 'processing' ? 'progress_activity' : undefined}>
-                {postStatusLabel(post.status)}
-              </StatusPill>
-            </span>
-            <Text as="span" variant="label-small" className="flex items-center gap-1 text-on-surface-variant">
-              <Icon name="schedule" size={14} />
-              {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString() : 'Not scheduled'}
+      <div className="v2-split v2-split--end">
+        <article className="v2-post-detail">
+          {text ? (
+            <Text variant="body-large" className="v2-post-detail__text">
+              {post.textContent}
             </Text>
-          </div>
-        </header>
-        {post.textContent?.trim() && (
-          <Text variant="body-large" className="whitespace-pre-wrap">
-            {post.textContent}
-          </Text>
-        )}
-        {post.media && post.media.length > 0 && (
-          <div className="v2-post-detail__media">
-            {post.media.map((media, index) => {
-              const url = mediaFullUrl(media);
-              const poster = media.type === 'video' ? mediaPosterUrl(media) : '';
-              return (
-                <button key={media.id} type="button" className="v2-post-card__thumb m3-focus-ring" aria-label={`Open media ${index + 1}`} onClick={() => setViewer(index)}>
-                  {url && media.type !== 'video' ? <img src={url} alt="" referrerPolicy="no-referrer" /> : poster ? <img src={poster} alt="" referrerPolicy="no-referrer" /> : url ? <video src={url} muted playsInline preload="metadata" /> : <Icon name="image" />}
-                  {media.type === 'video' && (
-                    <span className="v2-tile__overlay">
-                      <Icon name="play_arrow" filled />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <footer className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {quickScheduling ? (
-              <>
-                <TextField variant="outlined" type="datetime-local" aria-label="Schedule time" value={quickDate} onValueChange={setQuickDate} />
-                <Button variant="filled" size="xs" loading={quickSaving} onClick={() => void quickSchedule()}>
-                  Save
-                </Button>
-                <IconButton icon="close" size="xs" label="Cancel" onClick={() => setQuickScheduling(false)} />
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="filled"
-                  size="xs"
-                  icon="send"
-                  loading={sending}
-                  disabled={!active}
-                  onClick={() => (active ? setSendOpen(true) : toast.error('Campaign is inactive · Activate the campaign before sending posts.'))}
-                >
-                  {post.status === 'completed' ? 'Send Again' : 'Send Now'}
-                </Button>
-                <Button
-                  variant="tonal"
-                  size="xs"
-                  icon={post.scheduledAt ? 'edit_calendar' : 'schedule'}
-                  onClick={() => {
-                    const time = post.scheduledAt ? new Date(post.scheduledAt) : new Date();
-                    if (!post.scheduledAt || Number.isNaN(time.getTime())) time.setHours(new Date().getHours() + 1);
-                    setQuickDate(toDatetimeLocal(time));
-                    setQuickScheduling(true);
-                  }}
-                >
-                  {post.scheduledAt ? 'Reschedule' : 'Schedule'}
-                </Button>
-                {post.scheduledAt && (
-                  <Button variant="text" size="xs" icon="event_busy" onClick={() => void unschedule()}>
-                    Unschedule
+          ) : (
+            <div className="v2-post-detail__notext">
+              <Text variant="body-medium" className="italic text-on-surface-variant">
+                No text yet.
+              </Text>
+              <Button variant="text" size="xs" icon="auto_awesome" onClick={() => setAiOpen(true)}>
+                Generate with AI
+              </Button>
+            </div>
+          )}
+          {post.media && post.media.length > 0 && (
+            <div className="v2-post-detail__media" data-count={Math.min(post.media.length, 4)}>
+              {post.media.map((media, index) => {
+                const url = mediaFullUrl(media);
+                const poster = media.type === 'video' ? mediaPosterUrl(media) : '';
+                return (
+                  <button key={media.id} type="button" className="v2-post-card__thumb m3-focus-ring" aria-label={`Open media ${index + 1}`} onClick={() => setViewer(index)}>
+                    {url && media.type !== 'video' ? <img src={url} alt="" referrerPolicy="no-referrer" /> : poster ? <img src={poster} alt="" referrerPolicy="no-referrer" /> : url ? <video src={url} muted playsInline preload="metadata" /> : <Icon name="image" />}
+                    {media.type === 'video' && (
+                      <span className="v2-tile__overlay">
+                        <Icon name="play_arrow" filled />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </article>
+        <div className="v2-split__rail flex flex-col gap-4">
+          <Section variant="card">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill tone={postStatusTone(post.status)} icon={post.status === 'processing' ? 'progress_activity' : undefined}>
+                  {postStatusLabel(post.status)}
+                </StatusPill>
+                {aiTask && (aiTask.status === 'queued' || aiTask.status === 'running') && (
+                  <StatusPill tone="tertiary" icon="auto_awesome">
+                    Generating text
+                  </StatusPill>
+                )}
+              </div>
+              <Text variant="title-large" emphasized className="tabular-nums">
+                {formatPostTime(post.scheduledAt)}
+              </Text>
+              {!active && (
+                <Text variant="body-small" className="text-on-surface-variant">
+                  The campaign is paused, so this post will not be sent.
+                </Text>
+              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <PostActions post={post} schedule={schedule} active={active} sending={sending} size="sm" onSend={() => (active ? setSendOpen(true) : toast.error('Campaign is inactive · Activate the campaign before sending posts.'))} />
+                {externalUrl && !schedule.editing && (
+                  <Button variant="text" size="sm" trailingIcon="open_in_new" href={externalUrl} target="_blank" rel="noopener noreferrer">
+                    View live
                   </Button>
                 )}
-              </>
-            )}
-          </div>
-          {post.status === 'completed' ? (
-            <span className="flex items-center gap-2">
-              <StatusPill tone="success" icon="check_circle">
-                Published
-              </StatusPill>
-              {externalUrl && (
-                <Button variant="text" size="xs" trailingIcon="open_in_new" href={externalUrl} target="_blank" rel="noopener noreferrer">
-                  View Post
-                </Button>
-              )}
-            </span>
-          ) : (
-            <StatusPill tone={postStatusTone(post.status)} icon="info">
-              {postStatusLabel(post.status)}
-            </StatusPill>
-          )}
-        </footer>
-        {post.executions && post.executions.length > 0 && (
-          <RowList>
-            {post.executions.map((execution) => (
-              <Row
-                key={execution.id}
-                lead={execution.socialAccount ? <PlatformIcon platform={execution.socialAccount.platform} size={20} /> : <Icon name="public" />}
-                title={
-                  <span className="flex items-center gap-2">
-                    {execution.socialAccount ? displayAccountName(execution.socialAccount) : 'Channel'}
+              </div>
+            </div>
+          </Section>
+          <Section variant="card" icon="share" title="Channels">
+            {executions.length === 0 && accounts.length === 0 ? (
+              <Text variant="body-small" className="text-on-surface-variant">
+                This campaign has no channels.
+              </Text>
+            ) : (
+              <ul className="v2-delivery">
+                {executions.map((execution) => (
+                  <li key={execution.id}>
+                    {execution.socialAccount ? <AccountAvatar account={execution.socialAccount} size={32} refreshOn={['twitter', 'x', 'threads']} /> : <Icon name="public" />}
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <Text as="span" variant="label-large" className="truncate">
+                        {execution.socialAccount ? displayAccountName(execution.socialAccount) : 'Channel'}
+                      </Text>
+                      {execution.errorMsg && (
+                        <Text as="span" variant="body-small" className="text-error [overflow-wrap:anywhere]">
+                          {execution.errorMsg}
+                        </Text>
+                      )}
+                    </span>
                     <StatusPill tone={postStatusTone(execution.status)}>{postStatusLabel(execution.status)}</StatusPill>
-                  </span>
-                }
-                meta={execution.errorMsg && <span className="text-error">{execution.errorMsg}</span>}
-                actions={
-                  execution.externalUrl && (
-                    <Button variant="text" size="xs" trailingIcon="open_in_new" href={execution.externalUrl} target="_blank" rel="noopener noreferrer">
-                      Open
-                    </Button>
-                  )
-                }
-              />
-            ))}
-          </RowList>
-        )}
-      </article>
+                    {execution.externalUrl && <Button variant="text" size="xs" trailingIcon="open_in_new" href={execution.externalUrl} target="_blank" rel="noopener noreferrer">Open</Button>}
+                  </li>
+                ))}
+                {pending.map((account) => (
+                  <li key={account.id}>
+                    <AccountAvatar account={account} size={32} refreshOn={['twitter', 'x', 'threads']} />
+                    <Text as="span" variant="label-large" className="min-w-0 flex-1 truncate">
+                      {displayAccountName(account)}
+                    </Text>
+                    <Text as="span" variant="label-medium" className="text-on-surface-variant">
+                      Not sent
+                    </Text>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
+        </div>
+      </div>
 
       {viewer !== null && post.media && <PostMediaViewer media={post.media} index={viewer} onIndexChange={setViewer} onClose={() => setViewer(null)} />}
       {aiOpen && (

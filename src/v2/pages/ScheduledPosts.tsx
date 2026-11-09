@@ -6,7 +6,7 @@ import { formatShortDate } from '../../lib/date';
 import { Button, cx, Icon, IconButton, Text } from '../../m3';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { Row, RowList } from '../ui/Rows';
 import { SearchField } from '../ui/SearchField';
 import { Segmented } from '../ui/Toolbar';
@@ -217,6 +217,9 @@ export function ScheduledPosts() {
     return days;
   }, [currentMonth]);
 
+  // Sunday-first, to match the grid.
+  const weekdays = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(2023, 0, 1 + i).toLocaleDateString(undefined, { weekday: 'short' })), []);
+
   const countsByDate = useMemo(() => new Map(counts.map((count) => [count.date, count])), [counts]);
 
   function getPostCountForDate(date: Date) {
@@ -240,7 +243,7 @@ export function ScheduledPosts() {
         title={
           <span className="flex flex-wrap items-center gap-3">
             Scheduled Posts
-            {totalScheduled !== null && <span className="v2-count">{totalScheduled} total</span>}
+            {totalScheduled !== null && totalScheduled > 0 && <span className="v2-count">{totalScheduled} total</span>}
           </span>
         }
         description="View and manage your upcoming social media posts."
@@ -259,13 +262,10 @@ export function ScheduledPosts() {
       {viewMode === 'list' ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search scheduled posts..." className="v2-header-search" />
-            <Button variant="tonal" size="sm" icon="search" onClick={applySearch}>
-              Search
-            </Button>
-            {total > 0 && (
-              <Text variant="label-medium" className="ms-auto text-on-surface-variant">
-                {`Showing ${(page - 1) * 25 + 1}–${(page - 1) * 25 + posts.length} of ${total}${q ? ' matching' : ''} ${total === 1 ? 'post' : 'posts'}`}
+            <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search posts" aria-label="Search scheduled posts" className="v2-header-search" />
+            {q && total > 0 && (
+              <Text variant="label-medium" className="ms-auto tabular-nums text-on-surface-variant">
+                {total} matching {total === 1 ? 'post' : 'posts'}
               </Text>
             )}
           </div>
@@ -306,20 +306,13 @@ export function ScheduledPosts() {
               })}
             </RowList>
           )}
-          {totalPages > 1 && (
-            <div className="v2-paged-footer">
-              <Text variant="label-medium" className="text-on-surface-variant">
-                Page {page} of {totalPages} · {total} {total === 1 ? 'post' : 'posts'}
-              </Text>
-              <Pagination page={page} pages={totalPages} onPageChange={updatePage} />
-            </div>
-          )}
+          <PagedFooter page={page} pageSize={25} total={total} pages={totalPages} onPageChange={updatePage} />
         </div>
       ) : (
         <Section
           variant="card"
           title={currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-          description={!isLoading ? `${monthTotal} ${monthTotal === 1 ? 'post' : 'posts'} this month${totalScheduled !== null ? ` · ${totalScheduled} total` : ''}` : undefined}
+          description={!isLoading ? `${monthTotal} ${monthTotal === 1 ? 'post' : 'posts'} this month${totalScheduled ? ` · ${totalScheduled} total` : ''}` : undefined}
           actions={
             <>
               <IconButton icon="chevron_left" variant="tonal" label="Previous month" onClick={prevMonth} className="m3-mirror-rtl" />
@@ -331,7 +324,7 @@ export function ScheduledPosts() {
           }
         >
           <div className="v2-calendar">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+            {weekdays.map((d) => (
               <div key={d} className="v2-calendar__weekday">
                 {d}
               </div>
@@ -340,13 +333,14 @@ export function ScheduledPosts() {
               const data = getPostCountForDate(day.date);
               const today = day.date.toDateString() === new Date().toDateString();
               return (
-                <div key={i} className={cx('v2-calendar__day', !day.isCurrentMonth && 'v2-calendar__day--other')}>
+                <div key={i} className={cx('v2-calendar__day', !day.isCurrentMonth && 'v2-calendar__day--other')} data-busy={data && data.postCount > 0 ? '' : undefined} title={data && data.postCount > 0 ? `${data.postCount} ${data.postCount === 1 ? 'post' : 'posts'} · ${day.date.toLocaleDateString()}` : undefined}>
                   <span className="v2-calendar__date" data-today={today ? '' : undefined}>
                     {day.date.getDate()}
                   </span>
                   {data && data.postCount > 0 && (
                     <span className="v2-calendar__count">
-                      <span className="v2-pane-wide">Posts</span> {data.postCount}
+                      <strong>{data.postCount}</strong>
+                      <span className="v2-calendar__unit">{data.postCount === 1 ? 'post' : 'posts'}</span>
                     </span>
                   )}
                 </div>
