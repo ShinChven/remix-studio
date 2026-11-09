@@ -217,6 +217,9 @@ export function ScheduledPosts() {
     return days;
   }, [currentMonth]);
 
+  // Sunday-first, to match the grid.
+  const weekdays = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(2023, 0, 1 + i).toLocaleDateString(undefined, { weekday: 'short' })), []);
+
   const countsByDate = useMemo(() => new Map(counts.map((count) => [count.date, count])), [counts]);
 
   function getPostCountForDate(date: Date) {
@@ -321,7 +324,7 @@ export function ScheduledPosts() {
           }
         >
           <div className="v2-calendar">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
+            {weekdays.map((d) => (
               <div key={d} className="v2-calendar__weekday">
                 {d}
               </div>
@@ -330,13 +333,14 @@ export function ScheduledPosts() {
               const data = getPostCountForDate(day.date);
               const today = day.date.toDateString() === new Date().toDateString();
               return (
-                <div key={i} className={cx('v2-calendar__day', !day.isCurrentMonth && 'v2-calendar__day--other')}>
+                <div key={i} className={cx('v2-calendar__day', !day.isCurrentMonth && 'v2-calendar__day--other')} data-busy={data && data.postCount > 0 ? '' : undefined} title={data && data.postCount > 0 ? `${data.postCount} ${data.postCount === 1 ? 'post' : 'posts'} · ${day.date.toLocaleDateString()}` : undefined}>
                   <span className="v2-calendar__date" data-today={today ? '' : undefined}>
                     {day.date.getDate()}
                   </span>
                   {data && data.postCount > 0 && (
                     <span className="v2-calendar__count">
-                      <span className="v2-pane-wide">Posts</span> {data.postCount}
+                      <strong>{data.postCount}</strong>
+                      <span className="v2-calendar__unit">{data.postCount === 1 ? 'post' : 'posts'}</span>
                     </span>
                   )}
                 </div>

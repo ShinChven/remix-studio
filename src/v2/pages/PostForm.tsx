@@ -113,6 +113,7 @@ export function PostForm() {
     [existingMedia, removedMediaIds],
   );
   const totalMediaCount = visibleExistingMedia.length + newFiles.length;
+  const overX = content.length > 280 && targetAccounts.some((a) => ['x', 'twitter'].includes(a.platform?.toLowerCase()));
 
   const addFiles = (files: File[]) => {
     if (files.length === 0) return;
@@ -292,9 +293,9 @@ export function PostForm() {
 
   return (
     <Page density="compact">
-      <PageHeader title={isEditing ? 'Edit Post' : 'Create New Post'} description={isEditing ? 'Update your campaign post.' : 'Add a new post to your campaign.'} backLink={{ label: 'Back', onClick: () => navigate(-1) }} />
+      <PageHeader title={isEditing ? 'Edit Post' : 'New Post'} description={campaign?.name ? <>In <strong className="text-on-surface">{campaign.name}</strong></> : undefined} backLink={{ label: 'Back', onClick: () => navigate(-1) }} />
       <div className="v2-split v2-split--end">
-        <Section variant="card" title="Content & Media" description="What would you like to share?">
+        <Section variant="card" title="Content">
           <div className="flex flex-col gap-4">
             <TextField
               variant="outlined"
@@ -305,7 +306,9 @@ export function PostForm() {
               maxRows={20}
               value={content}
               onValueChange={setContent}
-              supportingText={`${content.length} / 280`}
+              supportingText={`${content.length} ${content.length === 1 ? 'character' : 'characters'}`}
+              error={overX}
+              errorText={`${content.length} characters · over X's 280 limit`}
               fullWidth
             />
             <div
@@ -374,50 +377,42 @@ export function PostForm() {
             </div>
           </div>
         </Section>
-        <div className="flex flex-col gap-4">
-          <Section variant="card" title="Scheduling" description="When should this be published?">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-start gap-2">
-                <TextField
-                  variant="outlined"
-                  type="datetime-local"
-                  label="Scheduled Time"
-                  leadingIcon="event"
-                  value={scheduledAt}
-                  onValueChange={setScheduledAt}
-                  supportingText={scheduledAt ? undefined : 'Not scheduled'}
-                  className="flex-1"
-                  fullWidth
-                />
-                {scheduledAt && <IconButton icon="close" label="Clear" tooltip onClick={() => setScheduledAt('')} />}
-              </div>
-              <Text variant="body-small" className="text-on-surface-variant">
-                Leave empty to save as a draft. Posts will be automatically published at the selected time.
-              </Text>
-              <Text variant="label-large" emphasized>
-                Target Channels
-              </Text>
-              {targetAccounts.length > 0 && (
-                <span className="flex flex-wrap gap-2">
-                  {targetAccounts.map((account) => (
-                    <span key={account.id} title={`${accountName(account)} (${account.platform})`}>
-                      <AccountAvatar account={account} size={36} refreshOn={['twitter', 'x', 'threads']} />
-                    </span>
-                  ))}
-                </span>
-              )}
-              <Text variant="body-small" className="text-on-surface-variant">
-                {targetAccounts.length > 0 ? `This post will be sent to all ${targetAccounts.length} channels connected to this campaign.` : 'No channels connected to this campaign. Please connect channels in campaign settings.'}
-              </Text>
-              <Button variant="filled" size="md" icon={isEditing ? 'save' : 'add'} loading={isSaving} fullWidth emphasized onClick={() => void handleSave()}>
-                {isEditing ? 'Update Post' : 'Create Post'}
-              </Button>
-              <Button variant="text" fullWidth disabled={isSaving} onClick={() => navigate(`/campaigns/${campaignId}`)}>
-                Cancel
-              </Button>
+        <div className="v2-split__rail flex flex-col gap-4">
+          <Section variant="card" icon="event" title="Schedule" description={scheduledAt ? 'Publishes automatically at this time.' : 'No time set: saved as a draft.'}>
+            <div className="flex items-start gap-2">
+              <TextField variant="outlined" type="datetime-local" aria-label="Scheduled time" value={scheduledAt} onValueChange={setScheduledAt} className="min-w-0 flex-1" fullWidth />
+              {scheduledAt && <IconButton icon="close" label="Clear schedule" tooltip onClick={() => setScheduledAt('')} />}
             </div>
           </Section>
-          <Section variant="tonal" icon="send" title="Ready to go?" description="You can also send this post immediately from the campaign dashboard." />
+          <Section variant="card" icon="share" title="Channels" description={targetAccounts.length > 0 ? 'Goes to every channel of this campaign.' : undefined}>
+            {targetAccounts.length > 0 ? (
+              <span className="flex flex-wrap gap-2">
+                {targetAccounts.map((account) => (
+                  <span key={account.id} className="v2-channel-chip" title={`${accountName(account)} · ${account.platform}`}>
+                    <AccountAvatar account={account} size={24} refreshOn={['twitter', 'x', 'threads']} />
+                    <span className="truncate">{accountName(account)}</span>
+                  </span>
+                ))}
+              </span>
+            ) : (
+              <div className="flex flex-col items-start gap-2">
+                <Text variant="body-small" className="text-on-surface-variant">
+                  This campaign has no channels, so the post cannot be sent yet.
+                </Text>
+                <Button variant="tonal" size="xs" icon="add_link" href={`/campaigns/edit/${campaignId}`}>
+                  Connect a channel
+                </Button>
+              </div>
+            )}
+          </Section>
+          <div className="flex flex-col gap-2">
+            <Button variant="filled" size="md" icon={scheduledAt ? 'schedule_send' : 'save'} loading={isSaving} fullWidth emphasized onClick={() => void handleSave()}>
+              {scheduledAt ? (isEditing ? 'Save & Schedule' : 'Schedule Post') : isEditing ? 'Save Draft' : 'Create Draft'}
+            </Button>
+            <Button variant="text" fullWidth disabled={isSaving} onClick={() => navigate(`/campaigns/${campaignId}`)}>
+              Cancel
+            </Button>
+          </div>
         </div>
       </div>
       <ConfirmDialog

@@ -11,7 +11,7 @@ import {
   type CampaignMediaImportSource,
   type PostWatermarkSettings,
 } from '../../api';
-import { Button, Icon, IconButton, Text, TextField } from '../../m3';
+import { Button, Icon, IconButton, LinearProgress, Text, TextField } from '../../m3';
 import { MediaPicker, type UniversalPickedItem } from '../components/MediaPicker';
 import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
 import { DropZone } from '../ui/DropZone';
@@ -311,93 +311,107 @@ export function CampaignBatchCreate() {
         title="Create Batch"
         description={
           <>
-            Queue media from uploads, libraries, or albums for <strong className="text-on-surface">{campaign?.name}</strong>
+            Every queued image or video becomes its own post in <strong className="text-on-surface">{campaign?.name}</strong>.
           </>
         }
         backLink={{ to: `/campaigns/${id}/batch`, label: 'Back to Batch Actions' }}
-        actions={
-          <>
-            <Button variant="text" href={`/campaigns/${id}/batch`}>
+      />
+      <div className="v2-batch-create">
+        <div className="flex min-w-0 flex-col gap-4">
+          <DropZone
+            title="Drop images or videos here"
+            hint="JPG, PNG, WEBP, GIF, MP4, WEBM, MOV"
+            icon="upload"
+            accept={POST_MEDIA_ACCEPT}
+            multiple
+            buttonLabel="Upload Files"
+            disabled={isUploading}
+            onFiles={handleFiles}
+          >
+            <div className="v2-batch-sources">
+              <Text as="span" variant="label-medium" className="text-on-surface-variant">
+                Or add from
+              </Text>
+              <Button variant="tonal" size="sm" icon="photo_library" disabled={isUploading} onClick={() => openPicker('library')}>
+                Library
+              </Button>
+              <Button variant="tonal" size="sm" icon="stacks" disabled={isUploading} onClick={() => openPicker('album')}>
+                Album
+              </Button>
+            </div>
+          </DropZone>
+          <Section
+            variant="plain"
+            icon="queue"
+            title={
+              <>
+                Queue {queue.length > 0 && <span className="v2-count">{queue.length}</span>}
+              </>
+            }
+            description={queue.length > 0 ? 'Captions are optional; you can write or generate them later in Batch Actions.' : undefined}
+            actions={
+              queue.length > 0 && (
+                <Button variant="text" size="xs" icon="clear_all" disabled={isUploading} onClick={clearQueue}>
+                  Clear All
+                </Button>
+              )
+            }
+          >
+            {queue.length > 0 ? (
+              <div className="v2-batch-queue">
+                {queue.map((item, index) => {
+                  const name = item.kind === 'local' ? item.file.name : item.title || item.rawUrl || item.itemId;
+                  return (
+                    <div key={item.id} className="v2-batch-item">
+                      <div className="v2-batch-item__media">
+                        {item.preview ? (
+                          item.mediaType === 'video' && item.kind === 'local' ? <video src={item.preview} /> : <img src={item.kind === 'local' ? item.preview : imageDisplayUrl(item.preview)} alt="" />
+                        ) : (
+                          <Icon name={item.mediaType === 'video' ? 'movie' : 'image'} size={32} />
+                        )}
+                        <span className="v2-post-tile__pos v2-batch-item__pos">{index + 1}</span>
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Text variant="label-large" emphasized className="min-w-0 flex-1 truncate" title={name}>
+                            {name}
+                          </Text>
+                          <span className="v2-info-chip shrink-0">
+                            {item.kind} · {mediaSourceLabel(item.mediaType)}
+                          </span>
+                          <IconButton icon="close" size="xs" label="Remove from queue" tooltip disabled={isUploading} onClick={() => removeQueueItem(item.id)} />
+                        </div>
+                        <TextField variant="outlined" multiline rows={3} maxRows={8} placeholder="Caption for this post..." aria-label="Caption" value={item.content} onValueChange={(v) => updateContent(item.id, v)} fullWidth />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState icon="perm_media" shape="cookie-9" title="Nothing queued yet" description="Upload files or pick media from a library or album to start." />
+            )}
+          </Section>
+        </div>
+        <aside className="v2-batch-create__rail">
+          <WatermarkSettingsPanel settings={watermarkSettings} sampleUrl={watermarkPreviewUrl} isSaving={isWatermarkSaving} onChange={setWatermarkSettings} title="Watermark" description="Applied to image posts created from this page." statusText="Settings are saved when the batch is created." stacked />
+        </aside>
+      </div>
+      {queue.length > 0 && (
+        <div className="v2-float-bar v2-float-bar--confirm" role="toolbar" aria-label="Create batch">
+          <Text as="span" variant="label-large" emphasized className="tabular-nums whitespace-nowrap">
+            {isUploading ? `Creating ${uploadProgress} of ${queue.length}` : `${queue.length} ${queue.length === 1 ? 'post' : 'posts'} ready`}
+          </Text>
+          {isUploading && <LinearProgress value={uploadProgress} max={Math.max(1, queue.length)} className="v2-float-bar__progress" aria-label="Batch progress" />}
+          <span className="v2-float-bar__actions">
+            <Button variant="text" size="sm" disabled={isUploading} href={`/campaigns/${id}/batch`}>
               Cancel
             </Button>
-            <Button variant="filled" icon="check_circle" loading={isUploading} disabled={queue.length === 0} onClick={() => void handleConfirm()}>
-              {isUploading ? `Processing ${uploadProgress}/${queue.length}...` : 'Confirm Batch'}
+            <Button variant="filled" size="sm" icon="check" loading={isUploading} onClick={() => void handleConfirm()}>
+              Create {queue.length} {queue.length === 1 ? 'Post' : 'Posts'}
             </Button>
-          </>
-        }
-      />
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="tonal" icon="photo_library" onClick={() => openPicker('library')}>
-            Pick Library
-          </Button>
-          <Button variant="tonal" icon="stacks" onClick={() => openPicker('album')}>
-            Pick Album
-          </Button>
-          <Text variant="label-medium" className="ms-auto text-on-surface-variant">
-            {queue.length} queued · 1 media item per post
-          </Text>
+          </span>
         </div>
-        <WatermarkSettingsPanel settings={watermarkSettings} sampleUrl={watermarkPreviewUrl} isSaving={isWatermarkSaving} onChange={setWatermarkSettings} />
-        <DropZone
-          title="Drag and drop images or video here"
-          hint="JPG, PNG, WEBP, GIF, MP4 · Library and album picks use the same queue below"
-          icon="upload"
-          accept={POST_MEDIA_ACCEPT}
-          multiple
-          buttonLabel="Upload Files"
-          onFiles={handleFiles}
-        />
-        <Section
-          variant="plain"
-          icon="queue"
-          title={
-            <>
-              Batch Queue <span className="v2-count">{queue.length}</span>
-            </>
-          }
-          actions={
-            queue.length > 0 && (
-              <Button variant="text" size="xs" icon="clear_all" onClick={clearQueue}>
-                Clear All
-              </Button>
-            )
-          }
-        >
-          {queue.length > 0 ? (
-            <div className="v2-batch-queue">
-              {queue.map((item) => {
-                const name = item.kind === 'local' ? item.file.name : item.title || item.rawUrl || item.itemId;
-                return (
-                  <div key={item.id} className="v2-batch-item">
-                    <div className="v2-batch-item__media">
-                      {item.preview ? (
-                        item.mediaType === 'video' && item.kind === 'local' ? <video src={item.preview} /> : <img src={item.kind === 'local' ? item.preview : imageDisplayUrl(item.preview)} alt="" />
-                      ) : (
-                        <Icon name={item.mediaType === 'video' ? 'movie' : 'image'} size={32} />
-                      )}
-                      <IconButton icon="delete" size="xs" variant="filled" className="v2-button-danger v2-batch-item__remove" label="Remove" onClick={() => removeQueueItem(item.id)} />
-                    </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-2">
-                      <div className="flex min-w-0 flex-wrap items-center gap-2">
-                        <Text variant="label-large" emphasized className="min-w-0 flex-[1_1_120px] truncate" title={name}>
-                          {name}
-                        </Text>
-                        <span className="v2-info-chip shrink-0">
-                          {item.kind} · {mediaSourceLabel(item.mediaType)}
-                        </span>
-                      </div>
-                      <TextField variant="outlined" multiline rows={3} maxRows={8} placeholder="Enter caption for this post..." aria-label="Caption" value={item.content} onValueChange={(v) => updateContent(item.id, v)} fullWidth />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <EmptyState icon="image" size="inline" title="No media queued yet" />
-          )}
-        </Section>
-      </div>
+      )}
       <MediaPicker
         isOpen={pickerMode !== null}
         title="Media Picker"

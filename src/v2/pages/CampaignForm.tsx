@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createCampaign, fetchCampaign, fetchSocialAccounts, updateCampaign } from '../../api';
-import { Button, Icon, Ripple, Text, TextField } from '../../m3';
+import { Button, ChipSet, FilterChip, Icon, Ripple, Text, TextField } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { PlatformIcon, platformLabel } from '../lib/platform';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { SearchField } from '../ui/SearchField';
-import { StatTile } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
 
 interface SocialAccount {
@@ -117,96 +116,117 @@ export function CampaignForm() {
   if (loading) return <LoadingState minHeight={400} />;
   const platforms = Array.from(new Set(accounts.map((a) => a.platform))).filter(Boolean);
 
+  const usable = accounts.filter((a) => !a.status || a.status === 'active');
+
   return (
     <Page density="compact">
       <PageHeader
-        title={isEditing ? 'Edit Campaign' : 'Create New Campaign'}
-        description={isEditing ? 'Update your campaign settings and target channels.' : 'Set up a new campaign and select which channels will participate.'}
+        title={isEditing ? 'Campaign Settings' : 'New Campaign'}
+        description={isEditing ? 'Rename the campaign or change the channels it posts to.' : 'Name the campaign and choose the channels its posts go to.'}
         backLink={{ label: 'Back', onClick: () => navigate(-1) }}
       />
       <div className="v2-split">
-        <div className="flex flex-col gap-4">
-          <Section variant="card" title="Basic Information" description="General details about your campaign.">
+        <div className="v2-split__rail flex flex-col gap-4">
+          <Section variant="card" title="Details">
             <div className="flex flex-col gap-3">
               <TextField variant="outlined" label="Campaign Name" placeholder="e.g. Q4 Growth Sprint" value={name} onValueChange={setName} fullWidth required />
               <TextField variant="outlined" label="Description" placeholder="What is the goal of this campaign?" value={description} onValueChange={setDescription} multiline rows={4} maxRows={10} fullWidth />
             </div>
           </Section>
-          <Section variant="tonal" title="Selection Summary">
-            <div className="v2-stat-grid">
-              <StatTile icon="share" label="Channels Selected" value={selected.length} tone="primary" />
-              <StatTile icon="groups" label="Total Available" value={accounts.length} />
-              <StatTile icon="pie_chart" label="Coverage" value={`${Math.round((selected.length / accounts.length) * 100) || 0}%`} tone="tertiary" />
-            </div>
-            <Button variant="filled" size="md" icon={isEditing ? 'save' : 'rocket_launch'} loading={saving} fullWidth emphasized onClick={() => void save()} className="mt-3">
-              {isEditing ? 'Save Changes' : 'Launch Campaign'}
+          <div className="flex flex-col gap-2">
+            <Button variant="filled" size="md" icon={isEditing ? 'save' : 'rocket_launch'} loading={saving} fullWidth emphasized onClick={() => void save()}>
+              {isEditing ? 'Save Changes' : 'Create Campaign'}
             </Button>
-          </Section>
+            <Button variant="text" fullWidth disabled={saving} onClick={() => navigate(-1)}>
+              Cancel
+            </Button>
+          </div>
         </div>
         <Section
           variant="card"
-          title="Channel Selection"
-          description="Select which accounts will be used for this campaign."
-          actions={
+          title={
             <>
-              <Button variant="text" size="xs" onClick={selectAll}>
-                Select All
-              </Button>
-              <Button variant="text" size="xs" onClick={deselectAll}>
-                Deselect All
-              </Button>
+              Channels {usable.length > 0 && <span className="v2-count">{selected.length} of {usable.length}</span>}
             </>
           }
-        >
-          <div className="flex flex-col gap-3">
-            <SearchField shape="field" value={search} onChange={setSearch} placeholder="Search by username or platform..." />
-            <div className="flex flex-wrap gap-2">
-              {platforms.map((platform) => (
-                <Button key={platform} variant={platformFilter === platform ? 'filled' : 'outlined'} size="xs" icon={<PlatformIcon platform={platform} size={16} />} onClick={() => setPlatformFilter(platformFilter === platform ? null : platform)}>
-                  {platformLabel(platform)}
+          description="Every post in this campaign goes to all selected channels."
+          actions={
+            usable.length > 1 && (
+              <>
+                <Button variant="text" size="xs" onClick={selectAll}>
+                  Select All
                 </Button>
-              ))}
+                <Button variant="text" size="xs" onClick={deselectAll}>
+                  Clear
+                </Button>
+              </>
+            )
+          }
+        >
+          {usable.length === 0 ? (
+            <EmptyState
+              icon="share"
+              shape="flower"
+              size="inline"
+              title="No channels connected"
+              description="Connect an account first; you can still create the campaign and add channels later."
+              action={
+                <Button variant="tonal" size="sm" icon="add_link" href="/campaigns/channels">
+                  Manage Channels
+                </Button>
+              }
+            />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {usable.length > 6 && <SearchField shape="field" value={search} onChange={setSearch} placeholder="Search by username or platform..." />}
+              {platforms.length > 1 && (
+                <ChipSet aria-label="Filter by platform">
+                  {platforms.map((platform) => (
+                    <FilterChip key={platform} icon={<PlatformIcon platform={platform} size={16} />} label={platformLabel(platform)} selected={platformFilter === platform} onClick={() => setPlatformFilter(platformFilter === platform ? null : platform)} />
+                  ))}
+                </ChipSet>
+              )}
+              <div className="v2-pick-grid">
+                {filtered.map((account) => {
+                  const on = selectedSet.has(account.id.toLowerCase());
+                  return (
+                    <button key={account.id} type="button" role="checkbox" aria-checked={on} className="v2-destination m3-focus-ring" data-selected={on ? '' : undefined} onClick={() => toggle(account.id)}>
+                      <Ripple />
+                      <AccountAvatar account={account} size={40} refreshOn={['twitter', 'x', 'threads']} />
+                      <span className="flex min-w-0 flex-1 flex-col text-start">
+                        <Text as="span" variant="label-large" className="truncate">
+                          {displayName(account)}
+                        </Text>
+                        <Text as="span" variant="label-small" className="opacity-70">
+                          {platformLabel(account.platform)}
+                        </Text>
+                      </span>
+                      <Icon name={on ? 'check_circle' : 'radio_button_unchecked'} filled={on} className={on ? 'text-primary' : 'text-on-surface-variant'} />
+                    </button>
+                  );
+                })}
+              </div>
+              {filtered.length === 0 && (
+                <EmptyState
+                  icon="search_off"
+                  size="inline"
+                  title="No channels match"
+                  action={
+                    <Button
+                      variant="text"
+                      size="sm"
+                      onClick={() => {
+                        setSearch('');
+                        setPlatformFilter(null);
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  }
+                />
+              )}
             </div>
-            <div className="v2-pick-grid">
-              {filtered.map((account) => {
-                const on = selectedSet.has(account.id.toLowerCase());
-                return (
-                  <button key={account.id} type="button" role="checkbox" aria-checked={on} className="v2-destination m3-focus-ring" data-selected={on ? '' : undefined} onClick={() => toggle(account.id)}>
-                    <Ripple />
-                    <AccountAvatar account={account} size={36} refreshOn={['twitter', 'x', 'threads']} />
-                    <span className="flex min-w-0 flex-1 flex-col text-start">
-                      <Text as="span" variant="label-large" className="truncate">
-                        {displayName(account)}
-                      </Text>
-                      <Text as="span" variant="label-small" className="text-on-surface-variant">
-                        {platformLabel(account.platform)}
-                      </Text>
-                    </span>
-                    <Icon name={on ? 'check_circle' : 'radio_button_unchecked'} filled={on} className={on ? 'text-primary' : 'text-on-surface-variant'} />
-                  </button>
-                );
-              })}
-            </div>
-            {filtered.length === 0 && (
-              <EmptyState
-                icon="search_off"
-                size="inline"
-                title="No accounts found matching your search."
-                action={
-                  <Button
-                    variant="text"
-                    size="sm"
-                    onClick={() => {
-                      setSearch('');
-                      setPlatformFilter(null);
-                    }}
-                  >
-                    Clear all filters
-                  </Button>
-                }
-              />
-            )}
-          </div>
+          )}
         </Section>
       </div>
     </Page>

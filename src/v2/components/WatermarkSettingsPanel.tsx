@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { imageDisplayUrl, type PostWatermarkPosition, type PostWatermarkSettings } from '../../api';
-import { Icon, LoadingIndicator, Select, Slider, Switch, Text, TextField } from '../../m3';
+import { cx, Icon, LoadingIndicator, Select, Slider, Switch, Text, TextField } from '../../m3';
 import { NumberField } from '../ui/NumberField';
 import { Section } from '../ui/Page';
 
@@ -137,6 +137,8 @@ interface WatermarkSettingsPanelProps {
   savingText?: string;
   /** Hide the switch where the watermark is the whole point of the page. */
   showEnabledToggle?: boolean;
+  /** One column, for a narrow side rail. */
+  stacked?: boolean;
 }
 
 /** Text watermark settings with a live preview. */
@@ -150,6 +152,7 @@ export function WatermarkSettingsPanel({
   statusText = 'Settings save after Confirm Batch runs.',
   savingText = 'Saving watermark settings...',
   showEnabledToggle = true,
+  stacked = false,
 }: WatermarkSettingsPanelProps) {
   const set = <K extends keyof PostWatermarkSettings>(key: K, value: PostWatermarkSettings[K]) => onChange({ ...settings, [key]: value });
 
@@ -162,10 +165,10 @@ export function WatermarkSettingsPanel({
       actions={showEnabledToggle ? <Switch label="Enabled" checked={settings.enabled} onChange={(e) => set('enabled', e.target.checked)} /> : undefined}
     >
       {settings.enabled && (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]" data-density="compact">
+        <div className={cx('grid gap-5', !stacked && 'lg:grid-cols-[minmax(0,1fr)_320px]')} data-density="compact">
           <div className="flex flex-col gap-4">
             <TextField variant="outlined" label="Text" placeholder="Enter watermark text..." maxLength={200} showCounter={false} value={settings.text} onValueChange={(v) => set('text', v)} fullWidth />
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className={cx('grid gap-4', stacked ? 'grid-cols-2 [&>:first-child]:col-span-2' : 'sm:grid-cols-3')}>
               <Select variant="outlined" label="Position" value={settings.position} onChange={(v) => set('position', v as PostWatermarkPosition)} options={POSITIONS} fullWidth />
               <NumberField label="Padding" min={0} max={512} integer value={settings.padding} onValueChange={(v) => set('padding', v)} fullWidth />
               <NumberField label="Font size" min={8} max={256} integer value={settings.fontSize} onValueChange={(v) => set('fontSize', v)} fullWidth />
