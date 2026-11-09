@@ -178,7 +178,7 @@ export function CampaignForm() {
             />
           ) : (
             <div className="flex flex-col gap-3">
-              {usable.length > 6 && <SearchField shape="field" value={search} onChange={setSearch} placeholder="Search by username or platform..." />}
+              {usable.length > 6 && <SearchField shape="field" value={search} onChange={setSearch} placeholder="Search channels" aria-label="Search by username or platform" />}
               {platforms.length > 1 && (
                 <ChipSet aria-label="Filter by platform">
                   {platforms.map((platform) => (

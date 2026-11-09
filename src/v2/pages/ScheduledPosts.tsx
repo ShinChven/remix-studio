@@ -262,7 +262,7 @@ export function ScheduledPosts() {
       {viewMode === 'list' ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search scheduled posts..." className="v2-header-search" />
+            <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search posts" aria-label="Search scheduled posts" className="v2-header-search" />
             {q && total > 0 && (
               <Text variant="label-medium" className="ms-auto tabular-nums text-on-surface-variant">
                 {total} matching {total === 1 ? 'post' : 'posts'}

@@ -7,7 +7,7 @@
     "title": "Projets",
     "description": "Gérez et suivez vos flux de travail et tâches de génération IA.",
     "allProjects": "Tous les projets",
-    "searchPlaceholder": "Rechercher des projets par nom ou ID...",
+    "searchPlaceholder": "Rechercher des projets",
     "newProject": "Nouveau projet",
     "noResultsFound": "Aucun projet correspondant trouvé",
     "archiveProject": "Archiver le projet",

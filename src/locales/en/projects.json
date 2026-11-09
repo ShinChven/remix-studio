@@ -7,7 +7,7 @@
     "title": "Projects",
     "description": "Manage and track your AI workflows and generation tasks.",
     "allProjects": "All Projects",
-    "searchPlaceholder": "Search projects by name or ID...",
+    "searchPlaceholder": "Search projects",
     "newProject": "New Project",
     "noResultsFound": "No matching projects found",
     "archiveProject": "Archive Project",

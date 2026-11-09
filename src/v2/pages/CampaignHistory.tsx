@@ -255,7 +255,7 @@ export function CampaignHistory() {
               { value: 'chart', label: t('postingTrend.chartView'), icon: 'show_chart' },
             ]}
           />
-          <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search history..." className="v2-header-search" />
+          <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search history" className="v2-header-search" />
           {hasActiveFilters && (
             <Button variant="text" size="xs" icon="filter_alt_off" onClick={clearFilters}>
               {t('postingTrend.resetRange')}

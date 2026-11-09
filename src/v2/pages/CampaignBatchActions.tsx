@@ -393,7 +393,7 @@ export function CampaignBatchActions() {
                 ))}
             </ChipSet>
             <div className="v2-campaign-filters__tools">
-              <SearchField value={searchQuery} onChange={(v) => updateQuery({ q: v })} placeholder="Search posts by content..." className="v2-header-search" />
+              <SearchField value={searchQuery} onChange={(v) => updateQuery({ q: v })} placeholder="Search posts" aria-label="Search posts by content" className="v2-header-search" />
               <Select<SortKey>
                 variant="outlined"
                 aria-label="Sort"
