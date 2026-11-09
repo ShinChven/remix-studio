@@ -291,7 +291,7 @@ export function PostForm() {
   );
 
   return (
-    <Page width="default" density="compact">
+    <Page density="compact">
       <PageHeader title={isEditing ? 'Edit Post' : 'Create New Post'} description={isEditing ? 'Update your campaign post.' : 'Add a new post to your campaign.'} backLink={{ label: 'Back', onClick: () => navigate(-1) }} />
       <div className="v2-split v2-split--end">
         <Section variant="card" title="Content & Media" description="What would you like to share?">

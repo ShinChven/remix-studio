@@ -3154,6 +3154,10 @@
 .v2-inline-select--narrow {
   min-width: 80px;
 }
+.v2-inline-select--sort.m3-field, .v2-inline-select--sort .m3-field, .v2-inline-select--sort { min-width: 236px; }
+.v2-inline-select--status.m3-field, .v2-inline-select--status .m3-field, .v2-inline-select--status { min-width: 148px; }
+.v2-row__meta > * { min-width: 0; }
+.v2-row__meta > .v2-link { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
 .v2-row__check { display: inline-flex; cursor: pointer; }
 .v2-row__preview {
   min-width: 0;
@@ -5219,6 +5223,7 @@
   overflow: hidden;
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-body-large);
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 6;

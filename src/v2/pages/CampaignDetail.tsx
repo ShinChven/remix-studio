@@ -14,7 +14,7 @@ import { PlatformIcon } from '../lib/platform';
 import { postStatusLabel, postStatusTone, toDatetimeLocal } from '../lib/posts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
@@ -350,7 +350,7 @@ export function CampaignDetail() {
                 { value: 'created_desc', label: 'Created (Newest First)' },
                 { value: 'created_asc', label: 'Created (Oldest First)' },
               ]}
-              className="v2-inline-select"
+              className="v2-inline-select v2-inline-select--sort"
             />
             <IconButton icon="settings" variant="tonal" label="Settings" tooltip href={`/campaigns/edit/${campaign.id}`} />
             <IconButton icon="stacks" variant="tonal" label="Batch Actions" tooltip href={`/campaigns/${campaign.id}/batch`} />
@@ -585,29 +585,15 @@ export function CampaignDetail() {
               }
             />
           )}
-          {posts.length > 0 && (
-            <div className="v2-paged-footer">
-              <span className="flex items-center gap-3">
-                <Text variant="label-medium" className="text-on-surface-variant">
-                  Showing {matching === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, matching)} of {matching}
-                </Text>
-                <Select
-                  variant="outlined"
-                  aria-label="Page size"
-                  value={String(pageSize)}
-                  onChange={(v) => updateQuery({ pageSize: v })}
-                  options={PAGE_SIZE_OPTIONS.map((o) => ({ value: String(o), label: `${o} / page` }))}
-                  className="v2-inline-select"
-                />
-              </span>
-              <span className="flex items-center gap-2">
-                <Text variant="label-medium" className="text-on-surface-variant">
-                  Page {page} / {Math.max(1, totalPages)}
-                </Text>
-                <Pagination page={page} pages={Math.max(1, totalPages)} onPageChange={(next) => updateQuery({ page: String(next) })} />
-              </span>
-            </div>
-          )}
+          <PagedFooter
+            page={page}
+            pageSize={pageSize}
+            total={matching}
+            pages={totalPages}
+            onPageChange={(next) => updateQuery({ page: String(next) })}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageSizeChange={(next) => updateQuery({ pageSize: String(next) })}
+          />
         </main>
       </div>
 
@@ -619,7 +605,7 @@ export function CampaignDetail() {
         message={
           <>
             Are you sure you want to delete this post? This action cannot be undone.
-            {deletePostTarget?.textContent?.trim() && <span className="mt-2 block italic">"{deletePostTarget.textContent}"</span>}
+            {deletePostTarget?.textContent?.trim() && <span className="mt-2 line-clamp-3 block italic [overflow-wrap:anywhere]">"{deletePostTarget.textContent}"</span>}
           </>
         }
         confirmLabel="Delete Post"

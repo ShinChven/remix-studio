@@ -9,7 +9,7 @@ import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { postStatusLabel, postStatusTone } from '../lib/posts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { Row, RowList } from '../ui/Rows';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
@@ -353,7 +353,7 @@ export function CampaignBatchActions() {
               { value: 'completed', label: 'Posted' },
               { value: 'failed', label: 'Failed' },
             ]}
-            className="v2-inline-select"
+            className="v2-inline-select v2-inline-select--status"
           />
           <Select<SortKey>
             variant="outlined"
@@ -367,9 +367,8 @@ export function CampaignBatchActions() {
               { value: 'created_desc', label: 'Created (Newest First)' },
               { value: 'created_asc', label: 'Created (Oldest First)' },
             ]}
-            className="v2-inline-select"
+            className="v2-inline-select v2-inline-select--sort"
           />
-          <Select variant="outlined" aria-label="Page size" value={String(pageSize)} onChange={(v) => updateQuery({ pageSize: v })} options={PAGE_SIZE_OPTIONS.map((o) => ({ value: String(o), label: `${o} / page` }))} className="v2-inline-select" />
         </div>
 
         <div className="v2-selection-bar" data-active={none ? undefined : ''}>
@@ -498,17 +497,7 @@ export function CampaignBatchActions() {
             })}
           </RowList>
         )}
-        <div className="v2-paged-footer">
-          <Text variant="label-medium" className="text-on-surface-variant">
-            Showing {totalPosts === 0 ? 0 : (page - 1) * pageSize + 1}-{Math.min(page * pageSize, totalPosts)} of {totalPosts}
-          </Text>
-          <span className="flex items-center gap-2">
-            <Text variant="label-medium" className="text-on-surface-variant">
-              Page {page} / {Math.max(1, totalPages)}
-            </Text>
-            <Pagination page={page} pages={Math.max(1, totalPages)} onPageChange={(next) => updateQuery({ page: String(next) })} />
-          </span>
-        </div>
+        <PagedFooter page={page} pageSize={pageSize} total={totalPosts} pages={totalPages} onPageChange={(next) => updateQuery({ page: String(next) })} pageSizeOptions={PAGE_SIZE_OPTIONS} onPageSizeChange={(next) => updateQuery({ pageSize: String(next) })} />
       </div>
 
       {lightbox && <PostMediaViewer media={lightbox.media} index={lightbox.index} onIndexChange={(index) => setLightbox((c) => (c ? { ...c, index } : c))} onClose={() => setLightbox(null)} />}

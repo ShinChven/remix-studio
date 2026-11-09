@@ -9,7 +9,7 @@ import { PostingTrendChart, lastNDaysRange } from '../components/campaigns/Posti
 import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { fallbackExternalUrl } from '../lib/platform';
 import { EmptyState, Page, PageHeader, Section } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { Row, RowList } from '../ui/Rows';
 import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
@@ -244,7 +244,7 @@ export function CampaignHistory() {
 
   return (
     <Page ref={paginationRef} density="compact" aria-busy={view === 'list' && isLoading}>
-      <PageHeader title="History" description="Audit log of your posts." backLink={{ to: '/campaigns', label: 'Back' }} />
+      <PageHeader title="History" description="Audit log of your posts." backLink={{ to: '/campaigns', label: 'Back to Campaigns' }} />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Segmented<'list' | 'chart'>
@@ -343,14 +343,7 @@ export function CampaignHistory() {
             })}
           </RowList>
         )}
-        {view === 'list' && totalPages > 1 && (
-          <div className="v2-paged-footer">
-            <Text variant="label-medium" className="text-on-surface-variant">
-              Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
-            </Text>
-            <Pagination page={page} pages={totalPages} onPageChange={updatePage} />
-          </div>
-        )}
+        {view === 'list' && <PagedFooter page={page} pageSize={pageSize} total={total} pages={totalPages} onPageChange={updatePage} />}
       </div>
     </Page>
   );

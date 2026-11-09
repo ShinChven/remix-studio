@@ -145,17 +145,17 @@ export function CampaignPostDetail() {
   if (loading && !post) return <LoadingState label="Loading post..." minHeight={400} />;
   if (!post) {
     return (
-      <EmptyState
-        icon="error"
-        title="Post not found"
-        action={
-          backCampaignId && (
-            <Button variant="tonal" icon="arrow_back" href={`/campaigns/${backCampaignId}`}>
-              Back to Campaign
+      <Page width="narrow">
+        <EmptyState
+          icon="error"
+          title="Post not found"
+          action={
+            <Button variant="tonal" icon="arrow_back" href={backCampaignId ? `/campaigns/${backCampaignId}` : '/campaigns'}>
+              {backCampaignId ? 'Back to Campaign' : 'Back to Campaigns'}
             </Button>
-          )
-        }
-      />
+          }
+        />
+      </Page>
     );
   }
 
@@ -166,7 +166,7 @@ export function CampaignPostDetail() {
       : `Publish this post${accounts.length > 0 ? ` to ${accounts.length} connected channel${accounts.length === 1 ? '' : 's'}` : ''} right now? It goes live immediately and cannot be unsent.`;
 
   return (
-    <Page width="default" density="compact">
+    <Page density="compact">
       <PageHeader
         title="Post Detail"
         description={post.campaign?.name || 'Campaign post'}
@@ -212,7 +212,7 @@ export function CampaignPostDetail() {
           </div>
         </header>
         {post.textContent?.trim() && (
-          <Text variant="body-large" className="whitespace-pre-wrap">
+          <Text variant="body-large" className="whitespace-pre-wrap [overflow-wrap:anywhere]">
             {post.textContent}
           </Text>
         )}

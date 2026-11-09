@@ -5,7 +5,7 @@ import { Pagination } from './Pagination';
 export const PAGE_SIZE_OPTIONS: (number | 'all')[] = [25, 50, 100, 200, 500, 'all'];
 
 /** Page size menu: its own control so "All" can be switched back from. */
-export function PageSizeSelect({ value, onChange, className, 'aria-label': ariaLabel }: { value: number | 'all'; onChange: (value: number | 'all') => void; className?: string; 'aria-label'?: string }) {
+export function PageSizeSelect({ value, onChange, options = PAGE_SIZE_OPTIONS, className, 'aria-label': ariaLabel }: { value: number | 'all'; onChange: (value: number | 'all') => void; options?: (number | 'all')[]; className?: string; 'aria-label'?: string }) {
   const { t } = useTranslation();
   return (
     <Select
@@ -13,7 +13,7 @@ export function PageSizeSelect({ value, onChange, className, 'aria-label': ariaL
       aria-label={ariaLabel ?? t('pagination.pageSize')}
       value={String(value)}
       onChange={(next) => onChange(next === 'all' ? 'all' : Number(next))}
-      options={PAGE_SIZE_OPTIONS.map((option) => ({ value: String(option), label: option === 'all' ? t('pagination.all') : String(option) }))}
+      options={options.map((option) => ({ value: String(option), label: option === 'all' ? t('pagination.all') : String(option) }))}
       className={cx('v2-inline-select v2-inline-select--narrow v2-page-size', className)}
     />
   );
@@ -25,14 +25,20 @@ export interface PagedFooterProps {
   total: number;
   pages: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number | 'all') => void;
+  /** Omit for a list with a fixed page size. */
+  onPageSizeChange?: (size: number | 'all') => void;
+  /** Page sizes of a list with its own set; the size menu then stays while the list outgrows the smallest. */
+  pageSizeOptions?: number[];
   className?: string;
 }
 
 /** Range, page size and page navigation under a paged list; hidden when everything fits. */
-export function PagedFooter({ page, pageSize, total, pages, onPageChange, onPageSizeChange, className }: PagedFooterProps) {
+export function PagedFooter({ page, pageSize, total, pages, onPageChange, onPageSizeChange, pageSizeOptions, className }: PagedFooterProps) {
   const { t } = useTranslation();
-  if (pageSize === 'all' || total <= pageSize) return null;
+  if (pageSize === 'all') return null;
+  const paged = total > pageSize;
+  const sizable = Boolean(onPageSizeChange) && (paged || (pageSizeOptions !== undefined && total > Math.min(...pageSizeOptions)));
+  if (!paged && !sizable) return null;
   const effective = Math.max(1, pages);
   const current = Math.min(Math.max(1, page), effective);
   const start = (current - 1) * pageSize + 1;
@@ -43,11 +49,15 @@ export function PagedFooter({ page, pageSize, total, pages, onPageChange, onPage
         {t('pagination.range', { start, end, total })}
       </Text>
       <div className="flex flex-wrap items-center justify-center gap-3">
-        <PageSizeSelect value={pageSize} onChange={onPageSizeChange} />
-        <Text variant="label-medium" className="text-on-surface-variant">
-          {t('pagination.pageOf', { page: current, pages: effective })}
-        </Text>
-        <Pagination page={current} pages={effective} onPageChange={onPageChange} />
+        {sizable && onPageSizeChange && <PageSizeSelect value={pageSize} onChange={onPageSizeChange} options={pageSizeOptions} />}
+        {paged && (
+          <>
+            <Text variant="label-medium" className="text-on-surface-variant">
+              {t('pagination.pageOf', { page: current, pages: effective })}
+            </Text>
+            <Pagination page={current} pages={effective} onPageChange={onPageChange} />
+          </>
+        )}
       </div>
     </div>
   );

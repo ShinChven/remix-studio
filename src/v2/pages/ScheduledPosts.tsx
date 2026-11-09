@@ -6,7 +6,7 @@ import { formatShortDate } from '../../lib/date';
 import { Button, cx, Icon, IconButton, Text } from '../../m3';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { Row, RowList } from '../ui/Rows';
 import { SearchField } from '../ui/SearchField';
 import { Segmented } from '../ui/Toolbar';
@@ -240,7 +240,7 @@ export function ScheduledPosts() {
         title={
           <span className="flex flex-wrap items-center gap-3">
             Scheduled Posts
-            {totalScheduled !== null && <span className="v2-count">{totalScheduled} total</span>}
+            {totalScheduled !== null && totalScheduled > 0 && <span className="v2-count">{totalScheduled} total</span>}
           </span>
         }
         description="View and manage your upcoming social media posts."
@@ -260,12 +260,9 @@ export function ScheduledPosts() {
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search scheduled posts..." className="v2-header-search" />
-            <Button variant="tonal" size="sm" icon="search" onClick={applySearch}>
-              Search
-            </Button>
-            {total > 0 && (
-              <Text variant="label-medium" className="ms-auto text-on-surface-variant">
-                {`Showing ${(page - 1) * 25 + 1}–${(page - 1) * 25 + posts.length} of ${total}${q ? ' matching' : ''} ${total === 1 ? 'post' : 'posts'}`}
+            {q && total > 0 && (
+              <Text variant="label-medium" className="ms-auto tabular-nums text-on-surface-variant">
+                {total} matching {total === 1 ? 'post' : 'posts'}
               </Text>
             )}
           </div>
@@ -306,20 +303,13 @@ export function ScheduledPosts() {
               })}
             </RowList>
           )}
-          {totalPages > 1 && (
-            <div className="v2-paged-footer">
-              <Text variant="label-medium" className="text-on-surface-variant">
-                Page {page} of {totalPages} · {total} {total === 1 ? 'post' : 'posts'}
-              </Text>
-              <Pagination page={page} pages={totalPages} onPageChange={updatePage} />
-            </div>
-          )}
+          <PagedFooter page={page} pageSize={25} total={total} pages={totalPages} onPageChange={updatePage} />
         </div>
       ) : (
         <Section
           variant="card"
           title={currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
-          description={!isLoading ? `${monthTotal} ${monthTotal === 1 ? 'post' : 'posts'} this month${totalScheduled !== null ? ` · ${totalScheduled} total` : ''}` : undefined}
+          description={!isLoading ? `${monthTotal} ${monthTotal === 1 ? 'post' : 'posts'} this month${totalScheduled ? ` · ${totalScheduled} total` : ''}` : undefined}
           actions={
             <>
               <IconButton icon="chevron_left" variant="tonal" label="Previous month" onClick={prevMonth} className="m3-mirror-rtl" />

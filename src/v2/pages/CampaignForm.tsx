@@ -118,7 +118,7 @@ export function CampaignForm() {
   const platforms = Array.from(new Set(accounts.map((a) => a.platform))).filter(Boolean);
 
   return (
-    <Page width="default" density="compact">
+    <Page density="compact">
       <PageHeader
         title={isEditing ? 'Edit Campaign' : 'Create New Campaign'}
         description={isEditing ? 'Update your campaign settings and target channels.' : 'Set up a new campaign and select which channels will participate.'}
