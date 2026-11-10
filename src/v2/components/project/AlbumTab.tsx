@@ -22,7 +22,7 @@ import { TagDialog } from '../TagDialog';
 import { AlbumBatchTagDialog, AlbumDetailDialog, ExportPackageDialog, TextAlbumCompareDialog, TextAlbumDetailDialog, type AlbumBatchTagMode } from './AlbumDialogs';
 import { AlbumTransferDialog, albumFilename, type AlbumTransferAction } from './AlbumTransferDialog';
 import { shortDate } from './JobRow';
-import { DangerAction, ResultsBar } from './ResultsBar';
+import { ResultsBar, SelectionFloatBar, type SelectionAction } from './ResultsBar';
 
 export interface AlbumLightboxData {
   images: string[];
@@ -316,7 +316,6 @@ export function AlbumTab(props: AlbumTabProps) {
   const selectionMore: ActionMenuItem[] = [
     { key: 'autotag', hidden: !canAutoTag, label: t('projectViewer.album.autoTagSelected'), icon: 'wand_stars', onSelect: () => setAutoTagOpen(true) },
     { key: 'copy', label: t('projectViewer.transfer.copyTo'), icon: 'content_copy', onSelect: () => setTransferAction('copy') },
-    { key: 'move', label: t('projectViewer.transfer.moveTo'), icon: 'drive_file_move', onSelect: () => setTransferAction('move') },
     { key: 'compare', hidden: !(isText && selectedIds.length > 1), label: t('projectViewer.album.compareSelected'), icon: 'view_column', onSelect: () => setCompareOpen(true) },
   ];
 
@@ -402,14 +401,12 @@ export function AlbumTab(props: AlbumTabProps) {
     </>
   );
 
-  const selectionActions = (
-    <>
-      <IconButton icon="folder_zip" size="sm" label={t('projectViewer.album.exportSelected')} tooltip onClick={() => openExport(false)} />
-      <IconButton icon="sell" size="sm" label={t('projectViewer.album.tagSelected')} tooltip onClick={() => setBatchTagOpen(true)} />
-      <ActionMenu label={t('v2.project.moreActions')} items={selectionMore} size="sm" openOnHover />
-      <DangerAction label={t('projectViewer.common.deleteSelected')} onClick={() => deleteItems(selectedItems)} />
-    </>
-  );
+  const selectionActions: SelectionAction[] = [
+    { key: 'export', label: t('v2.project.selectionExport'), icon: 'folder_zip', onClick: () => openExport(false) },
+    { key: 'tag', label: t('v2.project.selectionTag'), icon: 'sell', onClick: () => setBatchTagOpen(true) },
+    { key: 'move', label: t('v2.project.selectionMove'), icon: 'drive_file_move', onClick: () => setTransferAction('move') },
+    { key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, onClick: () => deleteItems(selectedItems) },
+  ];
 
   const filterRow = filtered && (
     <>
@@ -492,7 +489,7 @@ export function AlbumTab(props: AlbumTabProps) {
         summary={total > 0 && (isText || isAudio ? t('v2.project.itemCount', { count: total }) : `${t('v2.project.itemCount', { count: total })} · ${formatBytes(totalSize)}`)}
         tools={tools}
         menuItems={total > 0 ? scopeActions : []}
-        selectionActions={selectionActions}
+        selection="floating"
         below={filterRow}
       />
 
@@ -640,6 +637,7 @@ export function AlbumTab(props: AlbumTabProps) {
 
       {total > 0 && <PagedFooter className="v2-results-footer" page={page} pageSize={pageSize} total={total} pages={pages} onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />}
       {total > 0 && albumItems.length > 0 && <p className="v2-results-total">{isText ? t('v2.project.itemCount', { count: total }) : `${t('v2.project.itemCount', { count: total })} · ${formatBytes(totalSize)}`}</p>}
+      <SelectionFloatBar selectedCount={selectedIds.length} totalCount={albumItems.length} onToggleSelectAll={() => toggleSelectAllAlbum(itemIds)} onClearSelection={props.clearAlbumSelection} actions={selectionActions} menuItems={selectionMore} />
 
       <Dialog open={videoItem !== null} onClose={() => setVideoItem(null)} maxWidth={1100} className="v2-video-dialog" headline={videoItem ? albumFilename(videoItem) : undefined} actions={<Button variant="text" onClick={() => setVideoItem(null)}>{t('projectViewer.common.close')}</Button>}>
         {videoItem && (

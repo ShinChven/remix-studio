@@ -8,7 +8,7 @@ import { EmptyState } from '../../ui/Page';
 import { PagedFooter } from '../../ui/PagedFooter';
 import { JobDetails, type OpenLightbox } from './JobDetails';
 import { JobRow, shortDate } from './JobRow';
-import { DangerAction, ResultsBar } from './ResultsBar';
+import { ResultsBar, SelectionFloatBar } from './ResultsBar';
 
 /**
  * A job list that only mounts the rows near the viewport, so thousands of drafts stay fast. It
@@ -118,14 +118,7 @@ export function DraftsTab(props: DraftsTabProps) {
             </>
           )
         }
-        selectionActions={
-          <>
-            <DangerAction label={t('projectViewer.common.deleteSelected')} disabled={starting} onClick={() => props.setShowDeleteSelectedModal(true)} />
-            <Button variant="filled" size="sm" icon="play_arrow" loading={starting} onClick={props.runSelectedDrafts}>
-              {t('v2.project.start')}
-            </Button>
-          </>
-        }
+        selection="floating"
       />
       {starting && <LinearProgress className="v2-results-progress" aria-label={t('projectViewer.drafts.starting', { defaultValue: 'Starting jobs' })} />}
       {draftJobs.length === 0 ? (
@@ -164,6 +157,16 @@ export function DraftsTab(props: DraftsTabProps) {
           )}
         />
       )}
+      <SelectionFloatBar
+        selectedCount={selectedDraftIds.size}
+        totalCount={draftJobs.length}
+        onToggleSelectAll={props.toggleSelectAllDrafts}
+        onClearSelection={props.clearDraftSelection}
+        actions={[
+          { key: 'start', label: t('v2.project.start'), icon: 'play_arrow', variant: 'filled', loading: starting, onClick: props.runSelectedDrafts },
+          { key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, disabled: starting, onClick: () => props.setShowDeleteSelectedModal(true) },
+        ]}
+      />
     </section>
   );
 }
@@ -274,16 +277,7 @@ export function QueueTab(props: QueueTabProps) {
             </Button>
           )
         }
-        selectionActions={
-          <>
-            <DangerAction label={t('projectViewer.common.deleteSelected')} disabled={retrying} onClick={props.deleteSelectedQueue} />
-            {queueJobs.some((j) => selectedQueueIds.has(j.id) && j.status === 'failed') && (
-              <Button variant="filled" size="sm" icon="replay" loading={isRetryingQueueBatch} disabled={retrying} onClick={props.retrySelectedQueue}>
-                {isRetryingQueueBatch ? t('projectViewer.queue.retrying') : t('projectViewer.queue.retry')}
-              </Button>
-            )}
-          </>
-        }
+        selection="floating"
       />
       {retrying && <LinearProgress className="v2-results-progress" aria-label={t('projectViewer.queue.retrying')} />}
       {queueJobs.length === 0 ? (
@@ -329,6 +323,25 @@ export function QueueTab(props: QueueTabProps) {
           }}
         />
       )}
+      <SelectionFloatBar
+        selectedCount={selectedQueueIds.size}
+        totalCount={queueJobs.length}
+        onToggleSelectAll={props.toggleSelectAllQueue}
+        onClearSelection={props.clearQueueSelection}
+        actions={[
+          {
+            key: 'retry',
+            label: isRetryingQueueBatch ? t('projectViewer.queue.retrying') : t('projectViewer.queue.retry'),
+            icon: 'replay',
+            variant: 'filled',
+            loading: isRetryingQueueBatch,
+            disabled: retrying,
+            hidden: !queueJobs.some((j) => selectedQueueIds.has(j.id) && j.status === 'failed'),
+            onClick: props.retrySelectedQueue,
+          },
+          { key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, disabled: retrying, onClick: props.deleteSelectedQueue },
+        ]}
+      />
     </section>
   );
 }
@@ -380,7 +393,7 @@ export function CompletedTab(props: CompletedTabProps) {
             />
           )
         }
-        selectionActions={<DangerAction label={t('projectViewer.common.deleteSelected')} onClick={() => props.setShowDeleteSelectedModal(true)} />}
+        selection="floating"
       />
       {isLoading && completedJobs.length === 0 ? (
         <div className="v2-results-loading">
@@ -414,6 +427,13 @@ export function CompletedTab(props: CompletedTabProps) {
           <PagedFooter className="v2-results-footer" page={props.page} pageSize={props.pageSize} total={total} pages={props.pages} onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />
         </>
       )}
+      <SelectionFloatBar
+        selectedCount={selectedCompletedIds.size}
+        totalCount={completedJobs.length}
+        onToggleSelectAll={props.toggleSelectAllCompleted}
+        onClearSelection={props.clearCompletedSelection}
+        actions={[{ key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, onClick: () => props.setShowDeleteSelectedModal(true) }]}
+      />
     </section>
   );
 }

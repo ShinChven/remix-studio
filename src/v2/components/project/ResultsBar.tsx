@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, cx, Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
@@ -103,27 +103,17 @@ export interface ResultsBarProps {
   below?: ReactNode;
   /** A small spinner while the list behind refreshes, so it never covers a row. */
   isLoading?: boolean;
+  /** 'floating': the bar keeps its sections and tools while selecting, and a SelectionFloatBar carries the actions. */
+  selection?: 'inline' | 'floating';
 }
 
 /** The results pane's top bar: sections and tools, turning into a contextual selection bar while anything is selected. */
-export function ResultsBar({ nav, totalCount, mobileCount, selectedCount, onToggleSelectAll, onClearSelection, selectionActions, tools, menuItems = [], summary, below, isLoading = false }: ResultsBarProps) {
+export function ResultsBar({ nav, totalCount, mobileCount, selectedCount, onToggleSelectAll, onClearSelection, selectionActions, tools, menuItems = [], summary, below, isLoading = false, selection = 'inline' }: ResultsBarProps) {
   const { t } = useTranslation();
-  const selecting = selectedCount > 0;
+  const selecting = selection === 'inline' && selectedCount > 0;
   const allSelected = selecting && selectedCount >= totalCount;
 
-  // Escape leaves selection, unless a dialog, menu or field has it.
-  useEffect(() => {
-    if (!selecting) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || e.defaultPrevented) return;
-      const target = e.target as HTMLElement | null;
-      if (target?.closest('input:not([type="checkbox"], [type="radio"]), textarea, select, [contenteditable="true"], [role="menu"]')) return;
-      if (document.querySelector('[aria-modal="true"], .m3-dialog-root')) return;
-      onClearSelection();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selecting, onClearSelection]);
+  useEscapeClears(selecting, onClearSelection);
 
   return (
     <div className="v2-results-head">
@@ -163,6 +153,113 @@ export function ResultsBar({ nav, totalCount, mobileCount, selectedCount, onTogg
         )}
       </div>
       {below && !selecting && <div className={cx('v2-results-below')}>{below}</div>}
+    </div>
+  );
+}
+
+/** Escape leaves selection, unless a dialog, menu or field has it. */
+function useEscapeClears(active: boolean, onClear: () => void) {
+  useEffect(() => {
+    if (!active) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest('input:not([type="checkbox"], [type="radio"]), textarea, select, [contenteditable="true"], [role="menu"]')) return;
+      if (document.querySelector('[aria-modal="true"], .m3-dialog-root')) return;
+      onClear();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [active, onClear]);
+}
+
+export interface SelectionAction {
+  key: string;
+  label: string;
+  icon: string;
+  onClick: () => void;
+  variant?: 'filled' | 'tonal';
+  danger?: boolean;
+  disabled?: boolean;
+  loading?: boolean;
+  hidden?: boolean;
+}
+
+/**
+ * The selection's actions in a pill that floats at the foot of the results pane. Put it last in
+ * the section: it sits at the foot of the pane and sticks to the bottom of the scroller. Actions show their labels where the
+ * pane has room and turn into icon buttons where it does not.
+ */
+export function SelectionFloatBar({ selectedCount, totalCount, onToggleSelectAll, onClearSelection, actions, menuItems = [], label }: { selectedCount: number; totalCount: number; onToggleSelectAll: () => void; onClearSelection: () => void; actions: SelectionAction[]; menuItems?: ActionMenuItem[]; label?: string }) {
+  const { t } = useTranslation();
+  const selecting = selectedCount > 0;
+  const allSelected = selecting && selectedCount >= totalCount;
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [paneWidth, setPaneWidth] = useState(Infinity);
+  // The widths the bar takes with every label, and with Select all as an icon; 0 until measured for the current actions.
+  const [needed, setNeeded] = useState({ full: 0, slim: 0 });
+  useEscapeClears(selecting, onClearSelection);
+
+  const visible = actions.filter((action) => !action.hidden);
+  const signature = [selectedCount, totalCount, ...visible.map((action) => `${action.key}:${action.label}`)].join('|');
+  // Labels show where the pane has room for them, measured rather than guessed. Select all gives
+  // up its label first, then the actions do.
+  const room = paneWidth - 24;
+  const slimSelectAll = needed.full > 0 && room < needed.full;
+  const compact = needed.slim > 0 && room < needed.slim;
+
+  useLayoutEffect(() => setNeeded({ full: 0, slim: 0 }), [signature]);
+  useLayoutEffect(() => {
+    if (needed.full > 0 || !anchor) return;
+    const row = anchor.querySelector<HTMLElement>('.v2-float-bar__actions');
+    const selectAll = anchor.querySelector<HTMLElement>('[data-select-all]');
+    const full = anchor.offsetWidth + (row ? row.scrollWidth - row.clientWidth : 0) + 1;
+    setNeeded({ full, slim: full - (selectAll ? selectAll.offsetWidth - 40 : 0) });
+  });
+  useLayoutEffect(() => {
+    const pane = anchor?.parentElement;
+    if (!pane) return;
+    const update = () => setPaneWidth(pane.clientWidth);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(pane);
+    return () => observer.disconnect();
+  }, [anchor]);
+
+  if (!selecting) return null;
+  const selectAllIcon = allSelected ? 'deselect' : 'select_all';
+  const selectAllLabel = allSelected ? t('v2.project.deselectAll') : t('v2.project.selectAll', { count: totalCount });
+  const onSelectAll = allSelected ? onClearSelection : onToggleSelectAll;
+  return (
+    <div ref={setAnchor} className="v2-float-bar v2-float-bar--pane" data-compact={compact ? '' : undefined} role="toolbar" aria-label={label ?? t('v2.project.selected', { count: selectedCount })}>
+      <IconButton icon="close" size="sm" label={t('v2.common.clearSelection')} tooltip onClick={onClearSelection} />
+      <Text as="span" variant="label-large" emphasized className="tabular-nums whitespace-nowrap">
+        {t('v2.project.selected', { count: selectedCount })}
+      </Text>
+      {compact ? null : slimSelectAll ? (
+        <IconButton icon={selectAllIcon} size="sm" label={selectAllLabel} tooltip onClick={onSelectAll} />
+      ) : (
+        <Button data-select-all="" variant="tonal" size="sm" icon={selectAllIcon} onClick={onSelectAll}>
+          {selectAllLabel}
+        </Button>
+      )}
+      <span className="v2-float-bar__actions">
+        {visible.map((action) =>
+          compact ? (
+            <IconButton key={action.key} icon={action.icon} size="sm" variant={action.variant} label={action.label} tooltip disabled={action.disabled || action.loading} className={action.danger ? 'v2-icon-danger' : undefined} onClick={action.onClick} />
+          ) : (
+            <Button key={action.key} variant={action.variant ?? 'text'} size="sm" icon={action.icon} loading={action.loading} disabled={action.disabled} className={action.danger ? 'v2-button-danger' : undefined} onClick={action.onClick}>
+              {action.label}
+            </Button>
+          ),
+        )}
+        <ActionMenu
+          label={t('v2.project.moreActions')}
+          items={compact ? [{ key: 'select-all', icon: selectAllIcon, label: selectAllLabel, onSelect: onSelectAll }, ...menuItems.map((item, index) => (index === 0 ? { ...item, divider: true } : item))] : menuItems}
+          size="sm"
+          placement="top-end"
+        />
+      </span>
     </div>
   );
 }
