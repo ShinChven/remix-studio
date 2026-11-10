@@ -27,6 +27,49 @@
     })();
   </script>
   <script>
+    (() => {
+      const RELOAD_KEY = 'remix:asset-reload';
+      const reloadOnce = () => {
+        try {
+          const now = Date.now();
+          const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+          if (now - last < 10000) return false;
+          sessionStorage.setItem(RELOAD_KEY, String(now));
+        } catch {}
+        window.location.reload();
+        return true;
+      };
+      window.__remixReloadOnStaleAsset = reloadOnce;
+
+      window.addEventListener('vite:preloadError', (event) => {
+        event.preventDefault();
+        reloadOnce();
+      });
+
+      window.addEventListener('error', (event) => {
+        const target = event && event.target;
+        if (!target || !target.tagName) return;
+        const url = target.src || target.href || '';
+        if ((target.tagName === 'SCRIPT' || target.tagName === 'LINK') && url.includes('/assets/')) {
+          reloadOnce();
+        }
+      }, true);
+
+      window.addEventListener('unhandledrejection', (event) => {
+        const msg = String((event && event.reason && (event.reason.message || event.reason)) || '');
+        if (
+          msg.includes('Failed to fetch dynamically imported module') ||
+          msg.includes('Importing a module script failed') ||
+          msg.includes('error loading dynamically imported module') ||
+          msg.includes('Unable to preload CSS')
+        ) {
+          event.preventDefault();
+          reloadOnce();
+        }
+      });
+    })();
+  </script>
+  <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((err) => {
