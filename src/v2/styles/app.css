@@ -5368,6 +5368,16 @@
 .v2-batch-sources { display: flex; flex-wrap: wrap; align-items: center; gap: var(--md-sys-measurement-space100); padding-top: var(--md-sys-measurement-space150); border-top: 1px solid var(--md-sys-color-outline-variant); }
 .v2-float-bar--confirm { margin-top: var(--md-sys-measurement-space200); margin-inline: auto; width: fit-content; padding-inline-start: var(--md-sys-measurement-space300); }
 .v2-float-bar__progress { width: 120px; flex-shrink: 1; }
+/* In the project results pane: last in the section, so it rides the bottom of the scroller. */
+.v2-float-bar--pane { max-width: calc(100% - 24px); margin-block: auto var(--md-sys-measurement-space200); }
+/* The bar takes the free space above it, so the footer stays under the list. */
+.v2-results-section:has(> .v2-float-bar--pane) > :is(.v2-results-footer, .v2-results-total) { margin-top: 0; }
+.v2-float-bar--pane .v2-float-bar__actions { padding-inline-start: 4px; }
+.v2-float-bar--pane[data-compact] { gap: 4px; padding-inline: 6px; }
+@media (max-width: 1023.98px) {
+  /* Above the floating workflow/jobs switch. */
+  .v2-project .v2-float-bar--pane { bottom: 88px; }
+}
 
 /* ---------- Assistant settings ---------- */
 .v2-steps { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
