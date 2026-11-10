@@ -74,6 +74,7 @@ import { ModelSelectorDialog } from '../components/project/ModelSelectorDialog';
 import { PromptEditDialog } from '../components/project/PromptEditDialog';
 import { PromptLimitDialog } from '../components/project/PromptLimitDialog';
 import { ResultsBar, SectionNav, type SectionNavItem } from '../components/project/ResultsBar';
+import { withStableAlbumUrls } from '../lib/stableAlbumUrls';
 import { WorkflowPanel } from '../components/project/WorkflowPanel';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
@@ -571,14 +572,14 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         q: albumSearch,
       });
       if (albumFetchTokenRef.current !== signalToken || isDeletingAlbumItemsRef.current) return;
-      setLocalAlbum(res.items);
+      setLocalAlbum((current) => withStableAlbumUrls(current, res.items));
       setAlbumTotal(res.total);
       setAlbumPages(res.pages);
       setAlbumTotalSize(res.totalSize);
       setAlbumAspectRatioCounts(res.aspectRatioCounts);
       setAlbumTagCounts(res.tagCounts || []);
       if (albumPage === 1 && albumSort === 'newest' && albumSelectedRatios.length === 0 && albumSelectedTags.length === 0 && !albumSearch.trim()) {
-        setAlbumPreviewItems(res.items.slice(0, 5));
+        setAlbumPreviewItems((current) => withStableAlbumUrls(current, res.items.slice(0, 5)));
       }
       albumLoadedKeyRef.current = albumQueryKey;
       albumFetchedAtRef.current = Date.now();
@@ -1001,17 +1002,18 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         setAlbumAspectRatioCounts(updatedAlbumRes.aspectRatioCounts);
         setAlbumTagCounts(updatedAlbumRes.tagCounts || []);
         if (tab === 'album') {
-          if (JSON.stringify(updatedAlbumRes.items) !== JSON.stringify(localAlbumRef.current)) {
-            setLocalAlbum(updatedAlbumRes.items);
+          const nextAlbum = withStableAlbumUrls(localAlbumRef.current, updatedAlbumRes.items);
+          if (nextAlbum.length !== localAlbumRef.current.length || nextAlbum.some((item, i) => item !== localAlbumRef.current[i])) {
+            setLocalAlbum(nextAlbum);
           }
           if (query.albumPage === 1 && query.albumSort === 'newest' && query.albumSelectedRatios.length === 0 && query.albumSelectedTags.length === 0 && !query.albumSearch.trim()) {
-            setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
+            setAlbumPreviewItems((current) => withStableAlbumUrls(current, updatedAlbumRes.items.slice(0, 5)));
           }
           setAlbumPages(updatedAlbumRes.pages);
           albumLoadedKeyRef.current = query.albumQueryKey;
           albumFetchedAtRef.current = Date.now();
         } else {
-          setAlbumPreviewItems(updatedAlbumRes.items.slice(0, 5));
+          setAlbumPreviewItems((current) => withStableAlbumUrls(current, updatedAlbumRes.items.slice(0, 5)));
           // Keep the cached rows intact while the user is on another tab. Mark
           // them stale so returning to Album shows the cache immediately and
           // revalidates it in the background.
