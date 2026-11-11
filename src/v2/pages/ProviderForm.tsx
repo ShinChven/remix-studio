@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { createProvider, fetchProvider, updateProvider } from '../../api';
-import { Button, Icon, IconButton, Ripple, Shape, Text, TextField, useSnackbar } from '../../m3';
+import { Button, Icon, IconButton, Ripple, Shape, Text, TextField } from '../../m3';
 import { PROVIDER_MODELS_MAP, type ProviderType } from '../../types';
 import { ModelRows, useModelEntries } from '../components/providers/ModelRows';
 import { ProviderHero } from '../components/providers/ProviderHero';
@@ -12,6 +12,8 @@ import { kindMeta } from '../ui/entityMeta';
 import { KindBadge } from '../ui/KindBadge';
 import { NumberField } from '../ui/NumberField';
 import { ErrorState, LoadingState, Page } from '../ui/Page';
+import { useToast } from '../ui/useToast';
+import { useCopy } from '../lib/useCopy';
 
 /** A secret field that never offers itself to password managers: masked text, not a password. */
 function SecretField({ label, value, onChange, placeholder, supporting }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; supporting?: string }) {
@@ -94,7 +96,8 @@ function ServiceOption({ type, selected, onSelect }: { type: ProviderType; selec
 
 export function ProviderForm() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const copyText = useCopy();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
   const navigate = useNavigate();
@@ -167,11 +170,11 @@ export function ProviderForm() {
       };
       if (isEditing) {
         await updateProvider(id!, payload);
-        snackbar.show(t('v2.providers.form.saved'));
+        toast.success(t('v2.providers.form.saved'));
         navigate(`/provider/${id}`);
       } else {
         const createdId = await createProvider(payload as never);
-        snackbar.show({ message: t('v2.providers.form.connected', { name: payload.name }), action: { label: t('v2.providers.open'), onClick: () => navigate(`/provider/${createdId}`) } });
+        toast.success(t('v2.providers.form.connected', { name: payload.name }), { action: { label: t('v2.providers.open'), onClick: () => navigate(`/provider/${createdId}`) } });
         navigate('/providers');
       }
     } catch (err) {
@@ -185,12 +188,7 @@ export function ProviderForm() {
   const models = useModelEntries(configs);
   const groups = modelsByKind(models);
 
-  const copy = (text: string) => {
-    void navigator.clipboard
-      .writeText(text)
-      .then(() => snackbar.show(t('v2.providers.copied')))
-      .catch(() => snackbar.show(t('v2.providers.copyFailed')));
-  };
+  const copy = (text: string) => void copyText(text, t('v2.providers.copied'), t('v2.providers.copyFailed'));
 
   if (isLoading) return <LoadingState minHeight={400} />;
 

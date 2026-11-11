@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createMediaDevice, deleteMediaDevice, fetchMediaDevices, updateMediaDevice, type DlnaStatus, type MediaDeviceKind, type MediaDeviceSummary } from '../../../api';
-import { Button, Icon, IconButton, Text, TextField, useSnackbar } from '../../../m3';
+import { Button, Icon, IconButton, Text, TextField } from '../../../m3';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { CopyField, StaticField } from '../../ui/CopyField';
 import { ErrorState, Section } from '../../ui/Page';
 import { Row, RowList } from '../../ui/Rows';
 import { StatusPill } from '../../ui/Stat';
 import { isScopeValid, ProjectScopePicker } from './ProjectScopePicker';
+import { useToast } from '../../ui/useToast';
 
 const formatDate = (ms: number) => new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
@@ -64,7 +65,7 @@ function DeviceForm({ initialName, initialScope, namePlaceholder, submitLabel, o
 /** TV mode, WebDAV tokens and DLNA servers that read the user's media. */
 export function MediaDevicesPanel() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [devices, setDevices] = useState<MediaDeviceSummary[] | null>(null);
   const [dlna, setDlna] = useState<DlnaStatus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -94,10 +95,10 @@ export function MediaDevicesPanel() {
       const result = await createMediaDevice(kind, name, scope);
       setCreating(null);
       if (result.token) setNewToken(result.token);
-      snackbar.show(t('mediaShare.toasts.added'));
+      toast.success(t('mediaShare.toasts.added'));
       await load();
     } catch (e) {
-      snackbar.show((e as Error).message);
+      toast.error((e as Error).message);
     }
   };
 
@@ -105,10 +106,10 @@ export function MediaDevicesPanel() {
     try {
       await updateMediaDevice(id, { name, projectIds: scope });
       setEditingId(null);
-      snackbar.show(t('mediaShare.toasts.saved'));
+      toast.success(t('mediaShare.toasts.saved'));
       await load();
     } catch (e) {
-      snackbar.show((e as Error).message);
+      toast.error((e as Error).message);
     }
   };
 
@@ -303,10 +304,10 @@ export function MediaDevicesPanel() {
           if (!removeTarget) return;
           try {
             await deleteMediaDevice(removeTarget.id);
-            snackbar.show(t('mediaShare.toasts.removed'));
+            toast.success(t('mediaShare.toasts.removed'));
             await load();
           } catch (e) {
-            snackbar.show((e as Error).message);
+            toast.error((e as Error).message);
             throw e;
           }
         }}

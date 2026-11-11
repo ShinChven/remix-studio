@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { IconButton, useSnackbar, type ButtonSize, type IconButtonVariant } from '../../m3';
+import { IconButton, type ButtonSize, type IconButtonVariant } from '../../m3';
 import { copyText, startResourceChat } from '../../lib/resource-ref';
+import { useToast } from '../ui/useToast';
 
 /** Copies an item's AI reference (built with `resourceRef`) without opening or selecting the item. */
 export function CopyRefButton({ reference, size = 'xs', variant = 'standard', className }: { reference: string; size?: ButtonSize; variant?: IconButtonVariant; className?: string }) {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -32,11 +33,11 @@ export function CopyRefButton({ reference, size = 'xs', variant = 'standard', cl
         try {
           await copyText(reference);
           setCopied(true);
-          snackbar.show(`${t('resourceRef.copied')} · ${reference}`);
+          toast.success(`${t('resourceRef.copied')} · ${reference}`);
           if (timer.current !== null) window.clearTimeout(timer.current);
           timer.current = window.setTimeout(() => setCopied(false), 1500);
         } catch {
-          snackbar.show(`${t('resourceRef.copyFailed')} · ${reference}`);
+          toast.error(`${t('resourceRef.copyFailed')} · ${reference}`);
         }
       }}
     />

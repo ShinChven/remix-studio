@@ -22,13 +22,16 @@ export interface PaginationProps {
   onPageChange: (page: number) => void;
   size?: 'xs' | 'sm';
   siblings?: number;
+  /** Only the neighbours and no first/last buttons. Defaults to compact windows; a footer passes what fits it. */
+  compact?: boolean;
   className?: string;
 }
 
 /** Page navigation. The list owns scrolling through usePaginationScroll. */
-export function Pagination({ page, pages, onPageChange, size = 'xs', siblings = 1, className }: PaginationProps) {
+export function Pagination({ page, pages, onPageChange, size = 'xs', siblings = 1, compact: compactProp, className }: PaginationProps) {
   const { t } = useTranslation();
-  const compact = useMediaQuery('(max-width: 599.98px)');
+  const narrowWindow = useMediaQuery('(max-width: 599.98px)');
+  const compact = compactProp ?? narrowWindow;
   const total = Math.max(1, pages);
   const current = Math.min(Math.max(1, page), total);
 

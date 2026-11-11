@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createProject, fetchProject, fetchProjectWorkflow, updateProject } from '../../api';
-import { Button, Dialog, Text, TextField, useSnackbar } from '../../m3';
+import { Button, Dialog, Text, TextField } from '../../m3';
 import type { CivitaiMediaType, Project, ProjectType, WorkflowItem } from '../../types';
 import { ChoiceTiles } from '../ui/ChoiceTiles';
 import { kindMeta } from '../ui/entityMeta';
 import { LoadingState, Section } from '../ui/Page';
+import { useToast } from '../ui/useToast';
 
 const TYPES: ProjectType[] = ['image', 'text', 'video', 'audio', 'comfyui', 'civitai'];
 
@@ -29,7 +30,7 @@ interface ProjectFormDialogProps {
 /** Creates, duplicates and edits a project. Full screen on phones, a dialog elsewhere. */
 export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: ProjectFormDialogProps) {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const isNew = !projectId;
 
   const [name, setName] = useState('');
@@ -68,7 +69,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
       } catch (error) {
         console.error('Failed to load project:', error);
         if (!cancelled) {
-          snackbar.show(t('projectForm.loadFailed'));
+          toast.error(t('projectForm.loadFailed'));
           onClose();
         }
       } finally {
@@ -141,7 +142,7 @@ export function ProjectFormDialog({ projectId, copyFromId, onClose, onSaved }: P
       onSaved({ id: targetId, name: trimmedName, description: trimmedDescription, prefix: trimmedPrefix, isNew });
     } catch (error) {
       console.error('Failed to save project:', error);
-      snackbar.show(t('projectForm.saveFailed'));
+      toast.error(t('projectForm.saveFailed'));
     } finally {
       setIsSubmitting(false);
     }

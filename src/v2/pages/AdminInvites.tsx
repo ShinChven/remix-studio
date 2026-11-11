@@ -1,21 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createAdminInvite, deleteAdminInvite, getAdminInvites } from '../../api';
-import { Button, DataTable, Dialog, IconButton, Select, Text, TextField, useSnackbar } from '../../m3';
+import { Button, DataTable, Dialog, IconButton, Select, Text, TextField } from '../../m3';
 import type { InviteCode } from '../../types';
 import { formatStorageTierOption, storageTierForKey, STORAGE_TIERS } from '../../lib/storage-tiers';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, Page, PageHeader } from '../ui/Page';
 import { NumberField } from '../ui/NumberField';
 import { StatusPill } from '../ui/Stat';
+import { useToast } from '../ui/useToast';
+import { useCopy } from '../lib/useCopy';
+import { useAsyncData } from '../lib/useAsyncData';
+import { errorText } from '../lib/errors';
 
 const TIERS = STORAGE_TIERS.map((tier) => ({ value: tier.key, label: formatStorageTierOption(tier) }));
 
 export function AdminInvites() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
-  const [invites, setInvites] = useState<InviteCode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+  const list = useAsyncData(getAdminInvites, []);
+  const invites = list.data ?? [];
+  const loading = list.loading;
+  const setInvites = (change: (current: InviteCode[]) => InviteCode[]) => list.setData((current) => change(current ?? []));
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [note, setNote] = useState('');
@@ -27,20 +33,6 @@ export function AdminInvites() {
 
   const formatDate = (value?: number) => (value ? new Date(value).toLocaleString() : t('adminUsers.never'));
   const tierLabel = (value: InviteCode['membershipTier']) => formatStorageTierOption(storageTierForKey(value));
-
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError('');
-      try {
-        setInvites(await getAdminInvites());
-      } catch (err) {
-        setError((err as Error).message || t('adminInvites.errors.load'));
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [t]);
 
   const resetForm = () => {
     setNote('');
@@ -56,24 +48,18 @@ export function AdminInvites() {
       setInvites((current) => [invite, ...current]);
       resetForm();
       setCreateOpen(false);
-      snackbar.show(t('adminInvites.toasts.created'));
+      toast.success(t('adminInvites.toasts.created'));
     } catch (err) {
       const message = (err as Error).message || t('adminInvites.errors.create');
       setError(message);
-      snackbar.show(message);
+      toast.error(message);
     } finally {
       setCreating(false);
     }
   };
 
-  const copy = async (value: string, message: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      snackbar.show(message);
-    } catch {
-      snackbar.show(t('adminInvites.toasts.copyFailed'));
-    }
-  };
+  const copyText = useCopy();
+  const copy = (value: string, message: string) => copyText(value, message, t('adminInvites.toasts.copyFailed'));
 
   return (
     <Page width="default" density="compact">
@@ -88,8 +74,9 @@ export function AdminInvites() {
           </Button>
         }
       />
+      {list.error && <ErrorState message={errorText(list.error, t('adminInvites.errors.load'))} onRetry={() => void list.reload()} retryLabel={t('v2.common.retry')} />}
       {error && <ErrorState message={error} />}
-      {!loading && invites.length === 0 ? (
+      {list.error && invites.length === 0 ? null : !loading && invites.length === 0 ? (
         <EmptyState icon="confirmation_number" shape="clover-4" title={t('adminInvites.noInvites')} />
       ) : (
         <DataTable<InviteCode>
@@ -203,11 +190,11 @@ export function AdminInvites() {
           try {
             await deleteAdminInvite(toDelete.id);
             setInvites((current) => current.filter((i) => i.id !== toDelete.id));
-            snackbar.show(t('adminInvites.toasts.deleted'));
+            toast.success(t('adminInvites.toasts.deleted'));
           } catch (err) {
             const message = (err as Error).message || t('adminInvites.errors.delete');
             setError(message);
-            snackbar.show(message);
+            toast.error(message);
           }
         }}
       />

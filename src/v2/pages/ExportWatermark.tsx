@@ -2,19 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { fetchPostWatermarkSettings, fetchProject, fetchProjectAlbum, imageDisplayUrl, startAlbumExport, updatePostWatermarkSettings, type AlbumExportVersion, type PostWatermarkSettings } from '../../api';
 import { projectMediaType } from '../../lib/project-media';
-import { Button, Icon, TextField, useSnackbar } from '../../m3';
+import { Button, Icon, TextField } from '../../m3';
 import type { AlbumItem, Project } from '../../types';
 import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { StatusPill } from '../ui/Stat';
 import { ThumbTile } from '../ui/ThumbTile';
 import { Segmented } from '../ui/Toolbar';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { formatBytes } from '../lib/format';
 
 type LocationState = { itemIds?: string[]; packageName?: string; exportVersion?: AlbumExportVersion };
 
 const defaultPackageName = (projectName?: string) => `${(projectName || 'Album').replace(/[^a-zA-Z0-9-_]/g, '_')}_watermark.zip`;
 const albumFilename = (item: AlbumItem) => decodeURIComponent((item.imageUrl || '').split('?')[0].split('/').pop() || '') || item.id;
-const formatSize = (bytes?: number) => (!bytes || bytes <= 0 ? null : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+const formatSize = (bytes?: number) => (!bytes || bytes <= 0 ? null : formatBytes(bytes));
 
 /** Album items a watermark export covers: from navigation state, a session scope key, or `ids`. */
 export function readScopedItemIds(searchParams: URLSearchParams, state: LocationState | null): string[] | undefined {
@@ -35,7 +38,7 @@ export function readScopedItemIds(searchParams: URLSearchParams, state: Location
 export function ExportWatermark() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const state = location.state as LocationState | null;
@@ -61,7 +64,7 @@ export function ExportWatermark() {
           fetchProjectAlbum(id, { limit: 999999, sort: 'newest' }),
           fetchPostWatermarkSettings().catch((error) => {
             console.warn('Failed to load watermark settings', error);
-            snackbar.show('Failed to load watermark settings');
+            toast.error('Failed to load watermark settings');
             return DEFAULT_WATERMARK_SETTINGS;
           }),
         ]);
@@ -72,7 +75,7 @@ export function ExportWatermark() {
         setPackageName((current) => current || defaultPackageName(proj.name));
       } catch (error) {
         if (!cancelled) {
-          snackbar.show((error as Error)?.message || 'Failed to load export page');
+          toast.error(errorText(error, 'Failed to load export page'));
           navigate(back);
         }
       } finally {
@@ -103,10 +106,10 @@ export function ExportWatermark() {
       await updatePostWatermarkSettings(watermark);
       setSavingWatermark(false);
       await startAlbumExport(id, scoped, packageName, version, { watermarkSettings: watermark });
-      snackbar.show('Watermark export queued');
+      toast.success('Watermark export queued');
       navigate('/exports');
     } catch (error) {
-      snackbar.show((error as Error)?.message || 'Failed to start watermark export');
+      toast.error(errorText(error, 'Failed to start watermark export'));
     } finally {
       setSavingWatermark(false);
       setSubmitting(false);

@@ -2,29 +2,26 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { deleteProjectImport, fetchProjectImports, uploadProjectBundle } from '../../api';
-import { Icon, IconButton, LinearProgress, Text, useSnackbar } from '../../m3';
+import { Icon, IconButton, LinearProgress, Text } from '../../m3';
 import type { ProjectImportTask } from '../../types';
-import { formatDateTime } from '../lib/format';
+import { formatBytes, formatDateTime } from '../lib/format';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { DropZone } from '../ui/DropZone';
 import { Page, PageHeader } from '../ui/Page';
 import { StatusPill } from '../ui/Stat';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { usePolling } from '../lib/usePolling';
 
 const IMPORTS_PAGE_SIZE = 5;
 const POLL_INTERVAL_MS = 3000;
 
-function formatSize(bytes?: number): string | null {
-  if (!bytes || bytes <= 0) return null;
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / 1024 ** index;
-  return `${parseFloat(value.toFixed(value >= 100 ? 0 : value >= 10 ? 1 : 2))} ${units[index]}`;
-}
+const formatSize = (bytes?: number) => (!bytes || bytes <= 0 ? null : formatBytes(bytes));
 
 /** Upload a project bundle and watch it unpack. */
 export function ProjectImport() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [imports, setImports] = useState<ProjectImportTask[]>([]);
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [toDelete, setToDelete] = useState<string | null>(null);
@@ -44,37 +41,34 @@ export function ProjectImport() {
         if ((task.status !== 'completed' && task.status !== 'failed') || announced.current.has(task.id)) continue;
         announced.current.add(task.id);
         if (seeding) continue;
-        snackbar.show(task.status === 'completed' ? t('projectImports.toast.completed', { name: task.projectName || '' }) : task.error || t('projectImports.toast.failed'));
+        if (task.status === 'completed') toast.success(t('projectImports.toast.completed', { name: task.projectName || '' }));
+        else toast.error(task.error || t('projectImports.toast.failed'));
       }
     } catch (err) {
       console.error('Failed to load project imports:', err);
     }
-  }, [snackbar, t]);
+  }, [toast, t]);
 
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (!hasActive) return undefined;
-    const interval = setInterval(() => void load(), POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [hasActive, load]);
+  usePolling(load, hasActive ? POLL_INTERVAL_MS : false);
 
   const upload = async (file: File) => {
     if (uploading) return;
     if (!file.name.toLowerCase().endsWith('.zip')) {
-      snackbar.show(t('projectImports.errors.notZip'));
+      toast.error(t('projectImports.errors.notZip'));
       return;
     }
     setUploadPercent(0);
     try {
       await uploadProjectBundle(file, { onProgress: setUploadPercent });
-      snackbar.show(t('projectImports.toast.queued'));
+      toast.success(t('projectImports.toast.queued'));
       await load();
     } catch (err) {
-      if ((err as Error)?.name !== 'AbortError') snackbar.show((err as Error)?.message || t('projectImports.errors.uploadFailed'));
+      if ((err as Error)?.name !== 'AbortError') toast.error(errorText(err, t('projectImports.errors.uploadFailed')));
     } finally {
       setUploadPercent(null);
     }
@@ -156,7 +150,7 @@ export function ProjectImport() {
             await deleteProjectImport(toDelete);
             setImports((prev) => prev.filter((task) => task.id !== toDelete));
           } catch (err) {
-            snackbar.show((err as Error)?.message || t('projectImports.errors.deleteFailed'));
+            toast.error(errorText(err, t('projectImports.errors.deleteFailed')));
           }
         }}
       />

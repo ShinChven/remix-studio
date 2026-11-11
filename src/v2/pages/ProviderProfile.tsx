@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { deleteProvider, fetchProvider, fetchProviderModels, updateProvider } from '../../api';
-import { Button, Icon, IconButton, LoadingIndicator, Text, useSnackbar } from '../../m3';
+import { Button, Icon, IconButton, LoadingIndicator, Text } from '../../m3';
 import type { Provider } from '../../types';
-import { SectionNav } from '../components/project/ResultsBar';
+import { ListBar, SectionNav } from '../ui/ListBar';
 import { ParallelStepper } from '../components/providers/ProviderItem';
 import { ModelRows, useModelEntries, type ModelEntry } from '../components/providers/ModelRows';
 import { ProviderHero } from '../components/providers/ProviderHero';
@@ -16,8 +16,12 @@ import { ActionMenu } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
 import { PromptDialog } from '../ui/PromptDialog';
-import { ResultsSearch } from '../ui/ResultFilters';
+import { ListSearch } from '../ui/ListSearch';
 import { StatusPill } from '../ui/Stat';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { useCopy } from '../lib/useCopy';
+import { usePolling } from '../lib/usePolling';
 
 /** Providers whose model list is built in rather than fetched with credentials. */
 const STATIC_MODELS = new Set(['RunningHub', 'KlingAI', 'BytePlus', 'Replicate', 'BlackForestLabs', 'MiniMax', 'Civitai', 'APIMart']);
@@ -30,7 +34,8 @@ const VIEW_ICONS: Record<View, string> = { all: 'model_training', text: 'notes',
 
 export function ProviderProfile() {
   const { t, i18n } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const copyText = useCopy();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [params, setParams] = useSearchParams();
@@ -82,13 +87,7 @@ export function ProviderProfile() {
 
   // Usage follows running jobs while there are any.
   const running = provider ? activeJobCount(provider) > 0 : false;
-  useEffect(() => {
-    if (!running) return;
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void loadProvider({ quiet: true });
-    }, LIVE_REFRESH_MS);
-    return () => window.clearInterval(timer);
-  }, [running, loadProvider]);
+  usePolling(() => loadProvider({ quiet: true }), running ? LIVE_REFRESH_MS : false);
 
   // Which built-in models the key can reach, for services that list their models.
   const [reachable, setReachable] = useState<Set<string> | null>(null);
@@ -135,12 +134,7 @@ export function ProviderProfile() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [renaming, setRenaming] = useState(false);
 
-  const copy = (text: string) => {
-    void navigator.clipboard
-      .writeText(text)
-      .then(() => snackbar.show(t('v2.providers.copied')))
-      .catch(() => snackbar.show(t('v2.providers.copyFailed')));
-  };
+  const copy = (text: string) => void copyText(text, t('v2.providers.copied'), t('v2.providers.copyFailed'));
 
   if (isLoadingProvider) return <LoadingState minHeight={400} />;
   if (error || !provider) {
@@ -259,10 +253,10 @@ export function ProviderProfile() {
         }
       />
 
-      <section className="v2-provider-models" aria-label={t('providerProfile.supportedModels')}>
+      <section className="v2-list-pane v2-provider-models" data-variant="surface" aria-label={t('providerProfile.supportedModels')}>
         {entries.length > 0 && (
-          <div className="v2-results-head">
-            <div className="v2-results-bar" data-density="compact">
+          <ListBar
+            lead={
               <SectionNav<View>
                 scope="provider-models"
                 label={t('v2.providers.kindsLabel')}
@@ -275,15 +269,17 @@ export function ProviderProfile() {
                   count: counts[value],
                 }))}
               />
-              {checking && <LoadingIndicator size={24} aria-label={t('v2.providers.models.checking')} />}
-              <span className="v2-results-bar__spacer" />
-              {summary && <span className="v2-results-bar__summary">{summary}</span>}
-              <div className="v2-results-bar__tools">
-                <ResultsSearch value={q} onChange={setSearch} label={t('v2.providers.models.search')} />
+            }
+            fitKey={view}
+            refreshing={checking}
+            summary={summary || undefined}
+            tools={
+              <>
+                <ListSearch value={q} onChange={setSearch} label={t('v2.providers.models.search')} />
                 {canCheck && <IconButton icon="refresh" size="sm" label={t('v2.providers.models.recheck')} tooltip disabled={checking} onClick={() => void checkModels()} />}
-              </div>
-            </div>
-          </div>
+              </>
+            }
+          />
         )}
 
         {!provider.hasKey && !isStatic && (
@@ -338,10 +334,10 @@ export function ProviderProfile() {
         onConfirm={async () => {
           try {
             await deleteProvider(provider.id);
-            snackbar.show(t('v2.providers.deleted', { name: provider.name }));
+            toast.success(t('v2.providers.deleted', { name: provider.name }));
             navigate('/providers');
           } catch (err) {
-            snackbar.show((err as Error).message || t('providers.errors.delete'));
+            toast.error(errorText(err, t('providers.errors.delete')));
           }
         }}
       />
@@ -362,9 +358,9 @@ export function ProviderProfile() {
           try {
             await updateProvider(provider.id, { name });
             setProvider({ ...provider, name });
-            snackbar.show(t('v2.providers.renamed', { name }));
+            toast.success(t('v2.providers.renamed', { name }));
           } catch (err) {
-            snackbar.show((err as Error).message || t('v2.providers.saveFailed'));
+            toast.error(errorText(err, t('v2.providers.saveFailed')));
             throw err;
           }
         }}

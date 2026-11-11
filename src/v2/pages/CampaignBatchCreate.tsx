@@ -1,3 +1,6 @@
+import { Trans, useTranslation } from 'react-i18next';
+import { errorText } from '../lib/errors';
+import { FloatBar } from '../ui/SelectionBar';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -17,6 +20,7 @@ import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../component
 import { DropZone } from '../ui/DropZone';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { useToast } from '../ui/useToast';
+import { readFileAsDataUrl } from '../lib/files';
 
 const POST_MEDIA_ACCEPT = 'image/*,video/mp4,video/webm,video/quicktime';
 
@@ -59,22 +63,11 @@ function importKey(mode: PickerMode, sourceId: string, itemId: string) {
   return JSON.stringify([mode, sourceId, itemId]);
 }
 
-function mediaSourceLabel(type: MediaType) {
-  return type === 'video' ? 'Video' : 'Image';
-}
 
 function getFileMediaType(file: File): MediaType {
   return file.type.startsWith('video/') ? 'video' : 'image';
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target?.result as string);
-    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-}
 
 
 /** Queues media from uploads, libraries or albums, one post each with its own caption, with an optional watermark. */
@@ -82,7 +75,7 @@ export function CampaignBatchCreate() {
   const toast = useToast();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+  const { t } = useTranslation();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [campaign, setCampaign] = useState<any>(null);
   const [queue, setQueue] = useState<BatchQueueItem[]>([]);
@@ -103,7 +96,7 @@ export function CampaignBatchCreate() {
       try {
         const watermarkPromise = fetchPostWatermarkSettings().catch((error) => {
           console.warn('Failed to load watermark settings', error);
-          toast.error('Failed to load watermark settings');
+          toast.error(t('v2.campaigns.create.watermarkLoadFailed'));
           return DEFAULT_WATERMARK_SETTINGS;
         });
         const [campaignData, watermarkData] = await Promise.all([
@@ -116,7 +109,7 @@ export function CampaignBatchCreate() {
         setWatermarkLoaded(true);
       } catch (error) {
         if (!cancelled) {
-          toast.error((error as Error)?.message || 'Failed to load campaign');
+          toast.error(errorText(error, t('v2.campaigns.loadCampaignFailed')));
           navigate('/campaigns');
         }
       } finally {
@@ -189,7 +182,7 @@ export function CampaignBatchCreate() {
 
     if (additions.length > 0) {
       setQueue((prev) => [...prev, ...additions]);
-      toast.success(`Added ${additions.length} item${additions.length === 1 ? '' : 's'} to queue`);
+      toast.success(t('v2.campaigns.create.added', { count: additions.length }));
     }
   };
 
@@ -197,7 +190,7 @@ export function CampaignBatchCreate() {
     const nextFiles = Array.from(files);
     const unsupported = nextFiles.find((file) => !file.type.startsWith('image/') && !file.type.startsWith('video/'));
     if (unsupported) {
-      toast.error('Only images and videos are supported');
+      toast.error(t('v2.campaigns.create.unsupported'));
       return;
     }
     const drafts: BatchQueueItem[] = nextFiles.map((file) => ({
@@ -233,7 +226,7 @@ export function CampaignBatchCreate() {
 
   const handleConfirm = async () => {
     if (!id || queue.length === 0) {
-      toast.error('Please add at least one media item');
+      toast.error(t('v2.campaigns.create.needOne'));
       return;
     }
 
@@ -265,7 +258,7 @@ export function CampaignBatchCreate() {
         try {
           await updatePostWatermarkSettings(watermarkSettings);
         } catch (error) {
-          toast.error((error as Error)?.message || 'Failed to save watermark settings');
+          toast.error(errorText(error, t('v2.campaigns.create.watermarkSaveFailed')));
         } finally {
           setIsWatermarkSaving(false);
         }
@@ -282,13 +275,13 @@ export function CampaignBatchCreate() {
       const failedCount = task.results.length - createdCount;
 
       if (task.status === 'failed' && createdCount === 0) {
-        toast.error(task.error || 'Failed to create batch');
+        toast.error(task.error || t('v2.campaigns.create.failed'));
       } else {
         if (createdCount > 0) {
-          toast.success(`Successfully created ${createdCount} post${createdCount === 1 ? '' : 's'} for ${campaign?.name}`);
+          toast.success(t('v2.campaigns.create.created', { count: createdCount, name: campaign?.name }));
         }
         if (failedCount > 0) {
-          toast.error(`Failed to process ${failedCount} item${failedCount === 1 ? '' : 's'}`);
+          toast.error(t('v2.campaigns.create.itemsFailed', { count: failedCount }));
         }
       }
 
@@ -297,7 +290,7 @@ export function CampaignBatchCreate() {
         navigate(`/campaigns/${id}/batch`);
       }
     } catch (error) {
-      toast.error((error as Error)?.message || 'Failed to create batch');
+      toast.error(errorText(error, t('v2.campaigns.create.failed')));
     } finally {
       setIsUploading(false);
     }
@@ -308,35 +301,33 @@ export function CampaignBatchCreate() {
   return (
     <Page density="compact">
       <PageHeader
-        title="Create Batch"
+        title={t('v2.campaigns.createBatch')}
         description={
-          <>
-            Every queued image or video becomes its own post in <strong className="text-on-surface">{campaign?.name}</strong>.
-          </>
+<Trans i18nKey="v2.campaigns.create.description" values={{ name: campaign?.name }} components={{ b: <strong className="text-on-surface" /> }} />
         }
-        backLink={{ to: `/campaigns/${id}/batch`, label: 'Back to Batch Actions' }}
+        backLink={{ to: `/campaigns/${id}/batch`, label: t('v2.campaigns.create.back') }}
       />
       <div className="v2-batch-create">
         <div className="flex min-w-0 flex-col gap-4">
           <DropZone
-            title="Drop images or videos here"
+            title={t('v2.campaigns.create.dropTitle')}
             hint="JPG, PNG, WEBP, GIF, MP4, WEBM, MOV"
             icon="upload"
             accept={POST_MEDIA_ACCEPT}
             multiple
-            buttonLabel="Upload Files"
+            buttonLabel={t('v2.campaigns.create.upload')}
             disabled={isUploading}
             onFiles={handleFiles}
           >
             <div className="v2-batch-sources">
               <Text as="span" variant="label-medium" className="text-on-surface-variant">
-                Or add from
+                {t('v2.campaigns.create.orAddFrom')}
               </Text>
               <Button variant="tonal" size="sm" icon="photo_library" disabled={isUploading} onClick={() => openPicker('library')}>
-                Library
+                {t('v2.campaigns.create.library')}
               </Button>
               <Button variant="tonal" size="sm" icon="stacks" disabled={isUploading} onClick={() => openPicker('album')}>
-                Album
+                {t('v2.campaigns.create.album')}
               </Button>
             </div>
           </DropZone>
@@ -345,14 +336,14 @@ export function CampaignBatchCreate() {
             icon="queue"
             title={
               <>
-                Queue {queue.length > 0 && <span className="v2-count">{queue.length}</span>}
+                {t('v2.campaigns.create.queue')} {queue.length > 0 && <span className="v2-count">{queue.length}</span>}
               </>
             }
-            description={queue.length > 0 ? 'Captions are optional; you can write or generate them later in Batch Actions.' : undefined}
+            description={queue.length > 0 ? t('v2.campaigns.create.captionsHint') : undefined}
             actions={
               queue.length > 0 && (
                 <Button variant="text" size="xs" icon="clear_all" disabled={isUploading} onClick={clearQueue}>
-                  Clear All
+                  {t('v2.campaigns.create.clearAll')}
                 </Button>
               )
             }
@@ -377,44 +368,43 @@ export function CampaignBatchCreate() {
                             {name}
                           </Text>
                           <span className="v2-info-chip shrink-0">
-                            {item.kind} · {mediaSourceLabel(item.mediaType)}
+                            {t(`v2.campaigns.create.kind.${item.kind}`, { defaultValue: item.kind })} · {item.mediaType === 'video' ? t('v2.campaigns.create.video') : t('v2.campaigns.create.image')}
                           </span>
-                          <IconButton icon="close" size="xs" label="Remove from queue" tooltip disabled={isUploading} onClick={() => removeQueueItem(item.id)} />
+                          <IconButton icon="close" size="xs" label={t('v2.campaigns.create.removeFromQueue')} tooltip disabled={isUploading} onClick={() => removeQueueItem(item.id)} />
                         </div>
-                        <TextField variant="outlined" multiline rows={3} maxRows={8} placeholder="Caption for this post..." aria-label="Caption" value={item.content} onValueChange={(v) => updateContent(item.id, v)} fullWidth />
+                        <TextField variant="outlined" multiline rows={3} maxRows={8} placeholder={t('v2.campaigns.create.captionPlaceholder')} aria-label={t('v2.campaigns.create.caption')} value={item.content} onValueChange={(v) => updateContent(item.id, v)} fullWidth />
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <EmptyState icon="perm_media" shape="cookie-9" title="Nothing queued yet" description="Upload files or pick media from a library or album to start." />
+              <EmptyState icon="perm_media" shape="cookie-9" title={t('v2.campaigns.create.emptyTitle')} description={t('v2.campaigns.create.emptyHint')} />
             )}
           </Section>
         </div>
         <aside className="v2-batch-create__rail">
-          <WatermarkSettingsPanel settings={watermarkSettings} sampleUrl={watermarkPreviewUrl} isSaving={isWatermarkSaving} onChange={setWatermarkSettings} title="Watermark" description="Applied to image posts created from this page." statusText="Settings are saved when the batch is created." stacked />
+          <WatermarkSettingsPanel settings={watermarkSettings} sampleUrl={watermarkPreviewUrl} isSaving={isWatermarkSaving} onChange={setWatermarkSettings} title={t('v2.campaigns.create.watermark')} description={t('v2.campaigns.create.watermarkHint')} statusText={t('v2.campaigns.create.watermarkStatus')} stacked />
         </aside>
       </div>
       {queue.length > 0 && (
-        <div className="v2-float-bar v2-float-bar--confirm" role="toolbar" aria-label="Create batch">
-          <Text as="span" variant="label-large" emphasized className="tabular-nums whitespace-nowrap">
-            {isUploading ? `Creating ${uploadProgress} of ${queue.length}` : `${queue.length} ${queue.length === 1 ? 'post' : 'posts'} ready`}
+        <FloatBar label={t('v2.campaigns.createBatch')}>
+          <Text as="span" variant="label-large" emphasized className="v2-float-bar__count">
+            {isUploading ? t('v2.campaigns.create.creating', { done: uploadProgress, total: queue.length }) : t('v2.campaigns.create.ready', { count: queue.length })}
           </Text>
-          {isUploading && <LinearProgress value={uploadProgress} max={Math.max(1, queue.length)} className="v2-float-bar__progress" aria-label="Batch progress" />}
+          {isUploading && <LinearProgress value={uploadProgress} max={Math.max(1, queue.length)} className="v2-float-bar__progress" aria-label={t('v2.campaigns.create.progress')} />}
           <span className="v2-float-bar__actions">
             <Button variant="text" size="sm" disabled={isUploading} href={`/campaigns/${id}/batch`}>
-              Cancel
+              {t('confirmModal.cancel', 'Cancel')}
             </Button>
             <Button variant="filled" size="sm" icon="check" loading={isUploading} onClick={() => void handleConfirm()}>
-              Create {queue.length} {queue.length === 1 ? 'Post' : 'Posts'}
+              {t('v2.campaigns.create.confirm', { count: queue.length })}
             </Button>
           </span>
-        </div>
+        </FloatBar>
       )}
       <MediaPicker
         isOpen={pickerMode !== null}
-        title="Media Picker"
         allowedTypes={['image', 'video']}
         defaultSourceKind={pickerMode || 'library'}
         memoryKey={`campaign-media:${pickerMode || 'library'}`}

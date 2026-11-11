@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "build:tv": "node scripts/build-tv.mjs",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit",
+    "lint": "tsc --noEmit && tsx scripts/check-v2-ui.ts",
     "i18n:check": "tsx scripts/compare-i18n.ts",
     "mcp:inspect": "npx @modelcontextprotocol/inspector --transport http --url http://localhost:3000/mcp",
     "docs:install": "npm --prefix docs-site install",

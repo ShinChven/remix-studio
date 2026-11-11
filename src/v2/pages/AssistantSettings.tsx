@@ -11,9 +11,9 @@ import { ProviderLogo } from '../components/ProviderLogo';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { PagedFooter } from '../ui/PagedFooter';
 import { Row, RowList } from '../ui/Rows';
-import { SearchField } from '../ui/SearchField';
+import { ListSearch } from '../ui/ListSearch';
 import { StatTile, StatusPill } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
 
@@ -540,14 +540,7 @@ export function AssistantSettings() {
               ))}
             </RowList>
           )}
-          {skillPages > 1 && (
-            <div className="v2-paged-footer">
-              <Text variant="label-medium" className="text-on-surface-variant">
-                {t('assistant.skillPageLabel', { defaultValue: 'Page {{page}} of {{pages}}', page: skillPage, pages: skillPages })}
-              </Text>
-              <Pagination page={skillPage} pages={skillPages} onPageChange={setSkillPage} />
-            </div>
-          )}
+          <PagedFooter page={skillPage} pageSize={SKILLS_PAGE_SIZE} total={skillTotal} pages={skillPages} onPageChange={setSkillPage} />
         </Section>
       )}
 
@@ -561,7 +554,7 @@ export function AssistantSettings() {
               <StatTile icon="verified_user" label={t('assistant.toolsNeedApproval', { defaultValue: 'Need approval' })} value={toolCounts.confirmation} tone="warning" />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <SearchField value={toolSearch} onChange={setToolSearch} placeholder={t('assistant.searchTools', { defaultValue: 'Search tools' })} />
+              <ListSearch value={toolSearch} onChange={setToolSearch} label={t('assistant.searchTools', { defaultValue: 'Search tools' })} />
               <ChipSet>
                 {(
                   [

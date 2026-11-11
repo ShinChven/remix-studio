@@ -3,20 +3,26 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { disconnectDrive, disconnectStore, fetchReleaseConnections, type ReleaseConnection, type ReleaseProvider } from '../../api';
 import { applyAvatarFallback, defaultAvatar } from '../../lib/avatar';
-import { Button, Icon, Text, useSnackbar } from '../../m3';
+import { Button, Icon, Text } from '../../m3';
 import { platformMeta } from '../components/exports/releaseMeta';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
+import { EmptyState, ErrorState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { Row, RowList } from '../ui/Rows';
 import { StatusPill } from '../ui/Stat';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { useAsyncData } from '../lib/useAsyncData';
 
 export function Releases() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [connections, setConnections] = useState<ReleaseConnection[]>([]);
-  const [providers, setProviders] = useState<ReleaseProvider[]>([]);
-  const [loading, setLoading] = useState(true);
+  const data = useAsyncData(fetchReleaseConnections, []);
+  const connections = data.data?.connections ?? [];
+  const providers = data.data?.providers ?? [];
+  const loading = data.loading;
+  const load = () => data.reload(true);
+  const setConnections = (change: (current: ReleaseConnection[]) => ReleaseConnection[]) => data.setData((current) => current && { ...current, connections: change(current.connections) });
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ReleaseConnection | null>(null);
 
@@ -26,24 +32,6 @@ export function Releases() {
   }, [providers]);
   const displayName = (c: ReleaseConnection) => c.displayName || c.email || c.accountId || providerLabel(c.platform);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchReleaseConnections();
-      setConnections(data.connections);
-      setProviders(data.providers);
-    } catch (error) {
-      snackbar.show((error as Error)?.message || t('releases.loadError'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // OAuth callbacks report back through URL parameters.
   useEffect(() => {
     const success = searchParams.get('success');
@@ -51,11 +39,11 @@ export function Releases() {
     if (!success && !error) return;
     const next = new URLSearchParams(searchParams);
     if (success) {
-      snackbar.show(t('releases.connectSuccess'));
+      toast.success(t('releases.connectSuccess'));
       next.delete('success');
       void load();
     } else if (error) {
-      snackbar.show(decodeURIComponent(error.replace(/\+/g, ' ')));
+      toast.error(decodeURIComponent(error.replace(/\+/g, ' ')));
       next.delete('error');
     }
     setSearchParams(next, { replace: true });
@@ -68,9 +56,9 @@ export function Releases() {
       if (c.kind === 'drive') await disconnectDrive(c.id);
       else await disconnectStore(c.platform, c.id);
       setConnections((prev) => prev.filter((item) => item.id !== c.id));
-      snackbar.show(t('releases.disconnectSuccess'));
+      toast.success(t('releases.disconnectSuccess'));
     } catch (error) {
-      snackbar.show((error as Error)?.message || t('releases.disconnectError'));
+      toast.error(errorText(error, t('releases.disconnectError')));
     } finally {
       setDisconnectingId(null);
     }
@@ -141,7 +129,9 @@ export function Releases() {
     <Page width="default">
       <PageHeader title={t('releases.title')} description={t('releases.description')} backLink={{ to: '/exports', label: t('releases.backToExports') }} />
       <div className="flex flex-col gap-6">
-        {loading ? (
+        {data.error ? (
+          <ErrorState message={errorText(data.error, t('releases.loadError'))} onRetry={() => void data.reload()} retryLabel={t('v2.common.retry')} />
+        ) : loading ? (
           <LoadingState />
         ) : connections.length === 0 ? (
           <EmptyState icon="rocket_launch" shape="sunny" title={t('releases.empty.title')} description={t('releases.empty.description')} />

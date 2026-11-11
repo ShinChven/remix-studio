@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { errorText } from '../../lib/errors';
 import React, { useEffect, useMemo, useState } from 'react';
 import { batchGeneratePostText, fetchAssistantProviders, fetchLibraries, fetchLibraryItems, type BatchGenerateTextResult } from '../../../api';
 import { Button, Checkbox, Dialog, Icon, LoadingIndicator, Ripple, Select, Text, useWindowSizeClass } from '../../../m3';
@@ -93,6 +95,7 @@ function resolveInitialTextModelChoice(providers: Provider[]): { providerId: str
 
 /** Writes post text with a model from a prompt (typed or picked from a text library), for one or many posts. */
 export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
+  const { t } = useTranslation();
   const toast = useToast();
   // Phones show one pane at a time.
   const isSinglePane = useWindowSizeClass() === 'compact';
@@ -122,7 +125,7 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
         }
       })
       .catch(() => {
-        toast.error('Failed to load providers');
+        toast.error(t('v2.campaigns.aiDialog.loadProvidersFailed'));
       });
   }, []);
 
@@ -154,7 +157,7 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
           return textLibraries[0]?.id || '';
         });
       } catch (error) {
-        if (!cancelled) toast.error((error as Error)?.message || 'Failed to load prompt libraries');
+        if (!cancelled) toast.error(errorText(error, t('v2.campaigns.aiDialog.loadLibrariesFailed')));
       } finally {
         if (!cancelled) setLoadingLibraries(false);
       }
@@ -186,7 +189,7 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
           return '';
         });
       } catch (error) {
-        if (!cancelled) toast.error((error as Error)?.message || 'Failed to load prompts');
+        if (!cancelled) toast.error(errorText(error, t('v2.campaigns.aiDialog.loadPromptsFailed')));
       } finally {
         if (!cancelled) setLoadingPrompts(false);
       }
@@ -235,11 +238,11 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
 
   const submit = async () => {
     if (!providerId || !selectedModel) {
-      toast.error('Select a model first');
+      toast.error(t('v2.campaigns.aiDialog.pickModel'));
       return;
     }
     if (!promptText.trim()) {
-      toast.error('Enter a prompt');
+      toast.error(t('v2.campaigns.aiDialog.enterPrompt'));
       return;
     }
     try {
@@ -258,11 +261,11 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
         // actual API model id (for example `gemini-3.5-flash-lite`).
         modelId: selectedModel.modelId,
       });
-      toast.success(`Queued text generation for ${task.total} post${task.total === 1 ? '' : 's'}`);
+      toast.success(t('v2.campaigns.aiDialog.queued', { count: task.total }));
       onQueued(task);
       onClose();
     } catch (err) {
-      toast.error((err as Error)?.message || 'Failed to generate text');
+      toast.error(errorText(err, t('v2.campaigns.aiDialog.failed')));
       setSubmitting(false);
     }
   };
@@ -279,7 +282,6 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
     }
   };
 
-  const postCountLabel = `${postIds.length} post${postIds.length === 1 ? '' : 's'}`;
 
   const modelOptions = providers.flatMap((p) => getTextModelsForProvider(p.type).map((m) => ({ value: `${p.id}::${m.id}`, label: m.name, supportingText: p.name })));
 
@@ -287,8 +289,8 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
     <div className="v2-ai-gen__options">
       <Select
         variant="outlined"
-        label="Model"
-        placeholder="Select a model"
+        label={t('v2.campaigns.aiDialog.model')}
+        placeholder={t('v2.campaigns.aiDialog.selectModel')}
         value={selectedValue || null}
         disabled={submitting}
         onChange={(value) => {
@@ -299,12 +301,12 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
         options={modelOptions}
         fullWidth
       />
-      <Checkbox label="Include first attached image" supportingText="Sends the post's first image to the model as context." checked={includeImages} disabled={submitting} onChange={(e) => setIncludeImages(e.target.checked)} />
+      <Checkbox label={t('v2.campaigns.aiDialog.includeImage')} supportingText={t('v2.campaigns.aiDialog.includeImageHint')} checked={includeImages} disabled={submitting} onChange={(e) => setIncludeImages(e.target.checked)} />
       <Select
         variant="outlined"
-        label="Prompt Library"
+        label={t('v2.campaigns.aiDialog.promptLibrary')}
         leadingIcon="menu_book"
-        placeholder={loadingLibraries ? 'Loading libraries...' : 'Select a text library'}
+        placeholder={loadingLibraries ? t('v2.campaigns.aiDialog.loadingLibraries') : t('v2.campaigns.aiDialog.selectLibrary')}
         value={libraryId || null}
         disabled={submitting || loadingLibraries}
         onChange={(value) => {
@@ -314,20 +316,20 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
         }}
         options={libraries.map((l) => ({ value: l.id, label: l.name }))}
         searchable
-        searchPlaceholder="Search libraries..."
+        searchPlaceholder={t('v2.campaigns.aiDialog.searchLibraries')}
         fullWidth
       />
-      {libraryId && <SearchField shape="field" value={promptQuery} onChange={setPromptQuery} placeholder="Search prompts..." />}
+      {libraryId && <SearchField shape="field" value={promptQuery} onChange={setPromptQuery} placeholder={t('v2.campaigns.aiDialog.searchPrompts')} />}
       <div className="v2-ai-gen__prompts">
         {!libraryId ? (
-          <EmptyState icon="menu_book" size="inline" title="No prompt library selected." />
+          <EmptyState icon="menu_book" size="inline" title={t('v2.campaigns.aiDialog.noLibrary')} />
         ) : loadingPrompts ? (
           <div className="flex items-center justify-center gap-2 py-8 text-on-surface-variant">
             <LoadingIndicator size={28} />
-            <Text variant="label-medium">Loading prompts...</Text>
+            <Text variant="label-medium">{t('v2.campaigns.aiDialog.loadingPrompts')}</Text>
           </div>
         ) : filteredPromptItems.length === 0 ? (
-          <EmptyState icon="search_off" size="inline" title="No prompts found." />
+          <EmptyState icon="search_off" size="inline" title={t('v2.campaigns.aiDialog.noPrompts')} />
         ) : (
           filteredPromptItems.map((item) => {
             const selected = item.id === selectedPromptId;
@@ -336,7 +338,7 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
                 <Ripple />
                 <span className="flex min-w-0 flex-1 flex-col gap-1 text-start">
                   <Text as="span" variant="label-large" emphasized className="truncate">
-                    {item.title || 'Untitled prompt'}
+                    {item.title || t('v2.campaigns.aiDialog.untitledPrompt')}
                   </Text>
                   <Text as="span" variant="body-small" className="line-clamp-2 text-on-surface-variant">
                     {item.content}
@@ -364,11 +366,11 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
     <div className="v2-ai-gen__editor">
       <div className="flex items-center justify-between gap-2">
         <Text as="label" variant="label-large" emphasized>
-          Prompt
+          {t('v2.campaigns.aiDialog.prompt')}
         </Text>
         <Text as="span" variant="label-small" className="flex items-center gap-2 text-on-surface-variant">
-          {selectedPrompt && <span className="v2-tag-mini">{selectedPrompt.title || 'Untitled prompt'}</span>}
-          {promptText.length} chars
+          {selectedPrompt && <span className="v2-tag-mini">{selectedPrompt.title || t('v2.campaigns.aiDialog.untitledPrompt')}</span>}
+          {t('v2.campaigns.dialogs.characters', { count: promptText.length })}
         </Text>
       </div>
       <textarea
@@ -381,11 +383,11 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
         }}
         onKeyDown={handleEditorKeyDown}
         disabled={submitting}
-        placeholder="e.g., Write a punchy launch announcement for the attached image, under 240 chars."
+        placeholder={t('v2.campaigns.aiDialog.promptPlaceholder')}
         autoFocus={!isSinglePane}
       />
       <Text variant="body-small" className="text-on-surface-variant">
-        Pick a saved prompt on the left to load it here, then edit freely. Press ⌘/Ctrl + Enter to generate.
+        {t('v2.campaigns.aiDialog.hint')}
       </Text>
     </div>
   );
@@ -398,9 +400,9 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
       icon="auto_awesome"
       headline={
         <span className="flex flex-col">
-          AI Generate Text
+          {t('v2.campaigns.aiDialog.title')}
           <Text as="span" variant="label-medium" className="text-on-surface-variant">
-            Generating for {postCountLabel}
+            {t('v2.campaigns.aiDialog.generatingFor', { count: postIds.length })}
             {selectedModel ? ` · ${selectedModel.name}` : ''}
           </Text>
         </span>
@@ -410,10 +412,10 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
       actions={
         <>
           <Button variant="text" disabled={submitting} onClick={onClose}>
-            Cancel
+            {t('confirmModal.cancel', 'Cancel')}
           </Button>
           <Button variant="filled" icon="auto_awesome" loading={submitting} disabled={!canSubmit} onClick={() => void submit()}>
-            {submitting ? 'Queueing...' : `Generate for ${postCountLabel}`}
+            {t('v2.campaigns.aiDialog.generate', { count: postIds.length })}
           </Button>
         </>
       }
@@ -425,8 +427,8 @@ export function BatchAiGenerateDialog({ postIds, onClose, onQueued }: Props) {
             value={mobilePane}
             onChange={setMobilePane}
             options={[
-              { value: 'editor', label: 'Prompt', icon: 'edit' },
-              { value: 'options', label: 'Options', icon: 'tune' },
+              { value: 'editor', label: t('v2.campaigns.aiDialog.prompt'), icon: 'edit' },
+              { value: 'options', label: t('v2.campaigns.aiDialog.options'), icon: 'tune' },
             ]}
           />
         )}

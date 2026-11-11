@@ -5,8 +5,10 @@ import { deleteLibrary, fetchLibrary, fetchLibraryReferences, removeLibraryRefer
 import { Button, Icon, Text } from '../../m3';
 import type { Library } from '../../types';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
+import { EmptyState, ErrorState, LoadingState, Page, PageHeader } from '../ui/Page';
 import { Row, RowList } from '../ui/Rows';
+import { useAsyncData } from '../lib/useAsyncData';
+import { errorText } from '../lib/errors';
 
 interface ProjectRef {
   id: string;
@@ -18,27 +20,16 @@ export function LibraryCleanup() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const [library, setLibrary] = useState<Library | null>(null);
-  const [refs, setRefs] = useState<ProjectRef[]>([]);
-  const [loading, setLoading] = useState(true);
+  const data = useAsyncData(async () => {
+    const [library, refs] = await Promise.all([fetchLibrary(id!), fetchLibraryReferences(id!)]);
+    return { library, refs };
+  }, [id], { enabled: !!id });
+  const library = data.data?.library ?? null;
+  const refs: ProjectRef[] = data.data?.refs ?? [];
+  const setRefs = (change: (current: ProjectRef[]) => ProjectRef[]) => data.setData((current) => current && { ...current, refs: change(current.refs) });
   const [removing, setRemoving] = useState<Set<string>>(new Set());
   const [cleaning, setCleaning] = useState(false);
   const [confirm, setConfirm] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-    (async () => {
-      try {
-        const [lib, references] = await Promise.all([fetchLibrary(id), fetchLibraryReferences(id)]);
-        setLibrary(lib);
-        setRefs(references);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id]);
 
   const removeOne = async (projectId: string) => {
     if (!id) return;
@@ -69,7 +60,8 @@ export function LibraryCleanup() {
     }
   };
 
-  if (loading) return <LoadingState minHeight={400} />;
+  if (data.loading) return <LoadingState minHeight={400} />;
+  if (data.error) return <ErrorState message={errorText(data.error, t('v2.common.loadFailed'))} onRetry={() => void data.reload()} retryLabel={t('v2.common.retry')} />;
   if (!library) return <EmptyState icon="error" title={t('libraryCleanup.errorNotFound')} />;
   const clean = refs.length === 0;
 

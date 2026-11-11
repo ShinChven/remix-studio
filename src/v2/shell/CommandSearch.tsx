@@ -9,7 +9,8 @@ import {
   fetchLibraries,
   fetchProjects,
 } from '../../api';
-import { Dialog, Icon, LoadingIndicator, Ripple, Text, TextField, useSnackbar } from '../../m3';
+import { Dialog, Icon, LoadingIndicator, Ripple, Text, TextField } from '../../m3';
+import { useToast } from '../ui/useToast';
 
 interface PaletteItem {
   value: string;
@@ -106,7 +107,7 @@ export function SearchTrigger() {
 function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [value, setValue] = useState('');
   const [debounced, setDebounced] = useState('');
   const [loading, setLoading] = useState(false);
@@ -169,10 +170,10 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
         const campaign = await createCampaign({ name: match.name });
         navigate(campaign?.id ? `/campaigns/${campaign.id}` : '/campaigns');
       }
-      snackbar.show(t('v2.shell.created', { kind, name: match.name }));
+      toast.success(t('v2.shell.created', { kind, name: match.name }));
       setValue('');
     } catch (err) {
-      snackbar.show(t('v2.shell.createFailed', { kind, message: (err as Error).message }));
+      toast.error(t('v2.shell.createFailed', { kind, message: (err as Error).message }));
     } finally {
       setLoading(false);
     }

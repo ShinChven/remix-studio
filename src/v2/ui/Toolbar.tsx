@@ -1,23 +1,6 @@
 import type { ReactNode } from 'react';
-import { Button, ButtonGroup, cx, Fab, Icon, LoadingIndicator, Text, type ButtonSize } from '../../m3';
-
-/** A row of list controls (title with count, filters, search, actions) that wraps on narrow windows. */
-export function ListToolbar({ title, icon, count, isLoading = false, children, className }: { title?: ReactNode; icon?: string; count?: number; isLoading?: boolean; children?: ReactNode; className?: string }) {
-  return (
-    <div className={cx('v2-list-toolbar', className)}>
-      {title && (
-        <div className="v2-list-toolbar__title">
-          {isLoading ? <LoadingIndicator size={24} /> : icon && <Icon name={icon} className="text-primary" />}
-          <Text as="h2" variant="title-large" emphasized>
-            {title}
-          </Text>
-          {count !== undefined && count > 0 && <span className="v2-count">{count}</span>}
-        </div>
-      )}
-      {children && <div className="v2-list-toolbar__controls">{children}</div>}
-    </div>
-  );
-}
+import { useTranslation } from 'react-i18next';
+import { Button, ButtonGroup, cx, Fab, IconButton, type ButtonSize } from '../../m3';
 
 export interface SegmentedOption<V extends string> {
   value: V;
@@ -79,4 +62,14 @@ export function CardGrid({ children, min = 280, className }: { children: ReactNo
       {children}
     </div>
   );
+}
+
+export type ListLayout = 'cards' | 'list';
+export const LIST_LAYOUTS: readonly ListLayout[] = ['cards', 'list'];
+
+/** Switches a list between cards and rows; the button shows the layout it switches to. */
+export function LayoutToggle({ value, onChange }: { value: ListLayout; onChange: (value: ListLayout) => void }) {
+  const { t } = useTranslation();
+  const next: ListLayout = value === 'cards' ? 'list' : 'cards';
+  return <IconButton icon={next === 'cards' ? 'grid_view' : 'view_agenda'} size="sm" label={next === 'cards' ? t('v2.library.cards') : t('v2.library.list')} tooltip onClick={() => onChange(next)} />;
 }

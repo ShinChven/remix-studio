@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { stashPwaShareHandoff, type PwaShareHandoffInput } from '../../lib/pwa-share';
-import { Button, Icon, Text, useSnackbar } from '../../m3';
+import { Button, Icon, Text } from '../../m3';
 import { clearShare, describeDiagnostics, loadShare, type LoadedShare } from '../lib/shareInbox';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { StatusPill } from '../ui/Stat';
+import { useToast } from '../ui/useToast';
 
 /** Content shared to the installed app from another app, and where to send it. */
 export function SharePage() {
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [searchParams] = useSearchParams();
   const swError = searchParams.get('error');
   const [status, setStatus] = useState<'loading' | 'loaded' | 'empty'>('loading');
@@ -53,14 +54,14 @@ export function SharePage() {
     if (handingOff) return;
     const payload = buildHandoff();
     if (!payload) {
-      snackbar.show('Nothing to share');
+      toast.success('Nothing to share');
       return;
     }
-    if (share && share.images.length > 1) snackbar.show(`Only the first of ${share.images.length} images will be ${verb}`);
+    if (share && share.images.length > 1) toast.success(`Only the first of ${share.images.length} images will be ${verb}`);
     setHandingOff(true);
     try {
       if (!(await stashPwaShareHandoff(payload))) {
-        snackbar.show('Shared content is too large to hand off');
+        toast.error('Shared content is too large to hand off');
         return;
       }
       await clearShare();

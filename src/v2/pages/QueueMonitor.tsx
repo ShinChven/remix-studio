@@ -3,13 +3,15 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { clearFailedQueueJobs, fetchQueueStatus } from '../../api';
-import { Button, Icon, LinearProgress, Text, useSnackbar } from '../../m3';
+import { Button, Icon, LinearProgress, Text } from '../../m3';
 import type { QueueMonitorJob, QueueMonitorProject, QueueMonitorProvider, QueueMonitorStatus, QueueMonitorView } from '../../types';
 import { ProviderLogo } from '../components/ProviderLogo';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState, Page, PageHeader } from '../ui/Page';
 import { MetricChip, StatTile, StatusPill, type Tone } from '../ui/Stat';
 import { Segmented } from '../ui/Toolbar';
+import { useToast } from '../ui/useToast';
+import { useAsyncData } from '../lib/useAsyncData';
 
 type ClearTarget = { type: 'all'; name: string } | { type: 'project'; id: string; name: string } | { type: 'provider'; id: string; name: string };
 
@@ -167,53 +169,17 @@ function ProviderPanel({ provider, onClear, busy }: { provider: QueueMonitorProv
 
 export function QueueMonitor() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const view = resolveView(searchParams.get('view'));
-  const [status, setStatus] = useState<QueueMonitorStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // The queues move on their own, so the page keeps itself current.
+  const queue = useAsyncData(() => fetchQueueStatus(view), [view], { pollMs: 5000 });
+  const status = queue.data ?? null;
+  const isLoading = queue.loading;
+  const error = queue.error ? t('queueMonitor.loadError') : null;
+  const load = (showLoading = true) => queue.reload(!showLoading);
   const [clearing, setClearing] = useState(false);
   const [clearTarget, setClearTarget] = useState<ClearTarget | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
-    try {
-      setError(null);
-      setStatus(await fetchQueueStatus(view));
-    } catch (err) {
-      console.error(err);
-      setError(t('queueMonitor.loadError'));
-    } finally {
-      if (showLoading) setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      setIsLoading(true);
-      try {
-        setError(null);
-        const next = await fetchQueueStatus(view);
-        if (active) setStatus(next);
-      } catch (err) {
-        console.error(err);
-        if (active) setError(t('queueMonitor.loadError'));
-      } finally {
-        if (active) setIsLoading(false);
-      }
-    })();
-    const interval = setInterval(() => {
-      void fetchQueueStatus(view)
-        .then((next) => active && setStatus(next))
-        .catch(() => {});
-    }, 5000);
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
-  }, [view, t]);
 
   const totals = status?.totals;
   const projects = status?.projects || [];
@@ -233,7 +199,7 @@ export function QueueMonitor() {
                 {t('projectViewer.queue.clearAllFailed')}
               </Button>
             )}
-            <Button variant="tonal" icon="refresh" loading={isLoading} onClick={() => void load()}>
+            <Button variant="tonal" icon="refresh" loading={queue.refreshing} onClick={() => void load()}>
               {t('queueMonitor.refresh')}
             </Button>
           </>
@@ -274,7 +240,7 @@ export function QueueMonitor() {
           <StatTile label={t('queueMonitor.metrics.limit')} value={totals.concurrency} />
         </div>
       )}
-      {error && <ErrorState message={error} />}
+      {error && <ErrorState message={error} onRetry={() => void queue.reload()} retryLabel={t('v2.common.retry')} />}
       {isLoading ? (
         <LoadingState />
       ) : view === 'projects' ? (
@@ -313,11 +279,11 @@ export function QueueMonitor() {
           setClearing(true);
           try {
             const result = await clearFailedQueueJobs(target.type === 'project' ? { projectId: target.id } : target.type === 'provider' ? { providerId: target.id } : {});
-            snackbar.show(t('queueMonitor.clearFailedSuccess', { count: result.cleared, defaultValue: `Cleared ${result.cleared} failed job${result.cleared === 1 ? '' : 's'}` }));
+            toast.success(t('queueMonitor.clearFailedSuccess', { count: result.cleared, defaultValue: `Cleared ${result.cleared} failed job${result.cleared === 1 ? '' : 's'}` }));
             await load(false);
           } catch (err) {
             console.error(err);
-            snackbar.show(t('queueMonitor.clearFailedError', { defaultValue: 'Failed to clear failed jobs.' }));
+            toast.error(t('queueMonitor.clearFailedError', { defaultValue: 'Failed to clear failed jobs.' }));
           } finally {
             setClearing(false);
           }

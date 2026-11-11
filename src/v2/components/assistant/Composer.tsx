@@ -26,11 +26,12 @@ import {
   MenuGroup,
   MenuItem,
   Text,
-  useSnackbar,
 } from '../../../m3';
 import { getTextModelsForProvider, type Provider } from '../../../types';
 import { SuggestionList } from '../../ui/SuggestionList';
 import { ProviderLogo } from '../ProviderLogo';
+import { useToast } from '../../ui/useToast';
+import { errorText } from '../../lib/errors';
 
 export type BoundContextType = 'project' | 'library' | 'campaign' | 'post';
 
@@ -189,7 +190,7 @@ export function Composer({
   composerRef,
 }: ComposerProps) {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [inputText, setInputText] = useState(initialInputText);
   const [boundContexts, setBoundContexts] = useState<BoundContext[]>(initialBoundContexts);
   const [attachedImages, setAttachedImages] = useState<AttachedImage[]>(initialAttachedImages);
@@ -320,27 +321,27 @@ export function Composer({
   const processImageFiles = useCallback(
     async (files: File[]) => {
       const imageFiles = files.filter((f) => f.type.startsWith('image/'));
-      if (imageFiles.length !== files.length) snackbar.show(t('assistant.invalidImageType'));
+      if (imageFiles.length !== files.length) toast.error(t('assistant.invalidImageType'));
       if (imageFiles.length === 0) return;
       const remaining = MAX_IMAGES - attachedImages.length;
       if (remaining <= 0) {
-        snackbar.show(t('assistant.maxImagesReached'));
+        toast.success(t('assistant.maxImagesReached'));
         return;
       }
       const toAdd = imageFiles.slice(0, remaining);
-      if (toAdd.length < imageFiles.length) snackbar.show(t('assistant.maxImagesReached'));
+      if (toAdd.length < imageFiles.length) toast.success(t('assistant.maxImagesReached'));
       const results: AttachedImage[] = [];
       for (const file of toAdd) {
         try {
           const compressed = await compressImage(file);
           results.push({ id: `img-${Date.now()}-${Math.random().toString(36).slice(2)}`, preview: compressed, base64: compressed });
         } catch {
-          snackbar.show(t('assistant.imageTooLarge'));
+          toast.error(t('assistant.imageTooLarge'));
         }
       }
       if (results.length > 0) setAttachedImages((prev) => [...prev, ...results]);
     },
-    [attachedImages.length, snackbar, t],
+    [attachedImages.length, toast, t],
   );
 
   const onFilePicked = (e: ChangeEvent<HTMLInputElement>) => {
@@ -371,7 +372,7 @@ export function Composer({
       sendAfterTranscribeRef.current = false;
       if (!micProvider) return;
       if (blob.size === 0) {
-        if (autoSend) snackbar.show(t('assistant.micNoSpeechDetected'));
+        if (autoSend) toast.success(t('assistant.micNoSpeechDetected'));
         return;
       }
       setIsTranscribing(true);
@@ -386,7 +387,7 @@ export function Composer({
         });
         const trimmed = text.trim();
         if (!trimmed) {
-          snackbar.show(t('assistant.micNoSpeechDetected'));
+          toast.success(t('assistant.micNoSpeechDetected'));
           return;
         }
         const nextText = inputText ? `${inputText}${inputText.endsWith(' ') ? '' : ' '}${trimmed}` : trimmed;
@@ -394,12 +395,12 @@ export function Composer({
         else setInputText(nextText);
       } catch (err) {
         console.error('[transcribeRecordedBlob]', err);
-        snackbar.show((err as Error)?.message || t('assistant.micTranscribeFailed'));
+        toast.error(errorText(err, t('assistant.micTranscribeFailed')));
       } finally {
         setIsTranscribing(false);
       }
     },
-    [micProvider, inputText, sendWithText, snackbar, t],
+    [micProvider, inputText, sendWithText, toast, t],
   );
 
   // The recorder's onstop is bound once per recording; it reaches the latest transcriber here.
@@ -411,7 +412,7 @@ export function Composer({
   const startRecording = async () => {
     if (!micProvider) return;
     if (!navigator.mediaDevices?.getUserMedia) {
-      snackbar.show(t('assistant.micUnsupported'));
+      toast.error(t('assistant.micUnsupported'));
       return;
     }
     try {
@@ -440,7 +441,7 @@ export function Composer({
         sendAfterTranscribeRef.current = false;
         setIsRecording(false);
         setRecordingSeconds(0);
-        snackbar.show(t('assistant.micRecordFailed'));
+        toast.error(t('assistant.micRecordFailed'));
       };
       recordingStartRef.current = Date.now();
       setRecordingSeconds(0);
@@ -453,7 +454,7 @@ export function Composer({
       }, 250);
     } catch (err) {
       console.error('[startRecording]', err);
-      snackbar.show((err as Error)?.name === 'NotAllowedError' ? t('assistant.micPermissionDenied') : t('assistant.micRecordFailed'));
+      toast.error((err as Error)?.name === 'NotAllowedError' ? t('assistant.micPermissionDenied') : t('assistant.micRecordFailed'));
     }
   };
 

@@ -1,5 +1,12 @@
 /* Maps Tailwind utilities onto the M3 color roles, corner scale and type families. */
 @theme {
+  /* Responsive utilities break at the M3 window size classes: medium, expanded, large, extra-large. */
+  --breakpoint-*: initial;
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 840px;
+  --breakpoint-lg: 1200px;
+  --breakpoint-xl: 1600px;
+
   --color-*: initial;
   --color-transparent: transparent;
   --color-current: currentColor;

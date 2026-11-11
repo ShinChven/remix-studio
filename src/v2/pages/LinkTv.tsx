@@ -2,10 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { approveMediaPairing, denyMediaPairing, fetchMediaPairing, type MediaPairingInfo } from '../../api';
-import { Button, Icon, Shape, Text, TextField, useSnackbar } from '../../m3';
+import { Button, Icon, Shape, Text, TextField } from '../../m3';
 import { useAuth } from '../app/auth';
 import { isScopeValid, ProjectScopePicker } from '../components/media-share/ProjectScopePicker';
 import { LoadingState } from '../ui/Page';
+import { useToast } from '../ui/useToast';
 
 /** Formats what the user types as XXXX-XXXX, dropping characters codes never use. */
 function formatCode(value: string): string {
@@ -16,7 +17,7 @@ function formatCode(value: string): string {
 /** Approves a TV's pairing code; the TV's QR code opens it with the code filled in. */
 export function LinkTv() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -56,7 +57,7 @@ export function LinkTv() {
       await fn();
       setOutcome(result);
     } catch (e) {
-      snackbar.show((e as Error).message);
+      toast.error((e as Error).message);
     } finally {
       setBusy(false);
     }

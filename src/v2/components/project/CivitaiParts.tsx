@@ -5,6 +5,7 @@ import { civitaiModelPageUrl, civitaiResourceLabel, normalizeCivitaiAir, parseCi
 import { Button, ChipSet, Icon, IconButton, Ripple, SuggestionChip, Text, TextField } from '../../../m3';
 import type { CivitaiResource, CivitaiSearchResult } from '../../../types';
 import { useToast } from '../../ui/useToast';
+import { useCopy } from '../../lib/useCopy';
 
 /** A Civitai thumbnail, falling back to the mark when missing or broken. */
 function ResourceThumb({ url, small }: { url?: string; small?: boolean }) {
@@ -132,16 +133,9 @@ export function CivitaiResourceLookup({ providerId, slot, baseModels, placeholde
 /** Trigger words a resource was trained on; clicking one copies it. */
 export function CivitaiTriggerWords({ words }: { words?: string[] }) {
   const { t } = useTranslation();
-  const toast = useToast();
+  const copyText = useCopy();
   if (!words || words.length === 0) return null;
-  const copy = async (word: string) => {
-    try {
-      await navigator.clipboard.writeText(word);
-      toast.success(t('projectViewer.civitai.triggerWordCopied'));
-    } catch {
-      toast.error(t('projectViewer.civitai.copyFailed'));
-    }
-  };
+  const copy = (word: string) => copyText(word, t('projectViewer.civitai.triggerWordCopied'), t('projectViewer.civitai.copyFailed'));
   return (
     <div className="flex flex-col gap-1">
       <Text variant="label-small" className="uppercase tracking-widest text-on-surface-variant">

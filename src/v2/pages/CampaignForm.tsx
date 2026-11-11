@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { errorText } from '../lib/errors';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createCampaign, fetchCampaign, fetchSocialAccounts, updateCampaign } from '../../api';
@@ -23,6 +25,7 @@ const displayName = (account: SocialAccount) => account.profileName || account.a
 export function CampaignForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const toast = useToast();
   const isEditing = Boolean(id);
   const [name, setName] = useState('');
@@ -45,7 +48,7 @@ export function CampaignForm() {
         setSelected((campaign.socialAccounts || []).map((a: SocialAccount) => a.id));
       }
     } catch (error) {
-      toast.error((error as Error)?.message || 'Error loading campaign data');
+      toast.error(errorText(error, t('v2.campaigns.loadCampaignFailed')));
       if (isEditing) navigate('/campaigns');
     } finally {
       setLoading(false);
@@ -91,7 +94,7 @@ export function CampaignForm() {
 
   const save = async () => {
     if (!name.trim()) {
-      toast.error('Campaign name is required');
+      toast.error(t('v2.campaigns.form.nameRequired'));
       return;
     }
     setSaving(true);
@@ -99,15 +102,15 @@ export function CampaignForm() {
       const data = { name: name.trim(), description: description.trim(), socialAccountIds: selected };
       if (isEditing && id) {
         await updateCampaign(id, data);
-        toast.success('Campaign updated successfully');
+        toast.success(t('v2.campaigns.form.updated'));
         navigate(`/campaigns/${id}`);
       } else {
         const campaign = await createCampaign(data);
-        toast.success('Campaign created successfully');
+        toast.success(t('v2.campaigns.form.created'));
         navigate(`/campaigns/${campaign.id}`);
       }
     } catch (error) {
-      toast.error((error as Error)?.message || 'Failed to save campaign');
+      toast.error(errorText(error, t('v2.campaigns.form.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -121,24 +124,24 @@ export function CampaignForm() {
   return (
     <Page density="compact">
       <PageHeader
-        title={isEditing ? 'Campaign Settings' : 'New Campaign'}
-        description={isEditing ? 'Rename the campaign or change the channels it posts to.' : 'Name the campaign and choose the channels its posts go to.'}
-        backLink={{ label: 'Back', onClick: () => navigate(-1) }}
+        title={isEditing ? t('v2.campaigns.settings') : t('v2.campaigns.newCampaign')}
+        description={isEditing ? t('v2.campaigns.form.editHint') : t('v2.campaigns.form.newHint')}
+        backLink={{ label: t('v2.campaigns.postForm.back'), onClick: () => navigate(-1) }}
       />
       <div className="v2-split">
         <div className="v2-split__rail flex flex-col gap-4">
-          <Section variant="card" title="Details">
+          <Section variant="card" title={t('v2.campaigns.form.details')}>
             <div className="flex flex-col gap-3">
-              <TextField variant="outlined" label="Campaign Name" placeholder="e.g. Q4 Growth Sprint" value={name} onValueChange={setName} fullWidth required />
-              <TextField variant="outlined" label="Description" placeholder="What is the goal of this campaign?" value={description} onValueChange={setDescription} multiline rows={4} maxRows={10} fullWidth />
+              <TextField variant="outlined" label={t('v2.campaigns.form.name')} placeholder={t('v2.campaigns.form.namePlaceholder')} value={name} onValueChange={setName} fullWidth required />
+              <TextField variant="outlined" label={t('v2.campaigns.form.description')} placeholder={t('v2.campaigns.form.descriptionPlaceholder')} value={description} onValueChange={setDescription} multiline rows={4} maxRows={10} fullWidth />
             </div>
           </Section>
           <div className="flex flex-col gap-2">
             <Button variant="filled" size="md" icon={isEditing ? 'save' : 'rocket_launch'} loading={saving} fullWidth emphasized onClick={() => void save()}>
-              {isEditing ? 'Save Changes' : 'Create Campaign'}
+              {isEditing ? t('v2.campaigns.form.saveChanges') : t('v2.campaigns.form.create')}
             </Button>
             <Button variant="text" fullWidth disabled={saving} onClick={() => navigate(-1)}>
-              Cancel
+              {t('confirmModal.cancel', 'Cancel')}
             </Button>
           </div>
         </div>
@@ -146,18 +149,18 @@ export function CampaignForm() {
           variant="card"
           title={
             <>
-              Channels {usable.length > 0 && <span className="v2-count">{selected.length} of {usable.length}</span>}
+              {t('channels')} {usable.length > 0 && <span className="v2-count">{t('v2.campaigns.form.selectedOf', { selected: selected.length, total: usable.length })}</span>}
             </>
           }
-          description="Every post in this campaign goes to all selected channels."
+          description={t('v2.campaigns.form.channelsHint')}
           actions={
             usable.length > 1 && (
               <>
                 <Button variant="text" size="xs" onClick={selectAll}>
-                  Select All
+                  {t('v2.campaigns.form.selectAll')}
                 </Button>
                 <Button variant="text" size="xs" onClick={deselectAll}>
-                  Clear
+                  {t('v2.campaigns.form.clear')}
                 </Button>
               </>
             )
@@ -168,19 +171,19 @@ export function CampaignForm() {
               icon="share"
               shape="flower"
               size="inline"
-              title="No channels connected"
-              description="Connect an account first; you can still create the campaign and add channels later."
+              title={t('v2.campaigns.channelsPage.none')}
+              description={t('v2.campaigns.form.noChannelsHint')}
               action={
                 <Button variant="tonal" size="sm" icon="add_link" href="/campaigns/channels">
-                  Manage Channels
+                  {t('v2.campaigns.form.manageChannels')}
                 </Button>
               }
             />
           ) : (
             <div className="flex flex-col gap-3">
-              {usable.length > 6 && <SearchField shape="field" value={search} onChange={setSearch} placeholder="Search channels" aria-label="Search by username or platform" />}
+              {usable.length > 6 && <SearchField shape="field" value={search} onChange={setSearch} placeholder={t('v2.campaigns.form.searchChannels')} aria-label={t('v2.campaigns.form.searchChannels')} />}
               {platforms.length > 1 && (
-                <ChipSet aria-label="Filter by platform">
+                <ChipSet aria-label={t('v2.campaigns.form.filterByPlatform')}>
                   {platforms.map((platform) => (
                     <FilterChip key={platform} icon={<PlatformIcon platform={platform} size={16} />} label={platformLabel(platform)} selected={platformFilter === platform} onClick={() => setPlatformFilter(platformFilter === platform ? null : platform)} />
                   ))}
@@ -210,7 +213,7 @@ export function CampaignForm() {
                 <EmptyState
                   icon="search_off"
                   size="inline"
-                  title="No channels match"
+                  title={t('v2.campaigns.form.noChannelsMatch')}
                   action={
                     <Button
                       variant="text"
@@ -220,7 +223,7 @@ export function CampaignForm() {
                         setPlatformFilter(null);
                       }}
                     >
-                      Clear filters
+                      {t('v2.common.clearFilters')}
                     </Button>
                   }
                 />

@@ -1,17 +1,18 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { cx, IconButton, Text, useSnackbar } from '../../m3';
+import { cx, IconButton, Text } from '../../m3';
+import { useToast } from './useToast';
 
 /** A read-only value with a copy button, e.g. a URL, token or command. */
 export function CopyField({ label, value, copiedMessage, className, mono = true }: { label?: ReactNode; value: string; copiedMessage?: string; className?: string; mono?: boolean }) {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(true);
-      if (copiedMessage) snackbar.show(copiedMessage);
+      if (copiedMessage) toast.success(copiedMessage);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       // The clipboard can be blocked on plain HTTP; the value stays selectable.

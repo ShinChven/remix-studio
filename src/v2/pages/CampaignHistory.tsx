@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { fetchCampaignHistory } from '../../api';
-import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { Button, ChipSet, FilterChip, IconButton, Text, TextField } from '../../m3';
+import { ChipSet, FilterChip, IconButton, Text, TextField } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { PostingTrendChart, lastNDaysRange } from '../components/campaigns/PostingTrendChart';
-import { usePaginationScroll } from '../lib/usePaginationScroll';
+import { errorText } from '../lib/errors';
 import { fallbackExternalUrl } from '../lib/platform';
-import { EmptyState, Page, PageHeader, Section } from '../ui/Page';
-import { PagedFooter } from '../ui/PagedFooter';
+import { useAsyncData } from '../lib/useAsyncData';
+import { PAGE_SIZES, useListParams } from '../lib/useListParams';
+import { ListTitle } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { ListSearch } from '../ui/ListSearch';
+import { Page, PageHeader, Section } from '../ui/Page';
 import { Row, RowList } from '../ui/Rows';
-import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
 import { Segmented } from '../ui/Toolbar';
-import { useToast } from '../ui/useToast';
 
 /** Quick ranges, in URL-friendly ids. `null` days means "all time" (no lower bound). */
 const RANGE_PRESETS = [
@@ -54,27 +55,15 @@ function parseDateInput(value: string) {
 
 /** Every published or failed post over a time range, as a list or as the posting-trend chart. */
 export function CampaignHistory() {
-  const toast = useToast();
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [history, setHistory] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const pageSize = parseInt(searchParams.get('pageSize') || '25', 10);
-  const paginationRef = usePaginationScroll({ page, pageSize, enabled: searchParams.get('view') !== 'chart' });
-  const startDateParam = searchParams.get('startDate') || '';
-  const endDateParam = searchParams.get('endDate') || '';
-  const qParam = searchParams.get('q') || '';
-  const rangeParam = searchParams.get('range') || '';
-
-  const [searchQuery, setSearchQuery] = useState(qParam);
-
-  const view = searchParams.get('view') === 'chart' ? 'chart' : 'list';
+  const list = useListParams({ pageSize: 25, pageSizes: PAGE_SIZES, defaults: { range: DEFAULT_PRESET, view: 'list' } });
+  const { page } = list;
+  const pageSize = list.pageSize === 'all' ? 500 : list.pageSize;
+  const startDateParam = list.get('startDate');
+  const endDateParam = list.get('endDate');
+  const qParam = list.q;
+  const rangeParam = list.get('range');
+  const view = list.oneOf('view', ['list', 'chart'] as const);
 
   // One range drives both views. Explicit dates in the URL mean the custom
   // range is in play; otherwise a quick preset is (30 days by default).
@@ -111,35 +100,19 @@ export function CampaignHistory() {
     return { from, to, apiStart: toDateInput(from), apiEnd: toDateInput(to) };
   }, [isCustomRange, startDateParam, endDateParam, preset]);
 
-  const setView = (nextView: 'list' | 'chart') => {
-    const params = new URLSearchParams(searchParams);
-    if (nextView === 'chart') params.set('view', 'chart');
-    else params.delete('view');
-    setSearchParams(params, { replace: true });
-  };
+  const setView = (nextView: 'list' | 'chart') => list.set({ view: nextView }, { replace: true, keepPage: true });
 
   const selectPreset = (id: RangePresetId) => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('startDate');
-    params.delete('endDate');
-    if (id === DEFAULT_PRESET) params.delete('range');
-    else params.set('range', id);
-    params.set('page', '1');
     setCustomOpen(false);
-    setSearchParams(params);
+    list.set({ startDate: null, endDate: null, range: id });
   };
 
   const openCustomRange = () => {
     setCustomOpen(true);
     if (hasCustomDates) return;
     // Seed the inputs with whatever is on screen so the switch isn't a reset.
-    const params = new URLSearchParams(searchParams);
     const seed = range.from ?? lastNDaysRange(30).from;
-    params.set('startDate', toDateInput(seed));
-    params.set('endDate', toDateInput(range.to));
-    params.delete('range');
-    params.set('page', '1');
-    setSearchParams(params);
+    list.set({ startDate: toDateInput(seed), endDate: toDateInput(range.to), range: null });
   };
 
   /** Applies a custom bound immediately; an inverted range is swapped, not rejected. */
@@ -147,87 +120,26 @@ export function CampaignHistory() {
     let nextStart = bound === 'start' ? value : startDateParam;
     let nextEnd = bound === 'end' ? value : endDateParam;
     if (nextStart && nextEnd && nextStart > nextEnd) [nextStart, nextEnd] = [nextEnd, nextStart];
-
-    const params = new URLSearchParams(searchParams);
-    if (nextStart) params.set('startDate', nextStart);
-    else params.delete('startDate');
-    if (nextEnd) params.set('endDate', nextEnd);
-    else params.delete('endDate');
-    params.delete('range');
-    params.set('page', '1');
     setCustomOpen(true);
-    setSearchParams(params);
+    list.set({ startDate: nextStart, endDate: nextEnd, range: null });
   };
 
-  const historyRequest = useRef(0);
-  const loadHistory = async (silent = false) => {
-    const request = ++historyRequest.current;
-    if (!silent) setIsLoading(true);
-    try {
-      const data = await fetchCampaignHistory(
-        page,
-        pageSize,
-        range.apiStart,
-        range.apiEnd,
-        qParam,
-        new Date().getTimezoneOffset(),
-      );
-      if (request !== historyRequest.current) return;
-      setHistory(data.items);
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      if (request !== historyRequest.current) return;
-      console.error('[CampaignHistory] error:', error);
-      toast.error((error as Error).message || 'Failed to load campaign history');
-    } finally {
-      if (request === historyRequest.current) setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // The chart pulls its own aggregates, so skip the list request while it is shown.
-    if (view === 'list') void loadHistory();
-    setSearchQuery(qParam);
-    return () => { historyRequest.current++; };
-  }, [page, pageSize, range.apiStart, range.apiEnd, qParam, view]);
-
-  // Posts published or edited elsewhere (another tab, an MCP agent, the scheduler).
-  useLiveRefresh(
-    (event) => event.resource === 'post' || event.resource === 'campaign',
-    () => loadHistory(true),
-    { enabled: view === 'list' },
-  );
-
-  const applySearch = () => {
-    const params = new URLSearchParams(searchParams);
-    params.set('page', '1');
-    if (searchQuery) params.set('q', searchQuery);
-    else params.delete('q');
-    setSearchParams(params);
-  };
+  // The chart pulls its own aggregates, so the list is only loaded while it is shown.
+  const history = useAsyncData(() => fetchCampaignHistory(page, pageSize, range.apiStart, range.apiEnd, qParam, new Date().getTimezoneOffset()), [page, pageSize, range.apiStart, range.apiEnd, qParam], {
+    enabled: view === 'list',
+    // Posts published or edited elsewhere (another tab, an MCP agent, the scheduler).
+    live: (event) => event.resource === 'post' || event.resource === 'campaign',
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items: any[] = history.data?.items ?? [];
+  const total = history.data?.total ?? 0;
 
   const clearFilters = () => {
-    const params = new URLSearchParams(searchParams);
-    params.delete('startDate');
-    params.delete('endDate');
-    params.delete('range');
-    params.delete('q');
-    params.set('page', '1');
-    setSearchQuery('');
     setCustomOpen(false);
-    setSearchParams(params);
+    list.set({ startDate: null, endDate: null, range: null, q: null });
   };
 
-  const hasActiveFilters = hasCustomDates
-    || Boolean(qParam)
-    || Boolean(rangeParam && rangeParam !== DEFAULT_PRESET);
-
-  const updatePage = (newPage: number) => {
-    const params = new URLSearchParams(searchParams);
-    params.set('page', newPage.toString());
-    setSearchParams(params);
-  };
+  const hasActiveFilters = hasCustomDates || Boolean(qParam) || rangeParam !== DEFAULT_PRESET;
 
   // The chip row scrolls sideways on phones, so keep the active chip in view.
   const activeChipRef = useRef<HTMLDivElement | null>(null);
@@ -242,26 +154,7 @@ export function CampaignHistory() {
   };
 
 
-  return (
-    <Page ref={paginationRef} density="compact" aria-busy={view === 'list' && isLoading}>
-      <PageHeader title="History" description="Audit log of your posts." backLink={{ to: '/campaigns', label: 'Back to Campaigns' }} />
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Segmented<'list' | 'chart'>
-            value={view}
-            onChange={setView}
-            options={[
-              { value: 'list', label: t('postingTrend.listView'), icon: 'list' },
-              { value: 'chart', label: t('postingTrend.chartView'), icon: 'show_chart' },
-            ]}
-          />
-          <SearchField value={searchQuery} onChange={setSearchQuery} onSubmit={() => applySearch()} placeholder="Search history" className="v2-header-search" />
-          {hasActiveFilters && (
-            <Button variant="text" size="xs" icon="filter_alt_off" onClick={clearFilters}>
-              {t('postingTrend.resetRange')}
-            </Button>
-          )}
-        </div>
+  const rangeChips = (
         <div className="flex flex-wrap items-center gap-2">
           <ChipSet scroll>
             {RANGE_PRESETS.map(({ id }) => (
@@ -277,31 +170,60 @@ export function CampaignHistory() {
             <span className="flex items-center gap-2">
               <TextField variant="outlined" type="date" aria-label={t('postingTrend.rangeStart')} value={startDateParam} max={endDateParam || undefined} onValueChange={(v) => setCustomBound('start', v)} />
               <Text as="span" variant="label-small" className="text-on-surface-variant">
-                TO
+                {t('v2.campaigns.history.to')}
               </Text>
               <TextField variant="outlined" type="date" aria-label={t('postingTrend.rangeEnd')} value={endDateParam} min={startDateParam || undefined} onValueChange={(v) => setCustomBound('end', v)} />
             </span>
           )}
         </div>
-        {view === 'chart' ? (
+  );
+
+  return (
+    <Page density="compact">
+      <PageHeader
+        title={t('v2.campaigns.history.title')}
+        description={t('v2.campaigns.history.description')}
+        backLink={{ to: '/campaigns', label: t('v2.campaigns.backToCampaigns') }}
+        actions={
+          <Segmented<'list' | 'chart'>
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'list', label: t('postingTrend.listView'), icon: 'list' },
+              { value: 'chart', label: t('postingTrend.chartView'), icon: 'show_chart' },
+            ]}
+          />
+        }
+      />
+      {view === 'chart' ? (
+        <div className="flex flex-col gap-3">
+          {rangeChips}
           <Section variant="card">
             <PostingTrendChart from={range.from} to={range.to} height={280} />
           </Section>
-        ) : isLoading && history.length === 0 ? (
-          <RowList>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="v2-skeleton" style={{ height: 56 }} />
-            ))}
-          </RowList>
-        ) : history.length === 0 ? (
-          <EmptyState icon="history" shape="clover-4" title="No history yet" description="Your sending history will appear here once you start publishing posts." />
-        ) : (
-          <RowList>
-            {history.map((post) => {
+        </div>
+      ) : (
+        <ListPane
+          label={t('v2.campaigns.history.title')}
+          lead={<ListTitle title={t('v2.campaigns.history.title')} icon="history" count={total} />}
+          tools={<ListSearch value={qParam} onChange={list.setQuery} label={t('v2.campaigns.history.search')} />}
+          below={rangeChips}
+          loading={history.loading}
+          refreshing={history.refreshing}
+          error={history.error ? errorText(history.error, t('v2.campaigns.history.loadFailed')) : null}
+          onRetry={() => void history.reload()}
+          count={items.length}
+          filtered={hasActiveFilters}
+          onClearFilters={clearFilters}
+          empty={{ icon: 'history', shape: 'clover-4', title: t('v2.campaigns.history.empty'), description: t('v2.campaigns.history.emptyHint') }}
+          paging={{ page, pageSize: list.pageSize, total, pages: history.data?.totalPages, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+        >
+          <RowList className="v2-list-pane__grid">
+            {items.map((post) => {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const execution = post.executions?.find((ex: any) => ex.externalUrl) || post.executions?.[0];
               const account = execution?.socialAccount;
-              const platform = account?.platform || 'Unknown';
+              const platform = account?.platform || '';
               const externalUrl = execution?.externalUrl || fallbackExternalUrl(platform, execution?.externalId);
               const updated = new Date(post.updatedAt);
               return (
@@ -310,17 +232,17 @@ export function CampaignHistory() {
                   lead={<AccountAvatar account={account} seed={post.id} size={36} refreshOn={['twitter', 'x', 'threads']} />}
                   title={
                     <span className="flex flex-wrap items-center gap-2">
-                      {account?.profileName || 'Unknown Account'}
-                      <StatusPill tone={post.status === 'completed' ? 'success' : 'error'}>{post.status === 'completed' ? 'Published' : 'Failed'}</StatusPill>
+                      {account?.profileName || t('v2.campaigns.unknownAccount')}
+                      <StatusPill tone={post.status === 'completed' ? 'success' : 'error'}>{post.status === 'completed' ? t('v2.campaigns.published') : t('v2.campaigns.failed')}</StatusPill>
                     </span>
                   }
                   meta={
                     <>
                       <span className="uppercase">{platform}</span>
                       <span>·</span>
-                      <button type="button" className="v2-link" onClick={() => navigate(`/campaigns/${post.campaign?.id}`)}>
-                        {post.campaign?.name || 'Unknown Campaign'}
-                      </button>
+                      <Link to={`/campaigns/${post.campaign?.id}`} className="v2-link">
+                        {post.campaign?.name || t('v2.campaigns.history.unknownCampaign')}
+                      </Link>
                       <span>·</span>
                       <span className="tabular-nums">
                         {updated.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} {updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -334,17 +256,16 @@ export function CampaignHistory() {
                   }
                   actions={
                     <>
-                      {externalUrl && <IconButton icon="open_in_new" size="xs" label="View live post" tooltip href={externalUrl} target="_blank" rel="noopener noreferrer" />}
-                      <IconButton icon="arrow_forward" size="xs" label="Manage" tooltip href={`/campaigns/${post.campaign?.id}/posts/edit/${post.id}`} />
+                      {externalUrl && <IconButton icon="open_in_new" size="xs" label={t('v2.campaigns.viewLivePost')} tooltip href={externalUrl} target="_blank" rel="noopener noreferrer" />}
+                      <IconButton icon="arrow_forward" size="xs" label={t('v2.campaigns.history.manage')} tooltip href={`/campaigns/${post.campaign?.id}/posts/edit/${post.id}`} />
                     </>
                   }
                 />
               );
             })}
           </RowList>
-        )}
-        {view === 'list' && <PagedFooter page={page} pageSize={pageSize} total={total} pages={totalPages} onPageChange={updatePage} />}
-      </div>
+        </ListPane>
+      )}
     </Page>
   );
 }

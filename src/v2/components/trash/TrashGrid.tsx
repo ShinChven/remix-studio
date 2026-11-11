@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import type { TileSize } from '../../lib/viewPrefs';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Checkbox, Icon, IconButton, LinearProgress, Shape, Text, useMediaQuery } from '../../../m3';
@@ -9,13 +10,12 @@ import { kindMeta } from '../../ui/entityMeta';
 import { KindBadge } from '../../ui/KindBadge';
 import { timeAgo, trashBytes, trashKind, trashTitle, type TrashGroup } from './trashMeta';
 
-export type TileSize = 's' | 'm' | 'l';
 /** How an item leaves the grid: lifted out when restored, dropped when deleted. */
 export type Leaving = 'restore' | 'delete';
 
 export interface TrashGridProps {
   groups: TrashGroup[];
-  selectedIds: Set<string>;
+  selectedIds: ReadonlySet<string>;
   size: TileSize;
   /** Off while the runs are projects, which already name it. */
   showProject: boolean;

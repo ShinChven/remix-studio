@@ -1,38 +1,40 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { deleteCampaign, fetchCampaignsPage, fetchRecentPosts, fetchScheduledPosts, updateCampaign } from '../../api';
-import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { formatShortDate, formatTimeOrDate } from '../../lib/date';
+import type { LiveResourceEvent } from '../../lib/live';
 import { Button, Icon, IconButton, LinearProgress, Text } from '../../m3';
 import { AccountAvatar } from '../components/campaigns/AccountAvatar';
 import { PostingTrendChart, lastNDaysRange } from '../components/campaigns/PostingTrendChart';
-import { usePaginationScroll } from '../lib/usePaginationScroll';
 import { fallbackExternalUrl } from '../lib/platform';
+import { useAction } from '../lib/useAction';
+import { useAsyncData } from '../lib/useAsyncData';
+import { CARD_PAGE_SIZES, useListParams } from '../lib/useListParams';
+import { useViewPref } from '../lib/viewPrefs';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EntityList, EntityRow } from '../ui/EntityList';
-import { useViewPref } from '../lib/viewPrefs';
+import { ListTitle } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { ListSearch } from '../ui/ListSearch';
 import { MediaCard } from '../ui/MediaCard';
 import { EmptyState, Page, Section } from '../ui/Page';
 import { PageHero } from '../ui/PageHero';
-import { PagedFooter } from '../ui/PagedFooter';
-import { SearchField } from '../ui/SearchField';
 import { StatusPill } from '../ui/Stat';
-import { CardGrid, ListToolbar, MobileFab, Segmented } from '../ui/Toolbar';
-import { useToast } from '../ui/useToast';
+import { CardGrid, LayoutToggle, LIST_LAYOUTS, MobileFab, type ListLayout } from '../ui/Toolbar';
 
 type CampaignStatus = 'Active' | 'Inactive';
-const LAYOUTS = ['cards', 'list'] as const;
-type Layout = (typeof LAYOUTS)[number];
 
 interface CampaignCardModel {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
+  createdAt: string;
   status: CampaignStatus;
-  startDate: string;
-  endDate: string;
+  /** Date and year only; the campaign page has the time of day. Null when nothing is scheduled. */
+  startDate: string | null;
+  endDate: string | null;
   totalPosts: number;
   postedPosts: number;
   thumbnail: string | null;
@@ -53,11 +55,11 @@ function mapCampaign(raw: any): CampaignCardModel {
   return {
     id: raw.id,
     name: raw.name,
-    description: raw.description || `Campaign created on ${new Date(raw.createdAt).toLocaleDateString()}`,
+    description: raw.description || null,
+    createdAt: raw.createdAt,
     status: raw.status === 'active' ? 'Active' : 'Inactive',
-    // Cards carry the date and year only; the campaign page has the time of day.
-    startDate: start ? formatShortDate(start, true) : 'Not scheduled',
-    endDate: end ? formatShortDate(end, true) : 'Not scheduled',
+    startDate: start ? formatShortDate(start, true) : null,
+    endDate: end ? formatShortDate(end, true) : null,
     totalPosts,
     postedPosts,
     thumbnail: withMedia ? withMedia.media[0].thumbnailUrl || withMedia.media[0].url || null : null,
@@ -67,127 +69,60 @@ function mapCampaign(raw: any): CampaignCardModel {
 /** Campaigns with their progress, plus the posting trend, recent posts and the upcoming queue. */
 export function Campaigns() {
   const { t } = useTranslation();
-  const toast = useToast();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const queryParam = searchParams.get('q')?.trim() || '';
-  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
-  const pageSize = Math.max(1, Math.min(100, parseInt(searchParams.get('pageSize') || '12', 10) || 12));
-  const paginationRef = usePaginationScroll({ page, pageSize });
-  const [campaigns, setCampaigns] = useState<CampaignCardModel[]>([]);
-  const [loading, setLoading] = useState(true);
+  const action = useAction();
+  const list = useListParams({ pageSize: 24, pageSizes: CARD_PAGE_SIZES });
+  const size = list.pageSize === 'all' ? 24 : list.pageSize;
   const [deleteTarget, setDeleteTarget] = useState<CampaignCardModel | null>(null);
-  const [search, setSearch] = useState(searchParams.get('q') || '');
-  const [layout, setLayout] = useViewPref<Layout>('v2.campaigns.layout', 'cards', LAYOUTS);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [recentPosts, setRecentPosts] = useState<any[]>([]);
-  const [recentLoading, setRecentLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [scheduled, setScheduled] = useState<any[]>([]);
-  const [scheduledTotal, setScheduledTotal] = useState(0);
-  const [scheduledLoading, setScheduledLoading] = useState(true);
+  const [layout, setLayout] = useViewPref<ListLayout>('v2.campaigns.layout', 'cards', LIST_LAYOUTS);
   const trendRange = useMemo(() => lastNDaysRange(7), []);
-  // Only the newest load may write the list.
-  const loadSeq = useRef(0);
 
-  const loadData = async (silent = false) => {
-    const seq = ++loadSeq.current;
-    if (!silent) setLoading(true);
-    try {
-      const data = await fetchCampaignsPage({ page, pageSize, q: queryParam || undefined });
-      if (seq !== loadSeq.current) return;
-      setCampaigns(data.items.map(mapCampaign));
-      setTotal(data.total);
-      setTotalPages(data.totalPages);
-    } catch (error) {
-      if (silent) console.error('Failed to refresh campaigns', error);
-      else toast.error('Failed to load campaigns');
-    } finally {
-      if (seq === loadSeq.current) setLoading(false);
-    }
-  };
-  const loadRecent = async (silent = false) => {
-    if (!silent) setRecentLoading(true);
-    try {
-      setRecentPosts(await fetchRecentPosts(10));
-    } catch (error) {
-      console.error('Failed to load recent posts', error);
-    } finally {
-      setRecentLoading(false);
-    }
-  };
-  const loadScheduled = async (silent = false) => {
-    if (!silent) setScheduledLoading(true);
-    try {
-      const data = await fetchScheduledPosts(1, 5);
-      setScheduled(data.items);
-      setScheduledTotal(data.total);
-    } catch (error) {
-      console.error('Failed to load scheduled posts', error);
-    } finally {
-      setScheduledLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadRecent();
-    void loadScheduled();
-  }, []);
-  useEffect(() => {
-    void loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, queryParam]);
-  // Campaigns and posts changed elsewhere (another tab, an MCP agent, the scheduler).
-  useLiveRefresh(
-    (event) => event.resource === 'campaign' || event.resource === 'post',
-    () => Promise.all([loadData(true), loadRecent(true), loadScheduled(true)]),
+  // Campaigns and posts also change elsewhere: another tab, an MCP agent, the scheduler.
+  const live = (event: LiveResourceEvent) => event.resource === 'campaign' || event.resource === 'post';
+  const campaigns = useAsyncData(
+    async () => {
+      const data = await fetchCampaignsPage({ page: list.page, pageSize: size, q: list.q || undefined });
+      return { items: data.items.map(mapCampaign), total: data.total, pages: data.totalPages };
+    },
+    [list.page, size, list.q],
+    { live },
   );
+  const items = campaigns.data?.items ?? [];
+  const total = campaigns.data?.total ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recent = useAsyncData<any[]>(() => fetchRecentPosts(10), [], { live });
+  const scheduled = useAsyncData(() => fetchScheduledPosts(1, 5), [], { live });
+  const recentPosts = recent.data ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const scheduledPosts: any[] = scheduled.data?.items ?? [];
+  const scheduledTotal = scheduled.data?.total ?? 0;
 
-  useEffect(() => {
-    const trimmed = search.trim();
-    if (trimmed === queryParam) return;
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      if (trimmed) params.set('q', trimmed);
-      else params.delete('q');
-      // A new search starts over.
-      params.delete('page');
-      setSearchParams(params, { replace: true });
-    }, 350);
-    return () => window.clearTimeout(timer);
-  }, [search, queryParam, searchParams, setSearchParams]);
-
-  const setPage = (next: number) => {
-    const params = new URLSearchParams(searchParams);
-    if (next <= 1) params.delete('page');
-    else params.set('page', String(next));
-    setSearchParams(params);
-  };
-
-  const toggleStatus = async (campaign: CampaignCardModel) => {
+  const toggleStatus = (campaign: CampaignCardModel) => {
     const next = campaign.status === 'Active' ? 'archived' : 'active';
-    try {
-      await updateCampaign(campaign.id, { status: next });
-      setCampaigns((prev) => prev.map((c) => (c.id === campaign.id ? { ...c, status: next === 'active' ? 'Active' : 'Inactive' } : c)));
-      toast.success(next === 'active' ? 'Campaign resumed' : 'Campaign paused');
-    } catch (error) {
-      toast.error((error as Error)?.message || 'Failed to update campaign');
-    }
+    void action.run(
+      async () => {
+        await updateCampaign(campaign.id, { status: next });
+        campaigns.setData((data) => data && { ...data, items: data.items.map((c) => (c.id === campaign.id ? { ...c, status: next === 'active' ? 'Active' : 'Inactive' } : c)) });
+      },
+      { key: campaign.id, success: next === 'active' ? t('v2.campaigns.resumed') : t('v2.campaigns.paused'), error: t('v2.campaigns.updateFailed') },
+    );
   };
 
   const campaignMenu = (c: CampaignCardModel): ActionMenuItem[] => [
     { key: 'edit', label: t('menu.edit'), icon: 'edit', href: `/campaigns/edit/${c.id}` },
-    { key: 'status', label: c.status === 'Active' ? t('menu.pause') : t('menu.resume'), icon: c.status === 'Active' ? 'pause' : 'play_arrow', onSelect: () => void toggleStatus(c) },
+    { key: 'status', label: c.status === 'Active' ? t('menu.pause') : t('menu.resume'), icon: c.status === 'Active' ? 'pause' : 'play_arrow', disabled: action.isBusy(c.id), onSelect: () => toggleStatus(c) },
     { key: 'delete', label: t('menu.delete'), icon: 'delete', danger: true, divider: true, onSelect: () => setDeleteTarget(c) },
   ];
+
+  const describe = (c: CampaignCardModel) => c.description ?? t('v2.campaigns.createdOn', { date: new Date(c.createdAt).toLocaleDateString() });
+  const postsLabel = (c: CampaignCardModel) => (c.totalPosts > 0 ? t('v2.campaigns.postsProgress', { done: Math.min(c.postedPosts, c.totalPosts), total: c.totalPosts }) : t('status.setup'));
+  const dateOf = (value: string | null) => value ?? t('v2.campaigns.notScheduled');
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const campaignIdOf = (post: any) => post.campaignId || post.campaign?.id;
 
   return (
-    <Page ref={paginationRef}>
+    <Page>
       <PageHero
         icon="send"
         shape="burst"
@@ -196,7 +131,7 @@ export function Campaigns() {
         actions={
           <>
             <Button variant="filled" icon="add" emphasized href="/campaigns/new" className="v2-hide-mobile">
-              New Campaign
+              {t('v2.campaigns.newCampaign')}
             </Button>
             <Button variant="tonal" icon="share" href="/campaigns/channels">
               {t('channels')}
@@ -205,43 +140,39 @@ export function Campaigns() {
         }
       />
       <div className="v2-campaigns">
-        <section className="flex min-w-0 flex-col gap-3" aria-busy={loading}>
-          <ListToolbar title={t('allCampaigns')} icon="campaign" count={total} isLoading={loading && campaigns.length > 0}>
-            <SearchField value={search} onChange={setSearch} placeholder={t('searchPlaceholder')} />
-            <Segmented<Layout>
-              aria-label={t('v2.library.layout')}
-              value={layout}
-              onChange={setLayout}
-              options={[
-                { value: 'cards', label: t('v2.library.cards'), icon: 'grid_view' },
-                { value: 'list', label: t('v2.library.list'), icon: 'view_agenda' },
-              ]}
-            />
-          </ListToolbar>
-          {loading && campaigns.length === 0 ? (
+        <ListPane
+          variant="flush"
+          label={t('allCampaigns')}
+          lead={<ListTitle title={t('allCampaigns')} icon="campaign" count={total} />}
+          tools={
+            <>
+              <ListSearch value={list.q} onChange={list.setQuery} label={t('searchPlaceholder')} />
+              <LayoutToggle value={layout} onChange={setLayout} />
+            </>
+          }
+          loading={campaigns.loading}
+          refreshing={campaigns.refreshing}
+          error={campaigns.error}
+          onRetry={() => void campaigns.reload()}
+          count={items.length}
+          filtered={list.filtered}
+          onClearFilters={list.clearFilters}
+          empty={{
+            icon: 'campaign',
+            shape: 'burst',
+            title: t('noCampaigns'),
+            action: (
+              <Button variant="filled" icon="add" href="/campaigns/new">
+                {t('createOne')}
+              </Button>
+            ),
+          }}
+          paging={{ page: list.page, pageSize: size, total, pages: campaigns.data?.pages, onPageChange: list.setPage, onPageSizeChange: list.setPageSize, pageSizes: CARD_PAGE_SIZES }}
+        >
+          {layout === 'cards' ? (
             <CardGrid min={300}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="v2-skeleton" style={{ height: 300 }} />
-              ))}
-            </CardGrid>
-          ) : campaigns.length === 0 ? (
-            <EmptyState
-              icon="campaign"
-              shape="burst"
-              title={t('noCampaigns')}
-              action={
-                !queryParam && (
-                  <Button variant="filled" icon="add" onClick={() => navigate('/campaigns/new')}>
-                    {t('createOne')}
-                  </Button>
-                )
-              }
-            />
-          ) : layout === 'cards' ? (
-            <CardGrid min={300}>
-              {campaigns.map((c) => {
+              {items.map((c) => {
                 const done = Math.min(c.postedPosts, c.totalPosts);
-                const progress = c.totalPosts > 0 ? done / c.totalPosts : 0;
                 return (
                   <MediaCard
                     key={c.id}
@@ -250,35 +181,29 @@ export function Campaigns() {
                     seed={c.id}
                     height={320}
                     badge={<StatusPill tone={c.status === 'Active' ? 'success' : 'neutral'}>{c.status === 'Active' ? t('status.active') : t('status.paused')}</StatusPill>}
-                    kicker={c.totalPosts > 0 ? `${done}/${c.totalPosts} posts` : t('status.setup')}
+                    kicker={postsLabel(c)}
                     title={c.name}
-                    description={c.description}
+                    description={describe(c)}
                     meta={
                       <div className="flex w-full flex-col gap-2">
-                        {c.totalPosts > 0 && <LinearProgress value={progress} max={1} aria-label={`${done}/${c.totalPosts}`} />}
+                        {c.totalPosts > 0 && <LinearProgress value={done / c.totalPosts} max={1} aria-label={postsLabel(c)} />}
                         <div className="v2-campaign-dates">
                           <span>
                             <Text as="span" variant="label-small" className="block uppercase tracking-widest opacity-70">
-                              Start
+                              {t('v2.campaigns.start')}
                             </Text>
-                            {c.startDate}
+                            {dateOf(c.startDate)}
                           </span>
                           <span>
                             <Text as="span" variant="label-small" className="block uppercase tracking-widest opacity-70">
-                              End
+                              {t('v2.campaigns.end')}
                             </Text>
-                            {c.endDate}
+                            {dateOf(c.endDate)}
                           </span>
                         </div>
                       </div>
                     }
-                    actions={
-                      <ActionMenu
-                        label={t('v2.common.more')}
-                        variant="tonal"
-                        items={campaignMenu(c)}
-                      />
-                    }
+                    actions={<ActionMenu label={t('v2.common.more')} variant="tonal" items={campaignMenu(c)} />}
                   />
                 );
               })}
@@ -286,7 +211,7 @@ export function Campaigns() {
           ) : (
             <div className="v2-erow-surface">
               <EntityList>
-                {campaigns.map((c) => {
+                {items.map((c) => {
                   const done = Math.min(c.postedPosts, c.totalPosts);
                   const active = c.status === 'Active';
                   return (
@@ -305,7 +230,7 @@ export function Campaigns() {
                       }
                       title={c.name}
                       badges={<StatusPill tone={active ? 'success' : 'neutral'}>{active ? t('status.active') : t('status.paused')}</StatusPill>}
-                      subtitle={c.description}
+                      subtitle={describe(c)}
                       cells={[
                         {
                           key: 'posts',
@@ -314,9 +239,9 @@ export function Campaigns() {
                           children: (
                             <span className="v2-campaign-progress">
                               <Text as="span" variant="label-medium">
-                                {c.totalPosts > 0 ? `${done}/${c.totalPosts} posts` : t('status.setup')}
+                                {postsLabel(c)}
                               </Text>
-                              {c.totalPosts > 0 && <LinearProgress value={done / c.totalPosts} max={1} aria-label={`${done}/${c.totalPosts}`} />}
+                              {c.totalPosts > 0 && <LinearProgress value={done / c.totalPosts} max={1} aria-label={postsLabel(c)} />}
                             </span>
                           ),
                         },
@@ -328,7 +253,7 @@ export function Campaigns() {
                           children: (
                             <span className="v2-erow__value">
                               <Icon name="event" size={16} aria-hidden />
-                              <span className="truncate">{c.startDate === c.endDate ? c.startDate : `${c.startDate} – ${c.endDate}`}</span>
+                              <span className="truncate">{c.startDate === c.endDate ? dateOf(c.startDate) : `${dateOf(c.startDate)} – ${dateOf(c.endDate)}`}</span>
                             </span>
                           ),
                         },
@@ -343,8 +268,7 @@ export function Campaigns() {
               </EntityList>
             </div>
           )}
-          <PagedFooter page={page} pageSize={pageSize} total={total} pages={totalPages} onPageChange={setPage} />
-        </section>
+        </ListPane>
 
         <aside className="v2-campaigns__aside" data-density="compact">
           <Section variant="card" icon="trending_up" title={t('postingTrend.title')}>
@@ -363,11 +287,11 @@ export function Campaigns() {
               )
             }
           >
-            {recentLoading ? (
+            {recent.loading ? (
               Array.from({ length: 4 }).map((_, i) => <div key={i} className="v2-skeleton mb-2" style={{ height: 48 }} />)
             ) : recentPosts.length === 0 ? (
               <Text variant="body-small" className="text-on-surface-variant">
-                No recent activity found.
+                {t('v2.campaigns.noRecentActivity')}
               </Text>
             ) : (
               recentPosts.map((post) => {
@@ -384,9 +308,9 @@ export function Campaigns() {
                     <div className="flex min-w-0 flex-1 flex-col">
                       <span className="flex min-w-0 items-center gap-2">
                         <Link to={postLink} className="v2-link truncate">
-                          {account?.profileName || 'Unknown Account'}
+                          {account?.profileName || t('v2.campaigns.unknownAccount')}
                         </Link>
-                        <StatusPill tone={post.status === 'completed' ? 'success' : 'error'}>{post.status === 'completed' ? 'Published' : 'Failed'}</StatusPill>
+                        <StatusPill tone={post.status === 'completed' ? 'success' : 'error'}>{post.status === 'completed' ? t('v2.campaigns.published') : t('v2.campaigns.failed')}</StatusPill>
                       </span>
                       <Text as="span" variant="label-small" className="flex min-w-0 items-center gap-1 text-on-surface-variant">
                         <Link to={`/campaigns/${campaignIdOf(post)}`} className="truncate hover:underline">
@@ -395,7 +319,7 @@ export function Campaigns() {
                         · <Icon name="schedule" size={12} /> {formatTimeOrDate(new Date(post.updatedAt))}
                       </Text>
                     </div>
-                    {externalUrl && <IconButton icon="open_in_new" size="xs" label="View live post" tooltip href={externalUrl} target="_blank" rel="noopener noreferrer" />}
+                    {externalUrl && <IconButton icon="open_in_new" size="xs" label={t('v2.campaigns.viewLivePost')} tooltip href={externalUrl} target="_blank" rel="noopener noreferrer" />}
                   </div>
                 );
               })
@@ -412,23 +336,23 @@ export function Campaigns() {
             }
             actions={
               <Button variant="text" size="xs" trailingIcon="arrow_forward" href="/campaigns/scheduled">
-                {scheduled.length > 0 ? t('viewAllScheduled') : t('openCalendar')}
+                {scheduledPosts.length > 0 ? t('viewAllScheduled') : t('openCalendar')}
               </Button>
             }
           >
-            {scheduledLoading ? (
+            {scheduled.loading ? (
               Array.from({ length: 3 }).map((_, i) => <div key={i} className="v2-skeleton mb-2" style={{ height: 48 }} />)
-            ) : scheduled.length === 0 ? (
-              <EmptyState icon="schedule" size="inline" title={t('upcomingQueue')} description="No scheduled posts found. Start planning your campaigns!" />
+            ) : scheduledPosts.length === 0 ? (
+              <EmptyState icon="schedule" size="inline" title={t('upcomingQueue')} description={t('v2.campaigns.noScheduledHint')} />
             ) : (
-              scheduled.map((post) => {
+              scheduledPosts.map((post) => {
                 const link = `/campaigns/${campaignIdOf(post)}/posts/edit/${post.id}`;
                 return (
                   <Link key={post.id} to={link} className="v2-feed-row m3-focus-ring">
                     <span className="v2-feed-thumb">{post.media?.[0]?.thumbnailUrl ? <img src={post.media[0].thumbnailUrl} alt="" /> : <Icon name="event" />}</span>
                     <span className="flex min-w-0 flex-1 flex-col">
                       <Text as="span" variant="body-small" className="line-clamp-1">
-                        {post.textContent || <em className="text-on-surface-variant">No text content</em>}
+                        {post.textContent || <em className="text-on-surface-variant">{t('v2.campaigns.noTextContent')}</em>}
                       </Text>
                       <Text as="span" variant="label-small" className="truncate text-on-surface-variant">
                         {formatShortDate(new Date(post.scheduledAt))} · {post.campaign?.name}
@@ -442,27 +366,26 @@ export function Campaigns() {
           </Section>
         </aside>
       </div>
-      <MobileFab icon="add" label="New Campaign" href="/campaigns/new" />
+      <MobileFab icon="add" label={t('v2.campaigns.newCampaign')} href="/campaigns/new" />
       <ConfirmDialog
         open={!!deleteTarget}
         tone="danger"
         title={t('deleteDialog.title')}
-        message={t('deleteDialog.description', { name: deleteTarget?.name || 'this campaign' })}
+        message={t('deleteDialog.description', { name: deleteTarget?.name ?? '' })}
         confirmLabel={t('deleteDialog.confirm')}
         cancelLabel={t('deleteDialog.cancel')}
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
           if (!deleteTarget) return;
-          try {
-            await deleteCampaign(deleteTarget.id);
-            toast.success('Campaign deleted');
-            // Deleting the only card on the last page would leave it empty; step back instead.
-            if (campaigns.length === 1 && page > 1) setPage(page - 1);
-            else await loadData();
-          } catch (error) {
-            toast.error((error as Error)?.message || 'Failed to delete campaign');
-            throw error;
-          }
+          await action.run(
+            async () => {
+              await deleteCampaign(deleteTarget.id);
+              // Deleting the only card on the last page would leave it empty; step back instead.
+              if (items.length === 1 && list.page > 1) list.setPage(list.page - 1);
+              else await campaigns.reload(true);
+            },
+            { key: `delete:${deleteTarget.id}`, success: t('v2.campaigns.deleted'), error: t('v2.campaigns.deleteFailed'), rethrow: true },
+          );
         }}
       />
     </Page>

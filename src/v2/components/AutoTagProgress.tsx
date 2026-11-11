@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cancelAutoTag, fetchAutoTagStatus, retryAutoTag } from '../../api';
-import { Button, cx, Icon, IconButton, LinearProgress, Text, useSnackbar } from '../../m3';
+import { Button, cx, Icon, IconButton, LinearProgress, Text } from '../../m3';
 import type { AutoTagRunStatus, AutoTagScope } from '../../types';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
 
 const POLL_MS = 2_000;
 
@@ -20,7 +22,7 @@ export interface AutoTagProgressProps {
  */
 export function AutoTagProgress({ scope, runKey, className }: AutoTagProgressProps) {
   const { t, i18n } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [status, setStatus] = useState<AutoTagRunStatus | null>(null);
   const [pollKey, setPollKey] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -38,7 +40,7 @@ export function AutoTagProgress({ scope, runKey, className }: AutoTagProgressPro
         const next = await fetchAutoTagStatus(scopeRef.current);
         if (cancelled) return;
         if (wasActiveRef.current && !next.active && next.failures.length === 0 && next.completed > 0) {
-          snackbar.show(t('autoTag.finished', { count: next.completed }));
+          toast.success(t('autoTag.finished', { count: next.completed }));
         }
         wasActiveRef.current = next.active;
         setStatus(next);
@@ -77,7 +79,7 @@ export function AutoTagProgress({ scope, runKey, className }: AutoTagProgressPro
       setShowErrors(false);
       if (next.active) setPollKey((key) => key + 1);
     } catch (error) {
-      snackbar.show((error as Error)?.message || t(failureKey));
+      toast.error(errorText(error, t(failureKey)));
     } finally {
       setBusy(false);
     }

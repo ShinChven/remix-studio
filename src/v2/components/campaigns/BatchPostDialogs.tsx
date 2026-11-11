@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { batchSchedulePosts, batchSetPostText, type BatchScheduleItem } from '../../../api';
 import { Button, Dialog, Text, TextField } from '../../../m3';
 import { toDatetimeLocal } from '../../lib/posts';
+import { useAction } from '../../lib/useAction';
 import { useToast } from '../../ui/useToast';
 
 interface BatchProps {
@@ -29,39 +31,35 @@ function calculateSchedules(postIds: string[], start: Date, end: Date): BatchSch
 
 /** Schedules several posts across a time window. */
 export function BatchScheduleDialog({ postIds, onClose, onComplete }: BatchProps) {
+  const { t } = useTranslation();
   const toast = useToast();
+  const action = useAction();
   const defaults = defaultScheduleWindow();
   const [startTime, setStartTime] = useState(defaults.start);
   const [endTime, setEndTime] = useState(defaults.end);
-  const [submitting, setSubmitting] = useState(false);
+  const submitting = action.isBusy();
 
   const submit = async () => {
-    if (!startTime || !endTime) {
-      toast.error('Please select both start and end times');
-      return;
-    }
     const start = new Date(startTime);
     const end = new Date(endTime);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      toast.error('Invalid date');
+    if (!startTime || !endTime || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      toast.error(t('v2.campaigns.dialogs.pickBothTimes'));
       return;
     }
     if (end <= start) {
-      toast.error('End time must be after start time');
+      toast.error(t('v2.campaigns.dialogs.endAfterStart'));
       return;
     }
-    try {
-      setSubmitting(true);
-      const result = await batchSchedulePosts(calculateSchedules(postIds, start, end));
-      if (result.skipped.length > 0) toast.info(`Scheduled ${result.updated}. Skipped ${result.skipped.length}: ${result.skipped[0].reason}${result.skipped.length > 1 ? '…' : ''}`);
-      else toast.success(`Scheduled ${result.updated} post${result.updated === 1 ? '' : 's'}`);
-      onComplete();
-      onClose();
-    } catch (err) {
-      toast.error((err as Error)?.message || 'Failed to schedule posts');
-    } finally {
-      setSubmitting(false);
-    }
+    await action.run(
+      async () => {
+        const result = await batchSchedulePosts(calculateSchedules(postIds, start, end));
+        if (result.skipped.length > 0) toast.info(t('v2.campaigns.dialogs.scheduledPartial', { done: result.updated, skipped: result.skipped.length, reason: result.skipped[0].reason }));
+        else toast.success(t('v2.campaigns.dialogs.scheduled', { count: result.updated }));
+        onComplete();
+        onClose();
+      },
+      { error: t('v2.campaigns.dialogs.scheduleFailed') },
+    );
   };
 
   return (
@@ -69,25 +67,25 @@ export function BatchScheduleDialog({ postIds, onClose, onComplete }: BatchProps
       open
       onClose={() => !submitting && onClose()}
       icon="date_range"
-      headline="Batch Schedule Posts"
+      headline={t('v2.campaigns.dialogs.scheduleTitle')}
       maxWidth={480}
       actions={
         <>
           <Button variant="text" disabled={submitting} onClick={onClose}>
-            Cancel
+            {t('confirmModal.cancel', 'Cancel')}
           </Button>
           <Button variant="filled" loading={submitting} onClick={() => void submit()}>
-            Confirm Schedule
+            {t('v2.campaigns.dialogs.scheduleConfirm')}
           </Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
         <Text variant="body-medium" className="text-on-surface-variant">
-          Distribute {postIds.length} post{postIds.length === 1 ? '' : 's'} between the selected start and end times with 10% randomness.
+          {t('v2.campaigns.dialogs.scheduleHint', { count: postIds.length })}
         </Text>
-        <TextField variant="outlined" type="datetime-local" label="Start Date & Time" leadingIcon="event" required value={startTime} onValueChange={setStartTime} fullWidth />
-        <TextField variant="outlined" type="datetime-local" label="End Date & Time" leadingIcon="schedule" required value={endTime} onValueChange={setEndTime} fullWidth />
+        <TextField variant="outlined" type="datetime-local" label={t('v2.campaigns.dialogs.startTime')} leadingIcon="event" required value={startTime} onValueChange={setStartTime} fullWidth />
+        <TextField variant="outlined" type="datetime-local" label={t('v2.campaigns.dialogs.endTime')} leadingIcon="schedule" required value={endTime} onValueChange={setEndTime} fullWidth />
       </div>
     </Dialog>
   );
@@ -95,61 +93,57 @@ export function BatchScheduleDialog({ postIds, onClose, onComplete }: BatchProps
 
 /** Replaces the text of several posts with the same text. */
 export function BatchSetTextDialog({ postIds, onClose, onComplete }: BatchProps) {
+  const { t } = useTranslation();
   const toast = useToast();
+  const action = useAction();
   const [text, setText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const submitting = action.isBusy();
 
-  const submit = async () => {
-    if (!text.trim()) {
-      toast.error('Enter the text to apply');
-      return;
-    }
-    try {
-      setSubmitting(true);
-      const result = await batchSetPostText(postIds, text);
-      if (result.skipped.length > 0) toast.info(`Updated ${result.updated}. Skipped ${result.skipped.length}: ${result.skipped[0].reason}${result.skipped.length > 1 ? '…' : ''}`);
-      else toast.success(`Updated text for ${result.updated} post${result.updated === 1 ? '' : 's'}`);
-      onComplete();
-      onClose();
-    } catch (err) {
-      toast.error((err as Error)?.message || 'Failed to set post text');
-      setSubmitting(false);
-    }
-  };
+  const submit = () =>
+    action.run(
+      async () => {
+        const result = await batchSetPostText(postIds, text);
+        if (result.skipped.length > 0) toast.info(t('v2.campaigns.dialogs.textSetPartial', { done: result.updated, skipped: result.skipped.length, reason: result.skipped[0].reason }));
+        else toast.success(t('v2.campaigns.dialogs.textSet', { count: result.updated }));
+        onComplete();
+        onClose();
+      },
+      { error: t('v2.campaigns.dialogs.setTextFailed') },
+    );
 
   return (
     <Dialog
       open
       onClose={() => !submitting && onClose()}
       icon="text_fields"
-      headline="Set Post Text"
+      headline={t('v2.campaigns.dialogs.setTextTitle')}
       maxWidth={560}
       actions={
         <>
           <Button variant="text" disabled={submitting} onClick={onClose}>
-            Cancel
+            {t('confirmModal.cancel', 'Cancel')}
           </Button>
           <Button variant="filled" loading={submitting} disabled={!text.trim()} onClick={() => void submit()}>
-            {submitting ? 'Applying...' : 'Apply Text'}
+            {t('v2.campaigns.dialogs.applyText')}
           </Button>
         </>
       }
     >
       <div className="flex flex-col gap-4">
         <Text variant="body-medium" className="text-on-surface-variant">
-          Apply the same text to {postIds.length} selected post{postIds.length === 1 ? '' : 's'}. Existing text on those posts is replaced.
+          {t('v2.campaigns.dialogs.setTextHint', { count: postIds.length })}
         </Text>
         <TextField
           variant="outlined"
-          label="Post Text"
+          label={t('v2.campaigns.dialogs.postText')}
           multiline
           rows={6}
           maxRows={14}
           disabled={submitting}
-          placeholder="e.g., New drop is live. Link in bio. #launch"
+          placeholder={t('v2.campaigns.dialogs.postTextPlaceholder')}
           value={text}
           onValueChange={setText}
-          supportingText={`${text.length} characters`}
+          supportingText={t('v2.campaigns.dialogs.characters', { count: text.length })}
           data-autofocus
           fullWidth
         />

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { imageDisplayUrl, startAlbumExport, startAutoTag, type AlbumExportVersion } from '../../../api';
 import type { ProjectMediaType } from '../../../lib/project-media';
 import { copyText, resourceRef, startResourceChat } from '../../../lib/resource-ref';
-import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, SubMenu, Text, useSnackbar } from '../../../m3';
+import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, SubMenu, Text } from '../../../m3';
 import type { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../../types';
 import { withBase } from '../../app/paths';
 import { formatBytes } from '../../lib/format';
@@ -12,9 +12,10 @@ import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { HoverMenuButton } from '../../ui/HoverMenuButton';
 import { kindMeta } from '../../ui/entityMeta';
 import { EmptyState } from '../../ui/Page';
-import { PagedFooter, PAGE_SIZE_OPTIONS } from '../../ui/PagedFooter';
+import { ListSearch } from '../../ui/ListSearch';
+import { PagedFooter } from '../../ui/PagedFooter';
 import { PromptDialog } from '../../ui/PromptDialog';
-import { FilterChip, ResultsSearch, TagLine } from '../../ui/ResultFilters';
+import { FilterChip, TagLine } from '../../ui/ResultFilters';
 import { useToast } from '../../ui/useToast';
 import { AutoTagDialog } from '../AutoTagDialog';
 import { AutoTagProgress } from '../AutoTagProgress';
@@ -22,7 +23,8 @@ import { TagDialog } from '../TagDialog';
 import { AlbumBatchTagDialog, AlbumDetailDialog, ExportPackageDialog, TextAlbumCompareDialog, TextAlbumDetailDialog, type AlbumBatchTagMode } from './AlbumDialogs';
 import { AlbumTransferDialog, albumFilename, type AlbumTransferAction } from './AlbumTransferDialog';
 import { shortDate } from './JobRow';
-import { ResultsBar, SelectionFloatBar, type SelectionAction } from './ResultsBar';
+import { SelectionBar, type SelectionAction } from '../../ui/SelectionBar';
+import { ResultsBar } from './ResultsBar';
 
 export interface AlbumLightboxData {
   images: string[];
@@ -38,7 +40,7 @@ export interface AlbumTabProps {
   projectId: string;
   projectName: string;
   albumItems: AlbumItem[];
-  selectedAlbumIds: Set<string>;
+  selectedAlbumIds: ReadonlySet<string>;
   toggleSelectAllAlbum: (scopeIds?: string[]) => void;
   toggleAlbumSelection: (id: string, isShiftPressed: boolean, scopeIds?: string[]) => void;
   clearAlbumSelection: () => void;
@@ -86,9 +88,7 @@ function cssAspectRatio(value?: string) {
   return w && h ? `${w} / ${h}` : '1 / 1';
 }
 
-function sizeLabel(bytes: number) {
-  return bytes > 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
-}
+const sizeLabel = formatBytes;
 
 /** The project's results: a filterable, paged grid (or list, for text and audio) with bulk actions. */
 export function AlbumTab(props: AlbumTabProps) {
@@ -127,7 +127,6 @@ export function AlbumTab(props: AlbumTabProps) {
   } = props;
   const { t, i18n } = useTranslation();
   const toast = useToast();
-  const snackbar = useSnackbar();
   const navigate = useNavigate();
   const isText = projectType === 'text';
   const isVideo = projectType === 'video';
@@ -238,9 +237,9 @@ export function AlbumTab(props: AlbumTabProps) {
     const reference = resourceRef.albumItem(projectId, item.id);
     try {
       await copyText(reference);
-      snackbar.show(`${t('resourceRef.copied')} · ${reference}`);
+      toast.success(`${t('resourceRef.copied')} · ${reference}`);
     } catch {
-      snackbar.show(`${t('resourceRef.copyFailed')} · ${reference}`);
+      toast.error(`${t('resourceRef.copyFailed')} · ${reference}`);
     }
   };
 
@@ -339,7 +338,7 @@ export function AlbumTab(props: AlbumTabProps) {
 
   const tools = (
     <>
-      <ResultsSearch value={search} onChange={props.onSearchChange} label={t('projectViewer.album.searchPlaceholder')} />
+      <ListSearch value={search} onChange={props.onSearchChange} label={t('projectViewer.album.searchPlaceholder')} />
       {(showRatioFilter || tagCounts.length > 0 || hasTagFilter || hasRatioFilter) && (
         <HoverMenuButton
           placement="bottom-end"
@@ -388,14 +387,6 @@ export function AlbumTab(props: AlbumTabProps) {
           <MenuItem type="radio" icon="arrow_upward" checked={sort === 'oldest'} onSelect={() => props.onSortChange('oldest')}>
             {t('projectViewer.album.sortOldest')}
           </MenuItem>
-        </MenuGroup>
-        <MenuDivider />
-        <MenuGroup label={t('pagination.pageSize')}>
-          {PAGE_SIZE_OPTIONS.map((size) => (
-            <MenuItem key={String(size)} type="radio" checked={pageSize === size} onSelect={() => props.onPageSizeChange(size)}>
-              {size === 'all' ? t('pagination.all') : String(size)}
-            </MenuItem>
-          ))}
         </MenuGroup>
       </HoverMenuButton>
     </>
@@ -480,16 +471,13 @@ export function AlbumTab(props: AlbumTabProps) {
     <section className="v2-results-section">
       <ResultsBar
         nav={props.nav}
-        isLoading={isLoading && albumItems.length > 0}
+        refreshing={isLoading && albumItems.length > 0}
         totalCount={albumItems.length}
         mobileCount={total}
-        selectedCount={selectedIds.length}
-        onToggleSelectAll={() => toggleSelectAllAlbum(itemIds)}
-        onClearSelection={props.clearAlbumSelection}
+        onSelectAll={() => toggleSelectAllAlbum(itemIds)}
         summary={total > 0 && (isText || isAudio ? t('v2.project.itemCount', { count: total }) : `${t('v2.project.itemCount', { count: total })} · ${formatBytes(totalSize)}`)}
         tools={tools}
         menuItems={total > 0 ? scopeActions : []}
-        selection="floating"
         below={filterRow}
       />
 
@@ -637,7 +625,7 @@ export function AlbumTab(props: AlbumTabProps) {
 
       {total > 0 && <PagedFooter className="v2-results-footer" page={page} pageSize={pageSize} total={total} pages={pages} onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />}
       {total > 0 && albumItems.length > 0 && <p className="v2-results-total">{isText ? t('v2.project.itemCount', { count: total }) : `${t('v2.project.itemCount', { count: total })} · ${formatBytes(totalSize)}`}</p>}
-      <SelectionFloatBar selectedCount={selectedIds.length} totalCount={albumItems.length} onToggleSelectAll={() => toggleSelectAllAlbum(itemIds)} onClearSelection={props.clearAlbumSelection} actions={selectionActions} menuItems={selectionMore} />
+      <SelectionBar selectedCount={selectedIds.length} totalCount={albumItems.length} onSelectAll={() => toggleSelectAllAlbum(itemIds)} onClear={props.clearAlbumSelection} actions={selectionActions} menuItems={selectionMore} />
 
       <Dialog open={videoItem !== null} onClose={() => setVideoItem(null)} maxWidth={1100} className="v2-video-dialog" headline={videoItem ? albumFilename(videoItem) : undefined} actions={<Button variant="text" onClick={() => setVideoItem(null)}>{t('projectViewer.common.close')}</Button>}>
         {videoItem && (

@@ -10,6 +10,7 @@
 @import "../../m3/styles/index.css" layer(m3);
 @import "./density.css" layer(components);
 @import "./app.css" layer(components);
+@import "./list.css" layer(components);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
 @import "./theme-map.css";
 

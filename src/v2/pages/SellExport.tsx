@@ -14,11 +14,13 @@ import {
   type PostWatermarkSettings,
   type ProductCoverItem,
 } from '../../api';
-import { Button, Checkbox, ChipSet, AssistChip, Icon, IconButton, Select, Switch, Text, TextField, useSnackbar } from '../../m3';
+import { Button, Checkbox, ChipSet, AssistChip, Icon, IconButton, Select, Switch, Text, TextField } from '../../m3';
 import type { AlbumItem, ExportTask, Project } from '../../types';
 import { MediaPicker, type UniversalPickedItem } from '../components/MediaPicker';
 import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
 
 const MAX_COVERS = 8;
 const stripZip = (name?: string | null) => (name ? name.replace(/\.zip$/i, '').trim() : '');
@@ -28,7 +30,7 @@ export function SellExport() {
   const { exportId } = useParams<{ exportId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [exportTask, setExportTask] = useState<ExportTask | null>(null);
@@ -78,7 +80,7 @@ export function SellExport() {
           }
         }
       } catch (err) {
-        if (!cancelled) snackbar.show((err as Error)?.message || t('releases.loadError'));
+        if (!cancelled) toast.error(errorText(err, t('releases.loadError')));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -139,10 +141,10 @@ export function SellExport() {
         publishImmediately,
       };
       await createProduct(input);
-      snackbar.show(t('sell.queued'));
+      toast.success(t('sell.queued'));
       navigate('/exports');
     } catch (err) {
-      snackbar.show((err as Error)?.message || t('sell.failed'));
+      toast.error(errorText(err, t('sell.failed')));
     } finally {
       setWatermarkSaving(false);
       setSubmitting(false);
@@ -325,7 +327,7 @@ export function SellExport() {
                 nextMap[it.itemId] = it;
               }
             });
-            if (items.length > 0 && next.length >= MAX_COVERS && items.length > MAX_COVERS - covers.length) snackbar.show(t('sell.coversLimit', { count: MAX_COVERS }));
+            if (items.length > 0 && next.length >= MAX_COVERS && items.length > MAX_COVERS - covers.length) toast.error(t('sell.coversLimit', { count: MAX_COVERS }));
             setPicked(nextMap);
             setCovers(next);
           }}
