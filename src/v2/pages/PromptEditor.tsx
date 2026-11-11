@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -132,7 +133,7 @@ export function PromptEditor() {
           <span>{t('promptEditor.chars', { count: content.length })}</span>
           <span className="ms-auto inline-flex items-center gap-1">
             <Icon name="calendar_today" size={14} />
-            {new Date().toLocaleDateString()}
+            {new Date().toLocaleDateString(uiLocale())}
           </span>
           <span className="hidden sm:inline">{t('promptEditor.libraryLabel', { id: library.id })}</span>
         </footer>

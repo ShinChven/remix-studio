@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Icon } from '../../../m3';
 import type { TrashItem } from '../../../types';
-import { formatBytes } from '../../lib/format';
+import { formatBytes, uiLocale } from '../../lib/format';
 import { KindBadge } from '../../ui/KindBadge';
 import type { PageHeroStat } from '../../ui/PageHero';
 import { ShowcaseHero } from '../../ui/ShowcaseHero';
@@ -51,10 +51,10 @@ export function TrashHero({ items, actions }: TrashHeroProps) {
 
   const stats: PageHeroStat[] = [];
   if (all.length > 0) {
-    stats.push({ key: 'items', value: all.length.toLocaleString(), label: t('v2.trash.statItems', { count: all.length }) });
-    stats.push({ key: 'projects', icon: 'folder', value: projectCount.toLocaleString(), label: t('v2.trash.statProjects', { count: projectCount }) });
+    stats.push({ key: 'items', value: all.length.toLocaleString(uiLocale()), label: t('v2.trash.statItems', { count: all.length }) });
+    stats.push({ key: 'projects', icon: 'folder', value: projectCount.toLocaleString(uiLocale()), label: t('v2.trash.statProjects', { count: projectCount }) });
     if (totalBytes > 0) stats.push({ key: 'space', icon: 'hard_drive', value: formatBytes(totalBytes), label: t('v2.trash.toFree') });
-    if (oldest !== null) stats.push({ key: 'oldest', icon: 'history', label: t('v2.trash.statOldest', { time: timeAgo(oldest, i18n.language) }), title: new Date(oldest).toLocaleString() });
+    if (oldest !== null) stats.push({ key: 'oldest', icon: 'history', label: t('v2.trash.statOldest', { time: timeAgo(oldest, i18n.language) }), title: new Date(oldest).toLocaleString(uiLocale()) });
   }
 
   return (

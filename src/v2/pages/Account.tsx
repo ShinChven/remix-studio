@@ -35,7 +35,7 @@ import { Row, RowList } from '../ui/Rows';
 import { StatTile, StatusPill, type Tone } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
 import { errorText } from '../lib/errors';
-import { formatBytes } from '../lib/format';
+import { formatBytes, uiLocale } from '../lib/format';
 
 type AccountTab = 'overview' | 'storage' | 'security' | 'preferences' | 'devices';
 const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences', 'devices'];
@@ -560,7 +560,7 @@ export function Account() {
                 <StatusPill>{t('account.overview.plan', { tier: formatTier(user.storageLimit, 999) })}</StatusPill>
               </div>
               <Text variant="body-small" className="opacity-75">
-                {t('account.overview.memberSince', { date: new Date(user.createdAt).toLocaleDateString() })}
+                {t('account.overview.memberSince', { date: new Date(user.createdAt).toLocaleDateString(uiLocale()) })}
               </Text>
             </div>
             <Button variant="tonal" icon="logout" className="v2-button-danger" onClick={() => setShowSignOut(true)}>
@@ -761,7 +761,7 @@ export function Account() {
                       key={passkey.id}
                       lead={<Icon name="fingerprint" />}
                       title={passkey.name}
-                      meta={`${t('account.security.added', { date: new Date(passkey.createdAt).toLocaleString() })}${passkey.lastUsedAt ? ` • ${t('account.security.lastUsed', { date: new Date(passkey.lastUsedAt).toLocaleString() })}` : ''}`}
+                      meta={`${t('account.security.added', { date: new Date(passkey.createdAt).toLocaleString(uiLocale()) })}${passkey.lastUsedAt ? ` • ${t('account.security.lastUsed', { date: new Date(passkey.lastUsedAt).toLocaleString(uiLocale()) })}` : ''}`}
                       actions={
                         <Button variant="tonal" size="xs" icon="delete" className="v2-button-danger" loading={removingPasskeyId === passkey.id} onClick={() => setPasskeyToRemove({ id: passkey.id, name: passkey.name })}>
                           {t('account.security.remove')}

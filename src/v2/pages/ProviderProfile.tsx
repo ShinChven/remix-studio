@@ -11,7 +11,7 @@ import { ProviderHero } from '../components/providers/ProviderHero';
 import { activeJobCount, PROVIDER_KINDS, projectCount, providerHasCredentials, urlHost, type ProviderKind } from '../components/providers/providerMeta';
 import { clampParallel, useParallelSaver } from '../components/providers/useParallelSaver';
 import { relativeTime } from '../components/users/userMeta';
-import { formatDateTime } from '../lib/format';
+import { formatDateTime, uiLocale } from '../lib/format';
 import { ActionMenu } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
@@ -232,18 +232,18 @@ export function ProviderProfile() {
             </li>
             <li className="v2-provider-hero__stat">
               <span className="v2-provider-hero__stat-label">{t('v2.providers.projects')}</span>
-              <strong>{projects.toLocaleString()}</strong>
+              <strong>{projects.toLocaleString(uiLocale())}</strong>
             </li>
             <li className="v2-provider-hero__stat" data-active={jobs > 0 ? '' : undefined}>
               <span className="v2-provider-hero__stat-label">{t('v2.providers.running')}</span>
               <strong>
                 {jobs > 0 && <span className="v2-provider__pulse" aria-hidden />}
-                {jobs.toLocaleString()}
+                {jobs.toLocaleString(uiLocale())}
               </strong>
             </li>
             <li className="v2-provider-hero__stat">
               <span className="v2-provider-hero__stat-label">{t('providerProfile.models')}</span>
-              <strong>{provider.type === 'Civitai' ? t('v2.providers.catalog') : entries.length.toLocaleString()}</strong>
+              <strong>{provider.type === 'Civitai' ? t('v2.providers.catalog') : entries.length.toLocaleString(uiLocale())}</strong>
             </li>
             <li className="v2-provider-hero__stat" title={formatDateTime(provider.createdAt)}>
               <span className="v2-provider-hero__stat-label">{t('v2.providers.added')}</span>

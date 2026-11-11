@@ -27,8 +27,8 @@ COPY . .
 ARG GIT_COMMIT=""
 ENV VITE_GIT_COMMIT=$GIT_COMMIT
 
-# Build both frontend and backend
-RUN npm run build
+# Check translations before building the frontend and backend.
+RUN npm run i18n:check && npm run test:i18n && npm run build
 
 # Production stage
 FROM node:22-bookworm-slim AS runner

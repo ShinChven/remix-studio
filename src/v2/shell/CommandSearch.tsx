@@ -152,7 +152,10 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
     };
   }, [debounced]);
 
-  const kindLabel = (match: CreateMatch) => (match.type === 'campaign' ? match.type : `${match.subType} ${match.type}`);
+  const kindLabel = (match: CreateMatch) => {
+    const key = match.type === 'campaign' ? 'campaign' : `${match.subType}${match.type === 'project' ? 'Project' : 'Library'}`;
+    return t(`v2.commandKinds.${key}`);
+  };
 
   const runCreate = async (match: CreateMatch) => {
     const kind = kindLabel(match);

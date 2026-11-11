@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { cx, LinearProgress, Portal, renderIcon, Ripple, useAnchorPosition, type AnchorLike, type Placement } from '../../m3';
 
@@ -47,6 +48,7 @@ export function SuggestionList({
   width = 320,
   ...rest
 }: SuggestionListProps) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const { style, placement: resolved } = useAnchorPosition({ anchor, floatingRef: ref, open, placement, fitHeight: true, offset: 8 });
 
@@ -68,7 +70,7 @@ export function SuggestionList({
         style={{ ...style, width, maxWidth: 'calc(100vw - 16px)', maxHeight: 320 }}
         onMouseDown={(e) => e.preventDefault()}
       >
-        {loading && <LinearProgress aria-label="Loading" className="v2-suggestions__progress" />}
+        {loading && <LinearProgress aria-label={t('projectViewer.common.loading')} className="v2-suggestions__progress" />}
         {heading && <div className="m3-menu-group__label">{heading}</div>}
         {hint && <div className="v2-suggestions__hint">{hint}</div>}
         {!loading && options.length === 0 && emptyText && <div className="v2-suggestions__empty">{emptyText}</div>}

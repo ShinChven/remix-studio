@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -31,7 +32,7 @@ export function formatPostTime(value?: string | null) {
   if (!value) return i18n.t('v2.campaigns.notScheduled');
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return i18n.t('v2.campaigns.notScheduled');
-  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(uiLocale(), { month: 'short', day: 'numeric', year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Scheduling state of one post: the inline time editor and the unschedule call, shared by the card and the post page. */

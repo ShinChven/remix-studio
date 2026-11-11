@@ -142,10 +142,10 @@ export function Projects() {
       <ConfirmDialog
         open={!!deleteTarget}
         tone="danger"
-        title={t('projects.deleteTitle', { defaultValue: 'Delete Project' })}
-        message={t('projects.deleteConfirmation', { name: deleteTarget?.name })}
-        confirmLabel={t('common.delete', { defaultValue: 'Delete' })}
-        cancelLabel={t('common.cancel', { defaultValue: 'Cancel' })}
+        title={t('projectViewer.confirm.deleteProject.title', { defaultValue: 'Delete Project' })}
+        message={t('projectViewer.confirm.deleteProject.message', { name: deleteTarget?.name })}
+        confirmLabel={t('projectViewer.common.delete', { defaultValue: 'Delete' })}
+        cancelLabel={t('projectViewer.common.cancel', { defaultValue: 'Cancel' })}
         onConfirm={async () => {
           if (!deleteTarget) return;
           await action.run(
@@ -153,7 +153,7 @@ export function Projects() {
               await deleteProject(deleteTarget.id);
               await projects.reload(true);
             },
-            { key: deleteTarget.id, success: t('projects.deleteSuccess', { name: deleteTarget.name }), error: t('projects.deleteFailed'), rethrow: true },
+            { key: deleteTarget.id, success: t('v2.projectList.deleteSuccess', { name: deleteTarget.name }), error: t('v2.projectList.deleteFailed'), rethrow: true },
           );
         }}
         onClose={() => setDeleteTarget(null)}

@@ -1,9 +1,14 @@
+import i18n from '../../i18n';
+
+/** The language selected in the app, including regional formatting preferences. */
+export const uiLocale = (): string => i18n.language || i18n.resolvedLanguage || 'en';
+
 /** Bytes as a short size, e.g. `1.4 GB`. */
 export function formatBytes(bytes: number | null | undefined): string {
   if (!bytes || bytes <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   const index = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
-  return `${parseFloat((bytes / 1024 ** index).toFixed(1))} ${units[index]}`;
+  return `${new Intl.NumberFormat(uiLocale(), { maximumFractionDigits: 1 }).format(bytes / 1024 ** index)} ${units[index]}`;
 }
 
 /** True when `latest` is a newer dotted version than `current`. */
@@ -23,12 +28,12 @@ export function isNewerVersion(latest: string, current: string): boolean {
 export function formatDateTime(value: string | number | Date | null | undefined): string {
   if (value === null || value === undefined || value === '') return '';
   const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(uiLocale());
 }
 
 /** A date in the user's locale. */
 export function formatDate(value: string | number | Date | null | undefined): string {
   if (value === null || value === undefined || value === '') return '';
   const date = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString(uiLocale());
 }

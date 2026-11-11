@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -1316,7 +1317,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     if (type === 'library') {
       setShowLibrarySelector(true);
       void refreshLibrarySummaries().catch(() => {
-        toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+        toast.error(t('v2.projectEditor.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
       });
       return;
     }
@@ -1360,7 +1361,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const openWorkflowLibraryChangeSelector = (workflowItemId: string) => {
     setChangingLibraryItemId(workflowItemId);
     void refreshLibrarySummaries().catch(() => {
-      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+      toast.error(t('v2.projectEditor.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
   };
 
@@ -1400,7 +1401,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const openSaveWorkflowItemToLibrary = (item: WorkflowItemType) => {
     setSavingLibraryItemId(item.id);
     void refreshLibrarySummaries().catch(() => {
-      toast.error(t('projectViewer.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
+      toast.error(t('v2.projectEditor.toasts.refreshLibrariesFailed', { defaultValue: 'Failed to refresh libraries' }));
     });
   };
 
@@ -1446,7 +1447,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       setPreviewingLibrary(fullLibrary);
     } catch (error) {
       console.error('Failed to load library preview:', error);
-      toast.error(t('projectViewer.toasts.refreshLibraryFailed', { defaultValue: 'Failed to refresh library' }));
+      toast.error(t('v2.projectEditor.toasts.refreshLibraryFailed', { defaultValue: 'Failed to refresh library' }));
     } finally {
       if (libraryPreviewRequestRef.current === request) setIsLoadingPreviewLibrary(false);
     }
@@ -1739,7 +1740,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         modelName: selectedModel?.name || t('projectViewer.settings.selectModel'),
         affectedCount,
         limitLabel: formatPromptLimit(limit),
-        longestPromptLabel: `${longestPromptLength.toLocaleString()} ${limit.unit}`,
+        longestPromptLabel: `${longestPromptLength.toLocaleString(uiLocale())} ${limit.unit}`,
         resolve,
       });
     });
@@ -2078,12 +2079,12 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     } catch (e) {
       if (deleteCompleted) {
         console.error('Failed to refresh jobs after clearing failed jobs:', e);
-        toast.error(t('projectViewer.toasts.refreshAfterClearFailedJobsFailed', {
+        toast.error(t('v2.projectEditor.toasts.refreshAfterClearFailedJobsFailed', {
           defaultValue: 'Failed jobs were cleared, but the list could not be refreshed.',
         }));
       } else {
         console.error('Failed to clear failed jobs:', e);
-        toast.error(t('projectViewer.toasts.clearFailedJobsFailed', {
+        toast.error(t('v2.projectEditor.toasts.clearFailedJobsFailed', {
           defaultValue: 'Failed to clear failed jobs. Please try again.',
         }));
       }
@@ -2350,7 +2351,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   ];
   const sectionNav = (
     <div className="v2-project__section-nav">
-      <SectionNav<ProjectSection> scope="project" label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })} value={activeTab} onChange={setActiveTab} items={sectionItems} />
+      <SectionNav<ProjectSection> scope="project" label={t('v2.projectEditor.tabs.ariaLabel', { defaultValue: 'Project sections' })} value={activeTab} onChange={setActiveTab} items={sectionItems} />
     </div>
   );
   const workflowItem = (id: string | null) => (localProject.workflow || []).find((i) => i.id === id);
@@ -2364,7 +2365,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const mobileSectionNav = (
     <div className={floatingSwitch ? 'v2-project__mobile-sections v2-project__mobile-toggle' : 'v2-project__mobile-sections'}>
       <SectionNav<'workflow' | ProjectSection>
-        label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}
+        label={t('v2.projectEditor.tabs.ariaLabel', { defaultValue: 'Project sections' })}
         items={mobileSections}
         value={mobileSection}
         scope="project-mobile"
@@ -2723,7 +2724,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       />
       <MediaPicker
         isOpen={!!selectingLibraryForItemId}
-        title="Pick Workflow Item"
+        title={t('v2.accessibility.pickWorkflowItem')}
         allowedTypes={[workflowPickerType]}
         defaultSourceKind="library"
         multiple={false}

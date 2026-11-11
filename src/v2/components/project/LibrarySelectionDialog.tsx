@@ -65,13 +65,13 @@ export function LibrarySelectionDialog({ open, onClose, onSelect, libraries, sel
         {error && libraries.length > 0 && (
           <div className="v2-notice" data-tone="warning">
             <Icon name="warning" />
-            <Text variant="body-small">{t('projectViewer.librarySelection.refreshFailed', { defaultValue: 'Could not refresh libraries. Showing the last loaded data.' })}</Text>
+            <Text variant="body-small">{t('v2.projectEditor.librarySelection.refreshFailed', { defaultValue: 'Could not refresh libraries. Showing the last loaded data.' })}</Text>
           </div>
         )}
         {isLoading && libraries.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-12 text-on-surface-variant">
             <LoadingIndicator />
-            <Text variant="label-medium">{t('projectViewer.librarySelection.loading', { defaultValue: 'Loading libraries...' })}</Text>
+            <Text variant="label-medium">{t('v2.projectEditor.librarySelection.loading', { defaultValue: 'Loading libraries...' })}</Text>
           </div>
         ) : libraries.length === 0 ? (
           <EmptyState icon="library_books" title={t('projectViewer.librarySelection.noLibraries')} size="inline" />

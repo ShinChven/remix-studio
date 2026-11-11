@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +18,7 @@ type ClearTarget = { type: 'all'; name: string } | { type: 'project'; id: string
 
 const resolveView = (value: string | null): QueueMonitorView => (value === 'providers' ? 'providers' : 'projects');
 const formatTime = (value: number | undefined, t: TFunction) =>
-  value ? new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value)) : t('queueMonitor.unknown');
+  value ? new Intl.DateTimeFormat(uiLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value)) : t('queueMonitor.unknown');
 
 function stateTone(job: QueueMonitorJob): Tone {
   if (job.queueState === 'running' || job.queueState === 'detached') return 'primary';
@@ -266,9 +267,9 @@ export function QueueMonitor() {
         title={t('projectViewer.confirm.clearFailedJobs.title')}
         message={
           clearTarget?.type === 'project'
-            ? t('queueMonitor.confirm.clearProjectFailed', { name: clearTarget.name, defaultValue: `Clear failed jobs for project "${clearTarget.name}"?` })
+            ? t('v2.queueMonitor.confirm.clearProjectFailed', { name: clearTarget.name, defaultValue: `Clear failed jobs for project "${clearTarget.name}"?` })
             : clearTarget?.type === 'provider'
-              ? t('queueMonitor.confirm.clearProviderFailed', { name: clearTarget.name, defaultValue: `Clear failed jobs for provider queue "${clearTarget.name}"?` })
+              ? t('v2.queueMonitor.confirm.clearProviderFailed', { name: clearTarget.name, defaultValue: `Clear failed jobs for provider queue "${clearTarget.name}"?` })
               : t('projectViewer.confirm.clearFailedJobs.message')
         }
         confirmLabel={t('projectViewer.confirm.clearFailedJobs.confirm')}
@@ -279,11 +280,11 @@ export function QueueMonitor() {
           setClearing(true);
           try {
             const result = await clearFailedQueueJobs(target.type === 'project' ? { projectId: target.id } : target.type === 'provider' ? { providerId: target.id } : {});
-            toast.success(t('queueMonitor.clearFailedSuccess', { count: result.cleared, defaultValue: `Cleared ${result.cleared} failed job${result.cleared === 1 ? '' : 's'}` }));
+            toast.success(t('v2.queueMonitor.clearFailedSuccess', { count: result.cleared, defaultValue: `Cleared ${result.cleared} failed job${result.cleared === 1 ? '' : 's'}` }));
             await load(false);
           } catch (err) {
             console.error(err);
-            toast.error(t('queueMonitor.clearFailedError', { defaultValue: 'Failed to clear failed jobs.' }));
+            toast.error(t('v2.queueMonitor.clearFailedError', { defaultValue: 'Failed to clear failed jobs.' }));
           } finally {
             setClearing(false);
           }

@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import { useTranslation } from 'react-i18next';
 import { searchAssistantConversations } from '../../api';
 import { Icon } from '../../m3';
@@ -21,14 +22,14 @@ export function ChatHistory() {
   return (
     <Page width="default">
       <PageHeader
-        title={t('chatHistory.title', { defaultValue: 'Chat History' })}
-        description={t('chatHistory.description', { defaultValue: 'Search across conversation titles and message content.' })}
-        backLink={{ to: '/assistant', label: t('chatHistory.backToAssistant', { defaultValue: 'Back to Assistant' }) }}
+        title={t('v2.chatHistory.title', { defaultValue: 'Chat History' })}
+        description={t('v2.chatHistory.description', { defaultValue: 'Search across conversation titles and message content.' })}
+        backLink={{ to: '/assistant', label: t('v2.chatHistory.backToAssistant', { defaultValue: 'Back to Assistant' }) }}
       />
       <ListPane
-        label={t('chatHistory.title', { defaultValue: 'Chat History' })}
-        lead={<ListTitle title={t('chatHistory.title', { defaultValue: 'Chat History' })} icon="forum" count={total} />}
-        tools={<ListSearch value={list.q} onChange={list.setQuery} label={t('chatHistory.searchPlaceholder', { defaultValue: 'Search by title or message content...' })} />}
+        label={t('v2.chatHistory.title', { defaultValue: 'Chat History' })}
+        lead={<ListTitle title={t('v2.chatHistory.title', { defaultValue: 'Chat History' })} icon="forum" count={total} />}
+        tools={<ListSearch value={list.q} onChange={list.setQuery} label={t('v2.chatHistory.searchPlaceholder', { defaultValue: 'Search by title or message content...' })} />}
         loading={chats.loading}
         refreshing={chats.refreshing}
         error={chats.error}
@@ -36,13 +37,13 @@ export function ChatHistory() {
         count={items.length}
         filtered={list.filtered}
         onClearFilters={list.clearFilters}
-        noMatches={{ title: t('chatHistory.noResults', { defaultValue: 'No conversations match your search.' }) }}
-        empty={{ icon: 'forum', shape: 'clover-4', title: t('chatHistory.empty', { defaultValue: 'No conversations yet.' }) }}
+        noMatches={{ title: t('v2.chatHistory.noResults', { defaultValue: 'No conversations match your search.' }) }}
+        empty={{ icon: 'forum', shape: 'clover-4', title: t('v2.chatHistory.empty', { defaultValue: 'No conversations yet.' }) }}
         paging={{ page: list.page, pageSize: list.pageSize, total, pages: chats.data?.pages, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
       >
         <RowList className="v2-list-pane__grid">
           {items.map((conv) => (
-            <Row key={conv.id} to={`/assistant/${conv.id}`} lead={<Icon name="chat" className="text-primary" />} title={conv.title || t('chatHistory.untitled', { defaultValue: 'Untitled chat' })} meta={<span className="tabular-nums">{new Date(conv.updatedAt).toLocaleString()}</span>} />
+            <Row key={conv.id} to={`/assistant/${conv.id}`} lead={<Icon name="chat" className="text-primary" />} title={conv.title || t('v2.chatHistory.untitled', { defaultValue: 'Untitled chat' })} meta={<span className="tabular-nums">{new Date(conv.updatedAt).toLocaleString(uiLocale())}</span>} />
           ))}
         </RowList>
       </ListPane>

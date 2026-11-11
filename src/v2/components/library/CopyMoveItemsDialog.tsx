@@ -64,15 +64,15 @@ export function CopyMoveItemsDialog({ open, action, sourceLibraryId, libraryType
       onClose={() => !submitting && onClose()}
       dismissible={!submitting}
       icon={isCopy ? 'content_copy' : 'drive_file_move'}
-      headline={isCopy ? t('libraryEditor.copyItemsTitle', 'Copy Items') : t('libraryEditor.moveItemsTitle', 'Move Items')}
+      headline={isCopy ? t('v2.libraryTransfer.copyItemsTitle', 'Copy Items') : t('v2.libraryTransfer.moveItemsTitle', 'Move Items')}
       maxWidth={480}
       actions={
         <>
           <Button variant="text" onClick={onClose} disabled={submitting}>
-            {t('common.cancel', 'Cancel')}
+            {t('projectViewer.common.cancel', 'Cancel')}
           </Button>
           <Button variant="filled" loading={submitting} disabled={!target} onClick={() => void confirm()}>
-            {isCopy ? t('libraryEditor.confirmCopy', 'Copy') : t('libraryEditor.confirmMove', 'Move')}
+            {isCopy ? t('projectViewer.common.copy', 'Copy') : t('projectViewer.transfer.move', 'Move')}
           </Button>
         </>
       }
@@ -80,22 +80,22 @@ export function CopyMoveItemsDialog({ open, action, sourceLibraryId, libraryType
       <div className="flex flex-col gap-4">
         <Text variant="body-medium" className="text-on-surface-variant">
           {isCopy
-            ? t('libraryEditor.copyItemsDescription', { defaultValue: 'Select a destination library to copy {{count}} items to.', count: itemCount })
-            : t('libraryEditor.moveItemsDescription', { defaultValue: 'Select a destination library to move {{count}} items to.', count: itemCount })}
+            ? t('v2.libraryTransfer.copyItemsDescription', { defaultValue: 'Select a destination library to copy {{count}} items to.', count: itemCount })
+            : t('v2.libraryTransfer.moveItemsDescription', { defaultValue: 'Select a destination library to move {{count}} items to.', count: itemCount })}
         </Text>
         {loading ? (
           <div className="flex items-center gap-3 text-on-surface-variant">
             <LoadingIndicator size={32} />
-            <Text variant="body-medium">{t('common.loading', 'Loading...')}</Text>
+            <Text variant="body-medium">{t('projectViewer.common.loading', 'Loading...')}</Text>
           </div>
         ) : libraries.length === 0 ? (
           <Text variant="body-medium" className="v2-dashed-note">
-            {t('libraryEditor.noCompatibleLibraries', 'No compatible libraries found.')}
+            {t('v2.libraryTransfer.noCompatibleLibraries', 'No compatible libraries found.')}
           </Text>
         ) : (
           <Select
             variant="outlined"
-            label={t('libraryEditor.destinationLibrary', 'Destination Library')}
+            label={t('v2.libraryTransfer.destinationLibrary', 'Destination Library')}
             value={target}
             onChange={setTarget}
             options={libraries.map((lib) => ({ value: lib.id, label: lib.name }))}

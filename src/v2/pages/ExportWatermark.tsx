@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { fetchPostWatermarkSettings, fetchProject, fetchProjectAlbum, imageDisplayUrl, startAlbumExport, updatePostWatermarkSettings, type AlbumExportVersion, type PostWatermarkSettings } from '../../api';
@@ -36,6 +37,7 @@ export function readScopedItemIds(searchParams: URLSearchParams, state: Location
 }
 
 export function ExportWatermark() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
@@ -64,7 +66,7 @@ export function ExportWatermark() {
           fetchProjectAlbum(id, { limit: 999999, sort: 'newest' }),
           fetchPostWatermarkSettings().catch((error) => {
             console.warn('Failed to load watermark settings', error);
-            toast.error('Failed to load watermark settings');
+            toast.error(t('v2.watermark.settingsLoadFailed'));
             return DEFAULT_WATERMARK_SETTINGS;
           }),
         ]);
@@ -75,7 +77,7 @@ export function ExportWatermark() {
         setPackageName((current) => current || defaultPackageName(proj.name));
       } catch (error) {
         if (!cancelled) {
-          toast.error(errorText(error, 'Failed to load export page'));
+          toast.error(errorText(error, t('v2.watermark.exportLoadFailed')));
           navigate(back);
         }
       } finally {
@@ -106,21 +108,21 @@ export function ExportWatermark() {
       await updatePostWatermarkSettings(watermark);
       setSavingWatermark(false);
       await startAlbumExport(id, scoped, packageName, version, { watermarkSettings: watermark });
-      toast.success('Watermark export queued');
+      toast.success(t('v2.watermark.exportQueued'));
       navigate('/exports');
     } catch (error) {
-      toast.error(errorText(error, 'Failed to start watermark export'));
+      toast.error(errorText(error, t('v2.watermark.exportFailed')));
     } finally {
       setSavingWatermark(false);
       setSubmitting(false);
     }
   };
 
-  if (loading) return <LoadingState label="Loading..." minHeight={400} />;
+  if (loading) return <LoadingState label={t('projectViewer.common.loading')} minHeight={400} />;
   if (!project || !isImageProject) {
     return (
       <Page>
-        <PageHeader title="Export With Watermark" description="Watermark export is available for image projects." backLink={{ to: back, label: 'Back to Project' }} />
+        <PageHeader title={t('v2.watermark.exportTitle')} description={t('v2.watermark.imageProjectsOnly')} backLink={{ to: back, label: t('v2.watermark.backToProject') }} />
       </Page>
     );
   }
@@ -128,34 +130,32 @@ export function ExportWatermark() {
   return (
     <Page density="compact">
       <PageHeader
-        title="Export With Watermark"
+        title={t('v2.watermark.exportTitle')}
         description={
-          <>
-            Prepare a watermarked image ZIP for <strong className="text-on-surface">{project.name}</strong>.
-          </>
+          t('v2.watermark.exportDescription', { name: project.name })
         }
-        backLink={{ to: back, label: 'Back to Project' }}
+        backLink={{ to: back, label: t('v2.watermark.backToProject') }}
         actions={
           <>
             <Button variant="text" disabled={submitting} onClick={() => navigate(back)}>
-              Cancel
+              {t('projectViewer.common.cancel')}
             </Button>
             <Button variant="filled" icon="download" loading={submitting} disabled={!canExport} onClick={() => void start()} emphasized>
-              {submitting ? 'Queueing...' : 'Start Export'}
+              {submitting ? t('v2.watermark.queueing') : t('v2.watermark.startExport')}
             </Button>
           </>
         }
       />
       <div className="flex flex-col gap-5">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <TextField variant="outlined" label="Package name" leadingIcon="folder_zip" value={packageName} onValueChange={setPackageName} fullWidth />
+          <TextField variant="outlined" label={t('v2.watermark.packageName')} leadingIcon="folder_zip" value={packageName} onValueChange={setPackageName} fullWidth />
           <Segmented<AlbumExportVersion>
-            aria-label="Version"
+            aria-label={t('v2.watermark.version')}
             value={version}
             onChange={setVersion}
             options={[
-              { value: 'raw', label: 'Raw', icon: 'image' },
-              { value: 'optimized', label: 'Optimized', icon: 'auto_awesome' },
+              { value: 'raw', label: t('v2.watermark.raw'), icon: 'image' },
+              { value: 'optimized', label: t('v2.watermark.optimized'), icon: 'auto_awesome' },
             ]}
           />
         </div>
@@ -164,21 +164,21 @@ export function ExportWatermark() {
           sampleUrl={sampleUrl}
           isSaving={savingWatermark}
           onChange={setWatermark}
-          title="Export Watermark"
-          description="Saved per user and applied to this image export."
-          statusText="Settings save when export starts."
+          title={t('v2.watermark.exportSettingsTitle')}
+          description={t('v2.watermark.exportSettingsDescription')}
+          statusText={t('v2.watermark.exportStatus')}
         />
         <Section
           variant="card"
           icon={<Icon name="inventory_2" />}
           title={
             <span className="inline-flex items-center gap-2">
-              Images <StatusPill>{items.length}</StatusPill>
+              {t('v2.watermark.images')} <StatusPill>{items.length}</StatusPill>
             </span>
           }
           actions={
             <StatusPill tone="secondary">
-              {scoped ? 'Selected scope' : 'Full album'}
+              {scoped ? t('v2.watermark.selectedScope') : t('v2.watermark.fullAlbum')}
               {size ? ` - ${formatSize(size)}` : ''}
             </StatusPill>
           }
@@ -193,14 +193,14 @@ export function ExportWatermark() {
                     src={thumb ? imageDisplayUrl(thumb) : null}
                     badge={`#${(index + 1).toString().padStart(2, '0')}`}
                     title={albumFilename(item)}
-                    meta={item.aspectRatio || item.format || 'Image'}
+                    meta={item.aspectRatio || item.format || t('projectViewer.common.imageShort')}
                     trailing={formatSize(version === 'optimized' ? item.optimizedSize || item.size : item.size)}
                   />
                 );
               })}
             </div>
           ) : (
-            <EmptyState size="inline" icon="image" title="No images found in this export scope" />
+            <EmptyState size="inline" icon="image" title={t('v2.watermark.noImages')} />
           )}
         </Section>
       </div>

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Button, Dialog, Icon, IconButton, Shape, Text } from '../../../m3';
 import type { TrashItem } from '../../../types';
-import { formatBytes } from '../../lib/format';
+import { formatBytes, uiLocale } from '../../lib/format';
 import { kindMeta } from '../../ui/entityMeta';
 import { DetailBlock, ParamTable } from '../project/JobDetails';
 import { formatDuration } from './TrashGrid';
@@ -39,8 +39,8 @@ export function TrashItemDialog({ item, items, onNavigate, onClose, onRestore, o
   const facts = item
     ? ([
         { label: t('v2.trash.facts.kind'), value: [t(`v2.trash.kind.${kind}`), item.format?.toUpperCase()].filter(Boolean).join(' · ') },
-        { label: t('v2.trash.facts.deleted'), value: `${new Date(item.deletedAt).toLocaleString()} · ${timeAgo(item.deletedAt, i18n.language)}` },
-        item.createdAt ? { label: t('v2.project.created'), value: new Date(item.createdAt).toLocaleString() } : null,
+        { label: t('v2.trash.facts.deleted'), value: `${new Date(item.deletedAt).toLocaleString(uiLocale())} · ${timeAgo(item.deletedAt, i18n.language)}` },
+        item.createdAt ? { label: t('v2.project.created'), value: new Date(item.createdAt).toLocaleString(uiLocale()) } : null,
         kind !== 'text' ? { label: t('v2.project.filename'), value: trashFilename(item) } : null,
         item.aspectRatio ? { label: t('v2.trash.facts.aspectRatio'), value: item.aspectRatio } : null,
         item.resolution || item.quality ? { label: item.resolution ? t('v2.trash.facts.resolution') : t('v2.trash.facts.quality'), value: item.resolution || item.quality } : null,

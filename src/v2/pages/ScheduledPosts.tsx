@@ -1,8 +1,8 @@
+import { uiLocale } from '../lib/format';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { fetchScheduledPostCounts, fetchScheduledPosts } from '../../api';
-import { formatShortDate } from '../../lib/date';
 import type { LiveResourceEvent } from '../../lib/live';
 import { Button, cx, Icon, IconButton } from '../../m3';
 import { errorText } from '../lib/errors';
@@ -47,7 +47,7 @@ function formatLocalDateKey(date: Date) {
 
 /** Upcoming posts as a searchable list or a month calendar of daily counts. */
 export function ScheduledPosts() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const list = useListParams({ pageSize: 25, pageSizes: PAGE_SIZES, defaults: { view: 'list' } });
   const { page, q } = list;
   const pageSize = list.pageSize === 'all' ? 500 : list.pageSize;
@@ -131,7 +131,7 @@ export function ScheduledPosts() {
   }, [currentMonth]);
 
   // Sunday-first, to match the grid.
-  const weekdays = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(2023, 0, 1 + i).toLocaleDateString(undefined, { weekday: 'short' })), []);
+  const weekdays = useMemo(() => Array.from({ length: 7 }, (_, i) => new Date(2023, 0, 1 + i).toLocaleDateString(uiLocale(), { weekday: 'short' })), [i18n.language]);
 
   const countsByDate = useMemo(() => new Map(counts.map((count) => [count.date, count])), [counts]);
 
@@ -208,7 +208,7 @@ export function ScheduledPosts() {
                         </Link>
                         <span>·</span>
                         <span className="tabular-nums">
-                          {formatShortDate(when)} {when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {when.toLocaleDateString(uiLocale(), { month: 'short', day: 'numeric' })} {when.toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         {post.media && post.media.length > 1 && <span className="v2-info-chip">{t('v2.campaigns.scheduled.mediaCount', { count: post.media.length })}</span>}
                       </>
@@ -222,7 +222,7 @@ export function ScheduledPosts() {
       ) : (
         <Section
           variant="card"
-          title={currentMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+          title={currentMonth.toLocaleDateString(uiLocale(), { month: 'long', year: 'numeric' })}
           description={countsData.data ? [t('v2.campaigns.scheduled.thisMonth', { count: monthTotal }), totalScheduled ? t('v2.campaigns.scheduled.total', { count: totalScheduled }) : ''].filter(Boolean).join(' · ') : undefined}
           actions={
             <>
@@ -245,7 +245,7 @@ export function ScheduledPosts() {
               const data = getPostCountForDate(day.date);
               const today = day.date.toDateString() === new Date().toDateString();
               return (
-                <div key={i} className={cx('v2-calendar__day', !day.isCurrentMonth && 'v2-calendar__day--other')} data-busy={data && data.postCount > 0 ? '' : undefined} title={data && data.postCount > 0 ? `${t('v2.campaigns.scheduled.postCount', { count: data.postCount })} · ${day.date.toLocaleDateString()}` : undefined}>
+                <div key={i} className={cx('v2-calendar__day', !day.isCurrentMonth && 'v2-calendar__day--other')} data-busy={data && data.postCount > 0 ? '' : undefined} title={data && data.postCount > 0 ? `${t('v2.campaigns.scheduled.postCount', { count: data.postCount })} · ${day.date.toLocaleDateString(uiLocale())}` : undefined}>
                   <span className="v2-calendar__date" data-today={today ? '' : undefined}>
                     {day.date.getDate()}
                   </span>

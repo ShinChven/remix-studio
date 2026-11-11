@@ -104,7 +104,7 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
         <IconButton icon="palette" label={t('v2.theme.open')} tooltip onClick={onOpenTheme} />
         <IconButton icon="swap_horiz" label={t('v2.shell.classicUiHint')} tooltip onClick={openClassicUi} />
         {isAdmin && updateUrl && (
-          <IconButton icon="upgrade" label={t('sidebar.updateAvailable', 'Update Available')} tooltip href={updateUrl} target="_blank" rel="noopener noreferrer" badge={<Badge />} />
+          <IconButton icon="upgrade" label={t('v2.navigation.updateAvailable', 'Update Available')} tooltip href={updateUrl} target="_blank" rel="noopener noreferrer" badge={<Badge />} />
         )}
         <MenuButton
           placement="right"
@@ -185,7 +185,7 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
           <div className="flex items-center gap-1">
             <IconButton
               icon="upgrade"
-              label={t('sidebar.updateAvailable', 'Update Available')}
+              label={t('v2.navigation.updateAvailable', 'Update Available')}
               tooltip
               variant="tonal"
               size="xs"

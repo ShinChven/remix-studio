@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { PageHeroStat } from '../../ui/PageHero';
@@ -16,9 +17,9 @@ export function ExportsHero({ total, active, actions }: ExportsHeroProps) {
   const { t } = useTranslation();
   // The figures are always shown, with a dash while loading, so the hero keeps its height.
   const stats: PageHeroStat[] = [
-    { key: 'total', icon: 'folder_zip', value: total === null ? '–' : total.toLocaleString(), label: t('exports.stats.total') },
+    { key: 'total', icon: 'folder_zip', value: total === null ? '–' : total.toLocaleString(uiLocale()), label: t('exports.stats.total') },
     active > 0
-      ? { key: 'active', tone: 'running', value: active.toLocaleString(), label: t('exports.stats.active') }
+      ? { key: 'active', tone: 'running', value: active.toLocaleString(uiLocale()), label: t('exports.stats.active') }
       : { key: 'active', icon: 'check_circle', value: total === null ? '–' : '0', label: t('exports.stats.active') },
   ];
 

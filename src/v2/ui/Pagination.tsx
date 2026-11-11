@@ -44,7 +44,7 @@ export function Pagination({ page, pages, onPageChange, size = 'xs', siblings = 
   const items = buildPageItems(current, total, compact ? 0 : siblings);
 
   return (
-    <nav className={cx('v2-pagination', className)} aria-label={t('pagination.label', 'Pagination')}>
+    <nav className={cx('v2-pagination', className)} aria-label={t('v2.paging.label', 'Pagination')}>
       {!compact && (
         <IconButton icon="first_page" label={t('pagination.first')} size={size} disabled={current <= 1} onClick={() => goTo(1)} />
       )}

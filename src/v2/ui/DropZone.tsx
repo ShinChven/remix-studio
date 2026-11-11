@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useRef, useState, type ReactNode } from 'react';
 import { Button, cx, Icon, LinearProgress, Text } from '../../m3';
 
@@ -21,6 +22,7 @@ export interface DropZoneProps {
 
 /** Drop target with a file button: drag files onto it or pick them. */
 export function DropZone({ title, hint, icon = 'upload_file', accept, multiple, buttonLabel, buttonIcon = 'upload', busy, progress, disabled, onFiles, className, children }: DropZoneProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   return (
@@ -60,7 +62,7 @@ export function DropZone({ title, hint, icon = 'upload_file', accept, multiple, 
           {buttonLabel}
         </Button>
       </div>
-      {progress !== null && progress !== undefined && <LinearProgress value={progress} shape="wavy" aria-label="Upload progress" />}
+      {progress !== null && progress !== undefined && <LinearProgress value={progress} shape="wavy" aria-label={t('v2.accessibility.uploadProgress')} />}
       {children}
       <input
         ref={inputRef}

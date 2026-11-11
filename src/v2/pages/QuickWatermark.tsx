@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { fetchPostWatermarkSettings, fetchQuickWatermarkSource, renderQuickWatermark, type AlbumExportVersion, type PostWatermarkSettings, type QuickWatermarkSource, type QuickWatermarkTarget } from '../../api';
@@ -27,6 +28,7 @@ function downloadBlob(blob: Blob, filename: string) {
  * watermark settings are only read: they also drive campaign posts.
  */
 export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
+  const { t } = useTranslation();
   const { id, itemId } = useParams<{ id: string; itemId: string }>();
   const navigate = useNavigate();
   const toast = useToast();
@@ -36,7 +38,7 @@ export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
     return source === 'album' ? { kind: 'album', projectId: id, itemId } : { kind: 'library', libraryId: id, itemId };
   }, [source, id, itemId]);
   const fallbackPath = source === 'album' ? `/project/${id}?tab=album` : `/library/${id}`;
-  const backLabel = source === 'album' ? 'Back to Album' : 'Back to Library';
+  const backLabel = source === 'album' ? t('v2.watermark.backToAlbum') : t('v2.watermark.backToLibrary');
   const [image, setImage] = useState<QuickWatermarkSource | null>(null);
   const [watermark, setWatermark] = useState<PostWatermarkSettings>({ ...DEFAULT_WATERMARK_SETTINGS, enabled: true });
   const [version, setVersion] = useState<AlbumExportVersion>('raw');
@@ -71,7 +73,7 @@ export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
         setWatermark({ ...DEFAULT_WATERMARK_SETTINGS, ...settings, enabled: true });
       } catch (error) {
         if (!cancelled) {
-          toast.error(errorText(error, 'Failed to load image'));
+          toast.error(errorText(error, t('v2.watermark.imageLoadFailed')));
           navigate(fallbackPath, { replace: true });
         }
       } finally {
@@ -93,55 +95,53 @@ export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
     setCreating(true);
     try {
       downloadBlob(await renderQuickWatermark(target, watermark, version), image.downloadName);
-      toast.success('Watermarked image downloaded');
+      toast.success(t('v2.watermark.downloaded'));
     } catch (error) {
-      toast.error(errorText(error, 'Failed to watermark image'));
+      toast.error(errorText(error, t('v2.watermark.createFailed')));
     } finally {
       setCreating(false);
     }
   };
 
-  if (loading || !image) return <LoadingState label="Loading..." minHeight={400} />;
+  if (loading || !image) return <LoadingState label={t('projectViewer.common.loading')} minHeight={400} />;
 
   return (
     <Page width="default" density="compact">
       <PageHeader
-        title="Quick Watermark"
+        title={t('v2.watermark.quickTitle')}
         description={
-          <>
-            Watermark <strong className="text-on-surface">{image.filename}</strong> from <strong className="text-on-surface">{image.containerName}</strong>. The result downloads to this browser once and is not saved to storage.
-          </>
+          t('v2.watermark.quickDescription', { filename: image.filename, container: image.containerName })
         }
         backLink={{ onClick: goBack, label: backLabel }}
         actions={
           <>
             <Button variant="text" onClick={goBack} disabled={creating}>
-              Close
+              {t('projectViewer.common.close')}
             </Button>
-            <Button variant="filled" icon="approval" loading={creating} disabled={!canCreate} onClick={() => void create()} title={watermark.text.trim() ? undefined : 'Enter watermark text first'} emphasized>
-              {creating ? 'Creating...' : 'Create'}
+            <Button variant="filled" icon="approval" loading={creating} disabled={!canCreate} onClick={() => void create()} title={watermark.text.trim() ? undefined : t('v2.watermark.enterText')} emphasized>
+              {creating ? t('v2.watermark.creating') : t('v2.watermark.create')}
             </Button>
           </>
         }
       />
       <div className="flex flex-col gap-5">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-          <Section variant="tonal" icon={<Icon name="download" />} title="Download as">
+          <Section variant="tonal" icon={<Icon name="download" />} title={t('v2.watermark.downloadAs')}>
             <Text variant="label-large" emphasized className="truncate font-mono" title={image.downloadName}>
               {image.downloadName}
             </Text>
             <Text variant="body-small" className="text-on-surface-variant">
-              JPEG{formatSize(size) ? ` - source ${formatSize(size)}` : ''}
+              {formatSize(size) ? t('v2.watermark.sourceSize', { size: formatSize(size) }) : 'JPEG'}
             </Text>
           </Section>
           {image.optimizedUrl && (
             <Segmented<AlbumExportVersion>
-              aria-label="Version"
+              aria-label={t('v2.watermark.version')}
               value={version}
               onChange={setVersion}
               options={[
-                { value: 'raw', label: 'Raw', icon: 'image' },
-                { value: 'optimized', label: 'Optimized', icon: 'auto_awesome' },
+                { value: 'raw', label: t('v2.watermark.raw'), icon: 'image' },
+                { value: 'optimized', label: t('v2.watermark.optimized'), icon: 'auto_awesome' },
               ]}
             />
           )}
@@ -151,10 +151,10 @@ export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
           sampleUrl={previewUrl}
           isSaving={creating}
           onChange={setWatermark}
-          title="Watermark"
-          description="Starts from your saved watermark settings. Changes here apply to this image only and are not saved."
-          statusText="Click Create to download the watermarked JPEG. Nothing is kept on the server."
-          savingText="Creating watermarked image..."
+          title={t('v2.watermark.title')}
+          description={t('v2.watermark.quickSettingsDescription')}
+          statusText={t('v2.watermark.quickStatus')}
+          savingText={t('v2.watermark.quickSaving')}
           showEnabledToggle={false}
         />
       </div>

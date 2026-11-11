@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -245,7 +246,7 @@ export function CampaignHistory() {
                       </Link>
                       <span>·</span>
                       <span className="tabular-nums">
-                        {updated.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} {updated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {updated.toLocaleDateString(uiLocale(), { month: 'short', day: 'numeric', year: 'numeric' })} {updated.toLocaleTimeString(uiLocale(), { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       {post.status === 'failed' && execution?.errorMsg && (
                         <span className="w-full truncate text-error" title={execution.errorMsg}>

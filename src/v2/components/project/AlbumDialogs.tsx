@@ -221,7 +221,7 @@ export function ExportPackageDialog({ open, defaultValue, itemCount, onClose, on
           </Button>
           {onWatermark && (
             <Button variant="tonal" icon="approval" disabled={busy} onClick={() => onWatermark(name.trim() || defaultValue, version)}>
-              {t('projectViewer.exportDialog.watermark', { defaultValue: 'Watermark' })}
+              {t('v2.campaigns.create.watermark', { defaultValue: 'Watermark' })}
             </Button>
           )}
           <Button variant="filled" icon="download" loading={busy} disabled={!name.trim()} onClick={() => void submit()}>

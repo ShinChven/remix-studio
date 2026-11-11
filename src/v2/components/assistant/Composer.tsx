@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import {
   useCallback,
   useEffect,
@@ -88,7 +89,7 @@ const MOBILE_INPUT_QUERY = '(max-width: 767px), (pointer: coarse)';
 
 function summarizeSkillTitle(title: string | undefined, content: string) {
   if (title?.trim()) return title.trim();
-  const firstLine = content.split('\n').map((line) => line.trim()).find(Boolean) || 'Untitled prompt';
+  const firstLine = content.split('\n').map((line) => line.trim()).find(Boolean) || '';
   return firstLine.length > 48 ? `${firstLine.slice(0, 45)}...` : firstLine;
 }
 
@@ -102,12 +103,6 @@ function getSkillTriggerMatch(textBeforeCursor: string) {
   if (!match) return null;
   const query = match[2] || '';
   return { query, start: textBeforeCursor.length - query.length - 1 };
-}
-
-function formatCompactNumber(value: number) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}K`;
-  return String(value);
 }
 
 async function compressImage(file: File): Promise<string> {
@@ -149,9 +144,10 @@ async function compressImage(file: File): Promise<string> {
 
 /** Context window usage as a small determinate ring next to the model name. */
 function ContextUsage({ used, limit, unit }: { used: number; limit?: number; unit?: string }) {
+  const { t } = useTranslation();
   if (!limit || limit <= 0 || used <= 0) return null;
   const percent = Math.min(100, (used / limit) * 100);
-  const label = `Context used: ${used.toLocaleString()} / ${limit.toLocaleString()} ${unit || 'tokens'} (${Math.round(percent)}%)`;
+  const label = t('v2.accessibility.contextUsed', { used: used.toLocaleString(uiLocale()), limit: limit.toLocaleString(uiLocale()), unit: !unit || unit === 'tokens' ? t('v2.accessibility.tokens') : unit, percent: Math.round(percent) });
   return (
     <span className="inline-flex items-center gap-1" title={label}>
       <CircularProgress
@@ -162,7 +158,7 @@ function ContextUsage({ used, limit, unit }: { used: number; limit?: number; uni
         className={percent >= 90 ? 'v2-progress-error' : percent >= 70 ? 'v2-progress-warning' : undefined}
       />
       <span className="m3-visually-hidden">
-        {formatCompactNumber(used)} of {formatCompactNumber(limit)} {unit || 'tokens'}
+        {label}
       </span>
     </span>
   );
@@ -658,7 +654,7 @@ export function Composer({
           icon: 'bolt',
           label: (
             <span className="flex items-center gap-2">
-              <span className="truncate">{o.title}</span>
+              <span className="truncate">{o.title || t('v2.assistant.untitledSkill')}</span>
               {o.tags[0] && <span className="v2-tag">{o.tags[0]}</span>}
             </span>
           ),
@@ -837,13 +833,13 @@ export function Composer({
         loading={isSearchingActivePicker}
         heading={
           isSearchingActivePicker
-            ? t('assistant.searching', 'Searching...')
+            ? t('v2.assistant.searching', 'Searching...')
             : activePicker === 'skill'
-              ? t('assistant.selectPresetPrompt', 'Select preset prompt')
-              : t('assistant.selectResource', 'Select Resource')
+              ? t('v2.assistant.selectPresetPrompt', 'Select preset prompt')
+              : t('v2.assistant.selectResource', 'Select Resource')
         }
         hint={activePicker === 'skill' ? t('assistant.presetPromptEscapeHint', 'Press Esc to keep typing a literal slash.') : undefined}
-        emptyText={activePicker === 'skill' ? t('assistant.noPresetPrompts', 'No preset prompts found.') : t('assistant.noMatches', 'No matches found.')}
+        emptyText={activePicker === 'skill' ? t('v2.assistant.noPresetPrompts', 'No preset prompts found.') : t('v2.assistant.noMatches', 'No matches found.')}
       />
     </div>
   );

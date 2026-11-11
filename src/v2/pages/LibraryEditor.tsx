@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -82,7 +83,7 @@ function defaultExportName(name: string): string {
 
 function formatItemDateTime(value?: number): string {
   if (!value) return '';
-  return new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return new Date(value).toLocaleString(uiLocale(), { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 
@@ -879,7 +880,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
         label={t('libraryEditor.renameItem')}
         initialValue={renaming?.title || ''}
         allowEmpty
-        confirmLabel={t('common.save', 'Save')}
+        confirmLabel={t('projectViewer.common.save', 'Save')}
         onClose={() => setRenaming(null)}
         onConfirm={async (title) => {
           if (!renaming) return;

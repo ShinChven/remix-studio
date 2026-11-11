@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
@@ -98,7 +99,7 @@ export function CivitaiParamsTable({ params, sourceCount }: { params?: CivitaiGe
 /** Everything an expanded job shows: prompt, submitted values, references, result, error and metadata. */
 export function JobDetails({ job, onLightbox, showResultText, showError, showMetadata }: { job: Job; onLightbox: OpenLightbox; showResultText?: boolean; showError?: boolean; showMetadata?: boolean }) {
   const { t } = useTranslation();
-  const meta = [job.aspectRatio, job.quality, job.format, job.size ? `${(job.size / 1024).toFixed(1)} KB` : null, job.updatedAt || job.createdAt ? new Date(job.updatedAt || job.createdAt || 0).toLocaleString() : null].filter(Boolean) as string[];
+  const meta = [job.aspectRatio, job.quality, job.format, job.size ? `${(job.size / 1024).toFixed(1)} KB` : null, job.updatedAt || job.createdAt ? new Date(job.updatedAt || job.createdAt || 0).toLocaleString(uiLocale()) : null].filter(Boolean) as string[];
   return (
     <div className="v2-job-details">
       <DetailBlock label={t('projectViewer.common.fullPrompt')}>
@@ -132,7 +133,7 @@ export function JobDetails({ job, onLightbox, showResultText, showError, showMet
         </DetailBlock>
       )}
       {job.videoContexts && job.videoContexts.length > 0 && (
-        <DetailBlock label="Reference Videos">
+        <DetailBlock label={t('v2.accessibility.referenceVideos')}>
           <div className="grid gap-2 sm:grid-cols-2">
             {job.videoContexts.map((ctx, idx) => (
               <video key={idx} src={imageDisplayUrl(ctx)} controls className="v2-media-player" />
@@ -141,7 +142,7 @@ export function JobDetails({ job, onLightbox, showResultText, showError, showMet
         </DetailBlock>
       )}
       {job.audioContexts && job.audioContexts.length > 0 && (
-        <DetailBlock label="Reference Audio">
+        <DetailBlock label={t('v2.accessibility.referenceAudio')}>
           <div className="flex flex-col gap-2">
             {job.audioContexts.map((ctx, idx) => (
               <audio key={idx} src={imageDisplayUrl(ctx)} controls className="w-full" />

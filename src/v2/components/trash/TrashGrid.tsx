@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Checkbox, Icon, IconButton, LinearProgress, Shape, Text, useMediaQuery } from '../../../m3';
 import type { TrashItem } from '../../../types';
-import { formatBytes } from '../../lib/format';
+import { formatBytes, uiLocale } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { kindMeta } from '../../ui/entityMeta';
 import { KindBadge } from '../../ui/KindBadge';
@@ -232,7 +232,7 @@ export function TrashGrid({ groups, selectedIds, size, showProject, leaving, men
                           <span className="truncate">{item.projectName}</span>
                         </button>
                       )}
-                      <span className="v2-shot__sub" title={new Date(item.deletedAt).toLocaleString()}>
+                      <span className="v2-shot__sub" title={new Date(item.deletedAt).toLocaleString(uiLocale())}>
                         {t('v2.trash.deletedAgo', { time: timeAgo(item.deletedAt, i18n.language) })}
                       </span>
                     </div>

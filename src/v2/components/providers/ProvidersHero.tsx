@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Provider } from '../../../types';
@@ -31,11 +32,11 @@ export function ProvidersHero({ providers, actions }: ProvidersHeroProps) {
 
   const stats: PageHeroStat[] = [];
   if (all.length > 0) {
-    stats.push({ key: 'total', value: all.length.toLocaleString(), label: t('v2.providers.statProviders', { count: all.length }) });
-    stats.push({ key: 'ready', tone: 'success', value: ready.toLocaleString(), label: t('v2.providers.statReady', { count: ready }) });
-    if (missing > 0) stats.push({ key: 'missing', tone: 'warning', value: missing.toLocaleString(), label: t('v2.providers.statMissing', { count: missing }) });
-    if (running > 0) stats.push({ key: 'running', tone: 'running', value: running.toLocaleString(), label: t('v2.providers.statRunning', { count: running }) });
-    if (projects > 0) stats.push({ key: 'projects', icon: 'folder', value: projects.toLocaleString(), label: t('v2.providers.statProjects', { count: projects }) });
+    stats.push({ key: 'total', value: all.length.toLocaleString(uiLocale()), label: t('v2.providers.statProviders', { count: all.length }) });
+    stats.push({ key: 'ready', tone: 'success', value: ready.toLocaleString(uiLocale()), label: t('v2.providers.statReady', { count: ready }) });
+    if (missing > 0) stats.push({ key: 'missing', tone: 'warning', value: missing.toLocaleString(uiLocale()), label: t('v2.providers.statMissing', { count: missing }) });
+    if (running > 0) stats.push({ key: 'running', tone: 'running', value: running.toLocaleString(uiLocale()), label: t('v2.providers.statRunning', { count: running }) });
+    if (projects > 0) stats.push({ key: 'projects', icon: 'folder', value: projects.toLocaleString(uiLocale()), label: t('v2.providers.statProjects', { count: projects }) });
   }
 
   return (

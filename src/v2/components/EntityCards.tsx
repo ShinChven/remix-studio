@@ -94,7 +94,7 @@ export function ProjectCard({ project, isToggling, isExporting, onStartAssistant
           {onStartAssistantChat && (
             <IconButton
               icon="auto_awesome"
-              label={t('projects.projectCard.startAssistantChat', { defaultValue: 'Start Assistant Chat' })}
+              label={t('v2.projectEditor.startAssistantChat', { defaultValue: 'Start Assistant Chat' })}
               tooltip
               size="xs"
               className="v2-on-scrim"
@@ -102,7 +102,7 @@ export function ProjectCard({ project, isToggling, isExporting, onStartAssistant
             />
           )}
           <ActionMenu
-            label={t('common.moreOptions', { defaultValue: 'More options' })}
+            label={t('v2.common.more', { defaultValue: 'More options' })}
             icon="more_horiz"
             size="xs"
             className="v2-on-scrim"
@@ -125,7 +125,7 @@ export function ProjectCard({ project, isToggling, isExporting, onStartAssistant
                 disabled: isToggling,
                 hidden: !onToggleArchive,
               },
-              { key: 'delete', icon: 'delete', label: t('common.delete', { defaultValue: 'Delete' }), onSelect: () => onDelete?.(project), danger: true, divider: true, hidden: !onDelete },
+              { key: 'delete', icon: 'delete', label: t('projectViewer.common.delete', { defaultValue: 'Delete' }), onSelect: () => onDelete?.(project), danger: true, divider: true, hidden: !onDelete },
             ]}
           />
         </>
@@ -185,11 +185,11 @@ export function LibraryCard({ library, isCheckingRefs, onTogglePin, onStartAssis
           />
         )}
         {onStartAssistantChat && (
-          <IconButton icon="auto_awesome" label={t('libraries.libraryCard.startAssistantChat')} tooltip size="xs" onClick={() => onStartAssistantChat(library)} />
+          <IconButton icon="auto_awesome" label={t('v2.library.startChat')} tooltip size="xs" onClick={() => onStartAssistantChat(library)} />
         )}
         {(onDuplicate || onDelete) && (
           <ActionMenu
-            label={t('common.moreOptions', { defaultValue: 'More options' })}
+            label={t('v2.common.more', { defaultValue: 'More options' })}
             size="xs"
             items={[
               { key: 'duplicate', icon: 'content_copy', label: t('libraries.libraryCard.duplicate'), onSelect: () => onDuplicate?.(library), hidden: !onDuplicate },
@@ -220,7 +220,7 @@ export function LibraryRow({ library, isCheckingRefs, onTogglePin, onStartAssist
   const menuItems: ActionMenuItem[] = [
     { key: 'open', icon: 'arrow_forward', label: t('v2.providers.open'), onSelect: () => navigate(`/library/${library.id}`) },
     { key: 'pin', icon: 'push_pin', label: isPinned ? t('libraries.libraryCard.unpin') : t('libraries.libraryCard.pin'), onSelect: () => onTogglePin?.(library), hidden: !onTogglePin },
-    { key: 'assistant', icon: 'auto_awesome', label: t('libraries.libraryCard.startAssistantChat'), onSelect: () => onStartAssistantChat?.(library), hidden: !onStartAssistantChat },
+    { key: 'assistant', icon: 'auto_awesome', label: t('v2.library.startChat'), onSelect: () => onStartAssistantChat?.(library), hidden: !onStartAssistantChat },
     { key: 'duplicate', icon: 'content_copy', label: t('libraries.libraryCard.duplicate'), onSelect: () => onDuplicate?.(library), hidden: !onDuplicate, divider: true },
     { key: 'delete', icon: 'delete', label: t('libraryEditor.deleteLibrary'), onSelect: () => onDelete?.(library), disabled: isCheckingRefs, danger: true, hidden: !onDelete },
   ];
@@ -246,7 +246,7 @@ export function LibraryRow({ library, isCheckingRefs, onTogglePin, onStartAssist
       ]}
       onOpen={() => navigate(`/library/${library.id}`)}
       ariaLabel={library.name}
-      menuLabel={t('common.moreOptions', { defaultValue: 'More options' })}
+      menuLabel={t('v2.common.more', { defaultValue: 'More options' })}
       menuItems={menuItems}
     />
   );
