@@ -26,6 +26,9 @@ data/
 docs/
 scripts/
 !scripts/build-tv.mjs
+!scripts/compare-i18n.ts
+!scripts/check-v2-i18n.ts
+!scripts/test-v2-i18n.tsx
 README.md
 CHANGELOG.md
 UPGRADING.md
