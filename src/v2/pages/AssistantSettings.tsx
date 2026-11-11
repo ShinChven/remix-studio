@@ -280,7 +280,7 @@ export function AssistantSettings() {
     const isEnabled = enabledProviderIds.includes(providerId);
     if (isEnabled && enabledProviderIds.length === 1) {
       toast.error(
-        t('assistant.minimumProviderValidation', {
+        t('v2.assistant.minimumProviderValidation', {
           defaultValue: 'Keep at least one provider enabled for chat.',
         }),
       );
@@ -298,7 +298,7 @@ export function AssistantSettings() {
 
     if (normalizedEnabledIds.length === 0) {
       toast.error(
-        t('assistant.minimumProviderValidation', {
+        t('v2.assistant.minimumProviderValidation', {
           defaultValue: 'Keep at least one provider enabled for chat.',
         }),
       );
@@ -320,7 +320,7 @@ export function AssistantSettings() {
 
       setEnabledProviderIds(normalizedEnabledIds);
       toast.success(
-        t('assistant.providersSaved', {
+        t('v2.assistant.providersSaved', {
           defaultValue: 'Chat-enabled providers updated.',
         }),
       );
@@ -352,7 +352,7 @@ export function AssistantSettings() {
 
     if (!title || !content) {
       toast.error(
-        t('assistant.skillValidation', {
+        t('v2.assistant.skillValidation', {
           defaultValue: 'A title and prompt content are required.',
         }),
       );
@@ -381,8 +381,8 @@ export function AssistantSettings() {
       closeSkillEditor();
       toast.success(
         editorState.mode === 'create'
-          ? t('assistant.skillCreated', { defaultValue: 'Preset prompt created.' })
-          : t('assistant.skillUpdated', { defaultValue: 'Preset prompt updated.' }),
+          ? t('v2.assistant.skillCreated', { defaultValue: 'Preset prompt created.' })
+          : t('v2.assistant.skillUpdated', { defaultValue: 'Preset prompt updated.' }),
       );
     } catch (error) {
       console.error('Failed to save assistant skill:', error);
@@ -406,7 +406,7 @@ export function AssistantSettings() {
       setSkillPage(nextPage);
       await loadSkills(nextPage);
       setDeleteTarget(null);
-      toast.success(t('assistant.skillDeleted', { defaultValue: 'Preset prompt deleted.' }));
+      toast.success(t('v2.assistant.skillDeleted', { defaultValue: 'Preset prompt deleted.' }));
     } catch (error) {
       console.error('Failed to delete assistant skill:', error);
       toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
@@ -418,15 +418,15 @@ export function AssistantSettings() {
   return (
     <Page ref={paginationRef} width="default" density="compact">
       <PageHeader
-        title={t('assistant.chatSettings', { defaultValue: 'Chat settings' })}
-        description={t('assistant.chatSettingsDescription', { defaultValue: 'Enable the providers available to chat across the app and manage the preset prompts shown from the composer.' })}
-        backLink={{ to: returnPath, label: returnTo ? t('assistant.backToConversation', { defaultValue: 'Back to chat' }) : t('assistant.backToAssistant', { defaultValue: 'Back to assistant' }) }}
+        title={t('v2.assistant.chatSettings', { defaultValue: 'Chat settings' })}
+        description={t('v2.assistant.chatSettingsDescription', { defaultValue: 'Enable the providers available to chat across the app and manage the preset prompts shown from the composer.' })}
+        backLink={{ to: returnPath, label: returnTo ? t('v2.assistant.backToConversation', { defaultValue: 'Back to chat' }) : t('v2.chatHistory.backToAssistant', { defaultValue: 'Back to assistant' }) }}
       />
       <Tabs value={activeTab} onChange={(v) => handleTabChange(v as AssistantSettingsTab)} variant="secondary" scrollable className="mb-4">
-        <Tab value="providers" icon="key" inlineIcon label={t('assistant.providersTab', { defaultValue: 'Providers' })} />
-        <Tab value="skills" icon="auto_awesome" inlineIcon label={t('assistant.skillsTab', { defaultValue: 'Skills' })} />
-        <Tab value="tools" icon="build" inlineIcon label={t('assistant.toolsTab', { defaultValue: 'Tools' })} />
-        <Tab value="mcp" icon="hub" inlineIcon label={t('assistant.mcpTab', { defaultValue: 'MCP' })} />
+        <Tab value="providers" icon="key" inlineIcon label={t('v2.assistant.providersTab', { defaultValue: 'Providers' })} />
+        <Tab value="skills" icon="auto_awesome" inlineIcon label={t('v2.assistant.skillsTab', { defaultValue: 'Skills' })} />
+        <Tab value="tools" icon="build" inlineIcon label={t('v2.assistant.toolsTab', { defaultValue: 'Tools' })} />
+        <Tab value="mcp" icon="hub" inlineIcon label={t('sidebar.mcp', { defaultValue: 'MCP' })} />
       </Tabs>
 
       {activeTab === 'providers' && (
@@ -435,13 +435,13 @@ export function AssistantSettings() {
           title={t('assistant.chatProvidersTitle', { defaultValue: 'Enable providers for Assistant' })}
           description={
             <>
-              {t('assistant.chatProvidersDescription', { defaultValue: 'These providers appear in the assistant composer across the app. Disabled providers are hidden from new chat selection.' })}{' '}
+              {t('v2.assistant.chatProvidersDescription', { defaultValue: 'These providers appear in the assistant composer across the app. Disabled providers are hidden from new chat selection.' })}{' '}
               <Link to="/providers" className="v2-link">
-                {t('assistant.manageProvidersLink', { defaultValue: 'Manage provider credentials' })}
+                {t('v2.assistant.manageProvidersLink', { defaultValue: 'Manage provider credentials' })}
               </Link>
             </>
           }
-          actions={<StatusPill tone="primary" icon="layers">{t('assistant.enabledProviderCount', { defaultValue: '{{count}} enabled', count: enabledProviderIds.length })}</StatusPill>}
+          actions={<StatusPill tone="primary" icon="layers">{t('v2.assistant.enabledProviderCount', { defaultValue: '{{count}} enabled', count: enabledProviderIds.length })}</StatusPill>}
         >
           {isLoadingProviders ? (
             <LoadingState minHeight={200} />
@@ -460,13 +460,13 @@ export function AssistantSettings() {
                       <span className="flex flex-wrap items-center gap-2">
                         {provider.name}
                         <span className="v2-info-chip">{provider.type}</span>
-                        <StatusPill tone={enabled ? 'success' : 'neutral'}>{enabled ? t('assistant.providerEnabled', { defaultValue: 'Enabled' }) : t('assistant.providerDisabled', { defaultValue: 'Disabled' })}</StatusPill>
+                        <StatusPill tone={enabled ? 'success' : 'neutral'}>{enabled ? t('v2.assistant.providerEnabled', { defaultValue: 'Enabled' }) : t('v2.assistant.providerDisabled', { defaultValue: 'Disabled' })}</StatusPill>
                       </span>
                     }
-                    meta={unavailable ? t('assistant.providerUnavailable', { defaultValue: 'No text chat models are available for this provider.' }) : t('assistant.providerModelSummary', { defaultValue: '{{count}} chat models available', count: models.length })}
+                    meta={unavailable ? t('v2.assistant.providerUnavailable', { defaultValue: 'No text chat models are available for this provider.' }) : t('v2.assistant.providerModelSummary', { defaultValue: '{{count}} chat models available', count: models.length })}
                     actions={
                       <Button variant={enabled ? 'tonal' : 'outlined'} size="sm" icon={enabled ? 'check' : 'close'} disabled={unavailable || isSavingProviders} onClick={() => void handleToggleProvider(provider.id)}>
-                        {enabled ? t('assistant.disableProviderAction', { defaultValue: 'Disable for chat' }) : t('assistant.enableProviderAction', { defaultValue: 'Enable for chat' })}
+                        {enabled ? t('v2.assistant.disableProviderAction', { defaultValue: 'Disable for chat' }) : t('v2.assistant.enableProviderAction', { defaultValue: 'Enable for chat' })}
                       </Button>
                     }
                   >
@@ -491,48 +491,48 @@ export function AssistantSettings() {
         <Section
           aria-busy={isLoadingSkills}
           variant="plain"
-          title={t('assistant.presetPromptsTitle', { defaultValue: 'Composer skills' })}
+          title={t('v2.assistant.presetPromptsTitle', { defaultValue: 'Composer skills' })}
           description={
             <>
-              {t('assistant.presetPromptsDescription', { defaultValue: 'Type ` in the chat box to open this list and insert a preset prompt into the current draft.' })}{' '}
+              {t('v2.assistant.presetPromptsDescription', { defaultValue: 'Type ` in the chat box to open this list and insert a preset prompt into the current draft.' })}{' '}
               {skillsLibrary && (
                 <Link to={`/library/${skillsLibrary.id}`} className="v2-link">
-                  {t('assistant.openSkillsLibrary', { defaultValue: 'Open underlying text library' })}
+                  {t('v2.assistant.openSkillsLibrary', { defaultValue: 'Open underlying text library' })}
                 </Link>
               )}
             </>
           }
           actions={
             <Button variant="filled" icon="add" disabled={!skillsLibrary} onClick={() => openSkillEditor('create')}>
-              {t('assistant.newSkill', { defaultValue: 'New skill' })}
+              {t('v2.assistant.newSkill', { defaultValue: 'New skill' })}
             </Button>
           }
         >
           {isLoadingSkills && skillItems.length === 0 ? (
             <LoadingState minHeight={200} />
           ) : skillItems.length === 0 ? (
-            <EmptyState icon="auto_awesome" shape="sunny" title={t('assistant.emptySkillsTitle', { defaultValue: 'No preset prompts yet' })} description={t('assistant.emptySkillsDescription', { defaultValue: 'Create a skill here, then type ` in the composer to insert it into the chat draft.' })} />
+            <EmptyState icon="auto_awesome" shape="sunny" title={t('v2.assistant.emptySkillsTitle', { defaultValue: 'No preset prompts yet' })} description={t('v2.assistant.emptySkillsDescription', { defaultValue: 'Create a skill here, then type ` in the composer to insert it into the chat draft.' })} />
           ) : (
             <RowList>
               {skillItems.map((item, index) => (
                 <Row
                   key={item.id}
                   lead={<Icon name="auto_awesome" className="text-tertiary" />}
-                  title={item.title || t('assistant.untitledSkill', { defaultValue: 'Untitled preset prompt' })}
+                  title={item.title || t('v2.assistant.untitledSkill', { defaultValue: 'Untitled preset prompt' })}
                   meta={
                     <>
-                      <span className="v2-info-chip">{t('assistant.skillLabel', { defaultValue: 'Skill' })}</span>
-                      <span>{t('assistant.skillIndex', { defaultValue: '{{index}} of {{total}}', index: (skillPage - 1) * SKILLS_PAGE_SIZE + index + 1, total: skillTotal })}</span>
+                      <span className="v2-info-chip">{t('v2.assistant.skillLabel', { defaultValue: 'Skill' })}</span>
+                      <span>{t('v2.assistant.skillIndex', { defaultValue: '{{index}} of {{total}}', index: (skillPage - 1) * SKILLS_PAGE_SIZE + index + 1, total: skillTotal })}</span>
                       <span className="w-full">{summarizeSkillContent(item.content)}</span>
                     </>
                   }
                   actions={
                     <>
                       <Button variant="text" size="xs" icon="edit" onClick={() => openSkillEditor('edit', item)}>
-                        {t('assistant.editSkill', { defaultValue: 'Edit' })}
+                        {t('projectViewer.common.edit', { defaultValue: 'Edit' })}
                       </Button>
                       <Button variant="text" size="xs" icon="delete" className="v2-button-danger" onClick={() => setDeleteTarget(item)}>
-                        {t('assistant.deleteSkill', { defaultValue: 'Delete' })}
+                        {t('projectViewer.common.delete', { defaultValue: 'Delete' })}
                       </Button>
                     </>
                   }
@@ -545,23 +545,23 @@ export function AssistantSettings() {
       )}
 
       {activeTab === 'tools' && (
-        <Section variant="plain" title={t('assistant.toolsTitle', { defaultValue: 'Available MCP tools' })} description={t('assistant.toolsDescription', { defaultValue: 'These are the actions the assistant can call during chat. Write actions pause for approval before they run.' })}>
+        <Section variant="plain" title={t('v2.assistant.toolsTitle', { defaultValue: 'Available MCP tools' })} description={t('v2.assistant.toolsDescription', { defaultValue: 'These are the actions the assistant can call during chat. Write actions pause for approval before they run.' })}>
           <div className="flex flex-col gap-3">
             <div className="v2-stat-grid">
-              <StatTile icon="build" label={t('assistant.toolsTotal', { defaultValue: 'Total tools' })} value={toolCounts.total} tone="primary" />
-              <StatTile icon="database" label={t('assistant.toolsReadOnly', { defaultValue: 'Read-only' })} value={toolCounts.read} tone="tertiary" />
-              <StatTile icon="checklist" label={t('assistant.toolsWriteActions', { defaultValue: 'Write actions' })} value={toolCounts.mutate} tone="success" />
-              <StatTile icon="verified_user" label={t('assistant.toolsNeedApproval', { defaultValue: 'Need approval' })} value={toolCounts.confirmation} tone="warning" />
+              <StatTile icon="build" label={t('v2.assistant.toolsTotal', { defaultValue: 'Total tools' })} value={toolCounts.total} tone="primary" />
+              <StatTile icon="database" label={t('v2.assistant.toolsReadOnly', { defaultValue: 'Read-only' })} value={toolCounts.read} tone="tertiary" />
+              <StatTile icon="checklist" label={t('v2.assistant.toolsWriteActions', { defaultValue: 'Write actions' })} value={toolCounts.mutate} tone="success" />
+              <StatTile icon="verified_user" label={t('v2.assistant.toolsNeedApproval', { defaultValue: 'Need approval' })} value={toolCounts.confirmation} tone="warning" />
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <ListSearch value={toolSearch} onChange={setToolSearch} label={t('assistant.searchTools', { defaultValue: 'Search tools' })} />
+              <ListSearch value={toolSearch} onChange={setToolSearch} label={t('v2.assistant.searchTools', { defaultValue: 'Search tools' })} />
               <ChipSet>
                 {(
                   [
-                    ['all', t('assistant.toolsAll', { defaultValue: 'All' })],
-                    ['read', t('assistant.toolsRead', { defaultValue: 'Read' })],
-                    ['mutate', t('assistant.toolsWrite', { defaultValue: 'Write' })],
-                    ['destructive', t('assistant.toolsDestructive', { defaultValue: 'Destructive' })],
+                    ['all', t('v2.assistant.toolsAll', { defaultValue: 'All' })],
+                    ['read', t('v2.assistant.toolsRead', { defaultValue: 'Read' })],
+                    ['mutate', t('v2.assistant.toolsWrite', { defaultValue: 'Write' })],
+                    ['destructive', t('v2.assistant.toolsDestructive', { defaultValue: 'Destructive' })],
                   ] as const
                 ).map(([value, label]) => (
                   <FilterChip key={value} label={label} selected={toolCategory === value} onClick={() => setToolCategory(value as typeof toolCategory)} />
@@ -571,7 +571,7 @@ export function AssistantSettings() {
             {isLoadingTools ? (
               <LoadingState minHeight={200} />
             ) : visibleTools.length === 0 ? (
-              <EmptyState icon="build" size="inline" title={t('assistant.noToolsFound', { defaultValue: 'No tools found' })} description={t('assistant.noToolsFoundDescription', { defaultValue: 'Try a different search term or category filter.' })} />
+              <EmptyState icon="build" size="inline" title={t('v2.assistant.noToolsFound', { defaultValue: 'No tools found' })} description={t('v2.assistant.noToolsFoundDescription', { defaultValue: 'Try a different search term or category filter.' })} />
             ) : (
               <div className="v2-tool-grid">
                 {visibleTools.map((tool) => {
@@ -582,7 +582,7 @@ export function AssistantSettings() {
                         <StatusPill tone={tool.category === 'read' ? 'tertiary' : tool.category === 'mutate' ? 'success' : 'error'}>{getToolCategoryLabel(tool.category)}</StatusPill>
                         {tool.requiresConfirmation && (
                           <StatusPill tone="warning" icon="verified_user">
-                            {t('assistant.confirmationRequired', { defaultValue: 'Approval' })}
+                            {t('v2.assistant.confirmationRequired', { defaultValue: 'Approval' })}
                           </StatusPill>
                         )}
                       </span>
@@ -596,11 +596,11 @@ export function AssistantSettings() {
                         {tool.description}
                       </Text>
                       <Text variant="label-small" className="uppercase tracking-widest text-on-surface-variant">
-                        {t('assistant.toolInputs', { defaultValue: 'Inputs' })}
+                        {t('v2.assistant.toolInputs', { defaultValue: 'Inputs' })}
                       </Text>
                       {properties.length === 0 ? (
                         <Text variant="body-small" className="italic text-on-surface-variant">
-                          {t('assistant.noToolInputs', { defaultValue: 'No inputs required.' })}
+                          {t('v2.assistant.noToolInputs', { defaultValue: 'No inputs required.' })}
                         </Text>
                       ) : (
                         <div className="v2-param-table">
@@ -610,7 +610,7 @@ export function AssistantSettings() {
                                 <code className="font-mono font-semibold">{p.name}</code>
                                 <span className="v2-info-chip">{p.type}</span>
                                 <span className="v2-info-chip" data-tone={p.required ? 'error' : undefined}>
-                                  {p.required ? t('assistant.requiredInput', { defaultValue: 'Required' }) : t('assistant.optionalInput', { defaultValue: 'Optional' })}
+                                  {p.required ? t('v2.assistant.requiredInput', { defaultValue: 'Required' }) : t('v2.assistant.optionalInput', { defaultValue: 'Optional' })}
                                 </span>
                               </span>
                               {p.description && <span className="text-on-surface-variant">{p.description}</span>}
@@ -633,7 +633,7 @@ export function AssistantSettings() {
         open={!!editorState}
         onClose={() => !isSavingSkill && closeSkillEditor()}
         icon="auto_awesome"
-        headline={editorState?.mode === 'create' ? t('assistant.createSkillTitle', { defaultValue: 'Create a preset prompt' }) : t('assistant.editSkillTitle', { defaultValue: 'Update preset prompt' })}
+        headline={editorState?.mode === 'create' ? t('v2.assistant.createSkillTitle', { defaultValue: 'Create a preset prompt' }) : t('v2.assistant.editSkillTitle', { defaultValue: 'Update preset prompt' })}
         fullScreen="compact"
         maxWidth={720}
         actions={
@@ -642,20 +642,20 @@ export function AssistantSettings() {
               {t('assistant.cancel', { defaultValue: 'Cancel' })}
             </Button>
             <Button variant="filled" icon="auto_awesome" loading={isSavingSkill} onClick={() => void handleSaveSkill()}>
-              {editorState?.mode === 'create' ? t('assistant.createSkillAction', { defaultValue: 'Create skill' }) : t('assistant.saveSkillAction', { defaultValue: 'Save changes' })}
+              {editorState?.mode === 'create' ? t('v2.assistant.createSkillAction', { defaultValue: 'Create skill' }) : t('v2.assistant.saveSkillAction', { defaultValue: 'Save changes' })}
             </Button>
           </>
         }
       >
         <div className="flex flex-col gap-4">
-          <TextField variant="outlined" label={t('assistant.skillTitleField', { defaultValue: 'Title' })} placeholder={t('assistant.skillTitlePlaceholder', { defaultValue: 'Summarize this transcript' })} value={skillTitle} onValueChange={setSkillTitle} fullWidth data-autofocus />
+          <TextField variant="outlined" label={t('v2.assistant.skillTitleField', { defaultValue: 'Title' })} placeholder={t('v2.assistant.skillTitlePlaceholder', { defaultValue: 'Summarize this transcript' })} value={skillTitle} onValueChange={setSkillTitle} fullWidth data-autofocus />
           <TextField
             variant="outlined"
             multiline
             rows={10}
             maxRows={20}
-            label={t('assistant.skillPromptField', { defaultValue: 'Prompt template' })}
-            placeholder={t('assistant.skillPromptPlaceholder', { defaultValue: 'Paste the prompt template that should be inserted into the chat box.' })}
+            label={t('v2.assistant.skillPromptField', { defaultValue: 'Prompt template' })}
+            placeholder={t('v2.assistant.skillPromptPlaceholder', { defaultValue: 'Paste the prompt template that should be inserted into the chat box.' })}
             value={skillContent}
             onValueChange={setSkillContent}
             fullWidth
@@ -665,9 +665,9 @@ export function AssistantSettings() {
       <ConfirmDialog
         open={!!deleteTarget}
         tone="danger"
-        title={t('assistant.deleteSkillTitle', { defaultValue: 'Delete preset prompt' })}
-        message={t('assistant.deleteSkillMessage', { defaultValue: 'Delete "{{name}}" from the preset prompt list?', name: deleteTarget?.title || t('assistant.untitledSkill', { defaultValue: 'Untitled preset prompt' }) })}
-        confirmLabel={isDeletingSkill ? t('assistant.deletingSkill', { defaultValue: 'Deleting...' }) : t('assistant.deleteSkill', { defaultValue: 'Delete' })}
+        title={t('v2.assistant.deleteSkillTitle', { defaultValue: 'Delete preset prompt' })}
+        message={t('v2.assistant.deleteSkillMessage', { defaultValue: 'Delete "{{name}}" from the preset prompt list?', name: deleteTarget?.title || t('v2.assistant.untitledSkill', { defaultValue: 'Untitled preset prompt' }) })}
+        confirmLabel={isDeletingSkill ? t('deleteDialog.deleting', { defaultValue: 'Deleting...' }) : t('projectViewer.common.delete', { defaultValue: 'Delete' })}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteSkill}
       />

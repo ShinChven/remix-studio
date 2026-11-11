@@ -30,8 +30,8 @@ function Fact({ label, value }: { label: ReactNode; value: ReactNode }) {
 export function ProjectPreviewDialog({ project, libraries, onClose }: { project: Project | null; libraries: Library[]; onClose: () => void }) {
   const { t } = useTranslation();
   const steps = project?.workflow || [];
-  const libraryName = (id: string) => libraries.find((l) => l.id === id)?.name || t('assistant.preview.unknownLibrary', 'Unknown Library');
-  const notSet = t('assistant.preview.notSet', 'Not set');
+  const libraryName = (id: string) => libraries.find((l) => l.id === id)?.name || t('projectViewer.workflow.unknownLibrary', 'Unknown Library');
+  const notSet = t('v2.assistant.preview.notSet', 'Not set');
 
   return (
     <Dialog
@@ -44,11 +44,11 @@ export function ProjectPreviewDialog({ project, libraries, onClose }: { project:
       actions={
         <>
           <Button variant="text" onClick={onClose}>
-            {t('common.close', 'Close')}
+            {t('projectViewer.common.close', 'Close')}
           </Button>
           {project && (
             <Button variant="filled" icon="open_in_new" href={`/project/${project.id}`} onClick={onClose}>
-              {t('assistant.preview.openProject', 'Open Full Project')}
+              {t('v2.assistant.preview.openProject', 'Open Full Project')}
             </Button>
           )}
         </>
@@ -60,26 +60,26 @@ export function ProjectPreviewDialog({ project, libraries, onClose }: { project:
           <div className="v2-preview__badges">
             <code className="v2-code-chip">ID: {project.id}</code>
             <StatusPill tone="primary">{project.type}</StatusPill>
-            {project.status === 'archived' && <StatusPill tone="warning">{t('assistant.preview.archived', 'Archived')}</StatusPill>}
+            {project.status === 'archived' && <StatusPill tone="warning">{t('projects.archivedBadge', 'Archived')}</StatusPill>}
           </div>
           <div className="v2-preview__grid">
             <div className="v2-preview__aside">
               <section className="v2-preview__group">
-                <Text variant="label-medium" className="v2-preview__heading"><Icon name="smart_toy" size={18} />{t('assistant.preview.aiConfig', 'AI configuration')}</Text>
-                <Fact label={t('assistant.preview.provider', 'Provider')} value={project.providerId || notSet} />
-                <Fact label={t('assistant.preview.model', 'Model')} value={project.modelConfigId || notSet} />
+                <Text variant="label-medium" className="v2-preview__heading"><Icon name="smart_toy" size={18} />{t('v2.assistant.preview.aiConfig', 'AI configuration')}</Text>
+                <Fact label={t('projectViewer.common.provider', 'Provider')} value={project.providerId || notSet} />
+                <Fact label={t('projectViewer.common.model', 'Model')} value={project.modelConfigId || notSet} />
               </section>
               <section className="v2-preview__group">
-                <Text variant="label-medium" className="v2-preview__heading"><Icon name="tune" size={18} />{t('assistant.preview.settings', 'Project settings')}</Text>
-                {project.aspectRatio && <Fact label={t('assistant.preview.aspectRatio', 'Aspect Ratio')} value={project.aspectRatio} />}
-                {project.quality && <Fact label={t('assistant.preview.quality', 'Quality')} value={project.quality} />}
-                {project.resolution && <Fact label={t('assistant.preview.resolution', 'Resolution')} value={project.resolution} />}
-                {project.duration && <Fact label={t('assistant.preview.duration', 'Duration')} value={`${project.duration}s`} />}
+                <Text variant="label-medium" className="v2-preview__heading"><Icon name="tune" size={18} />{t('v2.assistant.preview.settings', 'Project settings')}</Text>
+                {project.aspectRatio && <Fact label={t('projectViewer.settings.aspectRatio', 'Aspect Ratio')} value={project.aspectRatio} />}
+                {project.quality && <Fact label={t('projectViewer.settings.quality', 'Quality')} value={project.quality} />}
+                {project.resolution && <Fact label={t('projectViewer.settings.resolution', 'Resolution')} value={project.resolution} />}
+                {project.duration && <Fact label={t('v2.project.duration', 'Duration')} value={`${project.duration}s`} />}
               </section>
             </div>
             <section className="v2-preview__steps">
-              <Text variant="label-medium" className="v2-preview__heading"><Icon name="layers" size={18} />{t('assistant.preview.steps', 'Workflow steps ({{count}})', { count: steps.length })}</Text>
-              {steps.length === 0 && <EmptyState size="inline" icon="layers" title={t('assistant.preview.noSteps', 'No workflow steps')} />}
+              <Text variant="label-medium" className="v2-preview__heading"><Icon name="layers" size={18} />{t('v2.assistant.preview.steps', 'Workflow steps ({{count}})', { count: steps.length })}</Text>
+              {steps.length === 0 && <EmptyState size="inline" icon="layers" title={t('v2.assistant.preview.noSteps', 'No workflow steps')} />}
               {steps.map((item, index) => (
                 <div key={item.id} className="v2-preview-step" data-disabled={item.disabled ? '' : undefined}>
                   <div className="v2-preview-step__head">
@@ -89,9 +89,9 @@ export function ProjectPreviewDialog({ project, libraries, onClose }: { project:
                       {item.type === 'model' ? (item.civitai?.slot === 'checkpoint' ? 'checkpoint' : 'lora') : item.type}
                       {item.civitai?.slot === 'negative' && ' · negative'}
                     </Text>
-                    {item.disabled && <StatusPill>{t('assistant.preview.disabled', 'Disabled')}</StatusPill>}
+                    {item.disabled && <StatusPill>{t('v2.assistant.preview.disabled', 'Disabled')}</StatusPill>}
                   </div>
-                  {item.type === 'text' && <Text variant="body-medium" className="v2-preview-step__quote">“{item.value || t('assistant.preview.noContent', 'No content')}”</Text>}
+                  {item.type === 'text' && <Text variant="body-medium" className="v2-preview-step__quote">“{item.value || t('v2.assistant.preview.noContent', 'No content')}”</Text>}
                   {item.type === 'model' && (
                     <ul className="v2-preview-step__list">
                       {(item.civitai?.options || []).map((option, i) => (
@@ -109,7 +109,7 @@ export function ProjectPreviewDialog({ project, libraries, onClose }: { project:
                         {item.value && item.type === 'video' && item.thumbnailUrl && <img src={imageDisplayUrl(item.thumbnailUrl)} alt="" />}
                         {(!item.value || (item.type === 'video' && !item.thumbnailUrl) || item.type === 'audio') && <Icon name={item.value ? STEP_ICONS[item.type] : 'hide_image'} size={22} />}
                       </span>
-                      <Text variant="body-small" className="text-on-surface-variant v2-ellipsis">{item.value || t('assistant.preview.noFile', 'No file uploaded')}</Text>
+                      <Text variant="body-small" className="text-on-surface-variant v2-ellipsis">{item.value || t('v2.assistant.preview.noFile', 'No file uploaded')}</Text>
                     </div>
                   )}
                 </div>

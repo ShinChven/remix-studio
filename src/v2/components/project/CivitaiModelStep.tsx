@@ -71,7 +71,7 @@ export function CivitaiModelStep(props: CivitaiModelStepProps) {
             <IconButton
               icon={item.disabled ? 'visibility_off' : 'visibility'}
               size="xs"
-              label={item.disabled ? t('projectViewer.workflow.enableItem', { defaultValue: 'Enable' }) : t('projectViewer.workflow.disableItem', { defaultValue: 'Disable' })}
+              label={item.disabled ? t('v2.projectEditor.workflow.enableItem', { defaultValue: 'Enable' }) : t('v2.projectEditor.workflow.disableItem', { defaultValue: 'Disable' })}
               tooltip
               onClick={() => props.onToggleDisable!(item.id)}
             />

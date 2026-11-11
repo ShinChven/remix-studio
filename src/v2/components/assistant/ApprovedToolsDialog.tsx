@@ -73,7 +73,7 @@ export function ApprovedToolsDialog({ open, conversationId, onClose }: { open: b
       maxWidth={680}
       actions={
         <Button variant="text" onClick={onClose}>
-          {t('common.close', 'Close')}
+          {t('projectViewer.common.close', 'Close')}
         </Button>
       }
     >
@@ -82,7 +82,7 @@ export function ApprovedToolsDialog({ open, conversationId, onClose }: { open: b
       </Text>
       {loading ? (
         <div className="v2-center-pad">
-          <LoadingIndicator size={40} aria-label={t('common.loading', 'Loading')} />
+          <LoadingIndicator size={40} aria-label={t('projectViewer.common.loading', 'Loading')} />
         </div>
       ) : tools.length === 0 ? (
         <EmptyState size="inline" icon="build" title={t('assistant.approvedTools.empty', 'No write-capable tools available.')} />

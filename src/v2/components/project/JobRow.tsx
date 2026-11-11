@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
@@ -43,7 +44,7 @@ export function shortDate(ts?: number) {
   if (!ts) return '';
   const date = new Date(ts);
   const sameYear = date.getFullYear() === new Date().getFullYear();
-  return date.toLocaleString(undefined, { year: sameYear ? undefined : '2-digit', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(uiLocale(), { year: sameYear ? undefined : '2-digit', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 const LEAD_ICON: Record<JobTone, string> = { neutral: 'edit_note', running: 'progress_activity', error: 'error', success: 'check' };

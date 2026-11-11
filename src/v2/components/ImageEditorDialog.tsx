@@ -293,8 +293,8 @@ export function ImageEditorDialog({ isOpen, onClose, onSave, imageUrl }: ImageEd
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'crop', label: t('imageEditor.crop', { defaultValue: 'Crop' }), icon: 'crop' },
-              { value: 'draw', label: t('imageEditor.draw', { defaultValue: 'Draw' }), icon: 'draw' },
+              { value: 'crop', label: t('projectViewer.imageEditor.crop', { defaultValue: 'Crop' }), icon: 'crop' },
+              { value: 'draw', label: t('projectViewer.imageEditor.draw', { defaultValue: 'Draw' }), icon: 'draw' },
             ]}
           />
           {mode === 'draw' && (
@@ -302,7 +302,7 @@ export function ImageEditorDialog({ isOpen, onClose, onSave, imageUrl }: ImageEd
               {COLORS.map((c) => (
                 <button key={c} type="button" className="v2-color-swatch m3-focus-ring" data-selected={drawColor === c ? '' : undefined} style={{ backgroundColor: c }} aria-label={c} onClick={() => setDrawColor(c)} />
               ))}
-              <IconButton icon="ink_eraser" size="xs" label={t('imageEditor.clearDrawings', { defaultValue: 'Clear Drawings' })} tooltip onClick={() => setPaths([])} />
+              <IconButton icon="ink_eraser" size="xs" label={t('projectViewer.imageEditor.clearDrawings', { defaultValue: 'Clear Drawings' })} tooltip onClick={() => setPaths([])} />
             </span>
           )}
           {mode === 'crop' && !!completedCrop?.width && !!completedCrop?.height && (
@@ -321,10 +321,10 @@ export function ImageEditorDialog({ isOpen, onClose, onSave, imageUrl }: ImageEd
                   setCompletedCrop(undefined);
                 }}
               >
-                {t('common.cancel', { defaultValue: 'Cancel' })}
+                {t('projectViewer.common.cancel', { defaultValue: 'Cancel' })}
               </Button>
               <Button variant="tonal" size="xs" icon="check" onClick={handleApplyCrop}>
-                {t('imageEditor.applyCrop', { defaultValue: 'Apply' })}
+                {t('v2.imageEditor.applyCrop', { defaultValue: 'Apply' })}
               </Button>
             </span>
           )}
@@ -344,13 +344,13 @@ export function ImageEditorDialog({ isOpen, onClose, onSave, imageUrl }: ImageEd
               setCompletedCrop(undefined);
             }}
           >
-            {t('imageEditor.resetOriginal', { defaultValue: 'Reset Original' })}
+            {t('v2.imageEditor.resetOriginal', { defaultValue: 'Reset Original' })}
           </Button>
           <Button variant="text" onClick={onClose}>
-            {t('common.cancel', { defaultValue: 'Cancel' })}
+            {t('projectViewer.common.cancel', { defaultValue: 'Cancel' })}
           </Button>
           <Button variant="filled" icon="check" loading={isLoading} onClick={() => void handleSave()}>
-            {isLoading ? t('common.saving', { defaultValue: 'Saving...' }) : t('common.save', { defaultValue: 'Save' })}
+            {isLoading ? t('v2.feedback.saving', { defaultValue: 'Saving...' }) : t('projectViewer.common.save', { defaultValue: 'Save' })}
           </Button>
         </>
       }
@@ -358,7 +358,7 @@ export function ImageEditorDialog({ isOpen, onClose, onSave, imageUrl }: ImageEd
       <div ref={containerRef} className="v2-image-editor">
         <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)} onComplete={(c) => setCompletedCrop(c)} disabled={mode === 'draw'} locked={mode === 'draw'} className={mode === 'draw' ? 'cursor-crosshair' : ''}>
           <div className="relative">
-            <img ref={imgRef} alt="Editor" src={currentImageUrl} crossOrigin="anonymous" onLoad={onImageLoad} className="pointer-events-none max-h-[60vh] max-w-full object-contain" />
+            <img ref={imgRef} alt={t('v2.accessibility.imageEditor')} src={currentImageUrl} crossOrigin="anonymous" onLoad={onImageLoad} className="pointer-events-none max-h-[60vh] max-w-full object-contain" />
             <canvas
               ref={canvasRef}
               className="absolute left-0 top-0 h-full w-full"

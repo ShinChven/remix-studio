@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPersonalAccessToken, fetchOAuthClients, fetchPersonalAccessTokens, registerOAuthClient, revokeOAuthClient, revokePersonalAccessToken, updateOAuthClientRedirectUris, type OAuthClientRegistrationResult, type OAuthClientSummary, type PersonalAccessTokenSummary } from '../../../api';
@@ -13,11 +14,11 @@ import { useCopy } from '../../lib/useCopy';
 export function McpConnections() {
   const toast = useToast();
   const copyToClipboard = useCopy();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const formatDate = useCallback((ts: number) => {
-    return new Date(ts).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-  }, []);
+    return new Date(ts).toLocaleDateString(uiLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
+  }, [i18n.language]);
 
   const formatRelative = useCallback((ts: number) => {
     const diff = Date.now() - ts;

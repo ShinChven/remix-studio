@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Icon, IconButton } from '../../../m3';
 import type { Provider } from '../../../types';
-import { formatDateTime } from '../../lib/format';
+import { formatDateTime, uiLocale } from '../../lib/format';
 import type { ActionMenuItem } from '../../ui/ActionMenu';
 import { EntityRow, keepInside } from '../../ui/EntityList';
 import { kindMeta } from '../../ui/entityMeta';
@@ -119,7 +119,7 @@ export function ProviderItem({ provider, selected, selecting, onToggleSelect, on
           children: (
             <span className="v2-erow__value">
               <Icon name="folder" size={16} aria-hidden />
-              {projectCount(provider).toLocaleString()}
+              {projectCount(provider).toLocaleString(uiLocale())}
             </span>
           ),
         },
@@ -132,7 +132,7 @@ export function ProviderItem({ provider, selected, selecting, onToggleSelect, on
           children: (
             <span className="v2-erow__value" data-active={running > 0 ? '' : undefined}>
               {running > 0 ? <span className="v2-provider__pulse" aria-hidden /> : <Icon name="progress_activity" size={16} aria-hidden />}
-              {running.toLocaleString()}
+              {running.toLocaleString(uiLocale())}
             </span>
           ),
         },

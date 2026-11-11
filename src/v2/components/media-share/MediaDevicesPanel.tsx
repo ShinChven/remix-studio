@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createMediaDevice, deleteMediaDevice, fetchMediaDevices, updateMediaDevice, type DlnaStatus, type MediaDeviceKind, type MediaDeviceSummary } from '../../../api';
@@ -10,7 +11,7 @@ import { StatusPill } from '../../ui/Stat';
 import { isScopeValid, ProjectScopePicker } from './ProjectScopePicker';
 import { useToast } from '../../ui/useToast';
 
-const formatDate = (ms: number) => new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+const formatDate = (ms: number) => new Date(ms).toLocaleString(uiLocale(), { dateStyle: 'medium', timeStyle: 'short' });
 
 /** Form for a new WebDAV token or DLNA server, and for editing any device. */
 function DeviceForm({ initialName, initialScope, namePlaceholder, submitLabel, onSubmit, onCancel }: {

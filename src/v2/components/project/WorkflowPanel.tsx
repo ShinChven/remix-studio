@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { civitaiModelItems, civitaiVideoEngine, isCivitaiVideo } from '../../../lib/civitai';
 import { Button, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuItem, Ripple, Text } from '../../../m3';
 import { PROVIDER_MODELS_MAP, resolveCustomModels, type Library, type Project, type Provider, type ProviderType, type WorkflowItem } from '../../../types';
-import { formatBytes } from '../../lib/format';
+import { formatBytes, uiLocale } from '../../lib/format';
 import { CivitaiModelStep } from './CivitaiModelStep';
 import { CivitaiSettingsPanel } from './CivitaiSettings';
 import { ComfySettingsPanel, ComfyWorkflowPanel } from './ComfyWorkflowPanel';
@@ -181,7 +181,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
   const enabledCount = items.length - disabledCount;
   const subtitle = [
     t('v2.project.stepCount', { count: enabledCount }),
-    !isComfy && props.combinationsCount > 0 ? t('v2.project.combinationCount', { count: props.combinationsCount, formatted: props.combinationsCount.toLocaleString() }) : null,
+    !isComfy && props.combinationsCount > 0 ? t('v2.project.combinationCount', { count: props.combinationsCount, formatted: props.combinationsCount.toLocaleString(uiLocale()) }) : null,
     disabledCount > 0 ? t('v2.project.disabledCount', { count: disabledCount }) : null,
   ]
     .filter(Boolean)
@@ -192,7 +192,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
       {dragOverFiles && (
         <div className="v2-workflow__drop">
           <Icon name="upload_file" size={40} />
-          <Text variant="title-medium">{t('projectViewer.workflow.dropFilesHere', { defaultValue: 'Drop files to add to workflow' })}</Text>
+          <Text variant="title-medium">{t('v2.projectEditor.workflow.dropFilesHere', { defaultValue: 'Drop files to add to workflow' })}</Text>
         </div>
       )}
       <header className="v2-workflow__head">
@@ -212,12 +212,12 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
           </Text>
         </button>
         <span className="v2-workflow__tools">
-          <IconButton icon="auto_awesome" size="sm" label={t('projectViewer.main.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })} tooltip onClick={props.onStartAssistantChat} />
+          <IconButton icon="auto_awesome" size="sm" label={t('v2.projectEditor.startAssistantChat', { defaultValue: 'Start assistant chat for this project' })} tooltip onClick={props.onStartAssistantChat} />
           <IconButton
             icon={isExpanded ? 'close_fullscreen' : 'open_in_full'}
             size="sm"
             className="v2-hide-compact"
-            label={isExpanded ? t('projectViewer.workflow.collapseWorkflow', { defaultValue: 'Exit full screen' }) : t('projectViewer.workflow.expandWorkflow', { defaultValue: 'Expand workflow to full screen' })}
+            label={isExpanded ? t('v2.projectEditor.workflow.collapseWorkflow', { defaultValue: 'Exit full screen' }) : t('v2.projectEditor.workflow.expandWorkflow', { defaultValue: 'Expand workflow to full screen' })}
             tooltip
             selected={isExpanded}
             onClick={props.onToggleExpand}
@@ -237,7 +237,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
             )}
             <MenuDivider />
             <MenuItem icon="info" onSelect={() => setInfoOpen(true)}>
-              {t('projectViewer.main.projectInfo', { defaultValue: 'Project info' })}
+              {t('v2.projectEditor.main.projectInfo', { defaultValue: 'Project info' })}
             </MenuItem>
             <MenuItem icon="edit" onSelect={props.onNavigateToEdit}>
               {t('v2.project.editProject')}
@@ -430,13 +430,13 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
         </>
       )}
 
-      <Dialog open={infoOpen} onClose={() => setInfoOpen(false)} icon="info" headline={t('projectViewer.main.projectInfo', { defaultValue: 'Project info' })} maxWidth={520} actions={<Button variant="filled" onClick={() => setInfoOpen(false)}>{t('projectViewer.common.close')}</Button>}>
+      <Dialog open={infoOpen} onClose={() => setInfoOpen(false)} icon="info" headline={t('v2.projectEditor.main.projectInfo', { defaultValue: 'Project info' })} maxWidth={520} actions={<Button variant="filled" onClick={() => setInfoOpen(false)}>{t('projectViewer.common.close')}</Button>}>
         <div className="flex flex-col gap-2">
           {[
-            { icon: 'title', label: t('projectViewer.main.projectTitle', { defaultValue: 'Title' }), value: localProject.name },
-            localProject.description ? { icon: 'notes', label: t('projectViewer.main.projectDescription', { defaultValue: 'Description' }), value: localProject.description } : null,
-            { icon: 'tag', label: t('projectViewer.main.id', { defaultValue: 'ID' }), value: localProject.id || props.project.id, mono: true },
-            { icon: 'hard_drive', label: t('projectViewer.main.storageUsage', { defaultValue: 'Storage usage' }), value: formatBytes(storage) },
+            { icon: 'title', label: t('v2.projectEditor.main.projectTitle', { defaultValue: 'Title' }), value: localProject.name },
+            localProject.description ? { icon: 'notes', label: t('v2.projectEditor.main.projectDescription', { defaultValue: 'Description' }), value: localProject.description } : null,
+            { icon: 'tag', label: t('v2.projectEditor.main.id', { defaultValue: 'ID' }), value: localProject.id || props.project.id, mono: true },
+            { icon: 'hard_drive', label: t('v2.projectEditor.main.storageUsage', { defaultValue: 'Storage usage' }), value: formatBytes(storage) },
           ]
             .filter(Boolean)
             .map((row) => (

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Button, Shape, Text } from '../../../m3';
 import type { Library, LibraryItem } from '../../../types';
-import { formatBytes, formatDate } from '../../lib/format';
+import { formatBytes, formatDate, uiLocale } from '../../lib/format';
 import { kindMeta } from '../../ui/entityMeta';
 import { KindBadge } from '../../ui/KindBadge';
 
@@ -55,7 +55,7 @@ export function LibraryHero({ library, itemCount, primary, actions }: LibraryHer
       <Shape name={meta.shape} size={320} morph={false} className="v2-lib-hero__backdrop" />
       <div className="v2-lib-hero__main">
         <Button variant="text" size="xs" icon="arrow_back" href="/libraries" className="v2-lib-hero__back">
-          {t('nav.libraries', 'Libraries')}
+          {t('v2.shell.libraries', 'Libraries')}
         </Button>
         <div className="v2-lib-hero__heading">
           <KindBadge kind={type} size={64} tone="solid" className="v2-lib-hero__badge" />
@@ -75,11 +75,11 @@ export function LibraryHero({ library, itemCount, primary, actions }: LibraryHer
         )}
         <ul className="v2-lib-hero__stats">
           <li>
-            <strong>{itemCount.toLocaleString()}</strong> {t('v2.library.statItems', { count: itemCount })}
+            <strong>{itemCount.toLocaleString(uiLocale())}</strong> {t('v2.library.statItems', { count: itemCount })}
           </li>
           {tagCount > 0 && (
             <li>
-              <strong>{tagCount.toLocaleString()}</strong> {t('v2.library.statTags', { count: tagCount })}
+              <strong>{tagCount.toLocaleString(uiLocale())}</strong> {t('v2.library.statTags', { count: tagCount })}
             </li>
           )}
           {totalSize > 0 && (

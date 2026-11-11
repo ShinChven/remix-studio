@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 /**
  * Reads the Web Share Target payload the service worker stashed in Cache Storage, and explains
  * a share that arrived empty. Shared by the share page of the new UI.
@@ -157,16 +159,16 @@ export async function clearShare(): Promise<void> {
   }
 }
 
-export function describeDiagnostics(share: LoadedShare): string {
+export function describeDiagnostics(share: LoadedShare, t: TFunction): string {
   const { unreadableFiles, fieldNames, method, contentType, parseError } = share.diagnostics;
   if (share.missingFiles > 0) {
-    return `The shared ${share.missingFiles === 1 ? 'file' : 'files'} could not be read back from storage. Sharing again usually works.`;
+    return t('v2.share.diagnostics.missing', { count: share.missingFiles });
   }
   if (unreadableFiles) {
-    return `The other app offered ${unreadableFiles === 1 ? 'a file' : `${unreadableFiles} files`} that the browser could not open. Try sharing from the gallery, or save the image first and share the saved copy.`;
+    return t('v2.share.diagnostics.unreadable', { count: unreadableFiles });
   }
   if (fieldNames && fieldNames.length > 0) {
-    return `The share arrived with no content in it (fields received: ${fieldNames.join(', ')}).`;
+    return t('v2.share.diagnostics.fields', { fields: fieldNames.join(', ') });
   }
   // Nothing at all came through, and the body was read back to be sure of it:
   // an empty body is the sending app's doing, while a body with bytes in it
@@ -174,7 +176,7 @@ export function describeDiagnostics(share: LoadedShare): string {
   // thing that makes the next report of this actionable.
   const { bodyBytes } = share.diagnostics;
   if (bodyBytes === 0) {
-    return 'The other app started a share but sent no content with it. Try sharing from the gallery rather than the preview, or save the image first and share the saved copy.';
+    return t('v2.share.diagnostics.emptyBody');
   }
   const seen = [
     method ? `method ${method}` : '',
@@ -183,7 +185,7 @@ export function describeDiagnostics(share: LoadedShare): string {
     parseError ? `parse error: ${parseError}` : '',
   ].filter(Boolean);
   return seen.length > 0
-    ? `The share arrived with nothing in it (${seen.join(', ')}). Try sharing again.`
-    : 'The share arrived with nothing in it.';
+    ? t('v2.share.diagnostics.details', { details: seen.join(', ') })
+    : t('v2.share.diagnostics.empty');
 }
 

@@ -8,6 +8,7 @@ import { RouterLink } from './app/RouterLink';
 import { AppShell } from './shell/AppShell';
 import { DEFAULT_SEED, THEME_STORAGE_KEY, UiPrefsProvider } from './theme/prefs';
 import { LoadingState } from './ui/Page';
+import { useM3Messages } from './lib/m3Messages';
 
 /** Lazy route module whose page is a named export. */
 function page<T>(load: () => Promise<T>, name: keyof T) {
@@ -225,13 +226,17 @@ function AppRoutes() {
 
 export function App() {
   const { i18n } = useTranslation();
+  const messages = useM3Messages();
   useEffect(() => {
     setPreferNewUi(true);
   }, []);
+  useEffect(() => {
+    document.documentElement.lang = i18n.language || i18n.resolvedLanguage || 'en';
+  }, [i18n.language, i18n.resolvedLanguage]);
   return (
     <ThemeProvider storageKey={THEME_STORAGE_KEY} defaultConfig={{ seed: DEFAULT_SEED, motionScheme: 'expressive' }}>
       <UiPrefsProvider>
-        <M3LocaleProvider locale={i18n.resolvedLanguage || i18n.language || 'en'}>
+        <M3LocaleProvider locale={i18n.language || i18n.resolvedLanguage || 'en'} messages={messages}>
           <SnackbarProvider>
             <AuthProvider>
               <ApiKeyGate>

@@ -7,7 +7,7 @@ import { copyText, resourceRef, startResourceChat } from '../../../lib/resource-
 import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, SubMenu, Text } from '../../../m3';
 import type { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../../types';
 import { withBase } from '../../app/paths';
-import { formatBytes } from '../../lib/format';
+import { formatBytes, uiLocale } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { HoverMenuButton } from '../../ui/HoverMenuButton';
 import { kindMeta } from '../../ui/entityMeta';
@@ -435,7 +435,7 @@ export function AlbumTab(props: AlbumTabProps) {
     [
       item.imageUrl ? { label: t('v2.project.filename'), value: albumFilename(item) } : null,
       { label: t('projectViewer.common.model'), value: `${getProviderName(item.providerId)} · ${getModelName(item.providerId, item.modelConfigId)}` },
-      item.createdAt ? { label: t('v2.project.created'), value: new Date(item.createdAt).toLocaleString() } : null,
+      item.createdAt ? { label: t('v2.project.created'), value: new Date(item.createdAt).toLocaleString(uiLocale()) } : null,
       item.aspectRatio ? { label: t('projectViewer.settings.aspectRatio'), value: item.aspectRatio } : null,
       item.resolution || item.quality ? { label: item.resolution ? t('projectViewer.settings.resolution') : t('projectViewer.settings.quality'), value: item.resolution || item.quality } : null,
       item.duration != null ? { label: t('v2.project.duration'), value: `${item.duration}s` } : null,

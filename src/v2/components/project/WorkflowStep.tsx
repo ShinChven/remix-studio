@@ -64,7 +64,7 @@ export function WorkflowStep(props: WorkflowStepProps) {
         <IconButton
           icon={item.disabled ? 'visibility_off' : 'visibility'}
           size="xs"
-          label={item.disabled ? t('projectViewer.workflow.enableItem', { defaultValue: 'Enable' }) : t('projectViewer.workflow.disableItem', { defaultValue: 'Disable' })}
+          label={item.disabled ? t('v2.projectEditor.workflow.enableItem', { defaultValue: 'Enable' }) : t('v2.projectEditor.workflow.disableItem', { defaultValue: 'Disable' })}
           tooltip
           onClick={() => props.onToggleDisable!(item.id)}
         />
@@ -124,7 +124,7 @@ export function WorkflowStep(props: WorkflowStepProps) {
           </div>
         ) : item.value ? (
           <button type="button" className="v2-step__media m3-focus-ring" onClick={preview} aria-label={t('projectViewer.common.preview', { defaultValue: 'Preview' })}>
-            <img src={imageDisplayUrl(item.thumbnailUrl || item.value)} alt="Reference" />
+            <img src={imageDisplayUrl(item.thumbnailUrl || item.value)} alt={t('v2.accessibility.reference')} />
           </button>
         ) : (
           <div className="v2-step__pick">

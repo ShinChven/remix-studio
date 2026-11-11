@@ -11,13 +11,14 @@
     "build:tv": "node scripts/build-tv.mjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit && tsx scripts/check-v2-ui.ts",
-    "i18n:check": "tsx scripts/compare-i18n.ts",
+    "i18n:check": "tsx scripts/compare-i18n.ts && tsx scripts/check-v2-i18n.ts",
     "mcp:inspect": "npx @modelcontextprotocol/inspector --transport http --url http://localhost:3000/mcp",
     "docs:install": "npm --prefix docs-site install",
     "docs:dev": "npm --prefix docs-site run dev",
     "docs:build": "npm --prefix docs-site run build",
     "docs:preview": "npm --prefix docs-site run preview",
-    "db:migrate": "npx prisma migrate deploy"
+    "db:migrate": "npx prisma migrate deploy",
+    "test:i18n": "tsx scripts/test-v2-i18n.tsx"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
@@ -79,6 +80,7 @@
     "@types/web-push": "^3.6.4",
     "@types/ws": "^8.18.1",
     "@types/yauzl": "^3.4.0",
+    "acorn": "^8.18.0",
     "autoprefixer": "^10.5.4",
     "esbuild": "^0.27.7",
     "prisma": "^7.9.1",

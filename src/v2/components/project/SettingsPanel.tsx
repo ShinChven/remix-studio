@@ -228,12 +228,12 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ChoiceChips value={localProject.format || 'png'} onChange={(format) => set({ format: format as Project['format'] })} options={['png', 'jpeg', 'webp'].map((value) => ({ value }))} />
           </SettingField>
           {model?.options.stepsOptions && model.options.stepsOptions.length > 0 && (
-            <SettingField label={t('projectViewer.settings.steps')}>
+            <SettingField label={t('v2.projectEditor.settings.steps')}>
               <ChoiceChips value={localProject.steps ?? (model.options.stepsOptions[0] || 20)} onChange={(steps) => set({ steps })} options={model.options.stepsOptions.map((value) => ({ value }))} />
             </SettingField>
           )}
           {model?.options.guidanceOptions && model.options.guidanceOptions.length > 0 && (
-            <SettingField label={t('projectViewer.settings.guidance')}>
+            <SettingField label={t('v2.projectEditor.settings.guidance')}>
               <ChoiceChips value={localProject.guidance ?? (model.options.guidanceOptions[0] || 3.5)} onChange={(guidance) => set({ guidance })} options={model.options.guidanceOptions.map((value) => ({ value }))} />
             </SettingField>
           )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { stashPwaShareHandoff, type PwaShareHandoffInput } from '../../lib/pwa-share';
@@ -9,6 +10,7 @@ import { useToast } from '../ui/useToast';
 
 /** Content shared to the installed app from another app, and where to send it. */
 export function SharePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams] = useSearchParams();
@@ -44,24 +46,24 @@ export function SharePage() {
     if (!share) return null;
     if (share.images.length > 0) {
       const img = share.images[0];
-      return { type: 'image', blob: img.blob, name: img.name || share.title || share.text || 'Shared image' };
+      return { type: 'image', blob: img.blob, name: img.name || share.title || share.text || t('v2.share.sharedImage') };
     }
     const combined = [share.title, share.text, share.url].filter(Boolean).join('\n').trim();
     return combined ? { type: 'text', data: combined } : null;
   };
 
-  const handOff = async (destination: string, verb: string) => {
+  const handOff = async (destination: string, attach = false) => {
     if (handingOff) return;
     const payload = buildHandoff();
     if (!payload) {
-      toast.success('Nothing to share');
+      toast.success(t('v2.share.nothing'));
       return;
     }
-    if (share && share.images.length > 1) toast.success(`Only the first of ${share.images.length} images will be ${verb}`);
+    if (share && share.images.length > 1) toast.success(t(attach ? 'v2.share.firstAttached' : 'v2.share.firstSaved', { count: share.images.length }));
     setHandingOff(true);
     try {
       if (!(await stashPwaShareHandoff(payload))) {
-        toast.error('Shared content is too large to hand off');
+        toast.error(t('v2.share.tooLarge'));
         return;
       }
       await clearShare();
@@ -76,21 +78,21 @@ export function SharePage() {
     navigate('/');
   };
 
-  if (status === 'loading') return <LoadingState label="Loading shared content..." minHeight={400} />;
+  if (status === 'loading') return <LoadingState label={t('v2.share.loading')} minHeight={400} />;
 
   if (status === 'empty' || !share) {
     const failed = Boolean(swError) || Boolean(share);
-    const detail = swError ? `Something went wrong handling the shared content: ${swError}` : share ? describeDiagnostics(share) : 'Share text or an image to Remix Studio from another app to see it here.';
+    const detail = swError ? t('v2.share.handlerFailed', { message: swError }) : share ? describeDiagnostics(share, t) : t('v2.share.emptyHint');
     return (
       <Page>
         <EmptyState
           icon={failed ? 'warning' : 'image'}
           shape={failed ? 'boom' : 'cookie-9'}
-          title={failed ? 'Share Failed' : 'No Shared Content'}
+          title={failed ? t('v2.share.failed') : t('v2.share.empty')}
           description={detail}
           action={
             <Button variant="filled" onClick={cancel}>
-              Go to Home
+              {t('v2.share.home')}
             </Button>
           }
         />
@@ -103,10 +105,10 @@ export function SharePage() {
 
   return (
     <Page width="narrow">
-      <PageHeader title="Shared with Remix Studio" description="Choose where to send this content." backLink={{ label: 'Cancel', onClick: cancel }} />
+      <PageHeader title={t('v2.share.title')} description={t('v2.share.description')} backLink={{ label: t('projectViewer.common.cancel'), onClick: cancel }} />
       <div className="flex flex-col gap-5">
-        <Section variant="card" icon={<Icon name={hasImage ? 'image' : 'notes'} />} title="Preview" actions={share.images.length > 1 ? <StatusPill tone="warning">Showing 1 of {share.images.length}</StatusPill> : undefined}>
-          <div className="v2-import-preview">{hasImage ? <img src={share.images[0].objectUrl} alt="Shared preview" /> : <pre>{previewText}</pre>}</div>
+        <Section variant="card" icon={<Icon name={hasImage ? 'image' : 'notes'} />} title={t('projectViewer.common.preview')} actions={share.images.length > 1 ? <StatusPill tone="warning">{t('v2.share.showingFirst', { count: share.images.length })}</StatusPill> : undefined}>
+          <div className="v2-import-preview">{hasImage ? <img src={share.images[0].objectUrl} alt={t('v2.share.preview')} /> : <pre>{previewText}</pre>}</div>
           {hasImage && previewText && (
             <Text variant="body-small" className="v2-notice">
               {previewText}
@@ -116,20 +118,20 @@ export function SharePage() {
             <div className="v2-notice" data-tone="warning">
               <Icon name="warning" />
               <Text variant="body-small">
-                {share.missingFiles === 1 ? 'One shared file' : `${share.missingFiles} shared files`} could not be read back and {share.missingFiles === 1 ? 'is' : 'are'} not included.
+                {t('v2.share.missingFiles', { count: share.missingFiles })}
               </Text>
             </div>
           )}
         </Section>
         <div className="grid gap-3 sm:grid-cols-3">
-          <Button variant="tonal" size="md" icon="layers" disabled={handingOff} onClick={() => void handOff('/import?destination=library', 'saved')}>
-            Save to Library
+          <Button variant="tonal" size="md" icon="layers" disabled={handingOff} onClick={() => void handOff('/import?destination=library')}>
+            {t('v2.share.saveLibrary')}
           </Button>
-          <Button variant="tonal" size="md" icon="folder" disabled={handingOff} onClick={() => void handOff('/import?destination=project', 'saved')}>
-            Save to Project
+          <Button variant="tonal" size="md" icon="folder" disabled={handingOff} onClick={() => void handOff('/import?destination=project')}>
+            {t('v2.share.saveProject')}
           </Button>
-          <Button variant="filled" size="md" icon="chat" disabled={handingOff} onClick={() => void handOff('/assistant', 'attached')} emphasized>
-            Start a Chat
+          <Button variant="filled" size="md" icon="chat" disabled={handingOff} onClick={() => void handOff('/assistant', true)} emphasized>
+            {t('v2.share.startChat')}
           </Button>
         </div>
       </div>

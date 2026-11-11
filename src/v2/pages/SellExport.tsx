@@ -241,9 +241,9 @@ export function SellExport() {
             sampleUrl={previewUrl}
             isSaving={watermarkSaving}
             onChange={setWatermark}
-            title="Listing Cover Watermark"
-            description="Saved per user and applied to Gumroad cover images added from this page."
-            statusText="Settings save when the listing is created."
+            title={t('v2.watermark.coverTitle')}
+            description={t('v2.watermark.coverDescription')}
+            statusText={t('v2.watermark.coverStatus')}
           />
           {covers.length === 0 ? (
             <EmptyState size="inline" icon="add_photo_alternate" title={t('sell.covers.empty')} />

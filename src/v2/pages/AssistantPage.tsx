@@ -1227,13 +1227,13 @@ export function AssistantPage() {
               <div className="v2-chat-tool__body">
                 {argsText && (
                   <div>
-                    <Text variant="label-small" className="v2-chat-tool__label">{t('assistant.toolArguments', 'Arguments')}</Text>
+                    <Text variant="label-small" className="v2-chat-tool__label">{t('v2.assistant.toolArguments', 'Arguments')}</Text>
                     <JsonView data={toolMessage.toolArgsJson} />
                   </div>
                 )}
                 {resultText && (
                   <div>
-                    <Text variant="label-small" className="v2-chat-tool__label">{t('assistant.toolResult', 'Result')}</Text>
+                    <Text variant="label-small" className="v2-chat-tool__label">{t('v2.assistant.toolResult', 'Result')}</Text>
                     <JsonView data={resultData} />
                   </div>
                 )}
@@ -1256,7 +1256,7 @@ export function AssistantPage() {
         </div>
         {proposalSummary && (
           <div className="v2-chat-confirm__summary">
-            <Text variant="label-small" className="text-on-surface-variant">{t('assistant.proposedChange', 'Proposed change')}</Text>
+            <Text variant="label-small" className="text-on-surface-variant">{t('v2.assistant.proposedChange', 'Proposed change')}</Text>
             <Text variant="body-medium">{proposalSummary}</Text>
           </div>
         )}
@@ -1277,7 +1277,7 @@ export function AssistantPage() {
   };
 
   const thoughtAccordion = (thoughtContent: string) => (
-    <ChatThoughtAccordion className="v2-chat-thought" thought={thoughtContent} title={t('assistant.thoughtProcess', 'Thought process')} />
+    <ChatThoughtAccordion className="v2-chat-thought" thought={thoughtContent} title={t('v2.assistant.thoughtProcess', 'Thought process')} />
   );
 
   const hasRenderableAssistantBubble = (msg: AssistantMessage) => {
@@ -1302,7 +1302,7 @@ export function AssistantPage() {
   };
 
   const copyText = (text: string | null | undefined) => {
-    if (text) void copyToClipboard(text, t('assistant.copied', { defaultValue: 'Copied to clipboard' }));
+    if (text) void copyToClipboard(text, t('v2.common.copied', { defaultValue: 'Copied to clipboard' }));
   };
 
   const renderUserMessage = (msg: AssistantMessage) => {
@@ -1313,7 +1313,7 @@ export function AssistantPage() {
             multiline
             rows={3}
             autoFocus
-            label={t('assistant.edit', { defaultValue: 'Edit message' })}
+            label={t('v2.assistant.edit', { defaultValue: 'Edit message' })}
             value={editingMessageContent}
             onChange={(e) => setEditingMessageContent(e.target.value)}
           />
@@ -1322,7 +1322,7 @@ export function AssistantPage() {
               {t('assistant.cancel', 'Cancel')}
             </Button>
             <Button variant="filled" size="sm" icon="send" disabled={isSending || !editingMessageContent.trim()} onClick={() => handleEditSubmit(msg.id)}>
-              {t('assistant.saveAndSubmit', 'Save & Submit')}
+              {t('v2.assistant.saveAndSubmit', 'Save & Submit')}
             </Button>
           </div>
         </div>
@@ -1340,11 +1340,11 @@ export function AssistantPage() {
         showAvatar={false}
         actions={
           <>
-            <IconButton size="xs" icon="content_copy" label={t('assistant.copy', { defaultValue: 'Copy text' })} tooltip onClick={() => copyText(userMessageText(msg.content))} />
+            <IconButton size="xs" icon="content_copy" label={t('v2.assistant.copy', { defaultValue: 'Copy text' })} tooltip onClick={() => copyText(userMessageText(msg.content))} />
             <IconButton
               size="xs"
               icon="edit"
-              label={t('assistant.edit', { defaultValue: 'Edit message' })}
+              label={t('v2.assistant.edit', { defaultValue: 'Edit message' })}
               tooltip
               onClick={() => {
                 setEditingMessageId(msg.id);
@@ -1366,7 +1366,7 @@ export function AssistantPage() {
           )}
           {cleanContent && <Markdown className="v2-chat-markdown">{cleanContent}</Markdown>}
           {!cleanContent && contextLines.length === 0 && msgImages.length === 0 && (
-            <Text variant="body-medium" className="v2-chat-user__muted">{t('assistant.boundResourcesSent', 'Bound resources referenced.')}</Text>
+            <Text variant="body-medium" className="v2-chat-user__muted">{t('v2.assistant.boundResourcesSent', 'Bound resources referenced.')}</Text>
           )}
           {contextLines.length > 0 && (
             <div className="v2-chat-ctx-list">
@@ -1502,7 +1502,7 @@ export function AssistantPage() {
                   <IconButton
                     size="xs"
                     icon="edit"
-                    label={t('assistant.rename', { defaultValue: 'Rename' })}
+                    label={t('assistant.renameConversation', { defaultValue: 'Rename' })}
                     onClick={() => {
                       setEditingTitle(conv.id);
                       setEditingTitleValue(conv.title);
@@ -1537,12 +1537,12 @@ export function AssistantPage() {
             {activeConversationId && (
               <IconButton icon="verified_user" label={t('assistant.approvedTools.title', 'Tool approvals')} tooltip onClick={() => setApprovedToolsModalOpen(true)} />
             )}
-            <IconButton icon="tune" label={t('assistant.chatSettings', { defaultValue: 'Chat settings' })} tooltip href={settingsPath} />
+            <IconButton icon="tune" label={t('v2.assistant.chatSettings', { defaultValue: 'Chat settings' })} tooltip href={settingsPath} />
             <IconButton
               icon={rightPanelOpen ? 'right_panel_close' : 'right_panel_open'}
               label={rightPanelOpen
-                ? t('assistant.collapseConversations', { defaultValue: 'Collapse conversations' })
-                : t('assistant.expandConversations', { defaultValue: 'Expand conversations' })}
+                ? t('v2.assistant.collapseConversations', { defaultValue: 'Collapse conversations' })
+                : t('v2.assistant.expandConversations', { defaultValue: 'Expand conversations' })}
               tooltip
               selected={rightPanelOpen}
               onClick={() => setRightPanelOpen(!rightPanelOpen)}
@@ -1564,14 +1564,14 @@ export function AssistantPage() {
                   <div className="m3-chat-message-row v2-chat-working" data-role="assistant" aria-live="polite">
                     <div className="m3-chat-avatar-slot v2-chat-working__avatar">
                       <Avatar src="/assistant-avatar.svg" name="Assistant" size={32} />
-                      <LoadingIndicator size={44} className="v2-chat-working__ring" aria-label={t('assistant.thinking', 'Thinking...')} />
+                      <LoadingIndicator size={44} className="v2-chat-working__ring" aria-label={t('assistant.loading', 'Thinking...')} />
                     </div>
                     <Text variant="body-medium" className="v2-chat-working__label">
                       {isReconnecting
                         ? t('assistant.reconnecting', 'Reconnecting to the assistant...')
                         : isStopping
                           ? t('assistant.stopping', 'Stopping...')
-                          : currentToolTitle || currentThinkingTitle || t('assistant.thinking', 'Thinking...')}
+                          : currentToolTitle || currentThinkingTitle || t('assistant.loading', 'Thinking...')}
                     </Text>
                   </div>
                 )}
@@ -1632,7 +1632,7 @@ export function AssistantPage() {
               icon="manage_search"
               size="sm"
               className="v2-chat__history"
-              label={t('assistant.searchHistory', { defaultValue: 'Search chat history' })}
+              label={t('v2.assistant.searchHistory', { defaultValue: 'Search chat history' })}
               tooltip
               onClick={() => navigate('/assistant/history')}
             />

@@ -1,3 +1,4 @@
+import { uiLocale } from '../../lib/format';
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
@@ -56,7 +57,7 @@ function QuantityStepper({ value, onChange, max }: { value: number; onChange: (v
       />
       <IconButton icon="add" size="xs" label={t('v2.project.more')} onClick={() => onChange(value + 1)} />
       <button type="button" className="v2-qty__max m3-focus-ring" disabled={max === 0} title={t('projectViewer.settings.setToMaxCombinations')} onClick={() => onChange(Math.max(1, max))}>
-        <Ripple disabled={max === 0} />/ {max.toLocaleString()}
+        <Ripple disabled={max === 0} />/ {max.toLocaleString(uiLocale())}
       </button>
     </div>
   );

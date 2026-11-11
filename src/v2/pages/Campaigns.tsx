@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -114,7 +115,7 @@ export function Campaigns() {
     { key: 'delete', label: t('menu.delete'), icon: 'delete', danger: true, divider: true, onSelect: () => setDeleteTarget(c) },
   ];
 
-  const describe = (c: CampaignCardModel) => c.description ?? t('v2.campaigns.createdOn', { date: new Date(c.createdAt).toLocaleDateString() });
+  const describe = (c: CampaignCardModel) => c.description ?? t('v2.campaigns.createdOn', { date: new Date(c.createdAt).toLocaleDateString(uiLocale()) });
   const postsLabel = (c: CampaignCardModel) => (c.totalPosts > 0 ? t('v2.campaigns.postsProgress', { done: Math.min(c.postedPosts, c.totalPosts), total: c.totalPosts }) : t('status.setup'));
   const dateOf = (value: string | null) => value ?? t('v2.campaigns.notScheduled');
 

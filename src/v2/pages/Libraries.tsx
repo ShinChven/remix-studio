@@ -187,7 +187,7 @@ export function Libraries() {
               await deleteLibrary(toDelete.id);
               await libraries.reload(true);
             },
-            { key: `delete:${toDelete.id}`, success: t('libraries.libraryCard.deleteSuccess', 'Library deleted successfully'), rethrow: true },
+            { key: `delete:${toDelete.id}`, success: t('v2.libraryActions.libraryCard.deleteSuccess', 'Library deleted successfully'), rethrow: true },
           );
         }}
       />

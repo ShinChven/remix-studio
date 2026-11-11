@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import QRCode from 'qrcode';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -151,7 +152,7 @@ export function AccountTwoFactorSetup() {
                   <div className="flex min-w-0 flex-col gap-3">
                     <code className="v2-secret">{pending.secret}</code>
                     <Text variant="body-small" className="text-on-surface-variant">
-                      {t('accountTwoFactorSetup.expiresAt', { time: new Date(pending.expiresAt).toLocaleTimeString() })}
+                      {t('accountTwoFactorSetup.expiresAt', { time: new Date(pending.expiresAt).toLocaleTimeString(uiLocale()) })}
                     </Text>
                     <a href={pending.otpauthUri} className="v2-link self-start">
                       {t('accountTwoFactorSetup.openOtpauth')}

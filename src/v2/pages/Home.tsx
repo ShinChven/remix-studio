@@ -182,7 +182,7 @@ export function Home() {
               </div>
             ))}
           </Shelf>
-          <Shelf title={t('sidebar.campaigns', 'Campaigns')} icon="campaign" to="/campaigns" onAdd={() => navigate('/campaigns/new')} addLabel={t('campaigns.new', 'New Campaign')} empty={t('campaigns.noCampaigns', 'No campaigns yet.')}>
+          <Shelf title={t('sidebar.campaigns', 'Campaigns')} icon="campaign" to="/campaigns" onAdd={() => navigate('/campaigns/new')} addLabel={t('v2.campaigns.newCampaign', 'New Campaign')} empty={t('v2.campaigns.noCampaigns', 'No campaigns yet.')}>
             {campaigns.map((campaign) => (
               <div key={campaign.id} className="v2-shelf__item">
                 <CampaignCard campaign={campaign} />
@@ -205,9 +205,9 @@ export function Home() {
       <ConfirmDialog
         open={!!deleteTarget}
         tone="danger"
-        title={t('projects.deleteTitle', { defaultValue: 'Delete Project' })}
-        message={t('projects.deleteConfirmation', { name: deleteTarget?.name })}
-        confirmLabel={t('common.delete', { defaultValue: 'Delete' })}
+        title={t('projectViewer.confirm.deleteProject.title', { defaultValue: 'Delete Project' })}
+        message={t('projectViewer.confirm.deleteProject.message', { name: deleteTarget?.name })}
+        confirmLabel={t('projectViewer.common.delete', { defaultValue: 'Delete' })}
         onConfirm={async () => {
           if (!deleteTarget) return;
           try {

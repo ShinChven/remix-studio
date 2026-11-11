@@ -1,3 +1,4 @@
+import { uiLocale } from '../lib/format';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createAdminInvite, deleteAdminInvite, getAdminInvites } from '../../api';
@@ -31,7 +32,7 @@ export function AdminInvites() {
   const [toDelete, setToDelete] = useState<InviteCode | null>(null);
   const inviteBase = useMemo(() => `${window.location.origin}/login`, []);
 
-  const formatDate = (value?: number) => (value ? new Date(value).toLocaleString() : t('adminUsers.never'));
+  const formatDate = (value?: number) => (value ? new Date(value).toLocaleString(uiLocale()) : t('adminUsers.never'));
   const tierLabel = (value: InviteCode['membershipTier']) => formatStorageTierOption(storageTierForKey(value));
 
   const resetForm = () => {

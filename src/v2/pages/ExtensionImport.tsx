@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createLibrary, createLibraryItem, createProject, fetchLibraries, fetchProjects, fetchProjectWorkflow, saveImage, updateProject } from '../../api';
@@ -14,6 +15,7 @@ type Destination = 'library' | 'project';
 
 /** Creates the destination on the spot: a library or a project of the imported item's type. */
 function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kind: Destination; open: boolean; type: 'image' | 'text'; onClose: () => void; onCreated: (id: string, name: string) => void }) {
+  const { t } = useTranslation();
   const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -28,12 +30,12 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
       if (kind === 'library') {
         const id = crypto.randomUUID();
         await createLibrary({ id, name: name.trim(), description: description.trim() || undefined, type });
-        toast.success('Library created successfully');
+        toast.success(t('v2.importer.libraryCreated'));
         onCreated(id, name.trim());
       } else {
         const id = crypto.randomUUID();
         await createProject({ id, name: name.trim(), description: description.trim() || undefined, type, prefix: prefix.trim(), createdAt: Date.now(), workflow: [], jobs: [], album: [], shuffle: false } as Project);
-        toast.success('Project created successfully');
+        toast.success(t('v2.importer.projectCreated'));
         onCreated(id, name.trim());
       }
       onClose();
@@ -41,7 +43,7 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
       setDescription('');
       setPrefix('');
     } catch {
-      toast.error(kind === 'library' ? 'Failed to create library' : 'Failed to create project');
+      toast.error(kind === 'library' ? t('v2.importer.libraryCreateFailed') : t('v2.importer.projectCreateFailed'));
     } finally {
       setBusy(false);
     }
@@ -52,23 +54,23 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
       open={open}
       onClose={onClose}
       icon={kind === 'library' ? 'folder' : 'play_circle'}
-      headline={kind === 'library' ? 'Create New Library' : 'Create New Project'}
+      headline={kind === 'library' ? t('v2.importer.createLibrary') : t('v2.importer.createProject')}
       maxWidth={460}
       actions={
         <>
           <Button variant="text" onClick={onClose}>
-            Cancel
+            {t('projectViewer.common.cancel')}
           </Button>
           <Button variant="filled" loading={busy} disabled={!name.trim()} onClick={() => void submit()}>
-            {kind === 'library' ? 'Create Library' : 'Create Project'}
+            {kind === 'library' ? t('v2.importer.createLibrary') : t('v2.importer.createProject')}
           </Button>
         </>
       }
     >
       <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
-        <TextField variant="outlined" label="Name" required value={name} onValueChange={setName} placeholder={kind === 'library' ? 'e.g. My Inspiration' : 'e.g. Logo Generator'} autoFocus fullWidth />
-        <TextField variant="outlined" label="Description (Optional)" value={description} onValueChange={setDescription} placeholder={kind === 'library' ? 'What goes in this library?' : undefined} multiline rows={kind === 'library' ? 3 : 2} fullWidth />
-        {kind === 'project' && <TextField variant="outlined" label="Prefix (Optional)" value={prefix} onValueChange={setPrefix} placeholder="e.g. img_" fullWidth />}
+        <TextField variant="outlined" label={t('v2.importer.name')} required value={name} onValueChange={setName} placeholder={kind === 'library' ? t('v2.importer.libraryNameHint') : t('v2.importer.projectNameHint')} autoFocus fullWidth />
+        <TextField variant="outlined" label={t('v2.importer.description')} value={description} onValueChange={setDescription} placeholder={kind === 'library' ? t('v2.importer.libraryDescriptionHint') : undefined} multiline rows={kind === 'library' ? 3 : 2} fullWidth />
+        {kind === 'project' && <TextField variant="outlined" label={t('v2.importer.prefix')} value={prefix} onValueChange={setPrefix} placeholder="img_" fullWidth />}
         <button type="submit" hidden />
       </form>
     </Dialog>
@@ -77,6 +79,7 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
 
 /** Saves an image or text sent from the Chrome extension or the share sheet into a library or project. */
 export function ExtensionImport() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams] = useSearchParams();
@@ -149,7 +152,7 @@ export function ExtensionImport() {
         setSelectedId(saved && items.find((x) => x.id === saved) ? saved : items[0]?.id ?? '');
       } catch (e) {
         console.error('Failed to load destinations', e);
-        toast.error('Failed to load destinations');
+        toast.error(t('v2.importer.destinationsLoadFailed'));
       } finally {
         setLoadingDestinations(false);
       }
@@ -173,18 +176,18 @@ export function ExtensionImport() {
         size = result.size;
       }
       if (destination === 'library') {
-        await createLibraryItem(selectedId, { id: crypto.randomUUID(), content: value, thumbnailUrl, optimizedUrl, size, title: itemName.trim() || `Imported ${importData.type}` });
-        toast.success('Saved to library successfully!');
+        await createLibraryItem(selectedId, { id: crypto.randomUUID(), content: value, thumbnailUrl, optimizedUrl, size, title: itemName.trim() || t(importData.type === 'image' ? 'v2.importer.importedImage' : 'v2.importer.importedText') });
+        toast.success(t('v2.importer.savedLibrary'));
         navigate(`/library/${selectedId}`);
       } else {
         const workflow = await fetchProjectWorkflow(selectedId);
         await updateProject(selectedId, { workflow: [...workflow, { id: crypto.randomUUID(), type: importData.type, value, thumbnailUrl, optimizedUrl, size, order: workflow.length }] });
-        toast.success('Saved to project successfully!');
+        toast.success(t('v2.importer.savedProject'));
         navigate(`/project/${selectedId}`);
       }
     } catch (e) {
       console.error(e);
-      toast.error(errorText(e, 'Failed to save imported item'));
+      toast.error(errorText(e, t('v2.importer.saveFailed')));
     } finally {
       setSaving(false);
     }
@@ -195,17 +198,17 @@ export function ExtensionImport() {
       <Page>
         <EmptyState
           icon="image"
-          title="No Import Data Found"
-          description={'Please use the Remix Studio Chrome extension to right-click an image or selected text and choose "Send to Remix Studio".'}
+          title={t('v2.importer.noData')}
+          description={t('v2.importer.noDataHint')}
           action={
             <Button variant="filled" href="/">
-              Go to Home
+              {t('v2.share.home')}
             </Button>
           }
         />
       </Page>
     ) : (
-      <LoadingState label="Waiting for data from extension..." minHeight={400} />
+      <LoadingState label={t('v2.importer.waiting')} minHeight={400} />
     );
   }
 
@@ -213,26 +216,26 @@ export function ExtensionImport() {
 
   return (
     <Page width="default">
-      <PageHeader title={`Import ${importData.type === 'image' ? 'Image' : 'Text'}`} description="Save this item to your Remix Studio workspace." backLink={{ label: 'Cancel', onClick: () => navigate(-1) }} />
+      <PageHeader title={t(importData.type === 'image' ? 'v2.importer.titleImage' : 'v2.importer.titleText')} description={t('v2.importer.descriptionText')} backLink={{ label: t('projectViewer.common.cancel'), onClick: () => navigate(-1) }} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Section variant="card">
-          <TextField variant="outlined" label="Name" leadingIcon="title" value={itemName} onValueChange={setItemName} placeholder={`Name this imported ${importData.type}`} autoFocus fullWidth />
+          <TextField variant="outlined" label={t('v2.importer.name')} leadingIcon="title" value={itemName} onValueChange={setItemName} placeholder={t(importData.type === 'image' ? 'v2.importer.nameImage' : 'v2.importer.nameText')} autoFocus fullWidth />
           <Text variant="label-large" className="text-on-surface-variant">
-            Preview
+            {t('projectViewer.common.preview')}
           </Text>
           <div className="v2-import-preview">
-            {importData.type === 'image' ? <img src={importData.data} alt="Import preview" /> : <pre>{importData.data}</pre>}
+            {importData.type === 'image' ? <img src={importData.data} alt={t('v2.importer.preview')} /> : <pre>{importData.data}</pre>}
           </div>
         </Section>
         <aside className="flex flex-col gap-4">
-          <Section variant="card" icon={<Icon name="folder" />} title="Destination" description="Choose where to save.">
+          <Section variant="card" icon={<Icon name="folder" />} title={t('v2.importer.destination')} description={t('v2.importer.destinationHint')}>
             <Segmented<Destination>
               fullWidth
               value={destination}
               onChange={changeDestination}
               options={[
-                { value: 'library', label: 'Library', icon: 'layers' },
-                { value: 'project', label: 'Project', icon: 'folder' },
+                { value: 'library', label: t('v2.importer.library'), icon: 'layers' },
+                { value: 'project', label: t('v2.importer.project'), icon: 'folder' },
               ]}
             />
             {loadingDestinations ? (
@@ -242,13 +245,13 @@ export function ExtensionImport() {
                 {options.length === 0 ? (
                   <div className="v2-notice" data-tone="error">
                     <Icon name="error" />
-                    <Text variant="body-small">No compatible {destination === 'library' ? 'libraries' : 'projects'} found.</Text>
+                    <Text variant="body-small">{t(destination === 'library' ? 'v2.importer.noLibraries' : 'v2.importer.noProjects')}</Text>
                   </div>
                 ) : (
                   <Select
                     variant="outlined"
-                    label={`Select ${destination}`}
-                    placeholder="Choose a destination..."
+                    label={t(destination === 'library' ? 'v2.importer.selectLibrary' : 'v2.importer.selectProject')}
+                    placeholder={t('v2.importer.chooseDestination')}
                     value={selectedId || null}
                     onChange={changeId}
                     options={options.map((o) => ({ value: o.id, label: o.name }))}
@@ -256,17 +259,17 @@ export function ExtensionImport() {
                   />
                 )}
                 <Button variant="text" size="xs" icon="add" className="self-start" onClick={() => setCreating(destination)}>
-                  Create New
+                  {t('v2.importer.createNew')}
                 </Button>
               </div>
             )}
           </Section>
           <div className="grid grid-cols-2 gap-2">
             <Button variant="outlined" disabled={saving} onClick={() => navigate(-1)}>
-              Cancel
+              {t('projectViewer.common.cancel')}
             </Button>
             <Button variant="filled" icon="save" loading={saving} disabled={!selectedId} onClick={() => void save()} emphasized>
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('v2.feedback.saving') : t('projectViewer.common.save')}
             </Button>
           </div>
         </aside>
