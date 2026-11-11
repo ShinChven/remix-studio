@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { copyAlbumItemsToProject, copyAlbumToLibrary, fetchLibraries, fetchProjects, imageDisplayUrl, moveAlbumItemsToProject } from '../../../api';
 import type { ProjectMediaType } from '../../../lib/project-media';
-import { Button, Dialog, Icon, LoadingIndicator, Ripple, Text, TextField, useSnackbar } from '../../../m3';
+import { Button, Dialog, Icon, LoadingIndicator, Ripple, Text, TextField } from '../../../m3';
 import { KindBadge } from '../../ui/KindBadge';
 import type { AlbumItem, Library, Project, ProjectType } from '../../../types';
 import { withBase } from '../../app/paths';
@@ -10,6 +10,7 @@ import { ChoiceTiles } from '../../ui/ChoiceTiles';
 import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Toolbar';
 import { useToast } from '../../ui/useToast';
+import { formatBytes } from '../../lib/format';
 
 export type AlbumTransferAction = 'copy' | 'move';
 export type AlbumTransferTarget = 'library' | 'project';
@@ -48,11 +49,7 @@ export function albumFilename(item: AlbumItem) {
   return decodeURIComponent(path.split('/').pop() || '') || item.id;
 }
 
-function formatSize(bytes: number) {
-  if (!bytes || bytes <= 0) return '0 MB';
-  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
+const formatSize = formatBytes;
 
 interface DestinationOption {
   id: string;
@@ -84,7 +81,6 @@ export interface AlbumTransferDialogProps {
 export function AlbumTransferDialog({ projectId, projectName, mediaType, projectType, initialAction, items, useAllAlbumScope = false, itemCount, totalSize, canMove, onClose, onDone }: AlbumTransferDialogProps) {
   const { t } = useTranslation();
   const toast = useToast();
-  const snackbar = useSnackbar();
   const [action, setAction] = useState<AlbumTransferAction>(canMove ? initialAction : 'copy');
   const [target, setTarget] = useState<AlbumTransferTarget>(() => {
     const remembered = readStored(`${TARGET_KEY_PREFIX}${initialAction}`);
@@ -206,11 +202,8 @@ export function AlbumTransferDialog({ projectId, projectName, mediaType, project
       writeStored(`${TARGET_KEY_PREFIX}${action}`, target);
       writeStored(target === 'library' ? `${LIBRARY_DESTINATION_KEY_PREFIX}${mediaType}` : `${PROJECT_DESTINATION_KEY_PREFIX}${projectType}`, destination.id);
       // The destination opens in a new tab so the album stays put.
-      snackbar.show({
-        message: t(isMove ? 'projectViewer.transfer.moved' : 'projectViewer.transfer.copied', { count, name: destination.name }),
+      toast.success(t(isMove ? 'projectViewer.transfer.moved' : 'projectViewer.transfer.copied', { count, name: destination.name }), {
         action: { label: destination.linkLabel, onClick: () => window.open(withBase(destination.href), '_blank', 'noopener') },
-        duration: 10_000,
-        closable: true,
       });
       onDone(action, isMove ? items : []);
     } catch (error) {

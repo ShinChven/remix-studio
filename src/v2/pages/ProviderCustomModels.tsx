@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties, type FormEvent } 
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { fetchProvider, updateProvider } from '../../api';
-import { Button, Dialog, Icon, IconButton, Select, Shape, Text, TextField, useSnackbar } from '../../m3';
+import { Button, Dialog, Icon, IconButton, Select, Shape, Text, TextField } from '../../m3';
 import { PROVIDER_MODELS_MAP, type CustomModelAlias, type ModelConfig, type Provider } from '../../types';
 import { ModelRows, useModelEntries } from '../components/providers/ModelRows';
 import { ProviderHero } from '../components/providers/ProviderHero';
@@ -12,6 +12,9 @@ import { kindMeta } from '../ui/entityMeta';
 import { KindBadge } from '../ui/KindBadge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { useCopy } from '../lib/useCopy';
 
 type EditorState = { mode: 'create' | 'edit'; index: number; customName: string; customModelId: string; baseModelId: string };
 
@@ -97,7 +100,8 @@ function VariantDialog({ editor, baseModels, saving, onChange, onSave, onClose }
 
 export function ProviderCustomModels() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const copyText = useCopy();
   const { id } = useParams<{ id: string }>();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [customModels, setCustomModels] = useState<CustomModelAlias[]>([]);
@@ -140,7 +144,7 @@ export function ProviderCustomModels() {
       setCustomModels(next);
       return true;
     } catch (e) {
-      snackbar.show((e as Error)?.message || t('providerCustomModels.errors.saveFailed'));
+      toast.error(errorText(e, t('providerCustomModels.errors.saveFailed')));
       return false;
     } finally {
       setIsSaving(false);
@@ -154,16 +158,11 @@ export function ProviderCustomModels() {
     const alias: CustomModelAlias = { customName: customName.trim(), customModelId: customModelId.trim(), baseModelId };
     const saved = await persist(editor.mode === 'create' ? [...customModels, alias] : customModels.map((m, i) => (i === editor.index ? alias : m)));
     if (!saved) return;
-    snackbar.show(t('v2.providers.variants.saved', { name: alias.customName }));
+    toast.success(t('v2.providers.variants.saved', { name: alias.customName }));
     setEditor(null);
   };
 
-  const copy = (text: string) => {
-    void navigator.clipboard
-      .writeText(text)
-      .then(() => snackbar.show(t('v2.providers.copied')))
-      .catch(() => snackbar.show(t('v2.providers.copyFailed')));
-  };
+  const copy = (text: string) => void copyText(text, t('v2.providers.copied'), t('v2.providers.copyFailed'));
 
   if (isLoading) return <LoadingState minHeight={400} />;
   if (!provider) {
@@ -294,7 +293,7 @@ export function ProviderCustomModels() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
           if (deleteTarget === null || !deleting) return;
-          if (await persist(customModels.filter((_, i) => i !== deleteTarget))) snackbar.show(t('v2.providers.variants.deleted', { name: deleting.customName }));
+          if (await persist(customModels.filter((_, i) => i !== deleteTarget))) toast.success(t('v2.providers.variants.deleted', { name: deleting.customName }));
         }}
       />
     </Page>

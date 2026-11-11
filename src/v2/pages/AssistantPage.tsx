@@ -59,6 +59,7 @@ import { JsonView } from '../ui/JsonView';
 import { Markdown } from '../ui/Markdown';
 import { LoadingState } from '../ui/Page';
 import { useToast } from '../ui/useToast';
+import { useCopy } from '../lib/useCopy';
 
 type AssistantNavigationState = {
   initialMessage?: string;
@@ -318,6 +319,7 @@ function summarizePendingConfirmation(
 export function AssistantPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const copyToClipboard = useCopy();
   // Wide enough to keep the conversation list docked beside the chat.
   const docked = useMediaQuery('(min-width: 1200px)', true);
   const { id: routeId } = useParams<{ id: string }>();
@@ -1108,7 +1110,7 @@ export function AssistantPage() {
       type: contextType,
       subType: resource.subType || undefined,
     });
-    if (window.innerWidth < 1024) setRightPanelOpen(false);
+    if (window.innerWidth < 1200) setRightPanelOpen(false);
   };
 
   const handleRemoveResource = async (resource: AssistantConversationResource) => {
@@ -1300,9 +1302,7 @@ export function AssistantPage() {
   };
 
   const copyText = (text: string | null | undefined) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    toast.success(t('assistant.copied', { defaultValue: 'Copied to clipboard' }));
+    if (text) void copyToClipboard(text, t('assistant.copied', { defaultValue: 'Copied to clipboard' }));
   };
 
   const renderUserMessage = (msg: AssistantMessage) => {

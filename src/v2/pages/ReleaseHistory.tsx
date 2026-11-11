@@ -1,65 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
-import { fetchReleaseHistory, type ReleaseHistoryItem } from '../../api';
-import { Button, Dialog, Icon, IconButton, Text, useSnackbar } from '../../m3';
+import { fetchReleaseHistory } from '../../api';
+import { Button, Dialog, Icon, IconButton, Text } from '../../m3';
 import { platformMeta } from '../components/exports/releaseMeta';
-import { usePaginationScroll } from '../lib/usePaginationScroll';
+import { errorText } from '../lib/errors';
 import { formatDateTime } from '../lib/format';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { useAsyncData } from '../lib/useAsyncData';
+import { PAGE_SIZES, useListParams } from '../lib/useListParams';
+import { ListTitle } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { Page, PageHeader } from '../ui/Page';
 import { StatusPill } from '../ui/Stat';
-
-const PAGE_SIZE = 20;
 
 export function ReleaseHistory() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
-  const paginationRef = usePaginationScroll({ page });
-  const [items, setItems] = useState<ReleaseHistoryItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [pages, setPages] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const list = useListParams({ pageSize: 25, pageSizes: PAGE_SIZES });
+  const pageSize = list.pageSize === 'all' ? 500 : list.pageSize;
+  const history = useAsyncData(() => fetchReleaseHistory(list.page, pageSize), [list.page, pageSize]);
+  const items = history.data?.items ?? [];
+  const total = history.data?.total ?? 0;
   const [selectedError, setSelectedError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetchReleaseHistory(page, PAGE_SIZE)
-      .then((res) => {
-        if (cancelled) return;
-        setItems(res.items);
-        setTotal(res.total);
-        setPages(Math.max(1, res.pages));
-      })
-      .catch((err) => !cancelled && snackbar.show((err as Error)?.message || t('releases.history.loadError')))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, t]);
-
   return (
-    <Page ref={paginationRef}>
-      <PageHeader
-        title={t('releases.history.title')}
-        description={t('releases.history.description')}
-        backLink={{ to: '/exports', label: t('releases.backToExports') }}
-        actions={
-          <StatusPill icon="list">
-            {total} {t('releases.history.stats.total')}
-          </StatusPill>
-        }
-      />
-      {loading && items.length === 0 ? (
-        <LoadingState />
-      ) : items.length === 0 ? (
-        <EmptyState icon="history" shape="cookie-7" title={t('releases.history.empty.title')} description={t('releases.history.empty.description')} />
-      ) : (
-        <div className="flex flex-col gap-2" data-density="compact">
+    <Page>
+      <PageHeader title={t('releases.history.title')} description={t('releases.history.description')} backLink={{ to: '/exports', label: t('releases.backToExports') }} />
+      <ListPane
+        label={t('releases.history.title')}
+        lead={<ListTitle title={t('releases.history.title')} icon="history" count={total} />}
+        loading={history.loading}
+        refreshing={history.refreshing}
+        error={history.error ? errorText(history.error, t('releases.history.loadError')) : null}
+        onRetry={() => void history.reload()}
+        count={items.length}
+        empty={{ icon: 'history', shape: 'cookie-7', title: t('releases.history.empty.title'), description: t('releases.history.empty.description') }}
+        paging={{ page: list.page, pageSize: list.pageSize, total, pages: history.data?.pages, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+      >
+        <div className="v2-list-pane__grid flex flex-col gap-2" data-density="compact">
           {items.map((item) => {
             const ok = item.status === 'success';
             const meta = platformMeta(item.platform);
@@ -110,27 +86,8 @@ export function ReleaseHistory() {
               </div>
             );
           })}
-          {pages > 1 && (
-            <div className="v2-page-footer">
-              <Pagination
-                page={page}
-                pages={pages}
-                size="sm"
-                onPageChange={(next) =>
-                  setSearchParams((prev) => {
-                    const params = new URLSearchParams(prev);
-                    params.set('page', String(next));
-                    return params;
-                  })
-                }
-              />
-              <Text variant="label-small" className="uppercase tracking-widest">
-                {t('exports.pagination', { current: page, total: pages })}
-              </Text>
-            </div>
-          )}
         </div>
-      )}
+      </ListPane>
 
       <Dialog
         open={!!selectedError}

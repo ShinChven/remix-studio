@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createLibraryItemsBatch, fetchLibrary } from '../../api';
-import { AssistChip, Button, ChipSet, Icon, Text, TextField, useSnackbar } from '../../m3';
+import { AssistChip, Button, ChipSet, Icon, Text, TextField } from '../../m3';
 import type { Library, LibraryItem } from '../../types';
 import {
   formatExportJson,
@@ -17,6 +17,9 @@ import {
 import { LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { StatTile, StatusPill } from '../ui/Stat';
 import { Segmented } from '../ui/Toolbar';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { useCopy } from '../lib/useCopy';
 
 const readFile = (file: File) =>
   new Promise<string>((resolve) => {
@@ -30,7 +33,8 @@ const isTextFile = (file: File) => file.type === 'text/plain' || file.type === '
 /** Bulk import of text items, with a live parse preview, and export of the whole library. */
 export function LibraryImportExport() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const copyText = useCopy();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -84,7 +88,7 @@ export function LibraryImportExport() {
       navigate(`/library/${id}`);
     } catch (error) {
       console.error('Failed to import items:', error);
-      snackbar.show((error as Error)?.message || t('libraryImportExport.toasts.importFailed'));
+      toast.error(errorText(error, t('libraryImportExport.toasts.importFailed')));
     } finally {
       setImporting(false);
     }
@@ -94,15 +98,7 @@ export function LibraryImportExport() {
   const previewTagCount = normalizeTags(preview.flatMap((item) => item.tags)).length;
   const libraryTagCount = library ? normalizeTags(library.items.flatMap((item) => item.tags || [])).length : 0;
 
-  const copy = async () => {
-    if (!output) return;
-    try {
-      await navigator.clipboard.writeText(output);
-      snackbar.show(t('libraryImportExport.toasts.outputCopied'));
-    } catch (error) {
-      snackbar.show((error as Error)?.message || t('libraryImportExport.toasts.copyFailed'));
-    }
-  };
+  const copy = () => output && copyText(output, t('libraryImportExport.toasts.outputCopied'), t('libraryImportExport.toasts.copyFailed'));
 
   const download = () => {
     if (!library || !output) return;

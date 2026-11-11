@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchLibraries, fetchLibrary, fetchLibraryItems, fetchProject, fetchProjectAlbum, fetchProjects, imageDisplayUrl } from '../../api';
@@ -71,14 +72,15 @@ export interface MediaPickerProps {
 
 const ALL_TYPES: LibraryType[] = ['text', 'image', 'video', 'audio'];
 const DEFAULT_SOURCE_KINDS: PickerSourceKind[] = ['library', 'album'];
-const typeLabel = (type: LibraryType) => (type === 'text' ? 'Text' : type === 'image' ? 'Image' : type === 'video' ? 'Video' : 'Audio');
-const kindLabel = (kind: PickerSourceKind) => (kind === 'library' ? 'Library' : 'Album');
-const SORTS: Array<{ value: UniversalPickerSort; label: string; icon: string }> = [
-  { value: 'newest', label: 'Newest', icon: 'arrow_downward' },
-  { value: 'oldest', label: 'Oldest', icon: 'arrow_upward' },
-  { value: 'name-asc', label: 'Name A-Z', icon: 'sort_by_alpha' },
-  { value: 'name-desc', label: 'Name Z-A', icon: 'sort_by_alpha' },
+const typeLabel = (type: LibraryType) => i18n.t(`v2.picker.types.${type}`);
+const kindLabel = (kind: PickerSourceKind) => i18n.t(`v2.picker.kinds.${kind}`);
+const SORTS: Array<{ value: UniversalPickerSort; icon: string }> = [
+  { value: 'newest', icon: 'arrow_downward' },
+  { value: 'oldest', icon: 'arrow_upward' },
+  { value: 'name-asc', icon: 'sort_by_alpha' },
+  { value: 'name-desc', icon: 'sort_by_alpha' },
 ];
+const sortLabel = (value: UniversalPickerSort) => i18n.t(`v2.picker.sorts.${value}`);
 
 function cssAspectRatio(value?: string) {
   const match = value?.trim().match(/^(\d+(?:\.\d+)?)\s*[:x]\s*(\d+(?:\.\d+)?)$/i);
@@ -160,13 +162,13 @@ function SortMenu({ value, onChange, label }: { value: UniversalPickerSort; onCh
       aria-label={label}
       trigger={(props) => (
         <Button {...props} variant="outlined" size="xs" icon={current.icon} trailingIcon="arrow_drop_down">
-          {current.label}
+          {sortLabel(current.value)}
         </Button>
       )}
     >
       {SORTS.map((s) => (
         <MenuItem key={s.value} icon={s.icon} type="radio" checked={s.value === value} onSelect={() => onChange(s.value)}>
-          {s.label}
+          {sortLabel(s.value)}
         </MenuItem>
       ))}
     </MenuButton>
@@ -211,7 +213,7 @@ export function AspectRatioMenu({ options, selected, onChange }: { options: Aspe
  */
 export function MediaPicker({
   isOpen,
-  title = 'Media Picker',
+  title,
   allowedTypes = ALL_TYPES,
   projectTypes,
   defaultSourceKind = 'library',
@@ -552,13 +554,13 @@ export function MediaPicker({
       open={isOpen}
       onClose={onClose}
       fullScreen="compact"
-      headline={title}
+      headline={title ?? t('v2.picker.title')}
       maxWidth={1280}
       className="v2-picker"
       confirmAction={
         multiple ? (
           <Button variant="filled" icon="check" disabled={selectedItems.length === 0} onClick={submit}>
-            Add
+            {t('v2.picker.add')}
           </Button>
         ) : undefined
       }
@@ -566,20 +568,18 @@ export function MediaPicker({
         <div className="flex w-full items-center justify-between gap-3">
           <Text variant="body-medium" className="text-on-surface-variant">
             {multiple ? (
-              <>
-                <strong className="text-on-surface">{selectedItems.length}</strong> selected
-              </>
+              t('v2.selection.selected', { count: selectedItems.length })
             ) : (
-              'Click any item above to select it.'
+              t('v2.picker.clickToSelect')
             )}
           </Text>
           <div className="flex gap-2">
             <Button variant="text" onClick={onClose}>
-              Cancel
+              {t('confirmModal.cancel', 'Cancel')}
             </Button>
             {multiple && (
               <Button variant="filled" icon="check_circle" disabled={selectedItems.length === 0} onClick={submit}>
-                Add Selected
+                {t('v2.picker.addSelected')}
               </Button>
             )}
           </div>
@@ -591,13 +591,13 @@ export function MediaPicker({
           <aside className="v2-picker__sources">
             {kindSwitch}
             {typeChips}
-            <SearchField shape="field" value={sourceQuery} onChange={setSourceQuery} placeholder={`Search ${activeKind === 'library' ? 'libraries' : 'projects'}...`} />
-            <SortMenu value={sourceSort} onChange={setSourceSort} label={`Sort ${activeKind}`} />
+            <SearchField shape="field" value={sourceQuery} onChange={setSourceQuery} placeholder={activeKind === 'library' ? t('v2.picker.searchLibraries') : t('v2.picker.searchProjects')} />
+            <SortMenu value={sourceSort} onChange={setSourceSort} label={t('v2.picker.sortSources')} />
             <div className="v2-picker__source-list">
               {loadingSources ? (
                 <LoadingState minHeight={160} />
               ) : filteredSources.length === 0 ? (
-                <EmptyState size="inline" icon="search" title="No matches found" />
+                <EmptyState size="inline" icon="search" title={t('v2.common.noMatches')} />
               ) : (
                 filteredSources.map((source) => (
                   <button
@@ -614,7 +614,7 @@ export function MediaPicker({
                       <KindBadge kind={source.type} size={24} />
                     </span>
                     <Text as="span" variant="body-small" className="line-clamp-2 opacity-75">
-                      {source.description || `${source.itemCount} items`}
+                      {source.description || t('v2.project.itemCount', { count: source.itemCount })}
                     </Text>
                   </button>
                 ))
@@ -625,7 +625,7 @@ export function MediaPicker({
 
         <section className="v2-picker__main">
           <Text variant="label-small" className="truncate uppercase tracking-widest text-on-surface-variant">
-            {activeSource ? `${kindLabel(activeSource.kind)} / ${activeSource.name} · ${activeSource.itemCount} items` : 'No source selected'}
+            {activeSource ? `${kindLabel(activeSource.kind)} / ${activeSource.name} · ${t('v2.project.itemCount', { count: activeSource.itemCount })}` : t('v2.picker.noSource')}
           </Text>
           {!fixedSourceId && compact && (
             <div className="flex min-w-0 flex-col gap-2">
@@ -633,11 +633,11 @@ export function MediaPicker({
                 {kindSwitch}
                 <Select
                   variant="outlined"
-                  aria-label={`Select ${activeKind}`}
+                  aria-label={t('v2.picker.selectSource')}
                   value={activeSource?.id ?? null}
-                  placeholder="Select source..."
+                  placeholder={t('v2.picker.selectSource')}
                   searchable
-                  searchPlaceholder={`Search ${activeKind === 'library' ? 'libraries' : 'projects'}...`}
+                  searchPlaceholder={activeKind === 'library' ? t('v2.picker.searchLibraries') : t('v2.picker.searchProjects')}
                   onChange={setActiveSourceId}
                   options={filteredSources.map((s) => ({ value: s.id, label: s.name, keywords: s.description }))}
                   className="min-w-0 flex-1"
@@ -648,7 +648,7 @@ export function MediaPicker({
             </div>
           )}
           <div className="flex flex-wrap items-center gap-2">
-            <SearchField shape="field" value={itemQuery} onChange={setItemQuery} placeholder="Search items..." className="min-w-[8rem] flex-1" />
+            <SearchField shape="field" value={itemQuery} onChange={setItemQuery} placeholder={t('v2.picker.searchItems')} className="min-w-[8rem] flex-1" />
             {showVersion && (
               <Segmented<'raw' | 'optimized'>
                 aria-label={t('projectViewer.copyToLibrary.versionToCopy')}
@@ -658,9 +658,8 @@ export function MediaPicker({
               />
             )}
             {showRatios && <AspectRatioMenu options={ratioCounts} selected={ratios} onChange={setRatios} />}
-            <SortMenu value={itemSort} onChange={setItemSort} label="Sort items" />
+            <SortMenu value={itemSort} onChange={setItemSort} label={t('v2.picker.sortItems')} />
             <PageSizeSelect
-              aria-label="Items per page"
               value={itemPageSize}
               onChange={(size) => {
                 setItemPageSize(size);
@@ -669,18 +668,18 @@ export function MediaPicker({
             />
             {multiple && (
               <Button variant={allSelected ? 'tonal' : 'outlined'} size="xs" icon={allSelected ? 'deselect' : 'select_all'} onClick={toggleAll}>
-                {allSelected ? 'Deselect All' : 'Select All'}
+                {allSelected ? t('v2.selection.deselectAll') : t('v2.campaigns.form.selectAll')}
               </Button>
             )}
           </div>
 
           <div ref={scrollRef} className="v2-picker__grid-scroll" aria-busy={loadingItems}>
             {!activeSource ? (
-              <EmptyState icon="layers" title="No source selected" description="Choose a library or album first." />
+              <EmptyState icon="layers" title={t('v2.picker.noSource')} description={t('v2.picker.noSourceHint')} />
             ) : loadingItems && items.length === 0 ? (
-              <LoadingState label="Loading items..." />
+              <LoadingState label={t('v2.picker.loadingItems')} />
             ) : items.length === 0 ? (
-              <EmptyState icon="search" title="No items found" description="Try a different filter or search." />
+              <EmptyState icon="search" title={t('v2.picker.noItems')} description={t('v2.common.noMatchesHint')} />
             ) : (
               <div className="v2-picker__grid">
                 {items.map((item) => {
@@ -693,7 +692,7 @@ export function MediaPicker({
                           <span className="flex items-center gap-1 text-on-surface-variant">
                             <Icon name="notes" size={14} />
                             <Text as="span" variant="label-small" className="uppercase">
-                              Text
+                              {typeLabel('text')}
                             </Text>
                           </span>
                           <Text as="span" variant="body-small" className="line-clamp-5">

@@ -20,6 +20,7 @@ import { useAuth } from '../app/auth';
 import { openClassicUi } from '../app/paths';
 import { formatBytes, isNewerVersion } from '../lib/format';
 import { setModeWithReveal } from '../theme/prefs';
+import { usePolling } from '../lib/usePolling';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.12.1';
 const GIT_COMMIT = import.meta.env.VITE_GIT_COMMIT || '';
@@ -27,19 +28,15 @@ const RELEASES_URL = 'https://github.com/shinchven/remix-studio/releases/latest'
 
 function useStorageUsage(enabled: boolean) {
   const [usage, setUsage] = useState<{ size: number; limit: number } | null>(null);
+  const load = () =>
+    fetchStorageAnalysis({ includeProjects: false })
+      .then((analysis) => setUsage({ size: analysis.totalSize, limit: analysis.limit }))
+      .catch((error) => console.error('Failed to load storage size:', error));
   useEffect(() => {
-    if (!enabled) {
-      setUsage(null);
-      return;
-    }
-    const load = () =>
-      fetchStorageAnalysis({ includeProjects: false })
-        .then((analysis) => setUsage({ size: analysis.totalSize, limit: analysis.limit }))
-        .catch((error) => console.error('Failed to load storage size:', error));
-    void load();
-    const interval = setInterval(() => void load(), 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    if (enabled) void load();
+    else setUsage(null);
   }, [enabled]);
+  usePolling(load, enabled ? 5 * 60 * 1000 : false);
   return usage;
 }
 

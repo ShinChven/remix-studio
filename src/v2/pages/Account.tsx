@@ -22,7 +22,7 @@ import {
 import { isPasskeySupported, serializeAttestationCredential, toPublicKeyCreationOptions } from '../../lib/passkey';
 import { disablePushNotifications, enablePushNotifications, getCurrentPushSubscription, getPushSupport } from '../../lib/push-notifications';
 import { storageTierForLimit } from '../../lib/storage-tiers';
-import { Avatar, Button, ButtonGroup, Dialog, Icon, LinearProgress, Select, Shape, Switch, Tab, Tabs, Text, TextField, useSnackbar, useTheme, type ThemeMode } from '../../m3';
+import { Avatar, Button, ButtonGroup, Dialog, Icon, LinearProgress, Select, Shape, Switch, Tab, Tabs, Text, TextField, useTheme, type ThemeMode } from '../../m3';
 import { AUTO_TAG_CONCURRENCY_LIMIT, providerAcceptsImageInput, type AutoTagSettings, type Provider, type SecuritySettings, type StorageAnalysis, type User } from '../../types';
 import { useAuth } from '../app/auth';
 import { MediaDevicesPanel } from '../components/media-share/MediaDevicesPanel';
@@ -33,6 +33,9 @@ import { NumberField } from '../ui/NumberField';
 import { ErrorState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { Row, RowList } from '../ui/Rows';
 import { StatTile, StatusPill, type Tone } from '../ui/Stat';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { formatBytes } from '../lib/format';
 
 type AccountTab = 'overview' | 'storage' | 'security' | 'preferences' | 'devices';
 const ACCOUNT_TABS: AccountTab[] = ['overview', 'storage', 'security', 'preferences', 'devices'];
@@ -59,14 +62,6 @@ const STORAGE_TONES: Record<string, { tone: Tone; color: string; icon: string }>
 };
 const storageTone = (id: string) => STORAGE_TONES[id] ?? STORAGE_TONES.other;
 
-function formatBytes(bytes: number) {
-  if (bytes === 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const value = bytes / 1024 ** index;
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
 function Notice({ tone, children, action }: { tone: 'success' | 'error' | 'warning' | 'info'; children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="v2-notice" data-tone={tone}>
@@ -81,7 +76,7 @@ function Notice({ tone, children, action }: { tone: 'success' | 'error' | 'warni
 
 function NotificationPreferences() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const support = useMemo(() => getPushSupport(), []);
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(support === 'supported');
@@ -119,19 +114,19 @@ function NotificationPreferences() {
         const result = await enablePushNotifications();
         if (result === 'denied') {
           setDenied(Notification.permission === 'denied');
-          snackbar.show(t('account.preferences.notifications.permissionDenied'));
+          toast.error(t('account.preferences.notifications.permissionDenied'));
           return;
         }
         setDenied(false);
         setEnabled(true);
-        snackbar.show(t('account.preferences.notifications.enabled'));
+        toast.success(t('account.preferences.notifications.enabled'));
       } else {
         await disablePushNotifications();
         setEnabled(false);
-        snackbar.show(t('account.preferences.notifications.disabled'));
+        toast.success(t('account.preferences.notifications.disabled'));
       }
     } catch (error) {
-      snackbar.show((error as Error)?.message || t('account.preferences.notifications.error'));
+      toast.error(errorText(error, t('account.preferences.notifications.error')));
     } finally {
       setBusy(false);
     }
@@ -141,9 +136,10 @@ function NotificationPreferences() {
     setBusy(true);
     try {
       const { delivered } = await sendTestPushNotification();
-      snackbar.show(delivered > 0 ? t('account.preferences.notifications.testSent') : t('account.preferences.notifications.testFailed'));
+      if (delivered > 0) toast.success(t('account.preferences.notifications.testSent'));
+      else toast.error(t('account.preferences.notifications.testFailed'));
     } catch (error) {
-      snackbar.show((error as Error)?.message || t('account.preferences.notifications.testFailed'));
+      toast.error(errorText(error, t('account.preferences.notifications.testFailed')));
     } finally {
       setBusy(false);
     }
@@ -183,7 +179,7 @@ const textModelsOf = (provider: Provider) => provider.models.filter((model) => m
 
 function AutoTagPreferences() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [saved, setSaved] = useState<AutoTagSettings | null>(null);
   const [draft, setDraft] = useState<AutoTagSettings | null>(null);
@@ -222,9 +218,9 @@ function AutoTagPreferences() {
       const next = await updateAutoTagSettings(draft);
       setSaved(next);
       setDraft(next);
-      snackbar.show(t('account.preferences.autoTag.saved'));
+      toast.success(t('account.preferences.autoTag.saved'));
     } catch (error) {
-      snackbar.show((error as Error)?.message || t('account.preferences.autoTag.saveFailed'));
+      toast.error(errorText(error, t('account.preferences.autoTag.saveFailed')));
     } finally {
       setSaving(false);
     }

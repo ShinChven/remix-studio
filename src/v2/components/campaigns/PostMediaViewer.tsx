@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Icon, IconButton, Portal, Text } from '../../../m3';
+import { useViewerKeys } from '../../lib/useViewerKeys';
 
 export interface ViewerMedia {
   sourceUrl?: string | null;
@@ -26,36 +27,26 @@ export function mediaPosterUrl(media: ViewerMedia) {
 
 /** Full-screen viewer for a post's images and videos, with ← → between them. */
 export function PostMediaViewer({ media, index, onIndexChange, onClose }: { media: ViewerMedia[]; index: number; onIndexChange: (index: number) => void; onClose: () => void }) {
+  const { t } = useTranslation();
   const count = media.length;
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
-      }
-      if (count < 2) return;
-      if (e.key === 'ArrowRight') onIndexChange((index + 1) % count);
-      if (e.key === 'ArrowLeft') onIndexChange((index - 1 + count) % count);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [count, index, onClose, onIndexChange]);
+  const step = (by: number) => count > 1 && onIndexChange((index + by + count) % count);
+  useViewerKeys(true, { onPrevious: () => step(-1), onNext: () => step(1), onClose });
   const item = media[index];
   const url = item ? mediaFullUrl(item) : '';
   return (
     <Portal>
       <div className="v2-media-viewer" role="dialog" aria-modal="true" onClick={onClose}>
-        <IconButton icon="close" variant="tonal" label="Close media viewer" className="v2-media-viewer__close" onClick={onClose} />
+        <IconButton icon="close" variant="tonal" label={t('v2.campaigns.viewer.close')} className="v2-media-viewer__close" onClick={onClose} />
         {count > 1 && (
           <>
-            <IconButton icon="chevron_left" variant="tonal" size="md" label="Previous media" className="v2-media-viewer__prev m3-mirror-rtl" onClick={(e) => { e.stopPropagation(); onIndexChange((index - 1 + count) % count); }} />
-            <IconButton icon="chevron_right" variant="tonal" size="md" label="Next media" className="v2-media-viewer__next m3-mirror-rtl" onClick={(e) => { e.stopPropagation(); onIndexChange((index + 1) % count); }} />
+            <IconButton icon="chevron_left" variant="tonal" size="md" label={t('v2.campaigns.viewer.previous')} className="v2-media-viewer__prev m3-mirror-rtl" onClick={(e) => { e.stopPropagation(); onIndexChange((index - 1 + count) % count); }} />
+            <IconButton icon="chevron_right" variant="tonal" size="md" label={t('v2.campaigns.viewer.next')} className="v2-media-viewer__next m3-mirror-rtl" onClick={(e) => { e.stopPropagation(); onIndexChange((index + 1) % count); }} />
           </>
         )}
         <div className="v2-media-viewer__stage">
           {!url ? (
             <Text variant="body-large" className="flex items-center gap-2">
-              <Icon name="broken_image" /> Media is not available
+              <Icon name="broken_image" /> {t('v2.campaigns.viewer.unavailable')}
             </Text>
           ) : item.type === 'video' ? (
             <video key={url} src={url} controls autoPlay playsInline onClick={(e) => e.stopPropagation()} />

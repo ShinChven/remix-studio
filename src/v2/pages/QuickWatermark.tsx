@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { fetchPostWatermarkSettings, fetchQuickWatermarkSource, renderQuickWatermark, type AlbumExportVersion, type PostWatermarkSettings, type QuickWatermarkSource, type QuickWatermarkTarget } from '../../api';
-import { Button, Icon, Text, useSnackbar } from '../../m3';
+import { Button, Icon, Text } from '../../m3';
 import { DEFAULT_WATERMARK_SETTINGS, WatermarkSettingsPanel } from '../components/WatermarkSettingsPanel';
 import { LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { Segmented } from '../ui/Toolbar';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
+import { formatBytes } from '../lib/format';
 
-const formatSize = (bytes?: number) => (!bytes || bytes <= 0 ? null : bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+const formatSize = (bytes?: number) => (!bytes || bytes <= 0 ? null : formatBytes(bytes));
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -26,7 +29,7 @@ function downloadBlob(blob: Blob, filename: string) {
 export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
   const { id, itemId } = useParams<{ id: string; itemId: string }>();
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const location = useLocation();
   const target = useMemo<QuickWatermarkTarget | null>(() => {
     if (!id || !itemId) return null;
@@ -68,7 +71,7 @@ export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
         setWatermark({ ...DEFAULT_WATERMARK_SETTINGS, ...settings, enabled: true });
       } catch (error) {
         if (!cancelled) {
-          snackbar.show((error as Error)?.message || 'Failed to load image');
+          toast.error(errorText(error, 'Failed to load image'));
           navigate(fallbackPath, { replace: true });
         }
       } finally {
@@ -90,9 +93,9 @@ export function QuickWatermark({ source }: { source: 'album' | 'library' }) {
     setCreating(true);
     try {
       downloadBlob(await renderQuickWatermark(target, watermark, version), image.downloadName);
-      snackbar.show('Watermarked image downloaded');
+      toast.success('Watermarked image downloaded');
     } catch (error) {
-      snackbar.show((error as Error)?.message || 'Failed to watermark image');
+      toast.error(errorText(error, 'Failed to watermark image'));
     } finally {
       setCreating(false);
     }

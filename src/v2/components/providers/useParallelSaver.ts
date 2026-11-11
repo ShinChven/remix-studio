@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateProvider } from '../../../api';
-import { useSnackbar } from '../../../m3';
 import type { Provider } from '../../../types';
+import { useToast } from '../../ui/useToast';
 
 /** Long enough to settle on a number before it is saved. */
 const SAVE_DELAY_MS = 700;
@@ -13,7 +13,7 @@ const SAVE_DELAY_MS = 700;
  */
 export function useParallelSaver(onFailed: () => void) {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const pending = useRef(new Map<string, { timer: number; save: () => void }>());
   const failed = useRef(onFailed);
   failed.current = onFailed;
@@ -36,15 +36,15 @@ export function useParallelSaver(onFailed: () => void) {
       const save = () => {
         saves.delete(provider.id);
         updateProvider(provider.id, { concurrency })
-          .then(() => snackbar.show(t('v2.providers.parallelSaved', { name: provider.name, count: concurrency })))
+          .then(() => toast.success(t('v2.providers.parallelSaved', { name: provider.name, count: concurrency })))
           .catch((err: Error) => {
-            snackbar.show(err.message || t('v2.providers.saveFailed'));
+            toast.error(err.message || t('v2.providers.saveFailed'));
             failed.current();
           });
       };
       saves.set(provider.id, { timer: window.setTimeout(save, SAVE_DELAY_MS), save });
     },
-    [snackbar, t],
+    [toast, t],
   );
 
   /** Whether a count for this provider is still waiting to be saved. */

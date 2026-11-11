@@ -1,0 +1,189 @@
+/*
+ * Lists. One pane, one bar, one search, one selection toolbar and one footer for every list in the
+ * app. Rows give up detail by measured fit (`data-fit`, see useFitLevel) instead of by breakpoint,
+ * because a label's width depends on the language.
+ */
+
+/* ---------- Pane ---------- */
+.v2-list-pane {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  container: pane / inline-size;
+  scroll-margin-top: var(--md-sys-measurement-space200);
+}
+.v2-list-pane[data-variant="surface"] {
+  min-height: 360px;
+  /* Clipped to its corners without becoming a scroller, so the bar can stick. */
+  overflow: clip;
+  border-radius: var(--md-sys-shape-corner-extra-large);
+  background: var(--md-sys-color-surface-container-lowest);
+}
+@media (max-width: 599.98px) {
+  .v2-list-pane[data-variant="surface"] { border-radius: var(--md-sys-shape-corner-large); }
+}
+.v2-list-pane__empty { margin: auto; padding-block: var(--md-sys-measurement-space600); }
+.v2-list-pane__notice { margin: 0 var(--md-sys-measurement-space150) var(--md-sys-measurement-space100); }
+.v2-list-pane__footer { margin-top: auto; padding: var(--md-sys-measurement-space150) var(--md-sys-measurement-space200) var(--md-sys-measurement-space200); }
+.v2-list-pane__grid { padding: var(--md-sys-measurement-space50) var(--md-sys-measurement-space150) var(--md-sys-measurement-space150); }
+.v2-list-pane[data-variant="flush"] > :is(.v2-list-pane__footer, .v2-list-pane__notice, .v2-list-pane__grid) { margin-inline: 0; padding-inline: 0; }
+/* Room for the floating toolbar, so it never covers the last row or the pager. */
+.v2-list-pane:has(> .v2-float-bar) { padding-bottom: var(--md-sys-measurement-space900); }
+
+/* ---------- Bar ---------- */
+.v2-list-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 88%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+.v2-list-pane[data-variant="surface"] > .v2-list-head {
+  border-radius: var(--md-sys-shape-corner-extra-large) var(--md-sys-shape-corner-extra-large) 0 0;
+}
+.v2-list-pane[data-variant="flush"] > .v2-list-head {
+  position: static;
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.v2-list-bar {
+  display: flex;
+  min-width: 0;
+  min-height: 60px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: var(--md-sys-measurement-space50);
+  /* Symmetric around the 42px section switcher, so it sits at the same height on one row or two. */
+  padding: 9px var(--md-sys-measurement-space150);
+}
+.v2-list-pane[data-variant="flush"] .v2-list-bar { padding-inline: 0; }
+/* Everything holds its width so the row overflows, which is what the fit level measures. */
+.v2-list-bar > * { flex-shrink: 0; }
+.v2-list-bar__spacer { flex: 1 1 0; min-width: 0; }
+.v2-list-bar__summary {
+  padding-inline: var(--md-sys-measurement-space50) var(--md-sys-measurement-space100);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.v2-list-bar__tools { display: flex; align-items: center; gap: var(--md-sys-measurement-space25); }
+.v2-list-bar__mobile-count {
+  display: none;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.v2-list-below {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--md-sys-measurement-space75);
+  padding: 0 var(--md-sys-measurement-space150) var(--md-sys-measurement-space100);
+}
+.v2-list-pane[data-variant="flush"] .v2-list-below { padding-inline: 0; }
+
+.v2-list-title { display: flex; min-width: 0; align-items: center; gap: var(--md-sys-measurement-space100); padding-inline-start: var(--md-sys-measurement-space50); }
+.v2-list-title__icon { flex-shrink: 0; color: var(--md-sys-color-primary); }
+.v2-list-title__text { margin: 0; white-space: nowrap; }
+.v2-list-title__count { flex-shrink: 0; }
+
+/* Search: a compact pill in the bar. */
+.v2-list-search-wrap { display: contents; }
+.v2-list-search-wrap .v2-list-search__toggle { display: none; }
+.v2-list-search.m3-field,
+.v2-list-search { flex: 0 0 auto; width: 200px; min-width: 0; margin-inline-end: var(--md-sys-measurement-space50); }
+/* Outside a bar (a page header, a dialog) it takes the room it is given. */
+:not(.v2-list-bar__tools) > .v2-list-search-wrap > .v2-list-search { flex: 1 1 200px; width: auto; max-width: 320px; }
+
+/* What the bar gives up, in order, as it runs out of room. */
+.v2-list-bar:not([data-fit="0"]) .v2-list-bar__summary { display: none; }
+.v2-list-bar:not([data-fit="0"], [data-fit="1"]) :is(.v2-section-nav__count, .v2-list-title__count) { display: none; }
+/* Search folds into an icon, and opens on a row of its own only while it is in use. */
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]) .v2-list-search-wrap:not([data-expanded]) .v2-list-search { display: none; }
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]) .v2-list-search-wrap:not([data-expanded]) .v2-list-search__toggle { display: inline-flex; }
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]):has(.v2-list-search-wrap[data-expanded]) { flex-wrap: wrap; row-gap: var(--md-sys-measurement-space100); }
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]):has(.v2-list-search-wrap[data-expanded]) .v2-list-bar__tools { display: contents; }
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]) .v2-list-search-wrap[data-expanded] { order: 10; display: flex; flex: 1 1 100%; }
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]) .v2-list-search-wrap[data-expanded] .v2-list-search { flex: 1 1 auto; width: 100%; max-width: none; margin: 0; }
+.v2-list-bar:is([data-fit="3"], [data-fit="4"], [data-fit="5"]) .v2-list-search-wrap[data-expanded] .v2-list-search__toggle { display: none; }
+/* Section labels give way to their icons. */
+.v2-list-bar:is([data-fit="4"], [data-fit="5"]) .v2-section-nav__icon { display: inline-flex; }
+.v2-list-bar:is([data-fit="4"], [data-fit="5"]) .v2-section-nav__label { display: none; }
+.v2-list-bar:is([data-fit="4"], [data-fit="5"]) .v2-section-nav__item { padding: 0 10px; }
+/* Last: the tools take a second row, and a long title is cut short. */
+.v2-list-bar[data-fit="5"] { flex-wrap: wrap; row-gap: var(--md-sys-measurement-space100); }
+.v2-list-bar[data-fit="5"] > * { flex-shrink: 1; }
+.v2-list-bar[data-fit="5"] .v2-list-bar__tools { display: contents; }
+.v2-list-bar[data-fit="5"] .v2-list-title { flex: 1 1 0; }
+.v2-list-bar[data-fit="5"] .v2-list-title__text { overflow: hidden; text-overflow: ellipsis; }
+.v2-list-bar[data-fit="5"] .v2-section-nav { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+
+/* ---------- Floating toolbar ---------- */
+/* Takes no room of its own: it rides the foot of the list without moving a row. */
+.v2-float-bar {
+  position: sticky;
+  bottom: var(--md-sys-measurement-space200);
+  z-index: 5;
+  display: flex;
+  height: 0;
+  align-items: flex-end;
+  justify-content: center;
+  margin-top: auto;
+  padding-inline: var(--md-sys-measurement-space150);
+  pointer-events: none;
+}
+/* As wide as the list, so its overflow tells whether the toolbar fits; clicks pass through beside the toolbar. */
+.v2-float-bar__fit { display: flex; min-width: 0; flex: 1 1 auto; justify-content: safe center; pointer-events: none; }
+.v2-float-bar__fit > .m3-toolbar {
+  pointer-events: auto;
+  flex-shrink: 0;
+  max-width: none;
+  animation: v2-float-bar-in var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
+}
+/* Out of things to give up: the actions scroll inside the toolbar rather than spill past the list. */
+.v2-float-bar__fit[data-fit="3"] > .m3-toolbar { flex-shrink: 1; min-width: 0; max-width: 100%; }
+.v2-float-bar__fit[data-fit="3"] .v2-float-bar__actions { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.v2-float-bar__count { padding-inline: var(--md-sys-measurement-space50) var(--md-sys-measurement-space100); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.v2-float-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--md-sys-measurement-space50);
+  padding-inline-start: var(--md-sys-measurement-space100);
+  border-inline-start: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+}
+.v2-float-bar__actions > * { flex-shrink: 0; }
+.v2-float-bar__progress { width: 120px; flex-shrink: 1; }
+.v2-float-bar .m3-button[data-variant="text"].v2-button-danger,
+.v2-float-bar .m3-icon-button.v2-icon-danger { --_label: var(--md-sys-color-error); --_icon: var(--md-sys-color-error); }
+/* Moves without scaling: a scaled toolbar would measure narrower than it is while it enters. */
+@keyframes v2-float-bar-in { from { opacity: 0; translate: 0 16px; } }
+@media (prefers-reduced-motion: reduce) { .v2-float-bar__fit > .m3-toolbar { animation: none; } }
+/* A toolbar that belongs under a form rather than over a list. */
+
+/* ---------- Footer ---------- */
+.v2-paged-footer {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--md-sys-measurement-space150);
+  padding-top: var(--md-sys-measurement-space150);
+}
+.v2-paged-footer > * { flex-shrink: 0; }
+.v2-paged-footer__spacer { flex: 1 1 0; min-width: 0; }
+.v2-paged-footer :is(.v2-paged-footer__range, .v2-paged-footer__of) {
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.v2-paged-footer .v2-pagination { flex-wrap: nowrap; }
+.v2-paged-footer:is([data-fit="1"], [data-fit="2"], [data-fit="3"]) .v2-paged-footer__of { display: none; }
+.v2-paged-footer:is([data-fit="2"], [data-fit="3"]) :is(.v2-paged-footer__range, .v2-paged-footer__spacer) { display: none; }
+.v2-paged-footer:is([data-fit="2"], [data-fit="3"]) { justify-content: center; }
+.v2-paged-footer[data-fit="3"] { flex-wrap: wrap; row-gap: var(--md-sys-measurement-space100); }
+.v2-page-size { min-width: 96px; }
+.v2-page-size .m3-field { min-width: 96px; }

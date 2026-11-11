@@ -10,7 +10,7 @@ import { shortDate } from '../project/JobRow';
 
 export interface LibraryAudioListProps {
   items: LibraryItem[];
-  selectedIds: Set<string>;
+  selectedIds: ReadonlySet<string>;
   label: (item: LibraryItem, index: number) => string;
   menuItems: (item: LibraryItem) => ActionMenuItem[];
   onToggle: (item: LibraryItem, index: number, shift: boolean) => void;

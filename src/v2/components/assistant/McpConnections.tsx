@@ -7,10 +7,12 @@ import { CopyField } from '../../ui/CopyField';
 import { EmptyState, Section } from '../../ui/Page';
 import { Row, RowList } from '../../ui/Rows';
 import { useToast } from '../../ui/useToast';
+import { useCopy } from '../../lib/useCopy';
 
 /** Personal access tokens, OAuth clients and setup snippets for connecting AI clients to the Remix Studio MCP server. */
 export function McpConnections() {
   const toast = useToast();
+  const copyToClipboard = useCopy();
   const { t } = useTranslation();
 
   const formatDate = useCallback((ts: number) => {
@@ -164,10 +166,11 @@ export function McpConnections() {
 
   const handleCopy = () => {
     if (!newToken) return;
-    navigator.clipboard.writeText(newToken);
-    setCopied(true);
-    toast.success(t('mcpConnections.toasts.tokenCopied'));
-    setTimeout(() => setCopied(false), 2000);
+    void copyToClipboard(newToken, t('mcpConnections.toasts.tokenCopied')).then((done) => {
+      if (!done) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   };
 
   const handleCloseNewToken = () => {
@@ -208,14 +211,10 @@ export function McpConnections() {
   };
 
   const handleCopyClientField = async (value: string, field: 'id' | 'secret') => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedClientField(field);
-      toast.success(t(field === 'id' ? 'mcpConnections.toasts.clientIdCopied' : 'mcpConnections.toasts.clientSecretCopied'));
-      setTimeout(() => setCopiedClientField((current) => (current === field ? null : current)), 2000);
-    } catch {
-      toast.error(t('mcpConnections.toasts.copyFailed', { label: field === 'id' ? 'client id' : 'client secret' }));
-    }
+    const done = await copyToClipboard(value, t(field === 'id' ? 'mcpConnections.toasts.clientIdCopied' : 'mcpConnections.toasts.clientSecretCopied'), t('mcpConnections.toasts.copyFailed', { label: field === 'id' ? 'client id' : 'client secret' }));
+    if (!done) return;
+    setCopiedClientField(field);
+    setTimeout(() => setCopiedClientField((current) => (current === field ? null : current)), 2000);
   };
 
   const handleCloseNewClient = () => {
@@ -258,14 +257,7 @@ export function McpConnections() {
     }
   };
 
-  const copyText = async (value: string, label: string) => {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast.success(t('mcpConnections.toasts.copied', { label }));
-    } catch {
-      toast.error(t('mcpConnections.toasts.copyFailed', { label: label.toLowerCase() }));
-    }
-  };
+  const copyText = (value: string, label: string) => copyToClipboard(value, t('mcpConnections.toasts.copied', { label }), t('mcpConnections.toasts.copyFailed', { label: label.toLowerCase() }));
 
   const snippet = (label: string, value: string, copyLabel: string, hint?: string) => (
     <div className="flex flex-col gap-2">

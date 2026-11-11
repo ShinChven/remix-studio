@@ -6,17 +6,10 @@ import { Button, ChipSet, Dialog, FilterChip, Icon, IconButton, InputChip, Sugge
 import type { AlbumItem, AlbumTagCount } from '../../../types';
 import { ChoiceTiles } from '../../ui/ChoiceTiles';
 import { Segmented } from '../../ui/Toolbar';
+import { useViewerKeys } from '../../lib/useViewerKeys';
 import { useToast } from '../../ui/useToast';
 import { CivitaiParamsTable, ParamTable, type OpenLightbox } from './JobDetails';
-
-async function copyWithToast(value: string, ok: string, fail: string, toast: ReturnType<typeof useToast>) {
-  try {
-    await navigator.clipboard.writeText(value);
-    toast.success(ok);
-  } catch {
-    toast.error(fail);
-  }
-}
+import { useCopy } from '../../lib/useCopy';
 
 interface AlbumDetailDialogProps {
   projectId: string;
@@ -30,7 +23,7 @@ interface AlbumDetailDialogProps {
 
 export function AlbumDetailDialog({ projectId, item, mediaType, rows, selectedTags, onTagClick, onClose }: AlbumDetailDialogProps) {
   const { t } = useTranslation();
-  const toast = useToast();
+  const copyText = useCopy();
   return (
     <Dialog
       open={item !== null}
@@ -62,7 +55,7 @@ export function AlbumDetailDialog({ projectId, item, mediaType, rows, selectedTa
               <div className="v2-album-detail__section-heading">
                 <Text as="h3" variant="title-small">{t('projectViewer.common.prompt')}</Text>
                 {item.prompt && (
-                  <Button variant="tonal" size="sm" icon="content_copy" onClick={() => void copyWithToast(item.prompt, t('projectViewer.albumPrompt.promptCopied'), t('projectViewer.albumPrompt.copyFailed'), toast)}>
+                  <Button variant="tonal" size="sm" icon="content_copy" onClick={() => void copyText(item.prompt, t('projectViewer.albumPrompt.promptCopied'), t('projectViewer.albumPrompt.copyFailed'))}>
                     {t('projectViewer.common.copy')}
                   </Button>
                 )}
@@ -281,8 +274,8 @@ export function ExportPackageDialog({ open, defaultValue, itemCount, onClose, on
 /** Text results side by side: prompt, references and generated text per column. */
 export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: { items: AlbumItem[]; setLightboxData: OpenLightbox; onClose: () => void }) {
   const { t } = useTranslation();
-  const toast = useToast();
-  const copy = (value: string, label: string) => copyWithToast(value, t('projectViewer.compare.copied', { label }), t('projectViewer.compare.copyFailed', { label: label.toLowerCase() }), toast);
+  const copyText = useCopy();
+  const copy = (value: string, label: string) => copyText(value, t('projectViewer.compare.copied', { label }), t('projectViewer.compare.copyFailed', { label: label.toLowerCase() }));
   return (
     <Dialog open={items.length > 0} onClose={onClose} fullScreen headline={t('projectViewer.compare.title')} className="v2-compare-dialog">
       <Text variant="label-medium" className="mb-3 uppercase tracking-widest text-on-surface-variant">
@@ -347,7 +340,7 @@ export function TextAlbumCompareDialog({ items, setLightboxData, onClose }: { it
 /** One text result at a time, with ← → to step through the page. */
 export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onClose }: { items: AlbumItem[]; startIndex: number | null; setLightboxData: OpenLightbox; onClose: () => void }) {
   const { t } = useTranslation();
-  const toast = useToast();
+  const copyText = useCopy();
   const [index, setIndex] = useState(startIndex ?? 0);
   const open = startIndex !== null && items.length > 0;
 
@@ -358,21 +351,12 @@ export function TextAlbumDetailDialog({ items, startIndex, setLightboxData, onCl
   const prev = () => setIndex((i) => (i > 0 ? i - 1 : items.length - 1));
   const next = () => setIndex((i) => (i < items.length - 1 ? i + 1 : 0));
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') prev();
-      else if (e.key === 'ArrowRight') next();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, items.length]);
+  useViewerKeys(open, { onPrevious: prev, onNext: next });
 
   const item = open ? items[Math.min(index, items.length - 1)] : null;
   const multiple = items.length > 1;
   const refs = item?.imageContexts || [];
-  const copy = (value: string, label: string) => copyWithToast(value, t('projectViewer.textDetail.copied', { label }), t('projectViewer.textDetail.copyFailed', { label: label.toLowerCase() }), toast);
+  const copy = (value: string, label: string) => copyText(value, t('projectViewer.textDetail.copied', { label }), t('projectViewer.textDetail.copyFailed', { label: label.toLowerCase() }));
 
   return (
     <Dialog

@@ -2,17 +2,19 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createLibrary, createLibraryItem, createProject, fetchLibraries, fetchProjects, fetchProjectWorkflow, saveImage, updateProject } from '../../api';
 import { consumePwaShareHandoff } from '../../lib/pwa-share';
-import { Button, Dialog, Icon, Select, Text, TextField, useSnackbar } from '../../m3';
+import { Button, Dialog, Icon, Select, Text, TextField } from '../../m3';
 import type { Library, Project } from '../../types';
 import { EmptyState, LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { Segmented } from '../ui/Toolbar';
+import { useToast } from '../ui/useToast';
+import { errorText } from '../lib/errors';
 
 type ImportData = { type: 'image' | 'text'; data: string; name?: string };
 type Destination = 'library' | 'project';
 
 /** Creates the destination on the spot: a library or a project of the imported item's type. */
 function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kind: Destination; open: boolean; type: 'image' | 'text'; onClose: () => void; onCreated: (id: string, name: string) => void }) {
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [prefix, setPrefix] = useState('');
@@ -26,12 +28,12 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
       if (kind === 'library') {
         const id = crypto.randomUUID();
         await createLibrary({ id, name: name.trim(), description: description.trim() || undefined, type });
-        snackbar.show('Library created successfully');
+        toast.success('Library created successfully');
         onCreated(id, name.trim());
       } else {
         const id = crypto.randomUUID();
         await createProject({ id, name: name.trim(), description: description.trim() || undefined, type, prefix: prefix.trim(), createdAt: Date.now(), workflow: [], jobs: [], album: [], shuffle: false } as Project);
-        snackbar.show('Project created successfully');
+        toast.success('Project created successfully');
         onCreated(id, name.trim());
       }
       onClose();
@@ -39,7 +41,7 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
       setDescription('');
       setPrefix('');
     } catch {
-      snackbar.show(kind === 'library' ? 'Failed to create library' : 'Failed to create project');
+      toast.error(kind === 'library' ? 'Failed to create library' : 'Failed to create project');
     } finally {
       setBusy(false);
     }
@@ -76,7 +78,7 @@ function CreateDestinationDialog({ kind, open, type, onClose, onCreated }: { kin
 /** Saves an image or text sent from the Chrome extension or the share sheet into a library or project. */
 export function ExtensionImport() {
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const [searchParams] = useSearchParams();
   const destinationParam = searchParams.get('destination');
   const requested: Destination | null = destinationParam === 'project' || destinationParam === 'library' ? destinationParam : null;
@@ -147,7 +149,7 @@ export function ExtensionImport() {
         setSelectedId(saved && items.find((x) => x.id === saved) ? saved : items[0]?.id ?? '');
       } catch (e) {
         console.error('Failed to load destinations', e);
-        snackbar.show('Failed to load destinations');
+        toast.error('Failed to load destinations');
       } finally {
         setLoadingDestinations(false);
       }
@@ -172,17 +174,17 @@ export function ExtensionImport() {
       }
       if (destination === 'library') {
         await createLibraryItem(selectedId, { id: crypto.randomUUID(), content: value, thumbnailUrl, optimizedUrl, size, title: itemName.trim() || `Imported ${importData.type}` });
-        snackbar.show('Saved to library successfully!');
+        toast.success('Saved to library successfully!');
         navigate(`/library/${selectedId}`);
       } else {
         const workflow = await fetchProjectWorkflow(selectedId);
         await updateProject(selectedId, { workflow: [...workflow, { id: crypto.randomUUID(), type: importData.type, value, thumbnailUrl, optimizedUrl, size, order: workflow.length }] });
-        snackbar.show('Saved to project successfully!');
+        toast.success('Saved to project successfully!');
         navigate(`/project/${selectedId}`);
       }
     } catch (e) {
       console.error(e);
-      snackbar.show((e as Error).message || 'Failed to save imported item');
+      toast.error(errorText(e, 'Failed to save imported item'));
     } finally {
       setSaving(false);
     }

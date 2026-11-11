@@ -20,3 +20,7 @@ export function useViewPref<T extends string>(key: string, fallback: T, allowed:
   };
   return [value, update];
 }
+
+/** How large the tiles of a media grid are drawn. */
+export type TileSize = 's' | 'm' | 'l';
+export const TILE_SIZES: readonly TileSize[] = ['s', 'm', 'l'];

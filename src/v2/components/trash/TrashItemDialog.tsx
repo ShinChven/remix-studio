@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { useViewerKeys } from '../../lib/useViewerKeys';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Button, Dialog, Icon, IconButton, Shape, Text } from '../../../m3';
@@ -29,19 +30,7 @@ export function TrashItemDialog({ item, items, onNavigate, onClose, onRestore, o
   const next = index >= 0 && index < items.length - 1 ? items[index + 1] : null;
 
   // Arrow keys page through the bin, unless a player or field has them.
-  useEffect(() => {
-    if (!item) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.altKey || e.metaKey || e.ctrlKey) return;
-      if (e.target instanceof Element && e.target.closest('input, textarea, video, audio, [contenteditable="true"]')) return;
-      const target = e.key === 'ArrowLeft' ? previous : e.key === 'ArrowRight' ? next : null;
-      if (!target) return;
-      e.preventDefault();
-      onNavigate(target);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [item, previous, next, onNavigate]);
+  useViewerKeys(item !== null, { onPrevious: previous ? () => onNavigate(previous) : undefined, onNext: next ? () => onNavigate(next) : undefined });
 
   const kind = item ? trashKind(item) : 'image';
   const meta = kindMeta(kind);

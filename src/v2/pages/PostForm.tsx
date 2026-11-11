@@ -1,3 +1,5 @@
+import { Trans, useTranslation } from 'react-i18next';
+import { errorText } from '../lib/errors';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { addPostMedia, createPost, fetchCampaign, fetchPost, removePostMedia, reorderPostMedia, saveImage, saveVideo, updatePost } from '../../api';
@@ -7,6 +9,7 @@ import { toDatetimeLocal } from '../lib/posts';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { LoadingState, Page, PageHeader, Section } from '../ui/Page';
 import { useToast } from '../ui/useToast';
+import { readFileAsDataUrl } from '../lib/files';
 
 interface SocialAccount {
   id: string;
@@ -50,18 +53,11 @@ function getFileMediaType(file: File): 'image' | 'video' | 'gif' {
   return 'image';
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target?.result as string);
-    reader.onerror = () => reject(reader.error || new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-}
 
 
 /** Creates or edits a campaign post: text, up to four images or videos in order, and when it goes out. */
 export function PostForm() {
+  const { t } = useTranslation();
   const toast = useToast();
   const { campaignId, postId } = useParams<{ campaignId: string; postId: string }>();
   const navigate = useNavigate();
@@ -96,7 +92,7 @@ export function PostForm() {
         setExistingMedia(post.media || []);
       }
     } catch (error) {
-      toast.error((error as Error)?.message || 'Error loading post');
+      toast.error(errorText(error, t('v2.campaigns.postForm.loadFailed')));
       navigate(`/campaigns/${campaignId}`);
     } finally {
       setIsLoading(false);
@@ -119,11 +115,11 @@ export function PostForm() {
     if (files.length === 0) return;
     const supported = files.filter((file) => file.type.startsWith('image/') || file.type.startsWith('video/'));
     if (supported.length !== files.length) {
-      toast.error('Only images, GIFs, and videos are supported');
+      toast.error(t('v2.campaigns.postForm.unsupported'));
       return;
     }
     if (totalMediaCount + supported.length > 4) {
-      toast.error('Maximum 4 media items allowed per post');
+      toast.error(t('v2.campaigns.postForm.tooMany'));
       return;
     }
     setNewFiles((prev) => [...prev, ...supported]);
@@ -199,7 +195,7 @@ export function PostForm() {
         setExistingMedia([...(res.media as PostMedia[]), ...removed]);
         setNewFiles(nextNewFiles);
       } catch (err) {
-        toast.error((err as Error)?.message || 'Failed to reorder media');
+        toast.error(errorText(err, t('v2.campaigns.postForm.reorderFailed')));
         await loadData();
       } finally {
         setIsReorderingMedia(false);
@@ -225,11 +221,11 @@ export function PostForm() {
   const handleSave = async () => {
     if (!campaignId) return;
     if (!content.trim() && totalMediaCount === 0) {
-      toast.error('Post must have text or media');
+      toast.error(t('v2.campaigns.postForm.needContent'));
       return;
     }
     if (scheduledAt && new Date(scheduledAt) < new Date(Date.now() + 5 * 60_000)) {
-      toast.error('Scheduled time must be at least 5 minutes in the future.');
+      toast.error(t('v2.campaigns.postForm.tooSoon'));
       return;
     }
 
@@ -253,10 +249,10 @@ export function PostForm() {
         await addPostMedia(post.id, { sourceUrl: uploaded.key, type: mediaType });
       }
 
-      toast.success(isEditing ? 'Post updated successfully' : 'Post created successfully');
+      toast.success(isEditing ? t('v2.campaigns.postForm.updated') : t('v2.campaigns.postForm.created'));
       navigate(`/campaigns/${campaignId}`);
     } catch (error) {
-      toast.error((error as Error)?.message || 'Failed to save post');
+      toast.error(errorText(error, t('v2.campaigns.postForm.saveFailed')));
     } finally {
       setIsSaving(false);
     }
@@ -277,14 +273,14 @@ export function PostForm() {
     <>
       <span className="v2-post-tile__top">
         <span className="v2-post-tile__pos">{index + 1}</span>
-        <IconButton icon="delete" size="xs" variant="filled" className="v2-button-danger" label="Remove media" onClick={onRemove} />
+        <IconButton icon="delete" size="xs" variant="filled" className="v2-button-danger" label={t('v2.campaigns.postForm.removeMedia')} onClick={onRemove} />
       </span>
       <span className="v2-post-tile__bottom">
         {label ? <span className="v2-info-chip" data-tone={isNew ? 'primary' : undefined}>{label}</span> : <span />}
         {totalMediaCount > 1 && (
           <span className="flex">
-            <IconButton icon="chevron_left" size="xs" variant="tonal" label="Move earlier" disabled={isReorderingMedia || index === 0} onClick={() => void moveMedia(index, index - 1)} />
-            <IconButton icon="chevron_right" size="xs" variant="tonal" label="Move later" disabled={isReorderingMedia || index >= totalMediaCount - 1} onClick={() => void moveMedia(index, index + 1)} />
+            <IconButton icon="chevron_left" size="xs" variant="tonal" label={t('v2.campaigns.postForm.moveEarlier')} disabled={isReorderingMedia || index === 0} onClick={() => void moveMedia(index, index - 1)} />
+            <IconButton icon="chevron_right" size="xs" variant="tonal" label={t('v2.campaigns.postForm.moveLater')} disabled={isReorderingMedia || index >= totalMediaCount - 1} onClick={() => void moveMedia(index, index + 1)} />
           </span>
         )}
       </span>
@@ -293,22 +289,22 @@ export function PostForm() {
 
   return (
     <Page density="compact">
-      <PageHeader title={isEditing ? 'Edit Post' : 'New Post'} description={campaign?.name ? <>In <strong className="text-on-surface">{campaign.name}</strong></> : undefined} backLink={{ label: 'Back', onClick: () => navigate(-1) }} />
+      <PageHeader title={isEditing ? t('v2.campaigns.batch.editPost') : t('v2.campaigns.postForm.newPost')} description={campaign?.name ? <Trans i18nKey="v2.campaigns.postForm.inCampaign" values={{ name: campaign.name }} components={{ b: <strong className="text-on-surface" /> }} /> : undefined} backLink={{ label: t('v2.campaigns.postForm.back'), onClick: () => navigate(-1) }} />
       <div className="v2-split v2-split--end">
-        <Section variant="card" title="Content">
+        <Section variant="card" title={t('v2.campaigns.postForm.content')}>
           <div className="flex flex-col gap-4">
             <TextField
               variant="outlined"
-              label="Post Content"
-              placeholder="Type your post content here..."
+              label={t('v2.campaigns.postForm.postContent')}
+              placeholder={t('v2.campaigns.postForm.contentPlaceholder')}
               multiline
               rows={8}
               maxRows={20}
               value={content}
               onValueChange={setContent}
-              supportingText={`${content.length} ${content.length === 1 ? 'character' : 'characters'}`}
+              supportingText={t('v2.campaigns.dialogs.characters', { count: content.length })}
               error={overX}
-              errorText={`${content.length} characters · over X's 280 limit`}
+              errorText={t('v2.campaigns.postForm.overX', { count: content.length })}
               fullWidth
             />
             <div
@@ -324,17 +320,17 @@ export function PostForm() {
             >
               <div className="flex items-center justify-between gap-2">
                 <Text variant="label-large" emphasized>
-                  Media
+                  {t('v2.campaigns.media')}
                 </Text>
                 <span className="flex items-center gap-2">
                   {isReorderingMedia && (
                     <Text as="span" variant="label-small" className="flex items-center gap-1 text-on-surface-variant">
-                      <LoadingIndicator size={18} aria-hidden /> Saving order…
+                      <LoadingIndicator size={18} aria-hidden /> {t('v2.campaigns.postForm.savingOrder')}
                     </Text>
                   )}
                   <span className="v2-info-chip">{totalMediaCount}/4</span>
                   <Button variant="tonal" size="xs" icon="add_photo_alternate" onClick={() => fileInputRef.current?.click()}>
-                    Add Files
+                    {t('v2.campaigns.postForm.addFiles')}
                   </Button>
                   <input ref={fileInputRef} type="file" multiple accept={POST_MEDIA_ACCEPT} hidden onChange={handleFileChange} />
                 </span>
@@ -342,7 +338,7 @@ export function PostForm() {
               {totalMediaCount > 0 ? (
                 <>
                   <Text variant="body-small" className="text-on-surface-variant">
-                    Drag files onto this area or use Add Files. Drag a tile, or use the arrows, to reorder.
+                    {t('v2.campaigns.postForm.reorderHint')}
                   </Text>
                   <div className="v2-post-tiles">
                     {visibleExistingMedia.map((media, index) => {
@@ -359,7 +355,7 @@ export function PostForm() {
                       return (
                         <div key={`${file.name}-${i}`} className="v2-post-tile" data-new="" title={file.name} {...tileProps(index)}>
                           <NewFilePreview file={file} />
-                          {tileOverlay(index, 'New', () => setNewFiles((prev) => prev.filter((_, j) => j !== i)), true)}
+                          {tileOverlay(index, t('v2.campaigns.postForm.new'), () => setNewFiles((prev) => prev.filter((_, j) => j !== i)), true)}
                         </div>
                       );
                     })}
@@ -368,9 +364,9 @@ export function PostForm() {
               ) : (
                 <button type="button" className="v2-post-media__empty m3-focus-ring" onClick={() => fileInputRef.current?.click()}>
                   <Icon name={isDragging ? 'upload' : 'add_photo_alternate'} size={36} />
-                  <Text variant="body-medium">{isDragging ? 'Drop files to upload' : 'No media added yet. Drag and drop or click Add Files.'}</Text>
+                  <Text variant="body-medium">{isDragging ? t('v2.campaigns.postForm.dropToUpload') : t('v2.campaigns.postForm.noMedia')}</Text>
                   <Text variant="body-small" className="text-on-surface-variant">
-                    Add images, GIFs, or video. Limits vary by platform.
+                    {t('v2.campaigns.postForm.mediaHint')}
                   </Text>
                 </button>
               )}
@@ -378,13 +374,13 @@ export function PostForm() {
           </div>
         </Section>
         <div className="v2-split__rail flex flex-col gap-4">
-          <Section variant="card" icon="event" title="Schedule" description={scheduledAt ? 'Publishes automatically at this time.' : 'No time set: saved as a draft.'}>
+          <Section variant="card" icon="event" title={t('v2.campaigns.schedule')} description={scheduledAt ? t('v2.campaigns.postForm.publishesAt') : t('v2.campaigns.postForm.savedAsDraft')}>
             <div className="flex items-start gap-2">
-              <TextField variant="outlined" type="datetime-local" aria-label="Scheduled time" value={scheduledAt} onValueChange={setScheduledAt} className="min-w-0 flex-1" fullWidth />
-              {scheduledAt && <IconButton icon="close" label="Clear schedule" tooltip onClick={() => setScheduledAt('')} />}
+              <TextField variant="outlined" type="datetime-local" aria-label={t('v2.campaigns.post.scheduleTime')} value={scheduledAt} onValueChange={setScheduledAt} className="min-w-0 flex-1" fullWidth />
+              {scheduledAt && <IconButton icon="close" label={t('v2.campaigns.postForm.clearSchedule')} tooltip onClick={() => setScheduledAt('')} />}
             </div>
           </Section>
-          <Section variant="card" icon="share" title="Channels" description={targetAccounts.length > 0 ? 'Goes to every channel of this campaign.' : undefined}>
+          <Section variant="card" icon="share" title={t('channels')} description={targetAccounts.length > 0 ? t('v2.campaigns.postForm.everyChannel') : undefined}>
             {targetAccounts.length > 0 ? (
               <span className="flex flex-wrap gap-2">
                 {targetAccounts.map((account) => (
@@ -397,20 +393,20 @@ export function PostForm() {
             ) : (
               <div className="flex flex-col items-start gap-2">
                 <Text variant="body-small" className="text-on-surface-variant">
-                  This campaign has no channels, so the post cannot be sent yet.
+                  {t('v2.campaigns.postForm.noChannels')}
                 </Text>
                 <Button variant="tonal" size="xs" icon="add_link" href={`/campaigns/edit/${campaignId}`}>
-                  Connect a channel
+                  {t('v2.campaigns.connectChannel')}
                 </Button>
               </div>
             )}
           </Section>
           <div className="flex flex-col gap-2">
             <Button variant="filled" size="md" icon={scheduledAt ? 'schedule_send' : 'save'} loading={isSaving} fullWidth emphasized onClick={() => void handleSave()}>
-              {scheduledAt ? (isEditing ? 'Save & Schedule' : 'Schedule Post') : isEditing ? 'Save Draft' : 'Create Draft'}
+              {scheduledAt ? (isEditing ? t('v2.campaigns.postForm.saveAndSchedule') : t('v2.campaigns.postForm.schedulePost')) : isEditing ? t('v2.campaigns.postForm.saveDraft') : t('v2.campaigns.postForm.createDraft')}
             </Button>
             <Button variant="text" fullWidth disabled={isSaving} onClick={() => navigate(`/campaigns/${campaignId}`)}>
-              Cancel
+              {t('confirmModal.cancel', 'Cancel')}
             </Button>
           </div>
         </div>
@@ -418,9 +414,9 @@ export function PostForm() {
       <ConfirmDialog
         open={mediaToRemove !== null}
         tone="danger"
-        title="Remove Media"
-        message="Are you sure you want to remove this existing media file? It will be removed when you save the post."
-        confirmLabel="Remove"
+        title={t('v2.campaigns.postForm.removeTitle')}
+        message={t('v2.campaigns.postForm.removeMessage')}
+        confirmLabel={t('v2.campaigns.postForm.remove')}
         onClose={() => setMediaToRemove(null)}
         onConfirm={() => {
           if (mediaToRemove) setRemovedMediaIds((prev) => new Set(prev).add(mediaToRemove));

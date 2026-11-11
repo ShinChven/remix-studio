@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import type { TileSize } from '../../lib/viewPrefs';
 import { useTranslation } from 'react-i18next';
 import { imageDisplayUrl } from '../../../api';
 import { Checkbox, Icon, IconButton, useMediaQuery } from '../../../m3';
@@ -10,12 +11,11 @@ import { TagLine } from '../../ui/ResultFilters';
 import { shortDate } from '../project/JobRow';
 
 export type MediaFit = 'cover' | 'contain';
-export type TileSize = 's' | 'm' | 'l';
 
 export interface LibraryMediaGridProps {
   type: 'image' | 'video';
   items: LibraryItem[];
-  selectedIds: Set<string>;
+  selectedIds: ReadonlySet<string>;
   fit: MediaFit;
   size: TileSize;
   /** Number of the first item on this page, for the index pills. */

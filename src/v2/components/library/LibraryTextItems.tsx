@@ -11,7 +11,7 @@ export type TextView = 'cards' | 'list';
 export interface LibraryTextItemsProps {
   view: TextView;
   items: LibraryItem[];
-  selectedIds: Set<string>;
+  selectedIds: ReadonlySet<string>;
   /** Number of the first item on this page, for the list's index column. */
   firstIndex: number;
   menuItems: (item: LibraryItem) => ActionMenuItem[];

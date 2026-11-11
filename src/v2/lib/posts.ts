@@ -1,10 +1,9 @@
+import i18n from '../i18n';
 import type { Tone } from '../ui/Stat';
 
 /** A post status as people read it. */
 export function postStatusLabel(status: string) {
-  if (status === 'completed') return 'Posted';
-  if (status === 'queued') return 'Queued';
-  return status.slice(0, 1).toUpperCase() + status.slice(1);
+  return i18n.t(`v2.campaigns.statuses.${status === 'completed' ? 'completed' : status}`, { defaultValue: status.slice(0, 1).toUpperCase() + status.slice(1) });
 }
 
 /** The tone a post status is shown in. */

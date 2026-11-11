@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { deleteProvider, fetchProviders, updateProvider } from '../../api';
-import { Button, IconButton, MenuGroup, MenuItem, useSnackbar } from '../../m3';
+import { Button, IconButton, MenuGroup, MenuItem } from '../../m3';
 import type { Provider } from '../../types';
-import { DangerAction, ResultsBar, SectionNav } from '../components/project/ResultsBar';
 import { ProviderItem } from '../components/providers/ProviderItem';
 import { ProvidersHero } from '../components/providers/ProvidersHero';
 import {
@@ -23,14 +22,23 @@ import {
 } from '../components/providers/providerMeta';
 import { ServiceGallery } from '../components/providers/ServiceGallery';
 import { clampParallel, useParallelSaver } from '../components/providers/useParallelSaver';
-import { useRangeSelection } from '../lib/useRangeSelection';
+import { runEach } from '../lib/bulk';
+import { useAction } from '../lib/useAction';
+import { useAsyncData } from '../lib/useAsyncData';
+import { useCopy } from '../lib/useCopy';
+import { useListParams } from '../lib/useListParams';
+import { useSelection } from '../lib/useSelection';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EntityList } from '../ui/EntityList';
 import { HoverMenuButton } from '../ui/HoverMenuButton';
-import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
+import { SectionNav } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { ListSearch } from '../ui/ListSearch';
+import { Page } from '../ui/Page';
 import { PromptDialog } from '../ui/PromptDialog';
-import { FilterChip, ResultsSearch } from '../ui/ResultFilters';
+import { FilterChip } from '../ui/ResultFilters';
+import { useToast } from '../ui/useToast';
 
 type View = 'all' | ProviderKind;
 const VIEWS: View[] = ['all', ...PROVIDER_KINDS];
@@ -40,85 +48,39 @@ const QUEUE_HREF = '/projects/queues?view=providers';
 /** How often usage refreshes while jobs are running. */
 const LIVE_REFRESH_MS = 15000;
 
-function pick<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
-  return value && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
-}
-
 export function Providers() {
   const { t } = useTranslation();
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const action = useAction();
+  const copyText = useCopy();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
 
   // Search, kind, status and sort live in the URL.
-  const q = params.get('q') ?? '';
-  const view = pick(params.get('kind'), VIEWS, 'all');
-  const status = pick(params.get('status'), PROVIDER_STATUSES, 'all');
-  const sort = pick(params.get('sort'), Object.keys(PROVIDER_SORTS) as ProviderSort[], 'service');
-
-  const update = useCallback(
-    (patch: Record<string, string | null>) => {
-      setParams(
-        (previous) => {
-          const next = new URLSearchParams(previous);
-          for (const [key, value] of Object.entries(patch)) {
-            if (value === null || value === '' || value === 'all') next.delete(key);
-            else next.set(key, value);
-          }
-          if (next.get('sort') === 'service') next.delete('sort');
-          return next;
-        },
-        { replace: true },
-      );
-    },
-    [setParams],
-  );
-  const setSearch = useCallback((value: string) => update({ q: value.trim() }), [update]);
+  const list = useListParams({ defaults: { kind: 'all', status: 'all', sort: 'service' } });
+  const { q } = list;
+  const view = list.oneOf('kind', VIEWS);
+  const status = list.oneOf('status', PROVIDER_STATUSES);
+  const sort = list.oneOf('sort', Object.keys(PROVIDER_SORTS) as ProviderSort[]);
 
   // Every provider with its usage; the list is short, so filtering happens here.
-  const [providers, setProviders] = useState<Provider[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const request = useRef(0);
+  const shownRef = useRef<Provider[]>([]);
   // A failed save reloads the true count.
-  const { schedule: scheduleParallel, isPending: parallelPending } = useParallelSaver(() => void load({ quiet: true }));
-
-  const load = useCallback(
-    async ({ quiet = false }: { quiet?: boolean } = {}) => {
-      const id = ++request.current;
-      if (!quiet) setLoading(true);
-      try {
-        const list = await fetchProviders();
-        if (id !== request.current) return;
-        // A count still waiting to be saved keeps the value on screen.
-        setProviders((current) =>
-          list.map((provider) => {
-            const shown = parallelPending(provider.id) ? current?.find((item) => item.id === provider.id) : undefined;
-            return shown ? { ...provider, concurrency: shown.concurrency } : provider;
-          }),
-        );
-        setError('');
-      } catch {
-        if (id === request.current) setError(t('providers.errors.load'));
-      } finally {
-        if (id === request.current) setLoading(false);
-      }
+  const { schedule: scheduleParallel, isPending: parallelPending } = useParallelSaver(() => void data.reload(true));
+  const data = useAsyncData(
+    async () => {
+      const fetched = await fetchProviders();
+      // A count still waiting to be saved keeps the value on screen.
+      return fetched.map((provider) => {
+        const shown = parallelPending(provider.id) ? shownRef.current.find((item) => item.id === provider.id) : undefined;
+        return shown ? { ...provider, concurrency: shown.concurrency } : provider;
+      });
     },
-    [t, parallelPending],
+    [],
+    // Usage follows running jobs while there are any.
+    { pollMs: (current) => (current?.some((provider) => activeJobCount(provider) > 0) ? LIVE_REFRESH_MS : false) },
   );
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  // Usage follows running jobs while there are any.
-  const running = providers?.some((provider) => activeJobCount(provider) > 0) ?? false;
-  useEffect(() => {
-    if (!running) return;
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void load({ quiet: true });
-    }, LIVE_REFRESH_MS);
-    return () => window.clearInterval(timer);
-  }, [running, load]);
+  const providers = data.data ?? null;
+  shownRef.current = providers ?? [];
 
   const scoped = useMemo(() => (providers ?? []).filter((provider) => matchesQuery(provider, q) && matchesStatus(provider, status)), [providers, q, status]);
   const counts = useMemo(() => {
@@ -129,13 +91,12 @@ export function Providers() {
   const shown = useMemo(() => scoped.filter((provider) => view === 'all' || providerKinds(provider).includes(view)).sort(PROVIDER_SORTS[sort].compare), [scoped, view, sort]);
 
   // Selection covers the providers in view; it clears whenever the list changes.
-  const { selected, toggle, selectAll, clear: clearSelection } = useRangeSelection(shown, (provider) => provider.id, [q, view, status, sort]);
-  const selectedProviders = useMemo(() => shown.filter((provider) => selected.has(provider.id)), [shown, selected]);
+  const selection = useSelection(shown, (provider) => provider.id, [q, view, status, sort]);
 
   const [pendingDelete, setPendingDelete] = useState<Provider[] | null>(null);
   const [renameTarget, setRenameTarget] = useState<Provider | null>(null);
 
-  const patchProvider = (id: string, patch: Partial<Provider>) => setProviders((list) => list?.map((item) => (item.id === id ? { ...item, ...patch } : item)) ?? list);
+  const patchProvider = (id: string, patch: Partial<Provider>) => data.setData((current) => current?.map((item) => (item.id === id ? { ...item, ...patch } : item)));
 
   const changeConcurrency = (provider: Provider, value: number) => {
     const concurrency = clampParallel(value);
@@ -143,12 +104,7 @@ export function Providers() {
     scheduleParallel(provider, concurrency);
   };
 
-  const copy = (text: string) => {
-    void navigator.clipboard
-      .writeText(text)
-      .then(() => snackbar.show(t('v2.providers.copied')))
-      .catch(() => snackbar.show(t('v2.providers.copyFailed')));
-  };
+  const copy = (text: string) => void copyText(text, t('v2.providers.copied'));
 
   const openProvider = (provider: Provider) => navigate(`/provider/${provider.id}`);
 
@@ -162,12 +118,12 @@ export function Providers() {
       { key: 'queue', icon: 'monitoring', label: t('sidebar.queueMonitor'), href: QUEUE_HREF, hidden: activeJobCount(provider) === 0 },
       {
         key: 'select',
-        icon: selected.has(provider.id) ? 'check_box' : 'check_box_outline_blank',
+        icon: selection.isSelected(provider.id) ? 'check_box' : 'check_box_outline_blank',
         label: t('v2.project.select'),
         type: 'checkbox',
-        checked: selected.has(provider.id),
+        checked: selection.isSelected(provider.id),
         divider: true,
-        onSelect: () => toggle(provider.id, false),
+        onSelect: () => selection.toggle(provider.id),
       },
       { key: 'copy-id', icon: 'fingerprint', label: t('v2.providers.copyId'), onSelect: () => copy(provider.id) },
       { key: 'delete', icon: 'delete', label: t('providers.deleteDialog.confirm'), danger: true, divider: true, onSelect: () => setPendingDelete([provider]) },
@@ -177,21 +133,11 @@ export function Providers() {
   const confirmDelete = async () => {
     const targets = pendingDelete;
     if (!targets?.length) return;
-    let done = 0;
-    let firstError = '';
-    for (const provider of targets) {
-      try {
-        await deleteProvider(provider.id);
-        done += 1;
-      } catch (err) {
-        firstError ||= targets.length > 1 ? `${provider.name}: ${(err as Error).message}` : (err as Error).message;
-      }
-    }
-    const failed = targets.length - done;
-    if (targets.length === 1) snackbar.show(failed ? firstError || t('providers.errors.delete') : t('v2.providers.deleted', { name: targets[0].name }));
-    else snackbar.show(failed ? t('v2.providers.deletePartial', { done, failed, reason: firstError }) : t('v2.providers.deletedCount', { count: done }));
-    clearSelection();
-    await load({ quiet: true });
+    const { done, failed, reason } = await runEach(targets, (provider) => deleteProvider(provider.id), (provider) => provider.name);
+    if (failed === 0) toast.success(targets.length === 1 ? t('v2.providers.deleted', { name: targets[0].name }) : t('v2.providers.deletedCount', { count: done }));
+    else toast.error(targets.length === 1 ? reason || t('providers.errors.delete') : t('v2.providers.deletePartial', { done, failed, reason }));
+    selection.clear();
+    await data.reload(true);
   };
 
   const deleteCopy = (() => {
@@ -204,7 +150,6 @@ export function Providers() {
       : { title: t('v2.providers.confirmDeleteMany', { count: pendingDelete.length }), message: `${t('v2.providers.confirmDeleteManyMessage')}${usage}` };
   })();
 
-  const clearFilters = () => update({ q: null, status: null, kind: null });
   const runningInScope = scoped.some((provider) => activeJobCount(provider) > 0);
 
   const nav = (
@@ -212,7 +157,7 @@ export function Providers() {
       scope="providers"
       label={t('v2.providers.kindsLabel')}
       value={view}
-      onChange={(next) => update({ kind: next })}
+      onChange={(next) => list.set({ kind: next })}
       items={VIEWS.map((value) => ({
         value,
         label: t(`v2.providers.kinds.${value}`),
@@ -225,7 +170,7 @@ export function Providers() {
 
   const tools = (
     <>
-      <ResultsSearch value={q} onChange={setSearch} label={t('v2.providers.search')} />
+      <ListSearch value={q} onChange={list.setQuery} label={t('v2.providers.search')} />
       <ActionMenu
         label={t('v2.providers.status')}
         icon="filter_list"
@@ -237,13 +182,13 @@ export function Providers() {
           checked: status === value,
           icon: STATUS_ICONS[value],
           label: t(`v2.providers.statuses.${value}`),
-          onSelect: () => update({ status: value }),
+          onSelect: () => list.set({ status: value }),
         }))}
       />
       <HoverMenuButton placement="bottom-end" aria-label={t('v2.providers.viewOptions')} trigger={(p) => <IconButton {...p} icon="tune" size="sm" label={t('v2.providers.viewOptions')} />}>
         <MenuGroup label={t('v2.project.sort')}>
           {(Object.keys(PROVIDER_SORTS) as ProviderSort[]).map((value) => (
-            <MenuItem key={value} type="radio" icon={PROVIDER_SORTS[value].icon} checked={sort === value} onSelect={() => update({ sort: value })}>
+            <MenuItem key={value} type="radio" icon={PROVIDER_SORTS[value].icon} checked={sort === value} onSelect={() => list.set({ sort: value })}>
               {t(`v2.providers.sorts.${value}`)}
             </MenuItem>
           ))}
@@ -254,10 +199,10 @@ export function Providers() {
 
   const chips = (q || status !== 'all') && (
     <>
-      {q && <FilterChip label={`“${q}”`} removeLabel={t('v2.providers.clearSearch')} onRemove={() => update({ q: null })} />}
-      {status !== 'all' && <FilterChip label={t(`v2.providers.statuses.${status}`)} removeLabel={t('v2.providers.clearStatus')} onRemove={() => update({ status: null })} />}
-      <Button variant="text" size="xs" onClick={clearFilters}>
-        {t('v2.project.clearFilters')}
+      {q && <FilterChip label={`“${q}”`} removeLabel={t('v2.providers.clearSearch')} onRemove={() => list.setQuery('')} />}
+      {status !== 'all' && <FilterChip label={t(`v2.providers.statuses.${status}`)} removeLabel={t('v2.providers.clearStatus')} onRemove={() => list.set({ status: null })} />}
+      <Button variant="text" size="xs" onClick={list.clearFilters}>
+        {t('v2.common.clearFilters')}
       </Button>
     </>
   );
@@ -281,68 +226,51 @@ export function Providers() {
         }
       />
 
-      <section className="v2-providers-pane" aria-label={t('providers.allProviders')}>
-        {providers && providers.length > 0 && (
-          <ResultsBar
-            nav={nav}
-            totalCount={shown.length}
-            selectedCount={selectedProviders.length}
-            onToggleSelectAll={selectAll}
-            onClearSelection={clearSelection}
-            isLoading={loading}
-            tools={tools}
-            below={chips || undefined}
-            menuItems={[
-              { key: 'new', icon: 'add', label: t('providers.newProvider'), href: '/provider/new' },
-              { key: 'queue', icon: 'monitoring', label: t('sidebar.queueMonitor'), href: QUEUE_HREF },
-              { key: 'refresh', icon: 'refresh', label: t('v2.providers.refresh'), onSelect: () => void load() },
-            ]}
-            selectionActions={<DangerAction label={t('providers.deleteDialog.confirm')} onClick={() => setPendingDelete(selectedProviders)} />}
-          />
-        )}
-
-        {error && (
-          <div className="v2-pane-inset v2-providers-pane__error">
-            <ErrorState message={error} onRetry={() => void load()} retryLabel={t('v2.providers.retry')} />
-          </div>
-        )}
-
-        {providers === null ? (
-          !error && <LoadingState />
-        ) : providers.length === 0 ? (
+      {providers !== null && providers.length === 0 ? (
+        <section className="v2-list-pane" data-variant="surface" aria-label={t('providers.allProviders')}>
           <ServiceGallery />
-        ) : missingKind ? (
-          <ServiceGallery kind={missingKind} />
-        ) : shown.length === 0 ? (
-          <EmptyState
-            className="v2-pane-empty"
-            shape="puffy"
-            icon="search_off"
-            title={t('v2.providers.noMatches')}
-            description={t('v2.providers.noMatchesHint')}
-            action={
-              <Button variant="tonal" icon="filter_alt_off" onClick={clearFilters}>
-                {t('v2.project.clearFilters')}
-              </Button>
-            }
-          />
-        ) : (
-          <EntityList selecting={selected.size > 0} busy={loading}>
+        </section>
+      ) : (
+        <ListPane
+          label={t('providers.allProviders')}
+          lead={nav}
+          fitKey={view}
+          tools={tools}
+          below={chips || undefined}
+          menuItems={[
+            { key: 'new', icon: 'add', label: t('providers.newProvider'), href: '/provider/new' },
+            { key: 'queue', icon: 'monitoring', label: t('sidebar.queueMonitor'), href: QUEUE_HREF },
+            { key: 'refresh', icon: 'refresh', label: t('v2.providers.refresh'), onSelect: () => void data.reload() },
+          ]}
+          loading={data.loading}
+          refreshing={data.refreshing}
+          error={data.error ? t('providers.errors.load') : null}
+          onRetry={() => void data.reload()}
+          count={shown.length}
+          filtered
+          onClearFilters={list.clearFilters}
+          noMatches={{ title: t('v2.providers.noMatches'), description: t('v2.providers.noMatchesHint') }}
+          empty={{ title: t('v2.providers.noMatches') }}
+          instead={missingKind ? <ServiceGallery kind={missingKind} /> : undefined}
+          selection={selection}
+          selectionActions={[{ key: 'delete', icon: 'delete', label: t('providers.deleteDialog.confirm'), danger: true, onClick: () => setPendingDelete(selection.items) }]}
+        >
+          <EntityList selecting={selection.selecting} busy={data.refreshing}>
             {shown.map((provider) => (
               <ProviderItem
                 key={provider.id}
                 provider={provider}
-                selected={selected.has(provider.id)}
-                selecting={selected.size > 0}
-                onToggleSelect={(range) => toggle(provider.id, range)}
+                selected={selection.isSelected(provider.id)}
+                selecting={selection.selecting}
+                onToggleSelect={(range) => selection.toggle(provider.id, range)}
                 onOpen={() => openProvider(provider)}
                 onConcurrencyChange={(value) => changeConcurrency(provider, value)}
                 menuItems={itemMenu(provider)}
               />
             ))}
           </EntityList>
-        )}
-      </section>
+        </ListPane>
+      )}
 
       <ConfirmDialog
         open={deleteCopy !== null}
@@ -369,14 +297,13 @@ export function Providers() {
           const target = renameTarget;
           const name = value.trim();
           if (!target || name === target.name) return;
-          try {
-            await updateProvider(target.id, { name });
-            patchProvider(target.id, { name });
-            snackbar.show(t('v2.providers.renamed', { name }));
-          } catch (err) {
-            snackbar.show((err as Error).message || t('v2.providers.saveFailed'));
-            throw err;
-          }
+          await action.run(
+            async () => {
+              await updateProvider(target.id, { name });
+              patchProvider(target.id, { name });
+            },
+            { key: target.id, success: t('v2.providers.renamed', { name }), error: t('v2.providers.saveFailed'), rethrow: true },
+          );
         }}
       />
     </Page>

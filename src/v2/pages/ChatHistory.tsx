@@ -1,106 +1,51 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
-import { searchAssistantConversations, type AssistantConversation } from '../../api';
-import { Icon, Text } from '../../m3';
-import { usePaginationScroll } from '../lib/usePaginationScroll';
-import { EmptyState, LoadingState, Page, PageHeader } from '../ui/Page';
-import { Pagination } from '../ui/Pagination';
+import { searchAssistantConversations } from '../../api';
+import { Icon } from '../../m3';
+import { useAsyncData } from '../lib/useAsyncData';
+import { PAGE_SIZES, useListParams } from '../lib/useListParams';
+import { ListTitle } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { ListSearch } from '../ui/ListSearch';
+import { Page, PageHeader } from '../ui/Page';
 import { Row, RowList } from '../ui/Rows';
-import { SearchField } from '../ui/SearchField';
-
-const PAGE_SIZE = 20;
 
 /** Searches past assistant conversations by title and message content. */
 export function ChatHistory() {
   const { t } = useTranslation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const q = searchParams.get('q') || '';
-  const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1);
-  const paginationRef = usePaginationScroll({ page });
-  const [items, setItems] = useState<AssistantConversation[]>([]);
-  const [total, setTotal] = useState(0);
-  const [pages, setPages] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [input, setInput] = useState(q);
-
-  useEffect(() => setInput(q), [q]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    searchAssistantConversations(q, page, PAGE_SIZE)
-      .then((result) => {
-        if (cancelled) return;
-        setItems(result.items);
-        setTotal(result.total);
-        setPages(result.pages);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error(err);
-        setItems([]);
-        setTotal(0);
-        setPages(1);
-      })
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [q, page]);
-
-  const submit = (value: string) =>
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      const trimmed = value.trim();
-      if (trimmed) next.set('q', trimmed);
-      else next.delete('q');
-      next.set('page', '1');
-      return next;
-    });
+  const list = useListParams({ pageSize: 25, pageSizes: PAGE_SIZES });
+  const pageSize = list.pageSize === 'all' ? 500 : list.pageSize;
+  const chats = useAsyncData(() => searchAssistantConversations(list.q, list.page, pageSize), [list.q, list.page, pageSize]);
+  const items = chats.data?.items ?? [];
+  const total = chats.data?.total ?? 0;
 
   return (
-    <Page ref={paginationRef} width="default" aria-busy={loading}>
+    <Page width="default">
       <PageHeader
         title={t('chatHistory.title', { defaultValue: 'Chat History' })}
         description={t('chatHistory.description', { defaultValue: 'Search across conversation titles and message content.' })}
         backLink={{ to: '/assistant', label: t('chatHistory.backToAssistant', { defaultValue: 'Back to Assistant' }) }}
       />
-      <div className="flex flex-col gap-3">
-        <SearchField value={input} onChange={setInput} onSubmit={submit} placeholder={t('chatHistory.searchPlaceholder', { defaultValue: 'Search by title or message content...' })} className="v2-search-field--block" />
-        <Text variant="label-medium" className="text-on-surface-variant">
-          {q ? t('chatHistory.resultsCount', { defaultValue: '{{total}} result(s) for "{{q}}"', total, q }) : t('chatHistory.totalCount', { defaultValue: '{{total}} conversation(s)', total })}
-        </Text>
-        {loading && items.length === 0 ? (
-          <LoadingState minHeight={240} />
-        ) : items.length === 0 ? (
-          <EmptyState icon="forum" shape="clover-4" title={q ? t('chatHistory.noResults', { defaultValue: 'No conversations match your search.' }) : t('chatHistory.empty', { defaultValue: 'No conversations yet.' })} />
-        ) : (
-          <RowList>
-            {items.map((conv) => (
-              <Row key={conv.id} to={`/assistant/${conv.id}`} lead={<Icon name="chat" className="text-primary" />} title={conv.title || t('chatHistory.untitled', { defaultValue: 'Untitled chat' })} meta={<span className="tabular-nums">{new Date(conv.updatedAt).toLocaleString()}</span>} />
-            ))}
-          </RowList>
-        )}
-        {pages > 1 && (
-          <div className="v2-paged-footer">
-            <Text variant="label-medium" className="text-on-surface-variant">
-              {t('chatHistory.pagination', { defaultValue: 'Page {{current}} of {{total}}', current: page, total: pages })}
-            </Text>
-            <Pagination
-              page={page}
-              pages={pages}
-              onPageChange={(next) =>
-                setSearchParams((prev) => {
-                  const p = new URLSearchParams(prev);
-                  p.set('page', String(next));
-                  return p;
-                })
-              }
-            />
-          </div>
-        )}
-      </div>
+      <ListPane
+        label={t('chatHistory.title', { defaultValue: 'Chat History' })}
+        lead={<ListTitle title={t('chatHistory.title', { defaultValue: 'Chat History' })} icon="forum" count={total} />}
+        tools={<ListSearch value={list.q} onChange={list.setQuery} label={t('chatHistory.searchPlaceholder', { defaultValue: 'Search by title or message content...' })} />}
+        loading={chats.loading}
+        refreshing={chats.refreshing}
+        error={chats.error}
+        onRetry={() => void chats.reload()}
+        count={items.length}
+        filtered={list.filtered}
+        onClearFilters={list.clearFilters}
+        noMatches={{ title: t('chatHistory.noResults', { defaultValue: 'No conversations match your search.' }) }}
+        empty={{ icon: 'forum', shape: 'clover-4', title: t('chatHistory.empty', { defaultValue: 'No conversations yet.' }) }}
+        paging={{ page: list.page, pageSize: list.pageSize, total, pages: chats.data?.pages, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+      >
+        <RowList className="v2-list-pane__grid">
+          {items.map((conv) => (
+            <Row key={conv.id} to={`/assistant/${conv.id}`} lead={<Icon name="chat" className="text-primary" />} title={conv.title || t('chatHistory.untitled', { defaultValue: 'Untitled chat' })} meta={<span className="tabular-nums">{new Date(conv.updatedAt).toLocaleString()}</span>} />
+          ))}
+        </RowList>
+      </ListPane>
     </Page>
   );
 }

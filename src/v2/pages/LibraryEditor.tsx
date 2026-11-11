@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   copyLibraryItems,
   createLibraryItem,
@@ -20,8 +20,8 @@ import {
   updateLibraryItem,
 } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { copyText, resourceRef, startResourceChat } from '../../lib/resource-ref';
-import { Button, Dialog, Icon, IconButton, LinearProgress, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, Shape, SubMenu, Text, useMediaQuery, useSnackbar } from '../../m3';
+import { resourceRef, startResourceChat } from '../../lib/resource-ref';
+import { Button, Dialog, Icon, IconButton, LinearProgress, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, Shape, SubMenu, Text, useMediaQuery } from '../../m3';
 import type { Library, LibraryItem } from '../../types';
 import { withBase } from '../app/paths';
 import { AutoTagDialog } from '../components/AutoTagDialog';
@@ -29,28 +29,37 @@ import { AutoTagProgress } from '../components/AutoTagProgress';
 import { CopyMoveItemsDialog } from '../components/library/CopyMoveItemsDialog';
 import { LibraryAudioList } from '../components/library/LibraryAudioList';
 import { LibraryHero } from '../components/library/LibraryHero';
-import { LibraryMediaGrid, type MediaFit, type TileSize } from '../components/library/LibraryMediaGrid';
+import { LibraryMediaGrid, type MediaFit } from '../components/library/LibraryMediaGrid';
 import { LibraryTextItems, type TextView } from '../components/library/LibraryTextItems';
 import { Lightbox } from '../components/Lightbox';
-import { DangerAction, ResultsBar } from '../components/project/ResultsBar';
 import { TagDialog } from '../components/TagDialog';
-import { usePaginationScroll } from '../lib/usePaginationScroll';
-import { useViewPref } from '../lib/viewPrefs';
+import { errorText } from '../lib/errors';
+import { useAction } from '../lib/useAction';
+import { useAssistantChat } from '../lib/useAssistantChat';
+import { useAsyncData } from '../lib/useAsyncData';
+import { useCopy } from '../lib/useCopy';
+import { PAGE_SIZES, useListParams } from '../lib/useListParams';
+import { useSelection } from '../lib/useSelection';
+import { TILE_SIZES, useViewPref, type TileSize } from '../lib/viewPrefs';
 import { ActionMenu, type ActionMenuItem } from '../ui/ActionMenu';
+import type { SelectionAction } from '../ui/SelectionBar';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { HoverMenuButton } from '../ui/HoverMenuButton';
 import { kindMeta } from '../ui/entityMeta';
+import { ListTitle } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { ListSearch } from '../ui/ListSearch';
 import { EmptyState, LoadingState, Page } from '../ui/Page';
-import { PagedFooter, PAGE_SIZE_OPTIONS } from '../ui/PagedFooter';
 import { PromptDialog } from '../ui/PromptDialog';
-import { FilterChip, ResultsSearch, TagLine } from '../ui/ResultFilters';
+import { FilterChip, TagLine } from '../ui/ResultFilters';
 import { Row, RowList } from '../ui/Rows';
+import { useToast } from '../ui/useToast';
+import { readFileAsDataUrl } from '../lib/files';
 
-type PageSize = number | 'all';
-const DEFAULT_PAGE_SIZE = 25;
 /** What "All" asks the server for. */
 const ALL_LIMIT = 999999;
 type SortKey = 'time-desc' | 'time-asc' | 'name-asc' | 'name-desc';
+const SORT_KEYS: readonly SortKey[] = ['time-desc', 'time-asc', 'name-asc', 'name-desc'];
 const SORT_OPTIONS: { value: SortKey; icon: string; label: string }[] = [
   { value: 'time-desc', icon: 'arrow_downward', label: 'libraryEditor.sort.timeDesc' },
   { value: 'time-asc', icon: 'arrow_upward', label: 'libraryEditor.sort.timeAsc' },
@@ -59,12 +68,6 @@ const SORT_OPTIONS: { value: SortKey; icon: string; label: string }[] = [
 ];
 const MEDIA_ACCEPT = { image: 'image/', video: 'video/', audio: 'audio/' } as const;
 const TEXT_FILE = /\.(txt|md|markdown)$/i;
-
-function parsePageSize(value: string | null): PageSize {
-  if (value === 'all') return 'all';
-  const size = parseInt(value || '', 10);
-  return PAGE_SIZE_OPTIONS.includes(size) ? size : DEFAULT_PAGE_SIZE;
-}
 
 function defaultExportName(name: string): string {
   const raw = (name || '').trim() || 'Library';
@@ -82,12 +85,6 @@ function formatItemDateTime(value?: number): string {
   return new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-const readFileAsDataUrl = (file: File) =>
-  new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (ev) => resolve(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  });
 
 /** Loads the library for `/library/:id` and keeps it current with live updates. */
 export function LibraryEditorPage() {
@@ -137,27 +134,25 @@ export function LibraryEditorPage() {
 function LibraryEditor({ library, onChanged }: { library: Library; onChanged: () => Promise<void> }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const action = useAction();
+  const copyText = useCopy();
+  const startChat = useAssistantChat();
   const wide = useMediaQuery('(min-width: 840px)');
-  const [searchParams, setSearchParams] = useSearchParams();
-  const currentPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
-  const searchTerm = searchParams.get('q') || '';
-  const pageSize = parsePageSize(searchParams.get('size'));
-  const paginationRef = usePaginationScroll({ page: currentPage, pageSize });
-  const sortBy = (searchParams.get('sortBy') as 'time' | 'name') || 'time';
-  const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc';
-  const filterTags = searchParams.getAll('tag');
+  const list = useListParams({ pageSize: 25, pageSizes: PAGE_SIZES, defaults: { sort: 'time-desc' } });
+  const currentPage = list.page;
+  const searchTerm = list.q;
+  const pageSize = list.pageSize;
+  // Links saved before the two sort keys became one.
+  const legacySort = list.get('sortBy') ? (`${list.get('sortBy')}-${list.get('sortOrder') || 'desc'}` as SortKey) : null;
+  const sortKey = legacySort && SORT_KEYS.includes(legacySort) ? legacySort : list.oneOf('sort', SORT_KEYS);
+  const [sortBy, sortOrder] = sortKey.split('-') as ['time' | 'name', 'asc' | 'desc'];
+  const filterTags = list.getAll('tag');
   const type = library.type || 'text';
   const isText = type === 'text';
   const isMedia = type === 'image' || type === 'video';
   const meta = kindMeta(type);
 
-  const [items, setItems] = useState<LibraryItem[]>([]);
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [loadingItems, setLoadingItems] = useState(true);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [lastIndex, setLastIndex] = useState<number | null>(null);
   const [upload, setUpload] = useState<{ done: number; total: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
@@ -174,106 +169,39 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   const [deleteSelectedOpen, setDeleteSelectedOpen] = useState(false);
   const [deleteLibraryOpen, setDeleteLibraryOpen] = useState(false);
   const [references, setReferences] = useState<{ id: string; name: string }[] | null>(null);
-  const [checkingRefs, setCheckingRefs] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [fit, setFit] = useViewPref<MediaFit>('v2.library.fit', 'cover', ['cover', 'contain']);
-  const [tileSize, setTileSize] = useViewPref<TileSize>('v2.library.tileSize', 'm', ['s', 'm', 'l']);
+  const [tileSize, setTileSize] = useViewPref<TileSize>('v2.library.tileSize', 'm', TILE_SIZES);
   const [textView, setTextView] = useViewPref<TextView>('v2.library.textView', 'cards', ['cards', 'list']);
   const fileInput = useRef<HTMLInputElement>(null);
   const tagsKey = filterTags.join('\u0000');
 
-  const updateParams = useCallback(
-    (apply: (next: URLSearchParams) => void) =>
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        apply(next);
-        return next;
-      }),
-    [setSearchParams],
-  );
-  const setPage = (page: number) => updateParams((next) => next.set('page', String(Math.max(1, page))));
-  const setPageSize = (size: PageSize) =>
-    updateParams((next) => {
-      if (size === DEFAULT_PAGE_SIZE) next.delete('size');
-      else next.set('size', String(size));
-      // A different page length invalidates the current offset.
-      next.set('page', '1');
-    });
-  const setSearch = useCallback(
-    (q: string) =>
-      updateParams((next) => {
-        if (q.trim()) next.set('q', q.trim());
-        else next.delete('q');
-        next.set('page', '1');
-      }),
-    [updateParams],
-  );
-  const setSort = (key: SortKey) =>
-    updateParams((next) => {
-      const [by, order] = key.split('-');
-      next.set('sortBy', by);
-      next.set('sortOrder', order);
-      next.set('page', '1');
-    });
-  const setFilterTags = (tags: string[]) =>
-    updateParams((next) => {
-      next.delete('tag');
-      tags.forEach((tag) => next.append('tag', tag));
-      next.set('page', '1');
-    });
+  const setPage = list.setPage;
+  const setPageSize = list.setPageSize;
+  const setSearch = list.setQuery;
+  const setSort = (key: SortKey) => list.set({ sort: key, sortBy: null, sortOrder: null });
+  const setFilterTags = (tags: string[]) => list.set({ tag: tags });
   const toggleFilterTag = (tag: string) => setFilterTags(filterTags.includes(tag) ? filterTags.filter((x) => x !== tag) : [...filterTags, tag]);
-  const clearFilters = () =>
-    updateParams((next) => {
-      next.delete('q');
-      next.delete('tag');
-      next.set('page', '1');
-    });
+  const clearFilters = () => list.set({ q: null, tag: [] });
 
-  // Only the newest load may write the items, so a slow one can't overwrite a later page or filter.
-  const loadSeq = useRef(0);
-  const loadItems = useCallback(
-    async (silent = false) => {
-      const seq = ++loadSeq.current;
-      if (!silent) setLoadingItems(true);
-      try {
-        const result = await fetchLibraryItems(library.id, currentPage, pageSize === 'all' ? ALL_LIMIT : pageSize, searchTerm || undefined, filterTags, sortBy, sortOrder);
-        if (seq !== loadSeq.current) return;
-        setItems(result.items);
-        setTotalItems(result.total);
-        setTotalPages(result.pages);
-      } catch (e) {
-        console.error('Failed to load items:', e);
-      } finally {
-        if (seq === loadSeq.current) setLoadingItems(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [library.id, currentPage, pageSize, searchTerm, tagsKey, sortBy, sortOrder],
-  );
-
-  useEffect(() => {
-    void loadItems();
-  }, [loadItems]);
+  // Items added or edited elsewhere (another tab, an MCP agent) show up without a reload.
+  const itemsData = useAsyncData(() => fetchLibraryItems(library.id, currentPage, pageSize === 'all' ? ALL_LIMIT : pageSize, searchTerm || undefined, filterTags, sortBy, sortOrder), [library.id, currentPage, pageSize, searchTerm, tagsKey, sortBy, sortOrder], {
+    live: (event) => event.resource === 'library' && (!event.id || event.id === library.id),
+  });
+  const items = useMemo(() => itemsData.data?.items ?? [], [itemsData.data]);
+  const totalItems = itemsData.data?.total ?? 0;
+  const loadingItems = itemsData.loading;
 
   // After a change made here: the items, and the hero's numbers and covers.
   const refresh = async () => {
-    await Promise.all([loadItems(), onChanged().catch((e) => console.error('Failed to reload library:', e))]);
+    await Promise.all([itemsData.reload(true), onChanged().catch((e) => console.error('Failed to reload library:', e))]);
   };
 
-  // Items added or edited elsewhere (another tab, an MCP agent).
-  useLiveRefresh(
-    (event) => event.resource === 'library' && (!event.id || event.id === library.id),
-    () => loadItems(true),
-  );
-
-  const clearSelection = useCallback(() => {
-    setSelected(new Set());
-    setLastIndex(null);
-  }, []);
-
   // The selection only ever covers the items in view, so bulk actions never reach hidden ones.
-  useEffect(clearSelection, [clearSelection, library.id, currentPage, pageSize, searchTerm, tagsKey, sortBy, sortOrder]);
+  const selection = useSelection(items, (item) => item.id, [library.id, currentPage, pageSize, searchTerm, tagsKey, sortBy, sortOrder]);
+  const selected = selection.selected;
+  const clearSelection = selection.clear;
 
   const tagCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -289,22 +217,8 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   const libraryCount = !hasFilter && !loadingItems ? totalItems : (library.itemCount ?? library.items.length);
   const viewing = viewingIndex !== null ? items[viewingIndex] ?? null : null;
   const playingVideo = videoIndex !== null ? items[videoIndex] ?? null : null;
-  const selectedItems = items.filter((item) => selected.has(item.id));
-
-  const toggle = (item: LibraryItem, index: number, shift: boolean) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (shift && lastIndex !== null) {
-        const select = !prev.has(item.id);
-        items.slice(Math.min(lastIndex, index), Math.max(lastIndex, index) + 1).forEach((it) => (select ? next.add(it.id) : next.delete(it.id)));
-      } else if (next.has(item.id)) next.delete(item.id);
-      else next.add(item.id);
-      return next;
-    });
-    setLastIndex(index);
-  };
-
-  const selectAll = () => setSelected(new Set(items.map((item) => item.id)));
+  const selectedItems = selection.items;
+  const toggle = (item: LibraryItem, _index: number, shift: boolean) => selection.toggle(item.id, shift);
 
   const accepts = (file: File) =>
     isText ? file.type.startsWith('text/') || TEXT_FILE.test(file.name) : file.type.startsWith(MEDIA_ACCEPT[type as keyof typeof MEDIA_ACCEPT]);
@@ -312,7 +226,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   const uploadFiles = async (files: File[]) => {
     const accepted = files.filter(accepts);
     const skipped = files.length - accepted.length;
-    if (skipped > 0) snackbar.show(t('v2.library.skipped', { count: skipped }));
+    if (skipped > 0) toast.success(t('v2.library.skipped', { count: skipped }));
     if (accepted.length === 0) return;
     setUpload({ done: 0, total: accepted.length });
     try {
@@ -342,7 +256,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
       await refresh();
     } catch (err) {
       console.error('Failed to upload files:', err);
-      snackbar.show((err as Error).message || t('libraryEditor.toasts.uploadFailed'));
+      toast.error(errorText(err, t('libraryEditor.toasts.uploadFailed')));
     } finally {
       setUpload(null);
     }
@@ -357,7 +271,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
       await uploadFiles([new File([blob], name, { type: blob.type })]);
     } catch (err) {
       console.error('Failed to fetch pasted URL:', err);
-      snackbar.show(t('v2.library.pasteFetchFailed'));
+      toast.error(t('v2.library.pasteFetchFailed'));
     }
   };
 
@@ -365,9 +279,9 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
     try {
       await createLibraryItem(library.id, { id: crypto.randomUUID(), content: text, title: '' });
       await refresh();
-      snackbar.show(t('v2.library.pastedText'));
+      toast.success(t('v2.library.pastedText'));
     } catch (err) {
-      snackbar.show((err as Error).message || t('libraryEditor.toasts.uploadFailed'));
+      toast.error(errorText(err, t('libraryEditor.toasts.uploadFailed')));
     }
   };
 
@@ -439,10 +353,10 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
           ? { itemIds: [...selected] }
           : { all: true as const, q: searchTerm || undefined, filterTags: filterTags.length > 0 ? filterTags : undefined };
       const { queued } = await startAutoTag({ kind: 'library', libraryId: library.id }, { ...scope, onlyUntagged, language: i18n.language });
-      snackbar.show(queued === 0 ? t('autoTag.nothingToTag') : t('autoTag.started', { count: queued }));
+      toast.success(queued === 0 ? t('autoTag.nothingToTag') : t('autoTag.started', { count: queued }));
       setAutoTagRunKey((key) => key + 1);
     } catch (err) {
-      snackbar.show((err as Error).message || t('autoTag.startFailed'));
+      toast.error(errorText(err, t('autoTag.startFailed')));
       throw err;
     }
   };
@@ -468,53 +382,36 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
     try {
       if (action === 'copy') {
         await copyLibraryItems(library.id, ids, destination);
-        snackbar.show(t('v2.library.copied', { count: ids.length }));
+        toast.success(t('v2.library.copied', { count: ids.length }));
       } else {
         await moveLibraryItems(library.id, ids, destination);
-        snackbar.show(t('v2.library.moved', { count: ids.length }));
+        toast.success(t('v2.library.moved', { count: ids.length }));
       }
       clearSelection();
       await refresh();
     } catch (e) {
       console.error(`Failed to ${action} items:`, e);
-      snackbar.show((e as Error).message || t(`libraryEditor.${action}Error`, `Failed to ${action} items`));
+      toast.error(errorText(e, t(`libraryEditor.${action}Error`, `Failed to ${action} items`)));
       throw e;
     }
   };
 
+  // A library still used by projects lists them first; an unused one is deleted outright.
   const askDeleteLibrary = async () => {
-    setCheckingRefs(true);
-    try {
-      const refs = await fetchLibraryReferences(library.id);
-      if (refs.length > 0) setReferences(refs);
-      else setDeleteLibraryOpen(true);
-    } catch (e) {
-      console.error('Failed to check references:', e);
-      setDeleteLibraryOpen(true);
-    } finally {
-      setCheckingRefs(false);
-    }
+    const refs = await action.run(() => fetchLibraryReferences(library.id), { key: 'refs' });
+    if (refs && refs.length > 0) setReferences(refs);
+    else setDeleteLibraryOpen(true);
   };
+  const checkingRefs = action.isBusy('refs');
 
-  const copyContent = (content: string) => {
-    void navigator.clipboard.writeText(content);
-    snackbar.show(t('libraryEditor.copiedToClipboard', { defaultValue: 'Copied to clipboard' }));
-  };
+  const copyContent = (content: string) => void copyText(content, t('libraryEditor.copiedToClipboard', { defaultValue: 'Copied to clipboard' }));
 
-  const copyReference = async (item: LibraryItem) => {
+  const copyReference = (item: LibraryItem) => {
     const reference = resourceRef.libraryItem(library.id, item.id);
-    try {
-      await copyText(reference);
-      snackbar.show(`${t('resourceRef.copied')} · ${reference}`);
-    } catch {
-      snackbar.show(`${t('resourceRef.copyFailed')} · ${reference}`);
-    }
+    return copyText(reference, `${t('resourceRef.copied')} · ${reference}`);
   };
 
-  const startAssistantChat = () => {
-    localStorage.removeItem('assistant_last_conversation');
-    navigate('/assistant', { state: { draftBoundContexts: [{ id: library.id, name: library.name, type: 'library', subType: type }] } });
-  };
+  const startAssistantChat = () => startChat({ id: library.id, name: library.name, type: 'library', subType: type });
 
   const itemLabel = (item: LibraryItem, index: number) => {
     if (item.title) return item.title;
@@ -539,7 +436,6 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
     else if (type === 'video') setVideoIndex(index);
   };
 
-  const sortKey = `${sortBy}-${sortOrder}` as SortKey;
   const uploading = upload !== null;
   const actionSize = wide ? 'md' : 'sm';
 
@@ -599,7 +495,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
 
   const tools = (
     <>
-      <ResultsSearch value={searchTerm} onChange={setSearch} label={t('libraryEditor.filterItems')} />
+      <ListSearch value={searchTerm} onChange={setSearch} label={t('libraryEditor.filterItems')} />
       {(tagCounts.length > 0 || filterTags.length > 0) && (
         <HoverMenuButton
           placement="bottom-end"
@@ -627,7 +523,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
               {t('v2.library.fitContain')}
             </MenuItem>
             <SubMenu icon="photo_size_select_large" label={t('v2.library.tileSize')}>
-              {(['s', 'm', 'l'] as const).map((size) => (
+              {TILE_SIZES.map((size) => (
                 <MenuItem key={size} type="radio" checked={tileSize === size} keepOpen onSelect={() => setTileSize(size)}>
                   {t(`v2.library.size.${size}`)}
                 </MenuItem>
@@ -653,13 +549,6 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
             </MenuItem>
           ))}
         </SubMenu>
-        <SubMenu icon="view_agenda" label={t('pagination.pageSize')}>
-          {PAGE_SIZE_OPTIONS.map((size) => (
-            <MenuItem key={String(size)} type="radio" checked={pageSize === size} onSelect={() => setPageSize(size)}>
-              {size === 'all' ? t('pagination.all') : String(size)}
-            </MenuItem>
-          ))}
-        </SubMenu>
       </HoverMenuButton>
     </>
   );
@@ -669,15 +558,13 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
     { key: 'export', hidden: isText, label: t('libraryEditor.exportModal.trigger'), icon: 'folder_zip', onSelect: () => setExportOpen(true) },
   ].filter((item) => !item.hidden);
 
-  const selectionActions = (
-    <>
-      <IconButton icon="sell" size="sm" label={t('libraryEditor.batchTag')} tooltip onClick={() => setBatchTagOpen(true)} />
-      {canAutoTag && <IconButton icon="wand_stars" size="sm" label={t('libraryEditor.autoTag')} tooltip onClick={() => setAutoTagTarget('selected')} />}
-      <IconButton icon="content_copy" size="sm" label={t('projectViewer.transfer.copyTo')} tooltip onClick={() => setCopyMove('copy')} />
-      <IconButton icon="drive_file_move" size="sm" label={t('projectViewer.transfer.moveTo')} tooltip onClick={() => setCopyMove('move')} />
-      <DangerAction label={t('libraryEditor.delete')} onClick={() => setDeleteSelectedOpen(true)} />
-    </>
-  );
+  const selectionActions: SelectionAction[] = [
+    { key: 'tag', icon: 'sell', label: t('libraryEditor.batchTag'), onClick: () => setBatchTagOpen(true) },
+    { key: 'autotag', icon: 'wand_stars', label: t('libraryEditor.autoTag'), hidden: !canAutoTag, onClick: () => setAutoTagTarget('selected') },
+    { key: 'copy', icon: 'content_copy', label: t('projectViewer.transfer.copyTo'), onClick: () => setCopyMove('copy') },
+    { key: 'move', icon: 'drive_file_move', label: t('projectViewer.transfer.moveTo'), onClick: () => setCopyMove('move') },
+    { key: 'delete', icon: 'delete', label: t('libraryEditor.delete'), danger: true, onClick: () => setDeleteSelectedOpen(true) },
+  ];
 
   const filterRow = hasFilter && (
     <>
@@ -685,47 +572,16 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
       {filterTags.map((tag) => (
         <FilterChip key={tag} label={`#${tag}`} removeLabel={t('projectViewer.album.tagRemove', { tag })} onRemove={() => toggleFilterTag(tag)} />
       ))}
-      <button type="button" className="v2-filter-link" onClick={clearFilters}>
-        {t('v2.project.clearFilters')}
-      </button>
+      <Button variant="text" size="xs" onClick={clearFilters}>
+        {t('v2.common.clearFilters')}
+      </Button>
     </>
   );
 
   const countLabel = hasFilter ? t('v2.library.matches', { count: totalItems }) : t('v2.project.itemCount', { count: totalItems });
 
   let body: ReactNode;
-  if (loadingItems && items.length === 0) {
-    body = (
-      <div className="v2-results-loading">
-        <LoadingIndicator />
-      </div>
-    );
-  } else if (items.length === 0 && !hasFilter) {
-    body = (
-      <EmptyState
-        icon={isText ? 'edit_note' : 'upload'}
-        shape={meta.shape}
-        className="v2-pane-empty"
-        title={t('v2.library.emptyTitle')}
-        description={isText ? t('v2.library.emptyText') : t('v2.library.emptyMedia')}
-        action={primaryAction}
-      />
-    );
-  } else if (items.length === 0) {
-    body = (
-      <EmptyState
-        icon="filter_alt_off"
-        className="v2-pane-empty"
-        title={t('libraryEditor.noResultsFound')}
-        description={t('libraryEditor.tryDifferentSearch')}
-        action={
-          <Button variant="tonal" icon="filter_alt_off" onClick={clearFilters}>
-            {t('v2.project.clearFilters')}
-          </Button>
-        }
-      />
-    );
-  } else if (isText) {
+  if (isText) {
     body = (
       <LibraryTextItems
         view={textView}
@@ -776,35 +632,37 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
   }
 
   return (
-    <Page ref={paginationRef} className="v2-lib" data-kind={type} {...dropHandlers}>
+    <Page className="v2-lib" data-kind={type} {...dropHandlers}>
       <LibraryHero library={library} itemCount={libraryCount} primary={primaryAction} actions={heroActions} />
 
-      <section className="v2-lib-pane v2-pane" data-density="compact">
-        <div className="v2-results-section">
-          <ResultsBar
-            nav={
-              <Text as="span" variant="title-small" emphasized className="v2-lib-pane__count">
-                {countLabel}
-              </Text>
-            }
-            isLoading={loadingItems && items.length > 0}
-            totalCount={items.length}
-            selectedCount={selected.size}
-            onToggleSelectAll={selectAll}
-            onClearSelection={clearSelection}
-            tools={tools}
-            menuItems={totalItems > 0 ? scopeActions : []}
-            selectionActions={selectionActions}
-            below={filterRow}
-          />
-
-          {upload && <LinearProgress className="v2-pane-inset v2-lib-pane__upload" shape="wavy" value={upload.done} max={upload.total} aria-label={t('v2.library.uploadingCount', { done: upload.done, total: upload.total })} />}
-          {canAutoTag && <AutoTagProgress scope={{ kind: 'library', libraryId: library.id }} runKey={autoTagRunKey} className="v2-pane-inset" />}
-
+      <div className="v2-lib-pane" data-density="compact">
+        <ListPane
+          label={library.name}
+          lead={<ListTitle title={countLabel} />}
+          tools={tools}
+          menuItems={totalItems > 0 ? scopeActions : []}
+          below={filterRow || undefined}
+          before={
+            <>
+              {upload && <LinearProgress className="v2-list-pane__notice v2-lib-pane__upload" shape="wavy" value={upload.done} max={upload.total} aria-label={t('v2.library.uploadingCount', { done: upload.done, total: upload.total })} />}
+              {canAutoTag && <AutoTagProgress scope={{ kind: 'library', libraryId: library.id }} runKey={autoTagRunKey} className="v2-list-pane__notice" />}
+            </>
+          }
+          loading={itemsData.loading}
+          refreshing={itemsData.refreshing}
+          error={itemsData.error}
+          onRetry={() => void itemsData.reload()}
+          count={items.length}
+          filtered={hasFilter}
+          onClearFilters={clearFilters}
+          noMatches={{ icon: 'filter_alt_off', title: t('libraryEditor.noResultsFound'), description: t('libraryEditor.tryDifferentSearch') }}
+          empty={{ icon: isText ? 'edit_note' : 'upload', shape: meta.shape, title: t('v2.library.emptyTitle'), description: isText ? t('v2.library.emptyText') : t('v2.library.emptyMedia'), action: primaryAction }}
+          selection={selection}
+          selectionActions={selectionActions}
+          paging={{ page: currentPage, pageSize, total: totalItems, pages: itemsData.data?.pages, onPageChange: setPage, onPageSizeChange: setPageSize }}
+        >
           {body}
-
-          {totalItems > 0 && <PagedFooter className="v2-results-footer" page={currentPage} pageSize={pageSize} total={totalItems} pages={totalPages} onPageChange={setPage} onPageSizeChange={setPageSize} />}
-        </div>
+        </ListPane>
 
         {dragging && (
           <div className="v2-lib-drop" aria-hidden>
@@ -819,7 +677,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
             </div>
           </div>
         )}
-      </section>
+      </div>
 
       <ConfirmDialog
         open={deleteLibraryOpen}
@@ -1030,7 +888,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
             await refresh();
           } catch (err) {
             console.error('Failed to update title', err);
-            snackbar.show((err as Error).message || t('v2.library.renameFailed'));
+            toast.error(errorText(err, t('v2.library.renameFailed')));
           }
         }}
       />
@@ -1048,10 +906,10 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
         onConfirm={async (name) => {
           try {
             const copy = await duplicateLibrary(library.id, name);
-            snackbar.show(t('libraries.duplicateDialog.success', { name: library.name }));
+            toast.success(t('libraries.duplicateDialog.success', { name: library.name }));
             navigate(`/library/${copy.id}`);
           } catch (error) {
-            snackbar.show((error as Error).message || t('libraries.duplicateDialog.error'));
+            toast.error(errorText(error, t('libraries.duplicateDialog.error')));
             throw error;
           }
         }}
@@ -1072,9 +930,9 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
           try {
             await exportMediaLibraryZip(library.id, fileName);
             navigate('/exports');
-            snackbar.show(t('libraryEditor.exportModal.success', 'Library export queued.'));
+            toast.success(t('libraryEditor.exportModal.success', 'Library export queued.'));
           } catch (error) {
-            snackbar.show((error as Error)?.message || t('libraryEditor.exportModal.error'));
+            toast.error(errorText(error, t('libraryEditor.exportModal.error')));
             throw error;
           }
         }}

@@ -12,11 +12,11 @@ import {
   Text,
   ThemeBuilder,
   THEME_BUILDER_PRESETS,
-  useSnackbar,
   useTheme,
   type MaterialShapeName,
 } from '../../m3';
 import { DEFAULT_SEED, DEFAULT_UI_PREFS, seedFromImageFile, useUiPrefs } from './prefs';
+import { useToast } from '../ui/useToast';
 
 const PRESETS = [DEFAULT_SEED, ...THEME_BUILDER_PRESETS.filter((c) => c.toLowerCase() !== DEFAULT_SEED.toLowerCase())].slice(0, 8);
 const PREVIEW_SHAPES: MaterialShapeName[] = ['cookie-9', 'clover-4', 'sunny', 'soft-burst', 'flower', 'puffy'];
@@ -55,7 +55,7 @@ export function ThemeEditor({ open, onClose }: { open: boolean; onClose: () => v
   const { t } = useTranslation();
   const theme = useTheme();
   const prefs = useUiPrefs();
-  const snackbar = useSnackbar();
+  const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [shapeIndex, setShapeIndex] = useState(0);
   const [extracting, setExtracting] = useState(false);
@@ -66,9 +66,9 @@ export function ThemeEditor({ open, onClose }: { open: boolean; onClose: () => v
     try {
       const seed = await seedFromImageFile(file);
       theme.setConfig({ seed });
-      snackbar.show(t('v2.theme.seedFromImageDone', { seed }));
+      toast.success(t('v2.theme.seedFromImageDone', { seed }));
     } catch {
-      snackbar.show(t('v2.theme.seedFromImageFailed'));
+      toast.error(t('v2.theme.seedFromImageFailed'));
     } finally {
       setExtracting(false);
       if (fileRef.current) fileRef.current.value = '';

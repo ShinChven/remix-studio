@@ -1,39 +1,37 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router-dom';
 import { deleteTrashBatch, deleteTrashPermanently, emptyTrash, fetchTrash, imageDisplayUrl, moveToTrashBatch, restoreTrashBatch, restoreTrashItem } from '../../api';
-import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, usePrefersReducedMotion, useSnackbar } from '../../m3';
+import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, usePrefersReducedMotion } from '../../m3';
 import type { TrashItem } from '../../types';
 import { Lightbox } from '../components/Lightbox';
-import { DangerAction, ResultsBar, SectionNav } from '../components/project/ResultsBar';
-import { TrashGrid, type Leaving, type TileSize } from '../components/trash/TrashGrid';
+import { TrashGrid, type Leaving } from '../components/trash/TrashGrid';
 import { TrashHero } from '../components/trash/TrashHero';
 import { TrashItemDialog } from '../components/trash/TrashItemDialog';
 import { groupItems, sortItems, TRASH_KINDS, TRASH_SORTS, trashBytes, trashFilename, trashKind, type TrashGroup, type TrashKind, type TrashSort } from '../components/trash/trashMeta';
-import { usePaginationScroll } from '../lib/usePaginationScroll';
+import { errorText } from '../lib/errors';
 import { formatBytes } from '../lib/format';
-import { useRangeSelection } from '../lib/useRangeSelection';
-import { useViewPref } from '../lib/viewPrefs';
+import { useAsyncData } from '../lib/useAsyncData';
+import { useCopy } from '../lib/useCopy';
+import { pageOf, PAGE_SIZES, useListParams } from '../lib/useListParams';
+import { useSelection } from '../lib/useSelection';
+import { TILE_SIZES, useViewPref, type TileSize } from '../lib/viewPrefs';
 import type { ActionMenuItem } from '../ui/ActionMenu';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { HoverMenuButton } from '../ui/HoverMenuButton';
-import { EmptyState, ErrorState, LoadingState, Page } from '../ui/Page';
-import { PagedFooter, PAGE_SIZE_OPTIONS } from '../ui/PagedFooter';
-import { FilterChip, ResultsSearch } from '../ui/ResultFilters';
+import { SectionNav } from '../ui/ListBar';
+import { ListPane } from '../ui/ListPane';
+import { ListSearch } from '../ui/ListSearch';
+import { Page } from '../ui/Page';
+import { FilterChip } from '../ui/ResultFilters';
+import { useToast } from '../ui/useToast';
 
 type View = 'all' | TrashKind;
 const VIEWS: View[] = ['all', ...TRASH_KINDS];
 const VIEW_ICONS: Record<View, string> = { all: 'delete', image: 'image', video: 'movie', audio: 'music_note', text: 'notes' };
-const TILE_SIZES: TileSize[] = ['s', 'm', 'l'];
-const DEFAULT_PAGE_SIZE = 100;
 /** Long enough for the lift or the drop to read before the item is gone. */
 const LEAVE_MS = 280;
 
 type Pending = { kind: 'empty' } | { kind: 'restore-all' } | { kind: 'delete'; items: TrashItem[] };
-
-function pick<T extends string>(value: string | null, allowed: readonly T[], fallback: T): T {
-  return value && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
-}
 
 /** Prompt, text, project, tags and file name, against every word of the search. */
 function matches(item: TrashItem, query: string): boolean {
@@ -46,70 +44,24 @@ function matches(item: TrashItem, query: string): boolean {
 export function Trash() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
-  const snackbar = useSnackbar();
+  const toast = useToast();
+  const copyText = useCopy();
   const reducedMotion = usePrefersReducedMotion();
-  const [params, setParams] = useSearchParams();
 
   // Filters, sort, paging and the open item live in the URL.
-  const q = params.get('q') ?? '';
-  const view = pick(params.get('kind'), VIEWS, 'all');
-  const project = params.get('project');
-  const sort = pick(params.get('sort'), Object.keys(TRASH_SORTS) as TrashSort[], 'recent');
-  const sizeParam = params.get('size');
-  const pageSize: number | 'all' = sizeParam === 'all' ? 'all' : PAGE_SIZE_OPTIONS.includes(Number(sizeParam)) ? Number(sizeParam) : DEFAULT_PAGE_SIZE;
-  const page = Math.max(1, Math.floor(Number(params.get('page'))) || 1);
-  const openId = params.get('item');
+  const list = useListParams({ pageSize: 100, pageSizes: PAGE_SIZES, defaults: { kind: 'all', sort: 'recent' } });
+  const { q, pageSize } = list;
+  const view = list.oneOf('kind', VIEWS);
+  const project = list.get('project') || null;
+  const sort = list.oneOf('sort', Object.keys(TRASH_SORTS) as TrashSort[]);
+  const openId = list.get('item') || null;
+  const setProject = (id: string | null) => list.set({ project: id });
   const [tileSize, setTileSize] = useViewPref<TileSize>('v2.trash.tileSize', 'm', TILE_SIZES);
 
-  const update = useCallback(
-    (patch: Record<string, string | number | null>, { push = false }: { push?: boolean } = {}) => {
-      setParams(
-        (previous) => {
-          const next = new URLSearchParams(previous);
-          for (const [key, value] of Object.entries(patch)) {
-            if (value === null || value === '' || (key === 'kind' && value === 'all')) next.delete(key);
-            else next.set(key, String(value));
-          }
-          // Any change to what is listed starts again from the first page.
-          if (!('page' in patch) && !('item' in patch)) next.delete('page');
-          if (next.get('page') === '1') next.delete('page');
-          if (next.get('sort') === 'recent') next.delete('sort');
-          if (next.get('size') === String(DEFAULT_PAGE_SIZE)) next.delete('size');
-          return next;
-        },
-        { replace: !push },
-      );
-    },
-    [setParams],
-  );
-  const setSearch = useCallback((value: string) => update({ q: value.trim() }), [update]);
-
   // Everything in the bin; the page filters and pages it.
-  const [items, setItems] = useState<TrashItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState('');
-  const [reloadKey, setReloadKey] = useState(0);
-  const reload = useCallback(() => setReloadKey((key) => key + 1), []);
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    fetchTrash()
-      .then((result) => {
-        if (cancelled) return;
-        setItems(result);
-        setError('');
-      })
-      .catch((err: Error) => !cancelled && setError(err.message || t('v2.trash.loadFailed')))
-      .finally(() => {
-        if (cancelled) return;
-        setLoading(false);
-        setLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadKey, t]);
+  const bin = useAsyncData(fetchTrash, []);
+  const items = useMemo(() => bin.data ?? [], [bin.data]);
+  const reload = () => void bin.reload(true);
 
   const projects = useMemo(() => {
     const byId = new Map<string, { id: string; name: string; count: number; exists: boolean }>();
@@ -130,33 +82,25 @@ export function Trash() {
     return result;
   }, [scoped]);
   const sorted = useMemo(() => sortItems(view === 'all' ? scoped : scoped.filter((item) => trashKind(item) === view), sort, lang), [scoped, view, sort, lang]);
-  const pages = pageSize === 'all' ? 1 : Math.max(1, Math.ceil(sorted.length / pageSize));
-  const currentPage = Math.min(page, pages);
-  const paginationRef = usePaginationScroll({ page: currentPage, pageSize });
-  const pageItems = useMemo(() => (pageSize === 'all' ? sorted : sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize)), [sorted, pageSize, currentPage]);
+  const { items: pageItems, page: currentPage, pages } = useMemo(() => pageOf(sorted, list.page, pageSize), [sorted, list.page, pageSize]);
   const groups = useMemo(() => groupItems(pageItems, sort, lang), [pageItems, sort, lang]);
   const totalBytes = useMemo(() => items.reduce((sum, item) => sum + trashBytes(item), 0), [items]);
   const shownBytes = useMemo(() => sorted.reduce((sum, item) => sum + trashBytes(item), 0), [sorted]);
 
   // Selection covers the items on the page; it clears whenever the list changes.
-  const { selected, setSelected, toggle, selectAll, clear: clearSelection } = useRangeSelection(pageItems, (item) => item.id, [q, view, project, sort, currentPage, pageSize]);
-  const selectedItems = useMemo(() => pageItems.filter((item) => selected.has(item.id)), [pageItems, selected]);
+  const selection = useSelection(pageItems, (item) => item.id, [q, view, project, sort, currentPage, pageSize]);
+  const selectedItems = selection.items;
 
-  const toggleGroup = (group: TrashGroup) =>
-    setSelected((current) => {
-      const next = new Set(current);
-      const all = group.items.every((item) => next.has(item.id));
-      for (const item of group.items) {
-        if (all) next.delete(item.id);
-        else next.add(item.id);
-      }
-      return next;
-    });
+  const toggleGroup = (group: TrashGroup) => {
+    const ids = group.items.map((item) => item.id);
+    if (ids.every((id) => selection.isSelected(id))) selection.remove(ids);
+    else selection.add(ids);
+  };
 
   // The open item, and the pictures in the lightbox.
   const openItem = openId ? (items.find((item) => item.id === openId) ?? null) : null;
-  const openDetails = (item: TrashItem) => update({ item: item.id }, { push: !openId });
-  const closeDetails = () => update({ item: null });
+  const openDetails = (item: TrashItem) => list.set({ item: item.id }, { keepPage: true, replace: !!openId });
+  const closeDetails = () => list.set({ item: null }, { keepPage: true, replace: true });
   const [lightbox, setLightbox] = useState<{ ids: string[]; index: number } | null>(null);
   const lightboxIndex = useRef(0);
   const itemsById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items]);
@@ -181,7 +125,7 @@ export function Trash() {
     if (openId && gone.has(openId)) {
       const at = sorted.findIndex((item) => item.id === openId);
       const neighbour = sorted.slice(at + 1).find((item) => !gone.has(item.id)) ?? sorted.slice(0, Math.max(0, at)).reverse().find((item) => !gone.has(item.id));
-      update({ item: neighbour?.id ?? null });
+      list.set({ item: neighbour?.id ?? null }, { keepPage: true, replace: true });
     }
     setLightbox((current) => {
       if (!current || !current.ids.some((id) => gone.has(id))) return current;
@@ -199,29 +143,21 @@ export function Trash() {
     });
     window.setTimeout(
       () => {
-        setItems((current) => current.filter((item) => !gone.has(item.id)));
+        bin.setData((current) => current?.filter((item) => !gone.has(item.id)));
         setLeaving((current) => {
           const next = new Map(current);
           for (const id of ids) next.delete(id);
           return next;
         });
-        setSelected((current) => {
-          if (![...current].some((id) => gone.has(id))) return current;
-          return new Set([...current].filter((id) => !gone.has(id)));
-        });
+        selection.remove(ids);
       },
       reducedMotion ? 0 : LEAVE_MS,
     );
   };
 
-  const fail = (err: unknown, key: string) => snackbar.show({ message: (err as Error).message || t(key), closable: true });
+  const fail = (err: unknown, key: string) => toast.error(errorText(err, t(key)));
 
-  const copy = (text: string) => {
-    void navigator.clipboard
-      .writeText(text)
-      .then(() => snackbar.show(t('v2.trash.copied')))
-      .catch(() => snackbar.show(t('v2.trash.copyFailed')));
-  };
+  const copy = (text: string) => void copyText(text, t('v2.trash.copied'));
 
   /** Puts restored items back in the bin, project by project. */
   const undoRestore = async (restored: TrashItem[]) => {
@@ -229,7 +165,7 @@ export function Trash() {
     for (const item of restored) byProject.set(item.projectId, [...(byProject.get(item.projectId) ?? []), item.id]);
     try {
       for (const [projectId, ids] of byProject) await moveToTrashBatch(projectId, ids);
-      snackbar.show(t('v2.trash.undone', { count: restored.length }));
+      toast.success(t('v2.trash.undone', { count: restored.length }));
     } catch (err) {
       fail(err, 'v2.trash.undoFailed');
     }
@@ -240,7 +176,7 @@ export function Trash() {
     const restorable = targets.filter((item) => item.projectExists !== false && !leaving.has(item.id));
     const skipped = targets.length - restorable.length;
     if (!restorable.length) {
-      snackbar.show(t('v2.trash.cantRestore', { count: targets.length }));
+      toast.info(t('v2.trash.cantRestore', { count: targets.length }));
       return;
     }
     try {
@@ -256,10 +192,7 @@ export function Trash() {
       'restore',
     );
     const message = restorable.length === 1 ? t('v2.trash.restoredTo', { project: restorable[0].projectName }) : t('v2.trash.restored', { count: restorable.length });
-    snackbar.show({
-      message: skipped ? `${message} · ${t('v2.trash.skipped', { count: skipped })}` : message,
-      action: { label: t('v2.trash.undo'), onClick: () => void undoRestore(restorable) },
-    });
+    toast.success(skipped ? `${message} · ${t('v2.trash.skipped', { count: skipped })}` : message, { action: { label: t('v2.trash.undo'), onClick: () => void undoRestore(restorable) } });
   };
 
   const deleteForever = async (targets: TrashItem[]) => {
@@ -273,7 +206,7 @@ export function Trash() {
       return;
     }
     leave(ids, 'delete');
-    snackbar.show(t('v2.trash.deleted', { count: ids.length, size: formatBytes(targets.reduce((sum, item) => sum + trashBytes(item), 0)) }));
+    toast.success(t('v2.trash.deleted', { count: ids.length, size: formatBytes(targets.reduce((sum, item) => sum + trashBytes(item), 0)) }));
   };
 
   const emptyAll = async () => {
@@ -288,7 +221,7 @@ export function Trash() {
       items.map((item) => item.id),
       'delete',
     );
-    snackbar.show(t('v2.trash.emptied', { size: formatBytes(totalBytes) }));
+    toast.success(t('v2.trash.emptied', { size: formatBytes(totalBytes) }));
   };
 
   const restorableCount = items.filter((item) => item.projectExists !== false).length;
@@ -298,10 +231,10 @@ export function Trash() {
     const kind = trashKind(item);
     return [
       { key: 'details', icon: 'info', label: t('v2.project.details'), onSelect: () => openDetails(item) },
-      { key: 'select', icon: selected.has(item.id) ? 'check_box' : 'check_box_outline_blank', label: t('v2.project.select'), type: 'checkbox', checked: selected.has(item.id), onSelect: () => toggle(item.id, false) },
+      { key: 'select', icon: selection.isSelected(item.id) ? 'check_box' : 'check_box_outline_blank', label: t('v2.project.select'), type: 'checkbox', checked: selection.isSelected(item.id), onSelect: () => selection.toggle(item.id) },
       { key: 'restore', icon: 'restore', label: orphan ? t('v2.trash.orphanShort') : t('v2.trash.restore'), disabled: orphan, divider: true, onSelect: () => void restore([item]) },
       { key: 'project', icon: 'folder_open', label: t('v2.trash.openProject'), hidden: orphan, href: `/project/${item.projectId}?tab=album` },
-      { key: 'filter', icon: 'filter_list', label: t('v2.trash.onlyThisProject'), hidden: project === item.projectId, onSelect: () => update({ project: item.projectId }) },
+      { key: 'filter', icon: 'filter_list', label: t('v2.trash.onlyThisProject'), hidden: project === item.projectId, onSelect: () => setProject(item.projectId) },
       { key: 'original', icon: 'open_in_new', label: t('projectViewer.album.openOriginal'), hidden: kind === 'text', href: imageDisplayUrl(item.imageUrl), target: '_blank' },
       { key: 'copy', icon: 'content_copy', label: kind === 'text' ? t('v2.trash.copyText') : t('v2.trash.copyPrompt'), hidden: !(item.textContent || item.prompt), onSelect: () => copy(kind === 'text' ? item.textContent || item.prompt : item.prompt) },
       { key: 'delete', icon: 'delete_forever', label: t('v2.trash.deleteForever'), danger: true, divider: true, onSelect: () => setPending({ kind: 'delete', items: [item] }) },
@@ -346,33 +279,33 @@ export function Trash() {
   };
 
   const filtered = Boolean(q) || Boolean(project) || view !== 'all';
-  const clearFilters = () => update({ q: null, project: null, kind: null });
+  const clearFilters = () => list.set({ q: null, project: null, kind: null });
 
   const nav = (
     <SectionNav<View>
       scope="trash"
       label={t('v2.trash.sections')}
       value={view}
-      onChange={(next) => update({ kind: next })}
+      onChange={(next) => list.set({ kind: next })}
       items={VIEWS.filter((value) => value === 'all' || value === view || counts[value] > 0).map((value) => ({ value, label: t(`v2.trash.kinds.${value}`), icon: VIEW_ICONS[value], count: counts[value] }))}
     />
   );
 
   const tools = (
     <>
-      <ResultsSearch value={q} onChange={setSearch} label={t('v2.trash.search')} />
+      <ListSearch value={q} onChange={list.setQuery} label={t('v2.trash.search')} />
       {projects.length > 1 && (
         <HoverMenuButton
           placement="bottom-end"
           aria-label={t('v2.trash.project')}
           trigger={(p) => <IconButton {...p} icon="folder" size="sm" variant={project ? 'tonal' : 'standard'} label={t('v2.trash.project')} />}
         >
-          <MenuItem type="radio" icon="folder_copy" checked={!project} onSelect={() => update({ project: null })} trailingText={String(items.length)}>
+          <MenuItem type="radio" icon="folder_copy" checked={!project} onSelect={() => setProject(null)} trailingText={String(items.length)}>
             {t('v2.trash.allProjects')}
           </MenuItem>
           <MenuDivider />
           {projects.map((entry) => (
-            <MenuItem key={entry.id} type="radio" icon={entry.exists ? 'folder' : 'folder_off'} checked={project === entry.id} onSelect={() => update({ project: entry.id })} trailingText={String(entry.count)}>
+            <MenuItem key={entry.id} type="radio" icon={entry.exists ? 'folder' : 'folder_off'} checked={project === entry.id} onSelect={() => setProject(entry.id)} trailingText={String(entry.count)}>
               {entry.name}
             </MenuItem>
           ))}
@@ -381,7 +314,7 @@ export function Trash() {
       <HoverMenuButton placement="bottom-end" aria-label={t('v2.trash.viewOptions')} trigger={(p) => <IconButton {...p} icon="tune" size="sm" label={t('v2.trash.viewOptions')} />}>
         <MenuGroup label={t('v2.project.sort')}>
           {(Object.keys(TRASH_SORTS) as TrashSort[]).map((value) => (
-            <MenuItem key={value} type="radio" icon={TRASH_SORTS[value].icon} checked={sort === value} onSelect={() => update({ sort: value })}>
+            <MenuItem key={value} type="radio" icon={TRASH_SORTS[value].icon} checked={sort === value} onSelect={() => list.set({ sort: value })}>
               {t(`v2.trash.sorts.${value}`)}
             </MenuItem>
           ))}
@@ -394,34 +327,26 @@ export function Trash() {
             </MenuItem>
           ))}
         </MenuGroup>
-        <MenuDivider />
-        <MenuGroup label={t('pagination.pageSize')}>
-          {PAGE_SIZE_OPTIONS.map((value) => (
-            <MenuItem key={String(value)} type="radio" checked={pageSize === value} onSelect={() => update({ size: value })}>
-              {value === 'all' ? t('pagination.all') : String(value)}
-            </MenuItem>
-          ))}
-        </MenuGroup>
       </HoverMenuButton>
     </>
   );
 
   const chips = (q || project) && (
     <>
-      {q && <FilterChip label={`“${q}”`} removeLabel={t('v2.trash.clearSearch')} onRemove={() => update({ q: null })} />}
-      {project && <FilterChip label={projectEntry?.name ?? project} removeLabel={t('v2.trash.allProjects')} onRemove={() => update({ project: null })} />}
-      <button type="button" className="v2-filter-link" onClick={clearFilters}>
-        {t('v2.project.clearFilters')}
-      </button>
+      {q && <FilterChip label={`“${q}”`} removeLabel={t('v2.trash.clearSearch')} onRemove={() => list.setQuery('')} />}
+      {project && <FilterChip label={projectEntry?.name ?? project} removeLabel={t('v2.trash.allProjects')} onRemove={() => setProject(null)} />}
+      <Button variant="text" size="xs" onClick={clearFilters}>
+        {t('v2.common.clearFilters')}
+      </Button>
     </>
   );
 
   const selectedOrphans = selectedItems.filter((item) => item.projectExists === false).length;
 
   return (
-    <Page ref={paginationRef} className="v2-trash" density="compact">
+    <Page className="v2-trash" density="compact">
       <TrashHero
-        items={loaded ? items : null}
+        items={bin.data ?? null}
         actions={
           items.length > 0 && (
             <>
@@ -436,91 +361,65 @@ export function Trash() {
         }
       />
 
-      <section className="v2-trash-pane" aria-label={t('trash.title')}>
-        <ResultsBar
-          nav={nav}
-          totalCount={pageItems.length}
-          selectedCount={selectedItems.length}
-          onToggleSelectAll={selectAll}
-          onClearSelection={clearSelection}
-          isLoading={loading && loaded}
-          summary={sorted.length > 0 && `${t('v2.project.itemCount', { count: sorted.length })} · ${formatBytes(shownBytes)}`}
-          tools={tools}
-          below={chips || undefined}
-          menuItems={[
-            { key: 'restore-all', icon: 'restore', label: t('v2.trash.restoreAll'), disabled: restorableCount === 0, onSelect: () => setPending({ kind: 'restore-all' }) },
-            { key: 'refresh', icon: 'refresh', label: t('v2.trash.refresh'), onSelect: reload },
-            { key: 'empty', icon: 'delete_sweep', label: t('v2.trash.emptyBin'), danger: true, divider: true, disabled: items.length === 0, onSelect: () => setPending({ kind: 'empty' }) },
-          ]}
-          selectionActions={
-            <>
-              <IconButton
-                icon="restore"
-                size="sm"
-                label={selectedOrphans ? `${t('v2.trash.restore')} · ${t('v2.trash.skipped', { count: selectedOrphans })}` : t('v2.trash.restore')}
-                tooltip
-                disabled={selectedOrphans === selectedItems.length}
-                onClick={() => void restore(selectedItems)}
-              />
-              <DangerAction icon="delete_forever" label={t('v2.trash.deleteForever')} onClick={() => setPending({ kind: 'delete', items: selectedItems })} />
-            </>
-          }
+      <ListPane
+        label={t('trash.title')}
+        lead={nav}
+        fitKey={view}
+        summary={sorted.length > 0 && `${t('v2.project.itemCount', { count: sorted.length })} · ${formatBytes(shownBytes)}`}
+        tools={tools}
+        below={chips || undefined}
+        menuItems={[
+          { key: 'restore-all', icon: 'restore', label: t('v2.trash.restoreAll'), disabled: restorableCount === 0, onSelect: () => setPending({ kind: 'restore-all' }) },
+          { key: 'refresh', icon: 'refresh', label: t('v2.trash.refresh'), onSelect: reload },
+          { key: 'empty', icon: 'delete_sweep', label: t('v2.trash.emptyBin'), danger: true, divider: true, disabled: items.length === 0, onSelect: () => setPending({ kind: 'empty' }) },
+        ]}
+        loading={bin.loading}
+        refreshing={bin.refreshing}
+        error={bin.error ? errorText(bin.error, t('v2.trash.loadFailed')) : null}
+        onRetry={() => void bin.reload()}
+        count={pageItems.length}
+        filtered={filtered && items.length > 0}
+        onClearFilters={clearFilters}
+        noMatches={{ title: t('v2.trash.noMatches'), description: t('v2.trash.noMatchesHint') }}
+        empty={{ shape: 'ghostish', icon: 'delete', title: t('v2.trash.emptyTitle'), description: t('v2.trash.emptyDescription') }}
+        selection={selection}
+        selectionActions={[
+          {
+            key: 'restore',
+            icon: 'restore',
+            label: selectedOrphans ? `${t('v2.trash.restore')} · ${t('v2.trash.skipped', { count: selectedOrphans })}` : t('v2.trash.restore'),
+            disabled: selectedOrphans === selectedItems.length,
+            onClick: () => void restore(selectedItems),
+          },
+          { key: 'delete', icon: 'delete_forever', label: t('v2.trash.deleteForever'), danger: true, onClick: () => setPending({ kind: 'delete', items: selectedItems }) },
+        ]}
+        paging={{ page: currentPage, pageSize, total: sorted.length, pages, onPageChange: list.setPage, onPageSizeChange: list.setPageSize }}
+      >
+        <TrashGrid
+          groups={groups}
+          selectedIds={selection.selected}
+          size={tileSize}
+          showProject={sort !== 'project'}
+          leaving={leaving}
+          menuItems={itemMenu}
+          onOpen={open}
+          onToggle={(item, range) => selection.toggle(item.id, range)}
+          onToggleGroup={toggleGroup}
+          onRestore={(item) => void restore([item])}
+          onDelete={(item) => setPending({ kind: 'delete', items: [item] })}
+          onProjectClick={(projectId) => setProject(projectId === project ? null : projectId)}
         />
-
-        {error && (
-          <div className="v2-pane-inset">
-            <ErrorState message={error} onRetry={reload} retryLabel={t('v2.trash.retry')} />
-          </div>
-        )}
-
-        {!loaded ? (
-          <LoadingState />
-        ) : items.length === 0 && !error ? (
-          <EmptyState className="v2-pane-empty v2-trash-empty" shape="ghostish" icon="delete" title={t('v2.trash.emptyTitle')} description={t('v2.trash.emptyDescription')} />
-        ) : sorted.length === 0 && !error ? (
-          <EmptyState
-            className="v2-pane-empty"
-            shape="puffy"
-            icon="search_off"
-            title={t('v2.trash.noMatches')}
-            description={t('v2.trash.noMatchesHint')}
-            action={
-              filtered && (
-                <Button variant="tonal" icon="filter_alt_off" onClick={clearFilters}>
-                  {t('v2.project.clearFilters')}
-                </Button>
-              )
-            }
-          />
-        ) : (
-          <TrashGrid
-            groups={groups}
-            selectedIds={selected}
-            size={tileSize}
-            showProject={sort !== 'project'}
-            leaving={leaving}
-            menuItems={itemMenu}
-            onOpen={open}
-            onToggle={(item, range) => toggle(item.id, range)}
-            onToggleGroup={toggleGroup}
-            onRestore={(item) => void restore([item])}
-            onDelete={(item) => setPending({ kind: 'delete', items: [item] })}
-            onProjectClick={(projectId) => update({ project: projectId === project ? null : projectId })}
-          />
-        )}
-
-        {sorted.length > 0 && <PagedFooter className="v2-results-footer" page={currentPage} pageSize={pageSize} total={sorted.length} pages={pages} onPageChange={(next) => update({ page: next })} onPageSizeChange={(next) => update({ size: next })} />}
-      </section>
+      </ListPane>
 
       <TrashItemDialog
         item={openItem}
         items={sorted}
-        onNavigate={(item) => update({ item: item.id })}
+        onNavigate={(item) => list.set({ item: item.id }, { keepPage: true, replace: true })}
         onClose={closeDetails}
         onRestore={(item) => void restore([item])}
         onDelete={(item) => setPending({ kind: 'delete', items: [item] })}
         onCopy={copy}
-        onProjectClick={(projectId) => update({ project: projectId, item: null })}
+        onProjectClick={(projectId) => list.set({ project: projectId, item: null })}
       />
 
       {lightbox && lightboxItems.length > 0 && (

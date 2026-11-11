@@ -8,7 +8,8 @@ import { EmptyState } from '../../ui/Page';
 import { PagedFooter } from '../../ui/PagedFooter';
 import { JobDetails, type OpenLightbox } from './JobDetails';
 import { JobRow, shortDate } from './JobRow';
-import { ResultsBar, SelectionFloatBar } from './ResultsBar';
+import { SelectionBar } from '../../ui/SelectionBar';
+import { ResultsBar } from './ResultsBar';
 
 /**
  * A job list that only mounts the rows near the viewport, so thousands of drafts stay fast. It
@@ -74,7 +75,7 @@ interface CommonProps {
 
 export interface DraftsTabProps extends CommonProps {
   draftJobs: Job[];
-  selectedDraftIds: Set<string>;
+  selectedDraftIds: ReadonlySet<string>;
   toggleSelectAllDrafts: () => void;
   clearDraftSelection: () => void;
   setShowDeleteSelectedModal: (show: boolean) => void;
@@ -105,9 +106,7 @@ export function DraftsTab(props: DraftsTabProps) {
         nav={props.nav}
         totalCount={draftJobs.length}
         mobileCount={draftJobs.length}
-        selectedCount={selectedDraftIds.size}
-        onToggleSelectAll={props.toggleSelectAllDrafts}
-        onClearSelection={props.clearDraftSelection}
+        onSelectAll={props.toggleSelectAllDrafts}
         menuItems={draftJobs.length > 0 ? [{ key: 'delete-all', icon: 'delete_sweep', danger: true, disabled: starting, label: t('projectViewer.drafts.deleteAllDrafts'), onSelect: () => props.setShowDeleteAllDraftsModal(true) }] : []}
         tools={
           draftJobs.length > 0 && (
@@ -118,7 +117,6 @@ export function DraftsTab(props: DraftsTabProps) {
             </>
           )
         }
-        selection="floating"
       />
       {starting && <LinearProgress className="v2-results-progress" aria-label={t('projectViewer.drafts.starting', { defaultValue: 'Starting jobs' })} />}
       {draftJobs.length === 0 ? (
@@ -157,11 +155,11 @@ export function DraftsTab(props: DraftsTabProps) {
           )}
         />
       )}
-      <SelectionFloatBar
+      <SelectionBar
         selectedCount={selectedDraftIds.size}
         totalCount={draftJobs.length}
-        onToggleSelectAll={props.toggleSelectAllDrafts}
-        onClearSelection={props.clearDraftSelection}
+        onSelectAll={props.toggleSelectAllDrafts}
+        onClear={props.clearDraftSelection}
         actions={[
           { key: 'start', label: t('v2.project.start'), icon: 'play_arrow', variant: 'filled', loading: starting, onClick: props.runSelectedDrafts },
           { key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, disabled: starting, onClick: () => props.setShowDeleteSelectedModal(true) },
@@ -230,7 +228,7 @@ function DraftsCanvas({ albumItems = [], onSwitchToAlbum, projectType = 'image',
 
 export interface QueueTabProps extends CommonProps {
   queueJobs: Job[];
-  selectedQueueIds: Set<string>;
+  selectedQueueIds: ReadonlySet<string>;
   toggleSelectAllQueue: () => void;
   clearQueueSelection: () => void;
   toggleQueueSelection: SelectToggle;
@@ -258,9 +256,7 @@ export function QueueTab(props: QueueTabProps) {
         nav={props.nav}
         totalCount={queueJobs.length}
         mobileCount={queueJobs.length}
-        selectedCount={selectedQueueIds.size}
-        onToggleSelectAll={props.toggleSelectAllQueue}
-        onClearSelection={props.clearQueueSelection}
+        onSelectAll={props.toggleSelectAllQueue}
         summary={
           queueJobs.length > 0 && (
             <>
@@ -277,7 +273,6 @@ export function QueueTab(props: QueueTabProps) {
             </Button>
           )
         }
-        selection="floating"
       />
       {retrying && <LinearProgress className="v2-results-progress" aria-label={t('projectViewer.queue.retrying')} />}
       {queueJobs.length === 0 ? (
@@ -323,11 +318,11 @@ export function QueueTab(props: QueueTabProps) {
           }}
         />
       )}
-      <SelectionFloatBar
+      <SelectionBar
         selectedCount={selectedQueueIds.size}
         totalCount={queueJobs.length}
-        onToggleSelectAll={props.toggleSelectAllQueue}
-        onClearSelection={props.clearQueueSelection}
+        onSelectAll={props.toggleSelectAllQueue}
+        onClear={props.clearQueueSelection}
         actions={[
           {
             key: 'retry',
@@ -349,7 +344,7 @@ export function QueueTab(props: QueueTabProps) {
 export interface CompletedTabProps extends CommonProps {
   completedJobs: Job[];
   isLoading: boolean;
-  selectedCompletedIds: Set<string>;
+  selectedCompletedIds: ReadonlySet<string>;
   toggleCompletedSelection: SelectToggle;
   toggleSelectAllCompleted: () => void;
   clearCompletedSelection: () => void;
@@ -376,12 +371,10 @@ export function CompletedTab(props: CompletedTabProps) {
     <section className="v2-results-section">
       <ResultsBar
         nav={props.nav}
-        isLoading={isLoading && completedJobs.length > 0}
+        refreshing={isLoading && completedJobs.length > 0}
         totalCount={completedJobs.length}
         mobileCount={total}
-        selectedCount={selectedCompletedIds.size}
-        onToggleSelectAll={props.toggleSelectAllCompleted}
-        onClearSelection={props.clearCompletedSelection}
+        onSelectAll={props.toggleSelectAllCompleted}
         tools={
           total > 0 && (
             <IconButton
@@ -393,7 +386,6 @@ export function CompletedTab(props: CompletedTabProps) {
             />
           )
         }
-        selection="floating"
       />
       {isLoading && completedJobs.length === 0 ? (
         <div className="v2-results-loading">
@@ -427,11 +419,11 @@ export function CompletedTab(props: CompletedTabProps) {
           <PagedFooter className="v2-results-footer" page={props.page} pageSize={props.pageSize} total={total} pages={props.pages} onPageChange={props.onPageChange} onPageSizeChange={props.onPageSizeChange} />
         </>
       )}
-      <SelectionFloatBar
+      <SelectionBar
         selectedCount={selectedCompletedIds.size}
         totalCount={completedJobs.length}
-        onToggleSelectAll={props.toggleSelectAllCompleted}
-        onClearSelection={props.clearCompletedSelection}
+        onSelectAll={props.toggleSelectAllCompleted}
+        onClear={props.clearCompletedSelection}
         actions={[{ key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, onClick: () => props.setShowDeleteSelectedModal(true) }]}
       />
     </section>

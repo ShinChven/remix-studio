@@ -35,7 +35,7 @@ import {
   type LibraryTagFilter,
 } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { DEFAULT_ALBUM_PAGE_SIZE, getRememberedAlbumPageSize, parseAlbumPageSize, rememberAlbumPageSize, type AlbumPageSize } from '../../lib/album-page-size-memory';
+import { useAlbumParams } from '../components/project/useAlbumParams';
 import { civitaiModelItems, civitaiResourceLabel, civitaiVideoEngineLabel, isCivitaiVideo, parseCivitaiAir } from '../../lib/civitai';
 import { groupComfyBindings, isComfyRemix } from '../../lib/comfyWorkflow';
 import { LIVE_CLIENT_ID } from '../../lib/live';
@@ -73,7 +73,8 @@ import { LibrarySelectionDialog } from '../components/project/LibrarySelectionDi
 import { ModelSelectorDialog } from '../components/project/ModelSelectorDialog';
 import { PromptEditDialog } from '../components/project/PromptEditDialog';
 import { PromptLimitDialog } from '../components/project/PromptLimitDialog';
-import { ResultsBar, SectionNav, type SectionNavItem } from '../components/project/ResultsBar';
+import { ResultsBar, type ProjectSection } from '../components/project/ResultsBar';
+import { SectionNav, type SectionNavItem } from '../ui/ListBar';
 import { withStableAlbumUrls } from '../lib/stableAlbumUrls';
 import { WorkflowPanel } from '../components/project/WorkflowPanel';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
@@ -81,6 +82,11 @@ import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { EmptyState, LoadingState } from '../ui/Page';
 import { useToast } from '../ui/useToast';
+import { usePolling } from '../lib/usePolling';
+import { useIdSelection } from '../lib/useSelection';
+import { readFileAsDataUrl } from '../lib/files';
+import { useAssistantChat } from '../lib/useAssistantChat';
+import { errorText } from '../lib/errors';
 
 /** Loads the project for `/project/:id` and saves its edits, renaming its folder when its id changes. */
 export function ProjectViewerPage() {
@@ -254,6 +260,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const { t } = useTranslation();
   const toast = useToast();
   const navigate = useNavigate();
+  const startAssistantChat = useAssistantChat();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab');
   const activeTab = (rawTab as 'draft' | 'queue' | 'completed' | 'album') || 'draft';
@@ -275,90 +282,9 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const [albumTotalSize, setAlbumTotalSize] = useState<number>(0);
   const [albumAspectRatioCounts, setAlbumAspectRatioCounts] = useState<AspectRatioCount[]>([]);
   const [albumTagCounts, setAlbumTagCounts] = useState<AlbumTagCount[]>([]);
-  // Album view state is URL-driven (subscribes to the search params) so it is
-  // shareable and survives back/forward, matching the `tab` param pattern.
-  const albumPage = Math.max(1, Math.floor(Number(searchParams.get('albumPage')) || 1));
-  // Without an `albumSize` param the album uses the page size last picked for
-  // this project in this browser. The viewer is reused across projects, so the
-  // remembered size is tied to the project it was read for.
-  const [rememberedAlbumPageSize, setRememberedAlbumPageSize] = useState(() => ({
-    projectId: project.id,
-    size: getRememberedAlbumPageSize(project.id),
-  }));
-  const albumDefaultPageSize = rememberedAlbumPageSize.projectId === project.id
-    ? rememberedAlbumPageSize.size
-    : getRememberedAlbumPageSize(project.id);
-  const albumPageSize: AlbumPageSize = parseAlbumPageSize(searchParams.get('albumSize')) ?? albumDefaultPageSize;
-  const albumSearch = searchParams.get('albumSearch') || '';
-  const albumSort: 'newest' | 'oldest' = searchParams.get('albumSort') === 'oldest' ? 'oldest' : 'newest';
-  const albumRatiosParam = searchParams.get('albumRatios') || '';
-  const albumSelectedRatios = React.useMemo(
-    () => (albumRatiosParam ? albumRatiosParam.split(',').filter(Boolean) : []),
-    [albumRatiosParam],
-  );
-  const albumTagsParam = searchParams.get('albumTags') || '';
-  const albumSelectedTags = React.useMemo(
-    () => (albumTagsParam ? albumTagsParam.split(',').filter(Boolean) : []),
-    [albumTagsParam],
-  );
-  const albumTagMatch: AlbumTagMatch = searchParams.get('albumTagMatch') === 'any' ? 'any' : 'all';
-
-  const updateAlbumParams = useCallback(
-    (updates: {
-      page?: number;
-      pageSize?: number | 'all';
-      sort?: 'newest' | 'oldest';
-      ratios?: string[];
-      tags?: string[];
-      tagMatch?: AlbumTagMatch;
-      search?: string;
-    }) => {
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        // Any change other than the page number itself returns to page 1.
-        if (
-          updates.pageSize !== undefined
-          || updates.sort !== undefined
-          || updates.ratios !== undefined
-          || updates.tags !== undefined
-          || updates.tagMatch !== undefined
-          || updates.search !== undefined
-        ) {
-          next.delete('albumPage');
-        }
-        if (updates.page !== undefined) {
-          if (updates.page > 1) next.set('albumPage', String(updates.page));
-          else next.delete('albumPage');
-        }
-        if (updates.pageSize !== undefined) {
-          if (updates.pageSize !== DEFAULT_ALBUM_PAGE_SIZE) next.set('albumSize', String(updates.pageSize));
-          else next.delete('albumSize');
-        }
-        if (updates.sort !== undefined) {
-          if (updates.sort !== 'newest') next.set('albumSort', updates.sort);
-          else next.delete('albumSort');
-        }
-        if (updates.ratios !== undefined) {
-          if (updates.ratios.length > 0) next.set('albumRatios', updates.ratios.join(','));
-          else next.delete('albumRatios');
-        }
-        if (updates.tags !== undefined) {
-          if (updates.tags.length > 0) next.set('albumTags', updates.tags.join(','));
-          else next.delete('albumTags');
-        }
-        if (updates.tagMatch !== undefined) {
-          if (updates.tagMatch === 'any') next.set('albumTagMatch', 'any');
-          else next.delete('albumTagMatch');
-        }
-        if (updates.search !== undefined) {
-          if (updates.search) next.set('albumSearch', updates.search);
-          else next.delete('albumSearch');
-        }
-        return next;
-      });
-    },
-    [setSearchParams],
-  );
+  // The album's view state lives in the address, so it is shareable and survives back and forward.
+  const albumParams = useAlbumParams(project.id);
+  const { page: albumPage, pageSize: albumPageSize, search: albumSearch, sort: albumSort, ratios: albumSelectedRatios, tags: albumSelectedTags, tagMatch: albumTagMatch, update: updateAlbumParams } = albumParams;
 
   const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
   const [completedTotal, setCompletedTotal] = useState<number>(0);
@@ -399,23 +325,24 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const [savingLibraryItemId, setSavingLibraryItemId] = useState<string | null>(null);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
-  const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [lightboxData, setLightboxData] = useState<LightboxData | null>(null);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   const [isWorkflowExpanded, setIsWorkflowExpanded] = useState(false);
-  const [selectedQueueIds, setSelectedQueueIds] = useState<Set<string>>(new Set());
-  const [selectedAlbumIds, setSelectedAlbumIds] = useState<Set<string>>(new Set());
-  const [lastSelectedAlbumId, setLastSelectedAlbumId] = useState<string | null>(null);
-  const [lastSelectedDraftId, setLastSelectedDraftId] = useState<string | null>(null);
-  const [lastSelectedQueueId, setLastSelectedQueueId] = useState<string | null>(null);
-  const [lastSelectedCompletedId, setLastSelectedCompletedId] = useState<string | null>(null);
   const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
   const [showDeleteCompletedSelectedModal, setShowDeleteCompletedSelectedModal] = useState(false);
   const [showDeleteQueueSelectedModal, setShowDeleteQueueSelectedModal] = useState(false);
   const [showClearAllFailedModal, setShowClearAllFailedModal] = useState(false);
   const [albumItemsToDelete, setAlbumItemsToDelete] = useState<AlbumItem[] | null>(null);
-  const [selectedCompletedIds, setSelectedCompletedIds] = useState<Set<string>>(new Set());
+  // One selection per section; each covers only the rows that section shows.
+  const draftSelection = useIdSelection();
+  const queueSelection = useIdSelection();
+  const completedSelection = useIdSelection();
+  const albumSelection = useIdSelection();
+  const selectedDraftIds = draftSelection.selected;
+  const selectedQueueIds = queueSelection.selected;
+  const selectedCompletedIds = completedSelection.selected;
+  const selectedAlbumIds = albumSelection.selected;
   const [isAddingDrafts, setIsAddingDrafts] = useState(false);
   const [isStartingDraftBatch, setIsStartingDraftBatch] = useState(false);
   const [startingDraftJobIds, setStartingDraftJobIds] = useState<Set<string>>(new Set());
@@ -641,29 +568,13 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     void loadCompletedPage(token, !hasLoadedCurrentQuery);
   }, [activeTab, completedQueryKey, loadCompletedPage]);
 
-  const handleAlbumPageChange = useCallback((p: number) => {
-    updateAlbumParams({ page: p });
-  }, [updateAlbumParams]);
-  const handleAlbumPageSizeChange = useCallback((size: number | 'all') => {
-    rememberAlbumPageSize(project.id, size);
-    setRememberedAlbumPageSize({ projectId: project.id, size });
-    updateAlbumParams({ pageSize: size });
-  }, [project.id, updateAlbumParams]);
-  const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => {
-    updateAlbumParams({ sort });
-  }, [updateAlbumParams]);
-  const handleAlbumSelectedRatiosChange = useCallback((ratios: string[]) => {
-    updateAlbumParams({ ratios });
-  }, [updateAlbumParams]);
-  const handleAlbumSelectedTagsChange = useCallback((tags: string[]) => {
-    updateAlbumParams({ tags });
-  }, [updateAlbumParams]);
-  const handleAlbumSearchChange = useCallback((search: string) => {
-    updateAlbumParams({ search });
-  }, [updateAlbumParams]);
-  const handleAlbumTagMatchChange = useCallback((tagMatch: AlbumTagMatch) => {
-    updateAlbumParams({ tagMatch });
-  }, [updateAlbumParams]);
+  const handleAlbumPageChange = useCallback((page: number) => updateAlbumParams({ page }), [updateAlbumParams]);
+  const handleAlbumPageSizeChange = albumParams.setPageSize;
+  const handleAlbumSortChange = useCallback((sort: 'newest' | 'oldest') => updateAlbumParams({ sort }), [updateAlbumParams]);
+  const handleAlbumSelectedRatiosChange = useCallback((ratios: string[]) => updateAlbumParams({ ratios }), [updateAlbumParams]);
+  const handleAlbumSelectedTagsChange = useCallback((tags: string[]) => updateAlbumParams({ tags }), [updateAlbumParams]);
+  const handleAlbumSearchChange = useCallback((search: string) => updateAlbumParams({ search }), [updateAlbumParams]);
+  const handleAlbumTagMatchChange = useCallback((tagMatch: AlbumTagMatch) => updateAlbumParams({ tagMatch }), [updateAlbumParams]);
 
   const handleCompletedPageChange = useCallback((p: number) => {
     setCompletedPage(p);
@@ -1224,13 +1135,8 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     };
   }, [localProject.id, scheduleProjectLiveRefresh, scheduleProjectDefinitionRefresh]);
 
-  useEffect(() => {
-    if (!isProcessing || isProjectLiveConnected) return;
-    const interval = window.setInterval(() => {
-      void runProjectLiveRefresh();
-    }, 10000);
-    return () => window.clearInterval(interval);
-  }, [isProcessing, isProjectLiveConnected, runProjectLiveRefresh]);
+  // Without the live connection, running jobs are checked on a timer instead.
+  usePolling(runProjectLiveRefresh, isProcessing && !isProjectLiveConnected ? 10000 : false);
 
   useEffect(() => {
     (async () => {
@@ -1667,83 +1573,34 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     setDragOverIndex(null);
   };
 
-  const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (event) => resolve(event.target?.result as string);
-    reader.onerror = () => reject(new Error('Failed to read file'));
-    reader.readAsDataURL(file);
-  });
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+  /** Uploads the file picked for a workflow step and points the step at it. */
+  const uploadWorkflowMedia = async (kind: 'image' | 'video' | 'audio', e: React.ChangeEvent<HTMLInputElement>, id: string) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setUploadingItemIds(prev => new Set(prev).add(id));
-      try {
-        const base64 = await readFileAsDataUrl(file);
-        const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveImage(base64, localProject.id);
-        commitUploadedFile(
-          id,
-          { value: url, thumbnailUrl, optimizedUrl, size },
-          { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
-        );
-      } catch (err: any) {
-        console.error('Failed to upload image:', err);
-        toast.error(err.message || t('projectViewer.toasts.uploadImageFailed'));
-      } finally {
-        setUploadingItemIds(prev => {
-          const next = new Set(prev);
-          next.delete(id);
-          return next;
-        });
+    if (!file) return;
+    setUploadingItemIds((prev) => new Set(prev).add(id));
+    try {
+      const base64 = await readFileAsDataUrl(file);
+      if (kind === 'audio') {
+        const { key, url, size } = await saveAudio(base64, localProject.id);
+        commitUploadedFile(id, { value: url, size }, { value: key, size });
+      } else {
+        const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await (kind === 'image' ? saveImage : saveVideo)(base64, localProject.id);
+        commitUploadedFile(id, { value: url, thumbnailUrl, optimizedUrl, size }, { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size });
       }
-    }
-  };
-
-  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingItemIds(prev => new Set(prev).add(id));
-    try {
-      const base64 = await readFileAsDataUrl(file);
-      const { key, url, thumbnailKey, thumbnailUrl, optimizedKey, optimizedUrl, size } = await saveVideo(base64, localProject.id);
-      commitUploadedFile(
-        id,
-        { value: url, thumbnailUrl, optimizedUrl, size },
-        { value: key, thumbnailUrl: thumbnailKey, optimizedUrl: optimizedKey, size },
-      );
-    } catch (err: any) {
-      console.error('Failed to upload video:', err);
-      toast.error(err.message || 'Failed to upload video');
+    } catch (err) {
+      console.error(`Failed to upload ${kind}:`, err);
+      toast.error(errorText(err, t('projectViewer.toasts.uploadImageFailed')));
     } finally {
-      setUploadingItemIds(prev => {
+      setUploadingItemIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
         return next;
       });
     }
   };
-
-  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingItemIds(prev => new Set(prev).add(id));
-    try {
-      const base64 = await readFileAsDataUrl(file);
-      const { key, url, size } = await saveAudio(base64, localProject.id);
-      commitUploadedFile(id, { value: url, size }, { value: key, size });
-    } catch (err: any) {
-      console.error('Failed to upload audio:', err);
-      toast.error(err.message || 'Failed to upload audio');
-    } finally {
-      setUploadingItemIds(prev => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }
-  };
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, id: string) => uploadWorkflowMedia('image', e, id);
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>, id: string) => uploadWorkflowMedia('video', e, id);
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>, id: string) => uploadWorkflowMedia('audio', e, id);
 
   /**
    * ComfyUI drafts: each combination of the bound inputs becomes a job that
@@ -1907,7 +1764,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     // Reveal the drafts we just created: mobile swaps to the jobs view, desktop
     // leaves full screen (which keeps the jobs pane hidden).
     setIsWorkflowExpanded(false);
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    if (typeof window !== 'undefined' && window.innerWidth < 1200) {
       setMobileView('jobs');
     }
   };
@@ -1978,11 +1835,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       );
 
       setLocalJobs(confirmedJobs);
-      setSelectedDraftIds((current) => {
-        const next = new Set(current);
-        for (const jobId of confirmedQueueJobIds) next.delete(jobId);
-        return next;
-      });
+      draftSelection.remove(confirmedQueueJobIds);
 
       if (confirmedQueueJobIds.size !== expectedJobIdSet.size) {
         toast.error(t('projectViewer.toasts.startedJobsNotVisible', {
@@ -2152,70 +2005,20 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const deleteSelectedDrafts = async () => {
     const jobIds = Array.from(selectedDraftIds);
     await deleteJobsAndReconcile(jobIds);
-    setSelectedDraftIds(new Set());
+    draftSelection.clear();
   };
 
   const deleteAllDrafts = async () => {
     const jobIds = localJobsRef.current.filter((job) => job.status === 'draft').map((job) => job.id);
     await deleteJobsAndReconcile(jobIds);
-    setSelectedDraftIds(new Set());
+    draftSelection.clear();
   };
 
-  const toggleDraftSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
-    setSelectedDraftIds(prev => {
-      const next = new Set(prev);
-      if (isShiftPressed && lastSelectedDraftId !== null) {
-        const lastIndex = scopeIds.indexOf(lastSelectedDraftId);
-        const currentIndex = scopeIds.indexOf(jobId);
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(lastIndex, currentIndex);
-          const end = Math.max(lastIndex, currentIndex);
-          const shouldSelect = !prev.has(jobId);
-          for (let i = start; i <= end; i++) {
-            if (shouldSelect) next.add(scopeIds[i]);
-            else next.delete(scopeIds[i]);
-          }
-        }
-      } else {
-        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
-      }
-      return next;
-    });
-    setLastSelectedDraftId(jobId);
-  };
+  const toggleDraftSelection = draftSelection.toggle;
+  const toggleSelectAllDrafts = () => draftSelection.toggleAll(localJobs.filter((j) => j.status === 'draft').map((j) => j.id));
 
-  const toggleSelectAllDrafts = () => {
-    const draftIds = localJobs.filter(j => j.status === 'draft').map(j => j.id);
-    setSelectedDraftIds(selectedDraftIds.size === draftIds.length ? new Set() : new Set(draftIds));
-  };
-
-  const toggleQueueSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
-    setSelectedQueueIds(prev => {
-      const next = new Set(prev);
-      if (isShiftPressed && lastSelectedQueueId !== null) {
-        const lastIndex = scopeIds.indexOf(lastSelectedQueueId);
-        const currentIndex = scopeIds.indexOf(jobId);
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(lastIndex, currentIndex);
-          const end = Math.max(lastIndex, currentIndex);
-          const shouldSelect = !prev.has(jobId);
-          for (let i = start; i <= end; i++) {
-            if (shouldSelect) next.add(scopeIds[i]);
-            else next.delete(scopeIds[i]);
-          }
-        }
-      } else {
-        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
-      }
-      return next;
-    });
-    setLastSelectedQueueId(jobId);
-  };
-
-  const toggleSelectAllQueue = () => {
-    const queueIds = localJobs.filter(j => j.status === 'pending' || j.status === 'processing' || j.status === 'failed').map(j => j.id);
-    setSelectedQueueIds(selectedQueueIds.size === queueIds.length ? new Set() : new Set(queueIds));
-  };
+  const toggleQueueSelection = queueSelection.toggle;
+  const toggleSelectAllQueue = () => queueSelection.toggleAll(localJobs.filter((j) => j.status === 'pending' || j.status === 'processing' || j.status === 'failed').map((j) => j.id));
 
   const retrySelectedQueue = async () => {
     const jobIds = localJobsRef.current
@@ -2231,7 +2034,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       const confirmedJobs = await fetchProjectJobs(localProject.id, { excludeStatus: ['completed'] });
       ++jobsFetchTokenRef.current;
       setLocalJobs(confirmedJobs);
-      setSelectedQueueIds(new Set());
+      queueSelection.clear();
     } catch (e) {
       console.error('Failed to retry selected jobs:', e);
       toast.error(e instanceof Error ? e.message : t('projectViewer.toasts.startJobsFailed'));
@@ -2244,7 +2047,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const deleteSelectedQueue = async () => {
     const jobIds = Array.from(selectedQueueIds);
     await deleteJobsAndReconcile(jobIds);
-    setSelectedQueueIds(new Set());
+    queueSelection.clear();
   };
 
   const clearAllFailed = async () => {
@@ -2271,7 +2074,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
       // Make this confirmed read authoritative over any concurrent live refresh.
       ++jobsFetchTokenRef.current;
       setLocalJobs(updatedJobs);
-      setSelectedQueueIds(new Set());
+      queueSelection.clear();
     } catch (e) {
       if (deleteCompleted) {
         console.error('Failed to refresh jobs after clearing failed jobs:', e);
@@ -2290,74 +2093,18 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     }
   };
 
-  const toggleCompletedSelection = (jobId: string, isShiftPressed: boolean, scopeIds: string[]) => {
-    setSelectedCompletedIds(prev => {
-      const next = new Set(prev);
-      if (isShiftPressed && lastSelectedCompletedId !== null) {
-        const lastIndex = scopeIds.indexOf(lastSelectedCompletedId);
-        const currentIndex = scopeIds.indexOf(jobId);
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(lastIndex, currentIndex);
-          const end = Math.max(lastIndex, currentIndex);
-          const shouldSelect = !prev.has(jobId);
-          for (let i = start; i <= end; i++) {
-            if (shouldSelect) next.add(scopeIds[i]);
-            else next.delete(scopeIds[i]);
-          }
-        }
-      } else {
-        if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
-      }
-      return next;
-    });
-    setLastSelectedCompletedId(jobId);
-  };
-
-  const toggleSelectAllCompleted = () => {
-    const completedIds = completedJobs.map(j => j.id);
-    setSelectedCompletedIds(selectedCompletedIds.size === completedIds.length ? new Set() : new Set(completedIds));
-  };
+  const toggleCompletedSelection = completedSelection.toggle;
+  const toggleSelectAllCompleted = () => completedSelection.toggleAll(completedJobs.map((j) => j.id));
 
   const deleteSelectedCompleted = async () => {
     const idsToDelete = Array.from(selectedCompletedIds);
     if (idsToDelete.length === 0) return;
     await deleteJobsAndReconcile(idsToDelete, true);
-    setSelectedCompletedIds(new Set());
+    completedSelection.clear();
   };
 
-  const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => {
-    setSelectedAlbumIds(prev => {
-      const next = new Set(prev);
-      const scopedIds = scopeIds !== undefined ? scopeIds : localAlbum.map(item => item.id);
-      if (isShiftPressed && lastSelectedAlbumId && next.has(lastSelectedAlbumId)) {
-        const lastIndex = scopedIds.findIndex(itemId => itemId === lastSelectedAlbumId);
-        const currentIndex = scopedIds.findIndex(itemId => itemId === id);
-        if (lastIndex !== -1 && currentIndex !== -1) {
-          const start = Math.min(lastIndex, currentIndex);
-          const end = Math.max(lastIndex, currentIndex);
-          for (let i = start; i <= end; i++) next.add(scopedIds[i]);
-        }
-      } else {
-        if (next.has(id)) next.delete(id); else next.add(id);
-      }
-      return next;
-    });
-    setLastSelectedAlbumId(id);
-  };
-
-  const toggleSelectAllAlbum = (scopeIds?: string[]) => {
-    const albumIds = scopeIds !== undefined ? scopeIds : localAlbum.map(item => item.id);
-    const allSelected = albumIds.length > 0 && albumIds.every(id => selectedAlbumIds.has(id));
-    setSelectedAlbumIds(prev => {
-      const next = new Set(prev);
-      if (allSelected) {
-        albumIds.forEach(id => next.delete(id));
-      } else {
-        albumIds.forEach(id => next.add(id));
-      }
-      return next;
-    });
-  };
+  const toggleAlbumSelection = (id: string, isShiftPressed: boolean, scopeIds?: string[]) => albumSelection.toggle(id, isShiftPressed, scopeIds ?? localAlbum.map((item) => item.id));
+  const toggleSelectAllAlbum = (scopeIds?: string[]) => albumSelection.toggleAll(scopeIds ?? localAlbum.map((item) => item.id));
 
   /**
    * Take items that have already left the album — deleted, or moved somewhere
@@ -2399,11 +2146,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     albumLoadedKeyRef.current = query.albumQueryKey;
     albumFetchedAtRef.current = Date.now();
 
-    setSelectedAlbumIds(prev => {
-      const next = new Set(prev);
-      itemIdsSet.forEach(id => next.delete(id));
-      return next;
-    });
+    albumSelection.remove(itemIdsSet);
 
     if (query.albumPage > nextAlbumPages) {
       albumLoadedKeyRef.current = null;
@@ -2585,29 +2328,15 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     onUpdate(updated);
   };
 
-  const handleStartAssistantChat = () => {
-    const projectContext: BoundContext = {
-      id: localProject.id,
-      name: localProject.name,
-      type: 'project',
-      subType: localProject.type || 'image',
-    };
+  const handleStartAssistantChat = () => startAssistantChat({ id: localProject.id, name: localProject.name, type: 'project', subType: localProject.type || 'image' });
 
-    localStorage.removeItem('assistant_last_conversation');
-    navigate('/assistant', {
-      state: {
-        draftBoundContexts: [projectContext],
-      },
-    });
-  };
-
-  const clearDraftSelection = useCallback(() => setSelectedDraftIds(new Set()), []);
-  const clearQueueSelection = useCallback(() => setSelectedQueueIds(new Set()), []);
-  const clearCompletedSelection = useCallback(() => setSelectedCompletedIds(new Set()), []);
-  const clearAlbumSelection = useCallback(() => setSelectedAlbumIds(new Set()), []);
+  const clearDraftSelection = draftSelection.clear;
+  const clearQueueSelection = queueSelection.clear;
+  const clearCompletedSelection = completedSelection.clear;
+  const clearAlbumSelection = albumSelection.clear;
 
   const albumTabLabel = localProject.type === 'text' ? t('projectViewer.tabs.texts') : localProject.type === 'audio' ? t('projectViewer.tabs.audios') : t('projectViewer.tabs.album');
-  const sectionItems: SectionNavItem[] = [
+  const sectionItems: SectionNavItem<ProjectSection>[] = [
     { value: 'draft', label: t('v2.project.sections.drafts'), icon: 'edit_note', count: draftJobs.length },
     {
       value: 'queue',
@@ -2621,20 +2350,21 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   ];
   const sectionNav = (
     <div className="v2-project__section-nav">
-      <SectionNav value={activeTab} onChange={setActiveTab} items={sectionItems} />
+      <SectionNav<ProjectSection> scope="project" label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })} value={activeTab} onChange={setActiveTab} items={sectionItems} />
     </div>
   );
   const workflowItem = (id: string | null) => (localProject.workflow || []).find((i) => i.id === id);
 
   const floatingSwitch = useContext(TopBarSlotContext) === null;
-  const mobileSections: SectionNavItem<'workflow' | SectionNavItem['value']>[] = [
+  const mobileSections: SectionNavItem<'workflow' | ProjectSection>[] = [
     { value: 'workflow', label: t('v2.project.workflow'), icon: 'account_tree', count: 0 },
     ...sectionItems,
   ];
   const mobileSection = mobileView === 'workflow' ? 'workflow' : activeTab;
   const mobileSectionNav = (
     <div className={floatingSwitch ? 'v2-project__mobile-sections v2-project__mobile-toggle' : 'v2-project__mobile-sections'}>
-      <SectionNav
+      <SectionNav<'workflow' | ProjectSection>
+        label={t('projectViewer.tabs.ariaLabel', { defaultValue: 'Project sections' })}
         items={mobileSections}
         value={mobileSection}
         scope="project-mobile"
@@ -2745,7 +2475,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         <div ref={tabContentRef} className="v2-project__scroll">
           {(activeTab === 'draft' || activeTab === 'queue') && isLoadingJobs && (
             <section className="v2-results-section">
-              <ResultsBar nav={sectionNav} isLoading totalCount={0} selectedCount={0} onToggleSelectAll={() => undefined} onClearSelection={() => undefined} />
+              <ResultsBar nav={sectionNav} refreshing totalCount={0} />
             </section>
           )}
           {activeTab === 'draft' && !isLoadingJobs && (
