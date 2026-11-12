@@ -3,11 +3,88 @@ import { authMiddleware, JwtPayload } from '../auth/auth';
 import { IRepository } from '../db/repository';
 import { S3Storage } from '../storage/s3-storage';
 import type { ProjectEventPublisher } from '../live/project-live-hub';
+import type { LiveEventPublisher } from '../live/user-live-hub';
 
 type Variables = { user: JwtPayload };
 
-export function createTrashRouter(repository: IRepository, storage: S3Storage, projectEvents?: ProjectEventPublisher) {
+export function createTrashRouter(repository: IRepository, storage: S3Storage, projectEvents?: ProjectEventPublisher, liveEvents?: LiveEventPublisher) {
   const router = new Hono<{ Variables: Variables }>();
+
+  const deleteKeys = async (keys: string[]) => {
+    for (const key of keys) {
+      try {
+        await storage.delete(key);
+      } catch (s3Err) {
+        console.error(`[Trash] Failed to delete S3 key ${key}:`, s3Err);
+      }
+    }
+  };
+
+  const readIds = async (c: { req: { json: () => Promise<any> } }): Promise<string[] | null> => {
+    const body = await c.req.json().catch(() => null);
+    const ids = body?.ids;
+    return Array.isArray(ids) && ids.every((id) => typeof id === 'string') ? ids : null;
+  };
+
+  // ─── Library items ───
+  // Kept apart from album items: their own table, and their own routes under /api/library-trash.
+
+  router.get('/api/library-trash', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const items = await repository.getLibraryTrashItems(user.userId);
+      const signed = await Promise.all(items.map(async (item) => ({
+        ...item,
+        imageUrl: item.imageUrl ? await storage.getPresignedUrl(item.imageUrl) : item.imageUrl,
+        thumbnailUrl: item.thumbnailUrl ? await storage.getPresignedUrl(item.thumbnailUrl) : item.thumbnailUrl,
+        optimizedUrl: item.optimizedUrl ? await storage.getPresignedUrl(item.optimizedUrl) : item.optimizedUrl,
+      })));
+      return c.json(signed);
+    } catch (e) {
+      console.error('[GET /api/library-trash]', e);
+      return c.json({ error: 'Failed to fetch trash' }, 500);
+    }
+  });
+
+  router.post('/api/library-trash/restore', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const ids = await readIds(c);
+      if (!ids) return c.json({ error: 'Invalid IDs' }, 400);
+      const { restored, libraryIds } = await repository.restoreLibraryTrashItems(user.userId, ids);
+      for (const id of libraryIds) liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id });
+      return c.json({ success: true, count: restored });
+    } catch (e) {
+      console.error('[POST /api/library-trash/restore]', e);
+      return c.json({ error: 'Failed to restore items' }, 500);
+    }
+  });
+
+  router.delete('/api/library-trash/empty', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      await deleteKeys(await repository.deleteLibraryTrashPermanently(user.userId));
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/library-trash/empty]', e);
+      return c.json({ error: 'Failed to empty trash' }, 500);
+    }
+  });
+
+  router.delete('/api/library-trash/batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const ids = await readIds(c);
+      if (!ids) return c.json({ error: 'Invalid IDs' }, 400);
+      await deleteKeys(await repository.deleteLibraryTrashPermanently(user.userId, ids));
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/library-trash/batch]', e);
+      return c.json({ error: 'Failed to delete items' }, 500);
+    }
+  });
+
+  // ─── Album items ───
 
   router.get('/api/trash', authMiddleware, async (c) => {
     try {

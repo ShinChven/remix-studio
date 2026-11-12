@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { deleteTrashBatch, deleteTrashPermanently, emptyTrash, fetchTrash, imageDisplayUrl, moveToTrashBatch, restoreTrashBatch, restoreTrashItem } from '../../api';
+import { deleteLibraryTrash, deleteTrashBatch, deleteTrashPermanently, emptyLibraryTrash, emptyTrash, fetchLibraryTrash, fetchTrash, imageDisplayUrl, moveLibraryItemsToTrash, moveToTrashBatch, restoreLibraryTrash, restoreTrashBatch, restoreTrashItem } from '../../api';
 import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, usePrefersReducedMotion } from '../../m3';
 import type { TrashItem } from '../../types';
 import { Lightbox } from '../components/Lightbox';
 import { TrashGrid, type Leaving } from '../components/trash/TrashGrid';
 import { TrashHero } from '../components/trash/TrashHero';
 import { TrashItemDialog } from '../components/trash/TrashItemDialog';
-import { groupItems, sortItems, TRASH_KINDS, TRASH_SORTS, trashBytes, trashFilename, trashKind, type TrashGroup, type TrashKind, type TrashSort } from '../components/trash/trashMeta';
+import { groupItems, sortItems, TRASH_KINDS, TRASH_SORTS, TRASH_SOURCES, trashBytes, trashFilename, trashKey, trashKind, trashParentHref, type TrashGroup, type TrashKind, type TrashSort, type TrashSource } from '../components/trash/trashMeta';
 import { errorText } from '../lib/errors';
 import { formatBytes } from '../lib/format';
 import { useAsyncData } from '../lib/useAsyncData';
@@ -22,12 +22,14 @@ import { SectionNav } from '../ui/ListBar';
 import { ListPane } from '../ui/ListPane';
 import { ListSearch } from '../ui/ListSearch';
 import { Page } from '../ui/Page';
+import { Segmented } from '../ui/Toolbar';
 import { FilterChip } from '../ui/ResultFilters';
 import { useToast } from '../ui/useToast';
 
 type View = 'all' | TrashKind;
 const VIEWS: View[] = ['all', ...TRASH_KINDS];
 const VIEW_ICONS: Record<View, string> = { all: 'delete', image: 'image', video: 'movie', audio: 'music_note', text: 'notes' };
+const SOURCE_ICONS: Record<TrashSource, string> = { projects: 'folder', libraries: 'photo_library' };
 /** Long enough for the lift or the drop to read before the item is gone. */
 const LEAVE_MS = 280;
 
@@ -37,7 +39,7 @@ type Pending = { kind: 'empty' } | { kind: 'restore-all' } | { kind: 'delete'; i
 function matches(item: TrashItem, query: string): boolean {
   const words = query.toLocaleLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return true;
-  const haystack = [item.prompt, item.textContent, item.projectName, item.format, trashFilename(item), ...(item.tags ?? [])].filter(Boolean).join('\n').toLocaleLowerCase();
+  const haystack = [item.title, item.prompt, item.textContent, item.projectName, item.format, trashFilename(item), ...(item.tags ?? [])].filter(Boolean).join('\n').toLocaleLowerCase();
   return words.every((word) => haystack.includes(word));
 }
 
@@ -51,6 +53,10 @@ export function Trash() {
   // Filters, sort, paging and the open item live in the URL.
   const list = useListParams({ pageSize: 100, pageSizes: PAGE_SIZES, defaults: { kind: 'all', sort: 'recent' } });
   const { q, pageSize } = list;
+  // Two bins: album items from projects, and items from libraries.
+  const source = list.oneOf('from', TRASH_SOURCES);
+  const fromLibraries = source === 'libraries';
+  const k = (key: string) => trashKey(source, key);
   const view = list.oneOf('kind', VIEWS);
   const project = list.get('project') || null;
   const sort = list.oneOf('sort', Object.keys(TRASH_SORTS) as TrashSort[]);
@@ -59,7 +65,7 @@ export function Trash() {
   const [tileSize, setTileSize] = useViewPref<TileSize>('v2.trash.tileSize', 'm', TILE_SIZES);
 
   // Everything in the bin; the page filters and pages it.
-  const bin = useAsyncData(fetchTrash, []);
+  const bin = useAsyncData(fromLibraries ? fetchLibraryTrash : fetchTrash, [source]);
   const items = useMemo(() => bin.data ?? [], [bin.data]);
   const reload = () => void bin.reload(true);
 
@@ -164,7 +170,7 @@ export function Trash() {
     const byProject = new Map<string, string[]>();
     for (const item of restored) byProject.set(item.projectId, [...(byProject.get(item.projectId) ?? []), item.id]);
     try {
-      for (const [projectId, ids] of byProject) await moveToTrashBatch(projectId, ids);
+      for (const [parentId, ids] of byProject) await (fromLibraries ? moveLibraryItemsToTrash(parentId, ids) : moveToTrashBatch(parentId, ids));
       toast.success(t('v2.trash.undone', { count: restored.length }));
     } catch (err) {
       fail(err, 'v2.trash.undoFailed');
@@ -176,11 +182,12 @@ export function Trash() {
     const restorable = targets.filter((item) => item.projectExists !== false && !leaving.has(item.id));
     const skipped = targets.length - restorable.length;
     if (!restorable.length) {
-      toast.info(t('v2.trash.cantRestore', { count: targets.length }));
+      toast.info(t(k('cantRestore'), { count: targets.length }));
       return;
     }
     try {
-      if (restorable.length === 1) await restoreTrashItem(restorable[0].id);
+      if (fromLibraries) await restoreLibraryTrash(restorable.map((item) => item.id));
+      else if (restorable.length === 1) await restoreTrashItem(restorable[0].id);
       else await restoreTrashBatch(restorable.map((item) => item.id));
     } catch (err) {
       fail(err, 'v2.trash.restoreFailed');
@@ -192,13 +199,14 @@ export function Trash() {
       'restore',
     );
     const message = restorable.length === 1 ? t('v2.trash.restoredTo', { project: restorable[0].projectName }) : t('v2.trash.restored', { count: restorable.length });
-    toast.success(skipped ? `${message} · ${t('v2.trash.skipped', { count: skipped })}` : message, { action: { label: t('v2.trash.undo'), onClick: () => void undoRestore(restorable) } });
+    toast.success(skipped ? `${message} · ${t(k('skipped'), { count: skipped })}` : message, { action: { label: t('v2.trash.undo'), onClick: () => void undoRestore(restorable) } });
   };
 
   const deleteForever = async (targets: TrashItem[]) => {
     const ids = targets.map((item) => item.id);
     try {
-      if (ids.length === 1) await deleteTrashPermanently(ids[0]);
+      if (fromLibraries) await deleteLibraryTrash(ids);
+      else if (ids.length === 1) await deleteTrashPermanently(ids[0]);
       else await deleteTrashBatch(ids);
     } catch (err) {
       fail(err, 'v2.trash.deleteFailed');
@@ -211,7 +219,7 @@ export function Trash() {
 
   const emptyAll = async () => {
     try {
-      await emptyTrash();
+      await (fromLibraries ? emptyLibraryTrash() : emptyTrash());
     } catch (err) {
       fail(err, 'v2.trash.emptyFailed');
       reload();
@@ -221,7 +229,7 @@ export function Trash() {
       items.map((item) => item.id),
       'delete',
     );
-    toast.success(t('v2.trash.emptied', { size: formatBytes(totalBytes) }));
+    toast.success(t(k('emptied'), { size: formatBytes(totalBytes) }));
   };
 
   const restorableCount = items.filter((item) => item.projectExists !== false).length;
@@ -232,9 +240,9 @@ export function Trash() {
     return [
       { key: 'details', icon: 'info', label: t('v2.project.details'), onSelect: () => openDetails(item) },
       { key: 'select', icon: selection.isSelected(item.id) ? 'check_box' : 'check_box_outline_blank', label: t('v2.project.select'), type: 'checkbox', checked: selection.isSelected(item.id), onSelect: () => selection.toggle(item.id) },
-      { key: 'restore', icon: 'restore', label: orphan ? t('v2.trash.orphanShort') : t('v2.trash.restore'), disabled: orphan, divider: true, onSelect: () => void restore([item]) },
-      { key: 'project', icon: 'folder_open', label: t('v2.trash.openProject'), hidden: orphan, href: `/project/${item.projectId}?tab=album` },
-      { key: 'filter', icon: 'filter_list', label: t('v2.trash.onlyThisProject'), hidden: project === item.projectId, onSelect: () => setProject(item.projectId) },
+      { key: 'restore', icon: 'restore', label: orphan ? t(k('orphanShort')) : t('v2.trash.restore'), disabled: orphan, divider: true, onSelect: () => void restore([item]) },
+      { key: 'project', icon: fromLibraries ? 'photo_library' : 'folder_open', label: t(k('openProject')), hidden: orphan, href: trashParentHref(item) },
+      { key: 'filter', icon: 'filter_list', label: t(k('onlyThisProject')), hidden: project === item.projectId, onSelect: () => setProject(item.projectId) },
       { key: 'original', icon: 'open_in_new', label: t('projectViewer.album.openOriginal'), hidden: kind === 'text', href: imageDisplayUrl(item.imageUrl), target: '_blank' },
       { key: 'copy', icon: 'content_copy', label: kind === 'text' ? t('v2.trash.copyText') : t('v2.trash.copyPrompt'), hidden: !(item.textContent || item.prompt), onSelect: () => copy(kind === 'text' ? item.textContent || item.prompt : item.prompt) },
       { key: 'delete', icon: 'delete_forever', label: t('v2.trash.deleteForever'), danger: true, divider: true, onSelect: () => setPending({ kind: 'delete', items: [item] }) },
@@ -248,7 +256,7 @@ export function Trash() {
       return {
         tone: 'danger' as const,
         icon: 'delete_sweep',
-        title: t('v2.trash.confirmEmptyTitle'),
+        title: t(k('confirmEmptyTitle')),
         message: t('v2.trash.confirmEmptyMessage', { count: items.length, size: formatBytes(totalBytes) }),
         confirm: t('v2.trash.emptyBin'),
       };
@@ -258,7 +266,7 @@ export function Trash() {
         tone: 'default' as const,
         icon: 'restore',
         title: t('v2.trash.confirmRestoreAllTitle'),
-        message: [t('v2.trash.confirmRestoreAllMessage', { count: restorableCount }), skipped ? t('v2.trash.skipped', { count: skipped }) : ''].filter(Boolean).join(' · '),
+        message: [t(k('confirmRestoreAllMessage'), { count: restorableCount }), skipped ? t(k('skipped'), { count: skipped }) : ''].filter(Boolean).join(' · '),
         confirm: t('v2.trash.restoreAll'),
       };
     }
@@ -297,15 +305,15 @@ export function Trash() {
       {projects.length > 1 && (
         <HoverMenuButton
           placement="bottom-end"
-          aria-label={t('v2.trash.project')}
-          trigger={(p) => <IconButton {...p} icon="folder" size="sm" variant={project ? 'tonal' : 'standard'} label={t('v2.trash.project')} />}
+          aria-label={t(k('project'))}
+          trigger={(p) => <IconButton {...p} icon={SOURCE_ICONS[source]} size="sm" variant={project ? 'tonal' : 'standard'} label={t(k('project'))} />}
         >
           <MenuItem type="radio" icon="folder_copy" checked={!project} onSelect={() => setProject(null)} trailingText={String(items.length)}>
-            {t('v2.trash.allProjects')}
+            {t(k('allProjects'))}
           </MenuItem>
           <MenuDivider />
           {projects.map((entry) => (
-            <MenuItem key={entry.id} type="radio" icon={entry.exists ? 'folder' : 'folder_off'} checked={project === entry.id} onSelect={() => setProject(entry.id)} trailingText={String(entry.count)}>
+            <MenuItem key={entry.id} type="radio" icon={fromLibraries ? 'photo_library' : entry.exists ? 'folder' : 'folder_off'} checked={project === entry.id} onSelect={() => setProject(entry.id)} trailingText={String(entry.count)}>
               {entry.name}
             </MenuItem>
           ))}
@@ -315,7 +323,7 @@ export function Trash() {
         <MenuGroup label={t('v2.project.sort')}>
           {(Object.keys(TRASH_SORTS) as TrashSort[]).map((value) => (
             <MenuItem key={value} type="radio" icon={TRASH_SORTS[value].icon} checked={sort === value} onSelect={() => list.set({ sort: value })}>
-              {t(`v2.trash.sorts.${value}`)}
+              {t(k(`sorts.${value}`))}
             </MenuItem>
           ))}
         </MenuGroup>
@@ -334,7 +342,7 @@ export function Trash() {
   const chips = (q || project) && (
     <>
       {q && <FilterChip label={`“${q}”`} removeLabel={t('v2.trash.clearSearch')} onRemove={() => list.setQuery('')} />}
-      {project && <FilterChip label={projectEntry?.name ?? project} removeLabel={t('v2.trash.allProjects')} onRemove={() => setProject(null)} />}
+      {project && <FilterChip label={projectEntry?.name ?? project} removeLabel={t(k('allProjects'))} onRemove={() => setProject(null)} />}
       <Button variant="text" size="xs" onClick={clearFilters}>
         {t('v2.common.clearFilters')}
       </Button>
@@ -347,6 +355,7 @@ export function Trash() {
     <Page className="v2-trash" density="compact">
       <TrashHero
         items={bin.data ?? null}
+        source={source}
         actions={
           items.length > 0 && (
             <>
@@ -359,6 +368,15 @@ export function Trash() {
             </>
           )
         }
+      />
+
+      <Segmented<TrashSource>
+        className="v2-trash__sources"
+        size="sm"
+        aria-label={t('v2.trash.sourcesLabel')}
+        value={source}
+        onChange={(next) => list.set({ from: next === 'projects' ? null : next, project: null, item: null, kind: null })}
+        options={TRASH_SOURCES.map((value) => ({ value, label: t(`v2.trash.sources.${value}`), icon: SOURCE_ICONS[value] }))}
       />
 
       <ListPane
@@ -380,14 +398,14 @@ export function Trash() {
         count={pageItems.length}
         filtered={filtered && items.length > 0}
         onClearFilters={clearFilters}
-        noMatches={{ title: t('v2.trash.noMatches'), description: t('v2.trash.noMatchesHint') }}
-        empty={{ shape: 'ghostish', icon: 'delete', title: t('v2.trash.emptyTitle'), description: t('v2.trash.emptyDescription') }}
+        noMatches={{ title: t('v2.trash.noMatches'), description: t(k('noMatchesHint')) }}
+        empty={{ shape: 'ghostish', icon: 'delete', title: t('v2.trash.emptyTitle'), description: t(k('emptyDescription')) }}
         selection={selection}
         selectionActions={[
           {
             key: 'restore',
             icon: 'restore',
-            label: selectedOrphans ? `${t('v2.trash.restore')} · ${t('v2.trash.skipped', { count: selectedOrphans })}` : t('v2.trash.restore'),
+            label: selectedOrphans ? `${t('v2.trash.restore')} · ${t(k('skipped'), { count: selectedOrphans })}` : t('v2.trash.restore'),
             disabled: selectedOrphans === selectedItems.length,
             onClick: () => void restore(selectedItems),
           },

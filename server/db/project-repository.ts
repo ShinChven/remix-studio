@@ -1650,7 +1650,7 @@ export class ProjectRepository {
     trash: number;
     staging: number;
   }> {
-    const [albumAgg, postMediaAgg, libAgg, exportAgg, trashAgg, stagedReadyAgg, stagedPendingAgg] = await Promise.all([
+    const [albumAgg, postMediaAgg, libAgg, exportAgg, trashAgg, libTrashAgg, stagedReadyAgg, stagedPendingAgg] = await Promise.all([
       this.prisma.albumItem.aggregate({
         where: { userId },
         _sum: { size: true, optimizedSize: true, thumbnailSize: true },
@@ -1670,6 +1670,10 @@ export class ProjectRepository {
       this.prisma.trashItem.aggregate({
         where: { userId },
         _sum: { size: true, optimizedSize: true, thumbnailSize: true },
+      }),
+      this.prisma.libraryTrashItem.aggregate({
+        where: { userId },
+        _sum: { size: true },
       }),
       this.prisma.stagedUpload.aggregate({
         where: { userId, status: 'ready' },
@@ -1699,7 +1703,7 @@ export class ProjectRepository {
       campaigns: Number(postMediaAgg._sum.size || 0),
       libraries: Number(libAgg._sum.size || 0),
       archives: Number(exportAgg._sum.size || 0),
-      trash: sum3(trashAgg),
+      trash: sum3(trashAgg) + Number(libTrashAgg._sum.size || 0),
       staging: Number(stagedReadyAgg._sum.storedSize || 0) + Number(stagedPendingAgg._sum.declaredSize || 0),
     };
   }

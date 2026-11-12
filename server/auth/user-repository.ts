@@ -818,7 +818,7 @@ export class UserRepository {
     const usage = new Map<string, { total: number; projects: number; libraries: number; exports: number; trash: number }>();
     if (userIds.length === 0) return usage;
 
-    const [albumItems, libraryItems, trashItems, exportTasks] = await Promise.all([
+    const [albumItems, libraryItems, trashItems, libraryTrashItems, exportTasks] = await Promise.all([
       this.prisma.albumItem.findMany({
         where: { userId: { in: userIds } },
         select: { userId: true, size: true, optimizedSize: true, thumbnailSize: true },
@@ -830,6 +830,10 @@ export class UserRepository {
       this.prisma.trashItem.findMany({
         where: { userId: { in: userIds } },
         select: { userId: true, size: true, optimizedSize: true, thumbnailSize: true },
+      }),
+      this.prisma.libraryTrashItem.findMany({
+        where: { userId: { in: userIds } },
+        select: { userId: true, size: true },
       }),
       this.prisma.exportTask.findMany({
         where: { userId: { in: userIds } },
@@ -861,6 +865,13 @@ export class UserRepository {
     for (const item of trashItems) {
       const entry = ensure(item.userId);
       const size = sumSizeFields(item);
+      entry.trash += size;
+      entry.total += size;
+    }
+
+    for (const item of libraryTrashItems) {
+      const entry = ensure(item.userId);
+      const size = toNumber(item.size);
       entry.trash += size;
       entry.total += size;
     }

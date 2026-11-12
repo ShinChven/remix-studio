@@ -30,6 +30,7 @@ model User {
   libraries               Library[]
   projects                Project[]
   trashItems              TrashItem[]
+  libraryTrashItems       LibraryTrashItem[]
   exportTasks             ExportTask[]
   projectImportTasks      ProjectImportTask[]
   deliveryTasks           DeliveryTask[]
@@ -383,6 +384,26 @@ model TrashItem {
   civitaiParams Json?
   createdAt     DateTime @default(now())
   deletedAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, deletedAt])
+}
+
+model LibraryTrashItem {
+  id           String   @id
+  userId       String
+  libraryId    String
+  libraryName  String
+  libraryType  String
+  content      String   @db.Text
+  title        String?
+  tags         Json? // String[]
+  thumbnailUrl String?
+  optimizedUrl String?
+  size         BigInt?
+  createdAt    DateTime @default(now())
+  deletedAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

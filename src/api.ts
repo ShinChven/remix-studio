@@ -1277,6 +1277,42 @@ export async function moveToTrashBatch(projectId: string, ids: string[]): Promis
   }
 }
 
+// ========== Library Trash ==========
+
+async function libraryTrashRequest(path: string, method: string, ids: string[] | undefined, fallback: string): Promise<void> {
+  const res = await apiFetch(path, {
+    method,
+    headers: getHeaders(),
+    body: ids ? JSON.stringify({ ids }) : undefined,
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || fallback);
+  }
+}
+
+/** Deleted library items, shaped like album trash: projectId and projectName hold the library's. */
+export async function fetchLibraryTrash(): Promise<TrashItem[]> {
+  const res = await apiFetch('/api/library-trash', { headers: getHeaders(false) });
+  return handleResponse<TrashItem[]>(res, 'Failed to fetch trash');
+}
+
+export function moveLibraryItemsToTrash(libraryId: string, ids: string[]): Promise<void> {
+  return libraryTrashRequest(`/api/libraries/${libraryId}/items/trash-batch`, 'POST', ids, 'Failed to move items to trash');
+}
+
+export function restoreLibraryTrash(ids: string[]): Promise<void> {
+  return libraryTrashRequest('/api/library-trash/restore', 'POST', ids, 'Failed to restore items');
+}
+
+export function deleteLibraryTrash(ids: string[]): Promise<void> {
+  return libraryTrashRequest('/api/library-trash/batch', 'DELETE', ids, 'Failed to delete items');
+}
+
+export function emptyLibraryTrash(): Promise<void> {
+  return libraryTrashRequest('/api/library-trash/empty', 'DELETE', undefined, 'Failed to empty trash');
+}
+
 /** Every tag used in one project's album, with per-tag item counts. */
 export async function fetchAlbumTagCounts(projectId: string): Promise<import('./types').AlbumTagCount[]> {
   const res = await apiFetch(`/api/projects/${projectId}/album/tags`, { headers: getHeaders(false) });

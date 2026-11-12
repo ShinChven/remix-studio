@@ -276,8 +276,10 @@ function summarizePendingConfirmation(
       const fields = ['content', 'title', 'tags'].filter((key) => Object.prototype.hasOwnProperty.call(args, key));
       return `Update prompt "${String(args.item_id ?? '')}" in library "${String(args.library_id ?? '')}"${fields.length ? ` (${fields.join(', ')})` : ''}.`;
     }
-    case 'delete_prompt':
-      return `Delete prompt "${String(args.item_id ?? '')}" from library "${String(args.library_id ?? '')}".`;
+    case 'delete_library_items': {
+      const count = Array.isArray(args.item_ids) ? new Set(args.item_ids).size : 0;
+      return `Move ${count} item${count === 1 ? '' : 's'} from library "${String(args.library_id ?? '')}" to the Recycle Bin.`;
+    }
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : 0;
       return `Create a ${String(args.type ?? 'new')} project named "${String(args.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;
