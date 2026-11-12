@@ -2486,6 +2486,24 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     }
   });
 
+  router.patch('/api/exports/:taskId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const taskId = c.req.param('taskId');
+      const body = await c.req.json().catch(() => ({} as any));
+      const name = typeof body?.packageName === 'string' ? body.packageName.trim() : '';
+      if (!name) return c.json({ error: 'A name is required' }, 400);
+      const task = await repository.getExportTask(user.userId, taskId);
+      if (!task) return c.json({ error: 'Export not found' }, 404);
+      if (task.status !== 'completed') return c.json({ error: 'Only a finished export can be renamed' }, 409);
+      const renamed = await exportManager.renameTask(user.userId, taskId, name);
+      return c.json(renamed);
+    } catch (e) {
+      console.error('[PATCH /api/exports/:taskId]', e);
+      return c.json({ error: 'Failed to rename export' }, 500);
+    }
+  });
+
   router.delete('/api/exports/:taskId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;

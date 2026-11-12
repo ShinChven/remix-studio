@@ -12,6 +12,7 @@ import {
   saveRefreshedTokens,
 } from '../services/drive/connections';
 import { chunkReadable } from '../utils/stream-chunks';
+import { archiveFileName } from './export-manager';
 import {
   applyPostWatermark,
   normalizePostWatermarkPayload,
@@ -57,6 +58,11 @@ export interface DeliveryTask {
   externalUrl?: string;
   error?: string;
   createdAt: number;
+}
+
+/** The name the user gave the archive, which may differ from its storage key. */
+function exportFileName(exportTask: { packageName?: string; s3Key: string }, exportTaskId: string): string {
+  return archiveFileName(exportTask.packageName || exportTask.s3Key.split('/').pop(), `export_${exportTaskId}`);
 }
 
 export class DeliveryManager {
@@ -286,7 +292,7 @@ export class DeliveryManager {
     }
 
     const provider = DriveFactory.getProvider(connection.provider);
-    const fileName = exportTask.s3Key.split('/').pop() || `export_${exportTaskId}.zip`;
+    const fileName = exportFileName(exportTask, exportTaskId);
     const totalBytes = Number(exportTask.size || 0);
     if (!Number.isFinite(totalBytes) || totalBytes <= 0) {
       throw new Error('Source export is missing a valid size');
@@ -387,7 +393,7 @@ export class DeliveryManager {
       throw new Error('Source export is missing a valid size');
     }
 
-    const filename = exportTask.s3Key.split('/').pop() || `export_${exportTaskId}.zip`;
+    const filename = exportFileName(exportTask, exportTaskId);
 
     await this.repository.saveDeliveryTask(userId, taskId, {
       ...task,

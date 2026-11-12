@@ -77,6 +77,39 @@ function forceJpegExtension(name: string): string {
   return `${clean.slice(0, dotIndex)}.jpg`;
 }
 
+/** Characters no common filesystem accepts in a file or folder name. */
+const UNSAFE_FILENAME_CHARS = /[\u0000-\u001f\u007f/\\:*?"<>|]/g;
+const MAX_ARCHIVE_BASE_LENGTH = 150;
+
+/**
+ * The archive's file name exactly as the user typed it, with `.zip`. The
+ * media sits at the root of the archive, so this name is also the folder an
+ * unzip tool extracts into; only characters a filesystem rejects are removed.
+ */
+export function archiveFileName(value: string | undefined, fallbackBase = 'Album'): string {
+  const base = (value || '')
+    .trim()
+    .replace(/\.zip$/i, '')
+    .replace(UNSAFE_FILENAME_CHARS, '_')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s.]+|[\s.]+$/g, '')
+    .slice(0, MAX_ARCHIVE_BASE_LENGTH)
+    .trim();
+  if (base) return `${base}.zip`;
+  return fallbackBase ? archiveFileName(fallbackBase, '') : 'Album.zip';
+}
+
+/** ASCII-only form of a name, for storage keys and old download clients. */
+function asciiFileName(name: string): string {
+  const base = name.replace(/\.zip$/i, '').replace(/[^a-zA-Z0-9-_]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+  return `${base || 'Album'}.zip`;
+}
+
+/** Content-Disposition that keeps a non-ASCII file name intact (RFC 6266). */
+export function attachmentDisposition(name: string): string {
+  return `attachment; filename="${asciiFileName(name)}"; filename*=UTF-8''${encodeURIComponent(name).replace(/['()*]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
+}
+
 export class ExportManager {
   private readonly workerId = crypto.randomUUID();
   private running = 0;
@@ -92,18 +125,14 @@ export class ExportManager {
 
   // ─── Public API ───────────────────────────────────────────────────────────
 
+  private normalizePackageName(value?: string, fallbackProjectName?: string): string {
+    return archiveFileName(value, `${fallbackProjectName || 'Album'}_Album`);
+  }
+
   /**
    * Insert a pending task row and return the taskId immediately.
    * The worker loop will pick it up and run it.
    */
-  private normalizePackageName(value?: string, fallbackProjectName?: string): string {
-    const raw = (value || '').trim() || `${fallbackProjectName || 'Album'}_Album.zip`;
-    const withoutZip = raw.replace(/\.zip$/i, '').trim();
-    const safeBase = (withoutZip || `${fallbackProjectName || 'Album'}_Album`).replace(/[^a-zA-Z0-9-_]/g, '_');
-    const compactBase = safeBase.replace(/_+/g, '_').replace(/^_+|_+$/g, '') || 'Album';
-    return `${compactBase}.zip`;
-  }
-
   async startExport(
     userId: string,
     projectId: string | undefined,
@@ -148,13 +177,26 @@ export class ExportManager {
     return this.presignTask(task);
   }
 
+  /**
+   * Rename a finished archive. Its media sits at the archive root, so the new
+   * name is also the folder it unzips into; nothing has to be rebuilt.
+   */
+  async renameTask(userId: string, taskId: string, name: string): Promise<ExportTask | undefined> {
+    const task = await this.repository.getExportTask(userId, taskId);
+    if (!task) return undefined;
+    if (task.status !== 'completed') throw new Error('Only a finished export can be renamed');
+    const packageName = this.normalizePackageName(name, task.projectName);
+    await this.repository.saveExportTask(userId, taskId, { ...task, packageName });
+    return this.presignTask({ ...task, packageName });
+  }
+
   /** Attach a fresh presigned URL to any completed task that has an s3Key. */
   async presignTask(task: any): Promise<ExportTask> {
     if (task.status === 'completed' && task.s3Key) {
       try {
         const packageName = this.normalizePackageName(task.packageName, task.projectName);
         const downloadUrl = await this.exportStorage.getPresignedUrl(task.s3Key, 86400, {
-          responseContentDisposition: `attachment; filename="${packageName}"`,
+          responseContentDisposition: attachmentDisposition(packageName),
           responseContentType: 'application/zip',
         });
         return { ...task, downloadUrl };
@@ -229,8 +271,9 @@ export class ExportManager {
 
     console.log(`[ExportManager] Starting task ${taskId} (${items.length} items, version=${exportVersion}, watermark=${watermarkEnabled}, user=${userId})`);
 
-    const normalizedPackageName = this.normalizePackageName(packageName, projectName);
-    const s3Key = `${userId}/exports/${taskId}/${normalizedPackageName}`;
+    // The key never changes after the build, so a rename only changes the
+    // download name; keep it ASCII so every storage backend accepts it.
+    const s3Key = `${userId}/exports/${taskId}/${asciiFileName(this.normalizePackageName(packageName, projectName))}`;
 
     // Heartbeat timer
     const heartbeatInterval = setInterval(async () => {

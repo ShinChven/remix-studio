@@ -48,7 +48,8 @@
     "card": {
       "files": "파일 {{count}}개",
       "download": "ZIP 다운로드",
-      "delete": "기록 삭제"
+      "delete": "기록 삭제",
+      "rename": "이름 변경"
     },
     "pagination": "{{total}}페이지 중 {{current}}페이지",
     "loadMore": "내보내기 더 불러오기",
@@ -69,6 +70,14 @@
       "batchTitle": "선택한 내보내기 삭제",
       "batchMessage": "내보내기 기록 {{count}}개를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
       "batchConfirm": "내보내기 삭제"
+    },
+    "renameDialog": {
+      "title": "압축 파일 이름 변경",
+      "description": "이 이름으로 다운로드되며 같은 이름의 폴더에 압축이 풀립니다.",
+      "label": "압축 파일 이름",
+      "confirm": "이름 변경",
+      "success": "압축 파일 이름을 변경했습니다.",
+      "error": "압축 파일 이름을 변경하지 못했습니다."
     }
   },
   "projectImports": {

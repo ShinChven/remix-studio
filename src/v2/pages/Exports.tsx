@@ -8,6 +8,7 @@ import {
   fetchDeliveryStatus,
   fetchReleaseConnections,
   fetchReleaseHistory,
+  renameExport,
   uploadExportToDrive,
   type ReleaseConnection,
   type ReleaseHistoryItem,
@@ -32,10 +33,12 @@ import { EntityList, EntityRow } from '../ui/EntityList';
 import { ListTitle } from '../ui/ListBar';
 import { ListPane } from '../ui/ListPane';
 import { Page } from '../ui/Page';
+import { PromptDialog } from '../ui/PromptDialog';
 import { StatusPill } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
 
 const EXPORT_HISTORY_PAGE_SIZE = 50;
+const stripZip = (name?: string) => (name || '').replace(/\.zip$/i, '');
 /** How often work in flight is checked. */
 const POLL_MS = 3000;
 
@@ -47,6 +50,7 @@ export function Exports() {
   const { page } = list;
   const pageSize = list.pageSize === 'all' ? 500 : list.pageSize;
   const [toDelete, setToDelete] = useState<string[]>([]);
+  const [toRename, setToRename] = useState<ExportTask | null>(null);
   const [driveTask, setDriveTask] = useState<ExportTask | null>(null);
   const [driveId, setDriveId] = useState<string | null>(null);
   const [historyTask, setHistoryTask] = useState<ExportTask | null>(null);
@@ -370,6 +374,9 @@ export function Exports() {
                             }}
                           />
                         )}
+                        {task.status === 'completed' && (
+                          <IconButton icon="edit" label={t('exports.card.rename')} tooltip size="xs" onClick={() => setToRename(task)} />
+                        )}
                         <IconButton icon="delete" label={t('exports.card.delete')} tooltip size="xs" className="v2-button-danger" onClick={() => setToDelete([task.id])} />
                       </>
                     }
@@ -384,6 +391,24 @@ export function Exports() {
               })}
             </EntityList>
       </ListPane>
+
+      <PromptDialog
+        open={!!toRename}
+        icon="edit"
+        title={t('exports.renameDialog.title')}
+        description={t('exports.renameDialog.description')}
+        label={t('exports.renameDialog.label')}
+        initialValue={stripZip(toRename?.packageName)}
+        maxLength={150}
+        supportingText=".zip"
+        confirmLabel={t('exports.renameDialog.confirm')}
+        onClose={() => setToRename(null)}
+        onConfirm={async (name) => {
+          if (!toRename) return;
+          await action.run(() => renameExport(toRename.id, name), { key: `rename:${toRename.id}`, success: t('exports.renameDialog.success'), error: t('exports.renameDialog.error'), rethrow: true });
+          await data.reload(true);
+        }}
+      />
 
       <ConfirmDialog
         open={toDelete.length > 0}
