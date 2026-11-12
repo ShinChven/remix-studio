@@ -7,7 +7,7 @@ import { formatBytes, uiLocale } from '../../lib/format';
 import { KindBadge } from '../../ui/KindBadge';
 import type { PageHeroStat } from '../../ui/PageHero';
 import { ShowcaseHero } from '../../ui/ShowcaseHero';
-import { timeAgo, trashBytes, trashKind } from './trashMeta';
+import { timeAgo, trashBytes, trashKey, trashKind, type TrashSource } from './trashMeta';
 
 /** One deleted item as a card: its picture, the start of its text, or its kind's badge. */
 function TrashCard({ item }: { item: TrashItem }) {
@@ -37,11 +37,13 @@ function TrashCard({ item }: { item: TrashItem }) {
 export interface TrashHeroProps {
   /** Everything in the bin; null until it has loaded. */
   items: TrashItem[] | null;
+  /** Which bin is shown; names the parents in the stats. */
+  source: TrashSource;
   actions: ReactNode;
 }
 
 /** The bin's header: what it holds, the space it takes, the page actions, and the last things thrown in. */
-export function TrashHero({ items, actions }: TrashHeroProps) {
+export function TrashHero({ items, source, actions }: TrashHeroProps) {
   const { t, i18n } = useTranslation();
   const all = items ?? [];
   const projectCount = new Set(all.map((item) => item.projectId)).size;
@@ -52,7 +54,7 @@ export function TrashHero({ items, actions }: TrashHeroProps) {
   const stats: PageHeroStat[] = [];
   if (all.length > 0) {
     stats.push({ key: 'items', value: all.length.toLocaleString(uiLocale()), label: t('v2.trash.statItems', { count: all.length }) });
-    stats.push({ key: 'projects', icon: 'folder', value: projectCount.toLocaleString(uiLocale()), label: t('v2.trash.statProjects', { count: projectCount }) });
+    stats.push({ key: 'projects', icon: source === 'libraries' ? 'photo_library' : 'folder', value: projectCount.toLocaleString(uiLocale()), label: t(trashKey(source, 'statProjects'), { count: projectCount }) });
     if (totalBytes > 0) stats.push({ key: 'space', icon: 'hard_drive', value: formatBytes(totalBytes), label: t('v2.trash.toFree') });
     if (oldest !== null) stats.push({ key: 'oldest', icon: 'history', label: t('v2.trash.statOldest', { time: timeAgo(oldest, i18n.language) }), title: new Date(oldest).toLocaleString(uiLocale()) });
   }

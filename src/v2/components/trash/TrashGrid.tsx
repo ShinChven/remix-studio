@@ -8,7 +8,7 @@ import { formatBytes, uiLocale } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { kindMeta } from '../../ui/entityMeta';
 import { KindBadge } from '../../ui/KindBadge';
-import { timeAgo, trashBytes, trashKind, trashTitle, type TrashGroup } from './trashMeta';
+import { timeAgo, trashBytes, trashKey, trashKind, trashTitle, type TrashGroup } from './trashMeta';
 
 /** How an item leaves the grid: lifted out when restored, dropped when deleted. */
 export type Leaving = 'restore' | 'delete';
@@ -206,7 +206,7 @@ export function TrashGrid({ groups, selectedIds, size, showProject, leaving, men
                         <Checkbox checked={selected} onChange={() => undefined} tabIndex={-1} aria-label={`${t('libraryEditor.selectItem')} · ${title}`} />
                       </span>
                       <div className="v2-shot__tools">
-                        <IconButton icon="restore" size="xs" className="v2-shot__tool" label={orphan ? t('v2.trash.orphanShort') : t('v2.trash.restore')} tooltip disabled={orphan} onClick={() => onRestore(item)} />
+                        <IconButton icon="restore" size="xs" className="v2-shot__tool" label={orphan ? t(trashKey(item.source, 'orphanShort')) : t('v2.trash.restore')} tooltip disabled={orphan} onClick={() => onRestore(item)} />
                         <IconButton icon="delete_forever" size="xs" className="v2-shot__tool" label={t('v2.trash.deleteForever')} tooltip onClick={() => onDelete(item)} />
                         <ActionMenu label={t('v2.project.moreActions')} items={menuItems(item)} size="xs" className="v2-shot__tool" />
                       </div>
@@ -225,10 +225,10 @@ export function TrashGrid({ groups, selectedIds, size, showProject, leaving, men
                           type="button"
                           className="v2-shot__name v2-trash-shot__project"
                           data-orphan={orphan ? '' : undefined}
-                          title={orphan ? `${item.projectName} · ${t('v2.trash.projectGone')}` : t('v2.trash.showProject', { name: item.projectName })}
+                          title={orphan ? `${item.projectName} · ${t(trashKey(item.source, 'projectGone'))}` : t('v2.trash.showProject', { name: item.projectName })}
                           onClick={() => onProjectClick(item.projectId)}
                         >
-                          <Icon name={orphan ? 'folder_off' : 'folder'} size={16} />
+                          <Icon name={item.source === 'library' ? 'photo_library' : orphan ? 'folder_off' : 'folder'} size={16} />
                           <span className="truncate">{item.projectName}</span>
                         </button>
                       )}

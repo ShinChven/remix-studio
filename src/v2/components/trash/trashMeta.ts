@@ -3,6 +3,41 @@ import type { TrashItem } from '../../../types';
 export type TrashKind = 'image' | 'video' | 'audio' | 'text';
 export const TRASH_KINDS: TrashKind[] = ['image', 'video', 'audio', 'text'];
 
+/** Which bin the page shows: album items from projects, or items from libraries. */
+export type TrashSource = 'projects' | 'libraries';
+export const TRASH_SOURCES: TrashSource[] = ['projects', 'libraries'];
+
+/** Strings that name the item's parent; library items read them from `v2.trash.library`. */
+const LIBRARY_KEYS = new Set([
+  'statProjects',
+  'projectGone',
+  'orphanShort',
+  'orphanHint',
+  'onlyThisProject',
+  'openProject',
+  'project',
+  'allProjects',
+  'sorts.project',
+  'cantRestore',
+  'skipped',
+  'confirmRestoreAllMessage',
+  'confirmEmptyTitle',
+  'emptied',
+  'emptyDescription',
+  'noMatchesHint',
+]);
+
+/** The i18n key for a string under `v2.trash`, in the wording of the item's bin. */
+export function trashKey(source: TrashSource | TrashItem['source'], key: string): string {
+  const library = source === 'libraries' || source === 'library';
+  return library && LIBRARY_KEYS.has(key) ? `v2.trash.library.${key}` : `v2.trash.${key}`;
+}
+
+/** Where the item goes back to. */
+export function trashParentHref(item: TrashItem): string {
+  return item.source === 'library' ? `/library/${item.projectId}` : `/project/${item.projectId}?tab=album`;
+}
+
 export type TrashSort = 'recent' | 'oldest' | 'largest' | 'project';
 export const TRASH_SORTS: Record<TrashSort, { icon: string }> = {
   recent: { icon: 'south' },
@@ -15,6 +50,7 @@ const AUDIO_FORMATS = new Set(['wav', 'mp3', 'm4a', 'aac', 'ogg']);
 
 /** What a deleted item holds, read from the item itself: its project may be gone. */
 export function trashKind(item: TrashItem): TrashKind {
+  if (item.libraryType) return item.libraryType;
   if (!item.imageUrl) return 'text';
   if (item.format === 'mp4' || item.civitaiParams?.mediaType === 'video') return 'video';
   if (item.format && AUDIO_FORMATS.has(item.format)) return 'audio';
@@ -31,6 +67,7 @@ export function trashFilename(item: TrashItem): string {
 
 /** What to call an item: its file for media, the start of its first line for text. */
 export function trashTitle(item: TrashItem): string {
+  if (item.title?.trim()) return item.title.trim();
   if (trashKind(item) !== 'text') return trashFilename(item);
   const line = (item.textContent || item.prompt || item.id).trim().split('\n')[0].replace(/^[#>*\s-]+/, '');
   return line.length > 72 ? `${line.slice(0, 71).trimEnd()}…` : line;

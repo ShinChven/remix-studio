@@ -1137,7 +1137,7 @@ function shouldReplaceProposalText(content: string): boolean {
     /\bbatch_create_prompts\b/,
     /\bcreate_project_with_workflow\b/,
     /\bupdate_prompt\b/,
-    /\bdelete_prompt\b/,
+    /\bdelete_library_items\b/,
     /\bcall [`']?[a-z_]+[`']?/i,
   ];
 

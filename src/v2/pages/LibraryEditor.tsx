@@ -7,6 +7,7 @@ import {
   createLibraryItem,
   deleteLibrary,
   deleteLibraryItem,
+  moveLibraryItemsToTrash,
   duplicateLibrary,
   exportMediaLibraryZip,
   fetchLibrary,
@@ -835,7 +836,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
         confirmLabel={t('libraryEditor.confirm.deleteSelected.confirm')}
         onClose={() => setDeleteSelectedOpen(false)}
         onConfirm={async () => {
-          for (const id of selected) await deleteLibraryItem(library.id, id);
+          await moveLibraryItemsToTrash(library.id, [...selected]);
           await refresh();
           clearSelection();
         }}

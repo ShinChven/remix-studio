@@ -163,6 +163,12 @@ export class PrismaRepository implements IRepository {
   deleteTrashPermanently(userId: string, itemId: string) { return this.projects.deleteTrashPermanently(userId, itemId); }
   emptyTrash(userId: string) { return this.projects.emptyTrash(userId); }
 
+  // === Library Trash ===
+  moveLibraryItemsToTrash(userId: string, libraryId: string, itemIds: string[]) { return this.libraries.moveLibraryItemsToTrash(userId, libraryId, itemIds); }
+  getLibraryTrashItems(userId: string) { return this.libraries.getLibraryTrashItems(userId); }
+  restoreLibraryTrashItems(userId: string, itemIds: string[]) { return this.libraries.restoreLibraryTrashItems(userId, itemIds); }
+  deleteLibraryTrashPermanently(userId: string, itemIds?: string[]) { return this.libraries.deleteLibraryTrashPermanently(userId, itemIds); }
+
   // === Export CRUD ===
   getExportTasks(userId: string, projectId: string) { return this.projects.getExportTasks(userId, projectId); }
   getAllExportTasks(userId: string, page?: number, limit?: number) { return this.projects.getAllExportTasks(userId, page, limit); }

@@ -1177,47 +1177,54 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
     },
   });
 
-  // ─── delete_prompt ───
+  // ─── delete_library_items ───
   tools.push({
-    name: 'delete_prompt',
-    title: 'Delete Prompt',
-    description: 'Delete one text prompt from a text library. Use get_library_items or search_library_items first to find the prompt item id.',
+    name: 'delete_library_items',
+    title: 'Delete Library Items',
+    description: 'Delete one or more items from a library of any type (text, image, video or audio), up to 100 per call, by moving them to the Recycle Bin. The user can restore them from there; their files are only removed, and storage only freed, when the bin is emptied. Use get_library_items or search_library_items first to find the item ids. Nothing is deleted unless every id exists in the library.',
     inputSchema: {
-      library_id: z.string().describe('The text library ID that contains the prompt'),
-      item_id: z.string().describe('The prompt item ID to delete'),
+      library_id: z.string().describe('The library ID that contains the items'),
+      item_ids: z.array(z.string()).min(1).max(100).describe('IDs of the items to delete (1–100)'),
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
     category: 'destructive',
     handler: async (userId, input) => {
-      const { library_id, item_id } = input as {
+      const { library_id, item_ids } = input as {
         library_id: string;
-        item_id: string;
+        item_ids: string[];
       };
 
       const library = await repository.getLibrarySummary(userId, library_id);
       if (!library) {
         return { text: JSON.stringify({ error: `Library "${library_id}" not found.` }), isError: true };
       }
-      if (library.type !== 'text') {
-        return { text: JSON.stringify({ error: `Library "${library.name}" is type "${library.type}", not a text prompt library.` }), isError: true };
-      }
 
-      const [existingItem] = await repository.getLibraryItemsByIds(userId, library_id, [item_id]);
-      if (!existingItem) {
-        return { text: JSON.stringify({ error: `Prompt "${item_id}" not found in library "${library.name}".` }), isError: true };
+      const ids = [...new Set(item_ids)];
+      const existingItems = await repository.getLibraryItemsByIds(userId, library_id, ids);
+      const existingIds = new Set(existingItems.map((item) => item.id));
+      const missing = ids.filter((id) => !existingIds.has(id));
+      if (missing.length > 0) {
+        return {
+          text: JSON.stringify({
+            error: `${missing.length} item${missing.length === 1 ? '' : 's'} not found in library "${library.name}". Nothing was deleted.`,
+            missingItemIds: missing,
+          }),
+          isError: true,
+        };
       }
 
       try {
-        await repository.deleteLibraryItem(userId, library_id, item_id);
+        const deletedCount = await repository.moveLibraryItemsToTrash(userId, library_id, ids);
         publishChange(userId, { resource: 'library', action: 'updated', id: library_id });
         return {
           text: JSON.stringify({
-            item_id,
             library_id,
             libraryUrl: appUrls.library(library_id),
             libraryName: library.name,
-            title: existingItem.title ?? null,
-            message: 'Prompt deleted successfully.',
+            libraryType: library.type,
+            deletedCount,
+            deleted: existingItems.map((item) => ({ item_id: item.id, title: item.title ?? null })),
+            message: `Moved ${deletedCount} item${deletedCount === 1 ? '' : 's'} to the Recycle Bin.`,
           }),
         };
       } catch (err: any) {

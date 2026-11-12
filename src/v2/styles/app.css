@@ -6064,3 +6064,6 @@ button.v2-model-row__id:is(:hover, :focus-visible) .m3-icon { opacity: 1; }
  * color: text primary, image tertiary, video secondary, audio success, ComfyUI warning.
  */
 .v2-page.v2-projects { padding-top: var(--md-sys-measurement-space200); }
+
+/* Recycle bin: which bin is shown, projects or libraries. */
+.v2-trash__sources { align-self: flex-start; }

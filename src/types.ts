@@ -2892,6 +2892,12 @@ export interface TrashItem extends AlbumItem {
   deletedAt: number;
   /** False once the project itself was deleted; the item can then only be deleted. */
   projectExists?: boolean;
+  /** Where the item was deleted from. For 'library', the project fields hold the library's id and name. */
+  source?: 'project' | 'library';
+  /** Library items: the kind of library the item came from. */
+  libraryType?: LibraryType;
+  /** Library items: the item's own title. */
+  title?: string;
 }
 
 export interface Project {

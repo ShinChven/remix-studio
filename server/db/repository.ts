@@ -159,6 +159,13 @@ export interface IRepository {
   deleteTrashPermanently(userId: string, itemId: string): Promise<string[]>; // Returns S3 keys (original, thumb, opt)
   emptyTrash(userId: string): Promise<string[]>; // Returns S3 keys
 
+  // === Library Trash ===
+  moveLibraryItemsToTrash(userId: string, libraryId: string, itemIds: string[]): Promise<number>;
+  getLibraryTrashItems(userId: string): Promise<TrashItem[]>;
+  restoreLibraryTrashItems(userId: string, itemIds: string[]): Promise<{ restored: number; libraryIds: string[] }>;
+  /** Omit itemIds to empty the bin. Returns the S3 keys that are safe to delete. */
+  deleteLibraryTrashPermanently(userId: string, itemIds?: string[]): Promise<string[]>;
+
   // === Legacy (for migration/import) ===
   getUserData(userId: string): Promise<AppData>;
   saveAllData(data: AppData): Promise<void>;

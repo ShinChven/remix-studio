@@ -77,8 +77,10 @@ export function summarizeToolEffect(
       const fields = ['content', 'title', 'tags'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
       return `Update prompt ${getLabel(objectArgs.item_id, 'prompt')} in library ${getLabel(objectArgs.library_id, 'library')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
     }
-    case 'delete_prompt':
-      return `Delete prompt ${getLabel(objectArgs.item_id, 'prompt')} from library ${getLabel(objectArgs.library_id, 'library')}.`;
+    case 'delete_library_items': {
+      const count = Array.isArray(objectArgs.item_ids) ? new Set(objectArgs.item_ids).size : 0;
+      return `Move ${count} item${count === 1 ? '' : 's'} from library ${getLabel(objectArgs.library_id, 'library')} to the Recycle Bin.`;
+    }
     case 'update_library_item': {
       const fields = ['title', 'tags', 'content'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
       return `Update item ${getLabel(objectArgs.item_id, 'item')} in library ${getLabel(objectArgs.library_id, 'library')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;

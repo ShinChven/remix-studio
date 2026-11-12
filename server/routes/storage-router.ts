@@ -51,9 +51,10 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       }
 
       // 1. Fetch all metadata from DB in a single pass
-      const [allItems, trashItems, userRecord] = await Promise.all([
+      const [allItems, trashItems, libraryTrashItems, userRecord] = await Promise.all([
         repository.getAllUserItems(userId),
         repository.getTrashItems(userId),
+        repository.getLibraryTrashItems(userId),
         userRepository.findById(userId),
       ]);
 
@@ -74,7 +75,7 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       let totalCampaignSize = 0;
 
       // Trash: sum size + optimizedSize + thumbnailSize from DB records (same as Trash page)
-      const totalTrashSize = trashItems.reduce((sum, item) => {
+      const totalTrashSize = [...trashItems, ...libraryTrashItems].reduce((sum, item) => {
         return sum + (item.size || 0) + (item.optimizedSize || 0) + (item.thumbnailSize || 0);
       }, 0);
 
@@ -85,6 +86,13 @@ export function createStorageRouter(repository: IRepository, userRepository: Use
       const markKey = (url?: string) => {
         if (url && !url.startsWith('http') && !url.startsWith('data:')) referencedKeys.add(url);
       };
+
+      // Deleted library items still own their files until the bin is emptied.
+      for (const item of libraryTrashItems) {
+        markKey(item.imageUrl);
+        markKey(item.thumbnailUrl);
+        markKey(item.optimizedUrl);
+      }
 
       for (const item of allItems) {
         const type = item._type;

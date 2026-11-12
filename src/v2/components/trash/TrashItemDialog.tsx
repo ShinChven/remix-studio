@@ -8,7 +8,7 @@ import { formatBytes, uiLocale } from '../../lib/format';
 import { kindMeta } from '../../ui/entityMeta';
 import { DetailBlock, ParamTable } from '../project/JobDetails';
 import { formatDuration } from './TrashGrid';
-import { timeAgo, trashFilename, trashKind, trashTitle } from './trashMeta';
+import { timeAgo, trashFilename, trashKind, trashTitle, trashKey } from './trashMeta';
 
 export interface TrashItemDialogProps {
   item: TrashItem | null;
@@ -124,10 +124,10 @@ export function TrashItemDialog({ item, items, onNavigate, onClose, onRestore, o
               title={t('v2.trash.showProject', { name: item.projectName })}
               onClick={() => onProjectClick(item.projectId)}
             >
-              <Icon name={orphan ? 'folder_off' : 'folder'} size={20} filled={!orphan} />
+              <Icon name={item.source === 'library' ? 'photo_library' : orphan ? 'folder_off' : 'folder'} size={20} filled={!orphan} />
               <span className="v2-trash-dialog__project-text">
                 <Text as="span" variant="label-small" className="v2-trash-dialog__project-label">
-                  {orphan ? t('v2.trash.projectGone') : t('v2.trash.facts.project')}
+                  {orphan ? t(trashKey(item.source, 'projectGone')) : t('v2.trash.facts.project')}
                 </Text>
                 <Text as="span" variant="title-small" emphasized className="truncate">
                   {item.projectName}
@@ -137,7 +137,7 @@ export function TrashItemDialog({ item, items, onNavigate, onClose, onRestore, o
             </button>
             {orphan && (
               <Text as="p" variant="body-small" className="v2-trash-dialog__orphan">
-                {t('v2.trash.orphanHint')}
+                {t(trashKey(item.source, 'orphanHint'))}
               </Text>
             )}
             {item.prompt && kind !== 'text' && (

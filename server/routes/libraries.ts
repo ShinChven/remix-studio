@@ -855,16 +855,34 @@ export function createLibraryRouter(
     }
   });
 
+  // Deleting an item moves it to the recycle bin.
   router.delete('/api/libraries/:libId/items/:itemId', authMiddleware, async (c) => {
     try {
       const user = c.get('user') as JwtPayload;
-      await repository.deleteLibraryItem(user.userId, c.req.param('libId'), c.req.param('itemId'));
+      const moved = await repository.moveLibraryItemsToTrash(user.userId, c.req.param('libId'), [c.req.param('itemId')]);
+      if (moved === 0) return c.json({ error: 'Not found' }, 404);
       liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: c.req.param('libId') });
       return c.json({ success: true });
     } catch (e: any) {
       if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
       console.error('[DELETE /api/libraries/:libId/items/:itemId]', e);
       return c.json({ error: 'Failed to delete item' }, 500);
+    }
+  });
+
+  router.post('/api/libraries/:libId/items/trash-batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const libId = c.req.param('libId');
+      const { ids } = await c.req.json().catch(() => ({}));
+      if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) return c.json({ error: 'Invalid IDs' }, 400);
+      const count = await repository.moveLibraryItemsToTrash(user.userId, libId, ids);
+      liveEvents?.publishChange(user.userId, { resource: 'library', action: 'updated', id: libId });
+      return c.json({ success: true, count });
+    } catch (e: any) {
+      if (isNotFoundError(e)) return c.json({ error: 'Not found' }, 404);
+      console.error('[POST /api/libraries/:libId/items/trash-batch]', e);
+      return c.json({ error: 'Failed to move items to trash' }, 500);
     }
   });
 

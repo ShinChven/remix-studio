@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-import type { LibraryType } from '../../src/types';
+import { Prisma, PrismaClient } from '@prisma/client';
+import type { LibraryType, TrashItem } from '../../src/types';
 import { Library, LibraryItem } from '../../src/types';
 
 export interface LibraryItemRefs {
@@ -400,7 +400,175 @@ export class LibraryRepository {
     }
   }
 
+  /** Moves items to the recycle bin; ids that are not in the library are skipped. Returns how many moved. */
+  async moveLibraryItemsToTrash(userId: string, libraryId: string, itemIds: string[]): Promise<number> {
+    const library = await this.prisma.library.findFirst({
+      where: { id: libraryId, userId },
+      select: { name: true, type: true },
+    });
+    if (!library) throw new Error('Library not found');
+    if (itemIds.length === 0) return 0;
 
+    return this.prisma.$transaction(async (tx) => {
+      const items = await tx.libraryItem.findMany({ where: { libraryId, id: { in: itemIds } } });
+      if (items.length === 0) return 0;
+
+      const deletedAt = new Date();
+      await tx.libraryTrashItem.createMany({
+        data: items.map((item) => ({
+          id: item.id,
+          userId,
+          libraryId,
+          libraryName: library.name,
+          libraryType: library.type,
+          content: item.content,
+          title: item.title,
+          tags: (item.tags as Prisma.InputJsonValue | null) ?? Prisma.DbNull,
+          thumbnailUrl: item.thumbnailUrl,
+          optimizedUrl: item.optimizedUrl,
+          size: item.size,
+          createdAt: item.createdAt,
+          deletedAt,
+        })),
+      });
+      await tx.libraryItem.deleteMany({ where: { libraryId, id: { in: items.map((item) => item.id) } } });
+      return items.length;
+    });
+  }
+
+  /** Deleted library items, newest first, in the shape the recycle bin shows: the library stands where a project would. */
+  async getLibraryTrashItems(userId: string): Promise<TrashItem[]> {
+    const items = await this.prisma.libraryTrashItem.findMany({
+      where: { userId },
+      orderBy: [{ deletedAt: 'desc' }, { id: 'desc' }],
+    });
+    // Items outlive their library; only those whose library is still there can go back.
+    const libraryIds = [...new Set(items.map((item) => item.libraryId))];
+    const libraries = libraryIds.length
+      ? await this.prisma.library.findMany({ where: { userId, id: { in: libraryIds } }, select: { id: true, name: true } })
+      : [];
+    const names = new Map(libraries.map((library) => [library.id, library.name]));
+
+    return items.map((item) => {
+      const libraryType = item.libraryType as LibraryType;
+      const isText = libraryType === 'text';
+      return {
+        id: item.id,
+        source: 'library' as const,
+        libraryType,
+        title: item.title ?? undefined,
+        jobId: '',
+        prompt: '',
+        textContent: isText ? item.content : undefined,
+        imageUrl: isText ? '' : item.content,
+        thumbnailUrl: item.thumbnailUrl ?? undefined,
+        optimizedUrl: item.optimizedUrl ?? undefined,
+        tags: (item.tags as string[]) ?? [],
+        size: item.size != null ? Number(item.size) : undefined,
+        createdAt: item.createdAt.getTime(),
+        deletedAt: item.deletedAt.getTime(),
+        projectId: item.libraryId,
+        projectName: names.get(item.libraryId) ?? item.libraryName,
+        projectExists: names.has(item.libraryId),
+      };
+    });
+  }
+
+  /** Puts deleted items back in their libraries; items whose library is gone stay in the bin. Returns the libraries that changed. */
+  async restoreLibraryTrashItems(userId: string, itemIds: string[]): Promise<{ restored: number; libraryIds: string[] }> {
+    if (itemIds.length === 0) return { restored: 0, libraryIds: [] };
+
+    return this.prisma.$transaction(async (tx) => {
+      const trashed = await tx.libraryTrashItem.findMany({ where: { userId, id: { in: itemIds } } });
+      const libraries = await tx.library.findMany({
+        where: { userId, id: { in: [...new Set(trashed.map((item) => item.libraryId))] } },
+        select: { id: true },
+      });
+      const existing = new Set(libraries.map((library) => library.id));
+      const restorable = trashed.filter((item) => existing.has(item.libraryId));
+      if (restorable.length === 0) return { restored: 0, libraryIds: [] };
+
+      await tx.libraryItem.createMany({
+        data: restorable.map((item) => ({
+          id: item.id,
+          libraryId: item.libraryId,
+          content: item.content,
+          title: item.title,
+          tags: (item.tags as Prisma.InputJsonValue | null) ?? [],
+          thumbnailUrl: item.thumbnailUrl,
+          optimizedUrl: item.optimizedUrl,
+          size: item.size,
+          createdAt: item.createdAt,
+        })),
+      });
+      await tx.libraryTrashItem.deleteMany({ where: { userId, id: { in: restorable.map((item) => item.id) } } });
+      return { restored: restorable.length, libraryIds: [...new Set(restorable.map((item) => item.libraryId))] };
+    });
+  }
+
+  /**
+   * Removes deleted library items for good: the given ones, or the whole bin.
+   * Returns the storage keys that are now safe to delete, leaving out any file
+   * that a job, album item, workflow or another library item still points at.
+   */
+  async deleteLibraryTrashPermanently(userId: string, itemIds?: string[]): Promise<string[]> {
+    const where = itemIds ? { userId, id: { in: itemIds } } : { userId };
+    const items = await this.prisma.libraryTrashItem.findMany({ where });
+    if (items.length === 0) return [];
+
+    await this.prisma.libraryTrashItem.deleteMany({ where: { userId, id: { in: items.map((item) => item.id) } } });
+
+    const keys = new Set<string>();
+    for (const item of items) {
+      const candidates = item.libraryType === 'text' ? [] : [item.content, item.thumbnailUrl, item.optimizedUrl];
+      for (const key of candidates) {
+        if (key && !key.startsWith('http') && !key.startsWith('data:')) keys.add(key);
+      }
+    }
+    if (keys.size === 0) return [];
+
+    const referenced = await this.findReferencedStorageKeys(userId, [...keys]);
+    return [...keys].filter((key) => !referenced.has(key));
+  }
+
+  /** Which of these storage keys some record of the user's still uses. */
+  private async findReferencedStorageKeys(userId: string, keys: string[]): Promise<Set<string>> {
+    const contexts = (table: string) =>
+      (['imageContexts', 'videoContexts', 'audioContexts'] as const).map(
+        (column) => Prisma.sql`
+          SELECT e.value AS key FROM ${Prisma.raw(`"${table}"`)} r
+          CROSS JOIN LATERAL jsonb_array_elements_text(
+            CASE WHEN jsonb_typeof(r.${Prisma.raw(`"${column}"`)}) = 'array' THEN r.${Prisma.raw(`"${column}"`)} ELSE '[]'::jsonb END
+          ) AS e(value)
+          WHERE r."userId" = ${userId}`,
+      );
+
+    const sources = [
+      ...contexts('Job'),
+      ...contexts('AlbumItem'),
+      ...contexts('TrashItem'),
+      Prisma.sql`
+        SELECT v.key FROM "LibraryItem" i
+        JOIN "Library" l ON l."id" = i."libraryId"
+        CROSS JOIN LATERAL (VALUES (i."content"), (i."thumbnailUrl"), (i."optimizedUrl")) AS v(key)
+        WHERE l."userId" = ${userId}`,
+      Prisma.sql`
+        SELECT v.key FROM "LibraryTrashItem" t
+        CROSS JOIN LATERAL (VALUES (t."content"), (t."thumbnailUrl"), (t."optimizedUrl")) AS v(key)
+        WHERE t."userId" = ${userId}`,
+      Prisma.sql`
+        SELECT v.key FROM "WorkflowItem" w
+        JOIN "Project" p ON p."id" = w."projectId"
+        CROSS JOIN LATERAL (VALUES (w."value"), (w."thumbnailUrl"), (w."optimizedUrl")) AS v(key)
+        WHERE p."userId" = ${userId}`,
+    ];
+
+    const rows = await this.prisma.$queryRaw<Array<{ key: string }>>`
+      SELECT DISTINCT k.key
+      FROM unnest(${keys}::text[]) AS k(key)
+      JOIN (${Prisma.join(sources, ' UNION ALL ')}) AS used ON used.key = k.key`;
+    return new Set(rows.map((row) => row.key));
+  }
 
   async searchLibraryItems(
     userId: string,
