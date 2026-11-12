@@ -48,7 +48,8 @@
     "card": {
       "files": "{{count}} 个文件",
       "download": "下载 ZIP",
-      "delete": "删除记录"
+      "delete": "删除记录",
+      "rename": "重命名"
     },
     "pagination": "第 {{current}} / {{total}} 页",
     "loadMore": "加载更多导出",
@@ -69,6 +70,14 @@
       "batchTitle": "删除所选导出",
       "batchMessage": "确定要删除所选的 {{count}} 条导出记录吗？此操作无法撤销。",
       "batchConfirm": "删除导出"
+    },
+    "renameDialog": {
+      "title": "重命名压缩包",
+      "description": "压缩包将以此名称下载，并解压到同名文件夹中。",
+      "label": "压缩包名称",
+      "confirm": "重命名",
+      "success": "压缩包已重命名。",
+      "error": "重命名压缩包失败。"
     }
   },
   "projectImports": {

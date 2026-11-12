@@ -1566,6 +1566,20 @@ export async function deleteExport(taskId: string): Promise<void> {
   }
 }
 
+/** Rename a finished archive; the new name is also the folder it unzips into. */
+export async function renameExport(taskId: string, packageName: string): Promise<ExportTask> {
+  const res = await apiFetch(`/api/exports/${taskId}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify({ packageName }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to rename export');
+  }
+  return res.json();
+}
+
 /** @deprecated use deleteExport(taskId) instead */
 export async function deleteProjectExport(projectId: string, taskId: string): Promise<void> {
   return deleteExport(taskId);

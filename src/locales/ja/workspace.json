@@ -48,7 +48,8 @@
     "card": {
       "files": "{{count}} ファイル",
       "download": "ZIP をダウンロード",
-      "delete": "レコードを削除"
+      "delete": "レコードを削除",
+      "rename": "名前を変更"
     },
     "pagination": "{{total}} ページ中 {{current}} ページ",
     "loadMore": "さらにエクスポートを読み込む",
@@ -69,6 +70,14 @@
       "batchTitle": "選択したエクスポートを削除",
       "batchMessage": "{{count}} 件のエクスポートレコードを削除してもよろしいですか？この操作は取り消せません。",
       "batchConfirm": "エクスポートを削除"
+    },
+    "renameDialog": {
+      "title": "アーカイブ名を変更",
+      "description": "この名前でダウンロードされ、同じ名前のフォルダーに展開されます。",
+      "label": "アーカイブ名",
+      "confirm": "名前を変更",
+      "success": "アーカイブ名を変更しました。",
+      "error": "アーカイブ名を変更できませんでした。"
     }
   },
   "projectImports": {

@@ -48,7 +48,8 @@
     "card": {
       "files": "{{count}} Fichiers",
       "download": "Télécharger le ZIP",
-      "delete": "Supprimer l'enregistrement"
+      "delete": "Supprimer l'enregistrement",
+      "rename": "Renommer"
     },
     "pagination": "Page {{current}} sur {{total}}",
     "loadMore": "Charger plus d'exports",
@@ -69,6 +70,14 @@
       "batchTitle": "Supprimer les exports sélectionnés",
       "batchMessage": "Voulez-vous vraiment supprimer {{count}} enregistrements d'exportation ? Cette action est irréversible.",
       "batchConfirm": "Supprimer les exports"
+    },
+    "renameDialog": {
+      "title": "Renommer l’archive",
+      "description": "L’archive est téléchargée sous ce nom et se décompresse dans un dossier du même nom.",
+      "label": "Nom de l’archive",
+      "confirm": "Renommer",
+      "success": "Archive renommée.",
+      "error": "Impossible de renommer l’archive."
     }
   },
   "projectImports": {

@@ -48,7 +48,8 @@
     "card": {
       "files": "{{count}} Files",
       "download": "Download ZIP",
-      "delete": "Delete record"
+      "delete": "Delete record",
+      "rename": "Rename"
     },
     "pagination": "Page {{current}} of {{total}}",
     "loadMore": "Load More Exports",
@@ -69,6 +70,14 @@
       "batchTitle": "Delete Selected Exports",
       "batchMessage": "Are you sure you want to delete {{count}} export records? This action cannot be undone.",
       "batchConfirm": "Delete Exports"
+    },
+    "renameDialog": {
+      "title": "Rename archive",
+      "description": "The archive downloads under this name and unzips into a folder with the same name.",
+      "label": "Archive name",
+      "confirm": "Rename",
+      "success": "Archive renamed.",
+      "error": "Failed to rename the archive."
     }
   },
   "projectImports": {
