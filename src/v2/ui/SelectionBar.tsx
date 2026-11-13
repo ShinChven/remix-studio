@@ -1,23 +1,34 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, cx, IconButton, Text, Toolbar } from '../../m3';
 import { useFitLevel } from '../lib/useFitLevel';
 import { ActionMenu, type ActionMenuItem } from './ActionMenu';
 
-/** Escape leaves selection, unless a dialog, menu or field has it. */
-export function useEscapeClears(active: boolean, onClear: () => void) {
+/** Escape leaves selection and D triggers its delete action, unless a dialog, menu or field has focus. */
+export function useEscapeClears(active: boolean, onClear: () => void, onDelete?: () => void) {
+  const callbacksRef = useRef({ onClear, onDelete });
+  callbacksRef.current = { onClear, onDelete };
+
   useEffect(() => {
     if (!active) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented) return;
-      const target = event.target as HTMLElement | null;
+      if (event.defaultPrevented || event.isComposing || event.repeat) return;
+      const isEscape = event.key === 'Escape';
+      const isDelete = (event.key === 'd' || event.key === 'D') && !event.metaKey && !event.ctrlKey && !event.altKey;
+      if (!isEscape && !isDelete) return;
+      const target = (event.target as HTMLElement | null) ?? (document.activeElement as HTMLElement | null);
       if (target?.closest('input:not([type="checkbox"], [type="radio"]), textarea, select, [contenteditable="true"], [role="menu"]')) return;
-      if (document.querySelector('[aria-modal="true"], .m3-dialog-root')) return;
-      onClear();
+      if (document.querySelector('[aria-modal="true"], .m3-dialog-root, [role="menu"][data-state="open"]')) return;
+      if (isEscape) {
+        callbacksRef.current.onClear();
+      } else if (callbacksRef.current.onDelete) {
+        event.preventDefault();
+        callbacksRef.current.onDelete();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [active, onClear]);
+  }, [active]);
 }
 
 /**
@@ -74,8 +85,9 @@ export function SelectionBar({ selectedCount, totalCount, onSelectAll, onClear, 
   const selecting = selectedCount > 0;
   const allSelected = selecting && selectedCount >= totalCount;
   const visible = actions.filter((action) => !action.hidden);
+  const deleteAction = visible.find((action) => action.key === 'delete' && !action.disabled && !action.loading && !action.menu);
   const fit = useFitLevel<HTMLDivElement>(3, [selectedCount, totalCount, allMatching?.total, ...visible.map((action) => `${action.key}:${action.label}`)].join('|'));
-  useEscapeClears(selecting, onClear);
+  useEscapeClears(selecting, onClear, deleteAction?.onClick);
 
   if (!selecting) return null;
   const slimSelectAll = fit.level >= 1;
