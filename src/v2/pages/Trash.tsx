@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { deleteLibraryTrash, deleteTrashBatch, deleteTrashPermanently, emptyLibraryTrash, emptyTrash, fetchLibraryTrash, fetchTrash, imageDisplayUrl, moveLibraryItemsToTrash, moveToTrashBatch, restoreLibraryTrash, restoreTrashBatch, restoreTrashItem } from '../../api';
-import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, usePrefersReducedMotion } from '../../m3';
+import { Button, IconButton, MenuDivider, MenuGroup, MenuItem, Tab, Tabs, usePrefersReducedMotion } from '../../m3';
 import type { TrashItem } from '../../types';
 import { Lightbox } from '../components/Lightbox';
 import { TrashGrid, type Leaving } from '../components/trash/TrashGrid';
@@ -22,7 +22,6 @@ import { SectionNav } from '../ui/ListBar';
 import { ListPane } from '../ui/ListPane';
 import { ListSearch } from '../ui/ListSearch';
 import { Page } from '../ui/Page';
-import { Segmented } from '../ui/Toolbar';
 import { FilterChip } from '../ui/ResultFilters';
 import { useToast } from '../ui/useToast';
 
@@ -362,7 +361,7 @@ export function Trash() {
               <Button variant="filled" icon="restore" emphasized disabled={restorableCount === 0} onClick={() => setPending({ kind: 'restore-all' })}>
                 {t('v2.trash.restoreAll')}
               </Button>
-              <Button variant="tonal" icon="delete_sweep" className="v2-button-danger" onClick={() => setPending({ kind: 'empty' })}>
+              <Button variant="outlined" icon="delete_sweep" className="v2-button-danger" onClick={() => setPending({ kind: 'empty' })}>
                 {t('v2.trash.emptyBin')}
               </Button>
             </>
@@ -370,14 +369,17 @@ export function Trash() {
         }
       />
 
-      <Segmented<TrashSource>
+      <Tabs
         className="v2-trash__sources"
-        size="sm"
+        scrollable
         aria-label={t('v2.trash.sourcesLabel')}
         value={source}
         onChange={(next) => list.set({ from: next === 'projects' ? null : next, project: null, item: null, kind: null })}
-        options={TRASH_SOURCES.map((value) => ({ value, label: t(`v2.trash.sources.${value}`), icon: SOURCE_ICONS[value] }))}
-      />
+      >
+        {TRASH_SOURCES.map((value) => (
+          <Tab key={value} value={value} label={t(`v2.trash.sources.${value}`)} icon={SOURCE_ICONS[value]} inlineIcon />
+        ))}
+      </Tabs>
 
       <ListPane
         label={t('trash.title')}
