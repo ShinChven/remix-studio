@@ -332,7 +332,7 @@ export class AssistantRunner {
         modelId = 'gemini-3.1-flash-lite';
         break;
       case 'Claude':
-        modelId = 'claude-haiku-4-5-20251001';
+        modelId = 'claude-haiku-5-5';
         break;
       case 'OpenAI':
         modelId = 'gpt-5.4-nano';

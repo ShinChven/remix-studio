@@ -445,6 +445,45 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'google-gemini-4-carbon-text',
+      name: 'Gemini 4 Carbon',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-4-carbon',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        // Gemini 4 runs on Google's tuned sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'google-gemini-4-argon-text',
+      name: 'Gemini 4 Argon',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-4-argon',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        // Gemini 4 runs on Google's tuned sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'google-gemini-4-hydrogen-text',
+      name: 'Gemini 4 Hydrogen',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-4-hydrogen',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        // Gemini 4 runs on Google's tuned sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
       id: 'google-gemini-3.8-flash-text',
       name: 'Gemini 3.8 Flash',
       generatorId: 'GoogleAI',
@@ -671,6 +710,45 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       options: {
         aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '2:3', '3:2', '4:5', '5:4', '21:9'],
         qualities: ['1K'],
+      },
+    },
+    {
+      id: 'vertex-gemini-4-carbon-text',
+      name: 'Gemini 4 Carbon',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-4-carbon',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        // Gemini 4 runs on Google's tuned sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'vertex-gemini-4-argon-text',
+      name: 'Gemini 4 Argon',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-4-argon',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        // Gemini 4 runs on Google's tuned sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
+      },
+    },
+    {
+      id: 'vertex-gemini-4-hydrogen-text',
+      name: 'Gemini 4 Hydrogen',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-4-hydrogen',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: {
+        // Gemini 4 runs on Google's tuned sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536],
       },
     },
     {
@@ -1274,6 +1352,71 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
+      id: 'openai-gpt-6-astra-text',
+      name: 'GPT-6 Astra',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6-astra',
+      category: 'text',
+      promptLimit: { value: 922000, unit: 'tokens' },
+      options: {
+        // GPT-6 reasoning models only accept the default sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000],
+      },
+    },
+    {
+      id: 'openai-gpt-6.1-sol-text',
+      name: 'GPT-6.1 Sol',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6.1-sol',
+      category: 'text',
+      promptLimit: { value: 922000, unit: 'tokens' },
+      options: {
+        // GPT-6 reasoning models only accept the default sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000],
+      },
+    },
+    {
+      id: 'openai-gpt-6.1-terra-text',
+      name: 'GPT-6.1 Terra',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6.1-terra',
+      category: 'text',
+      promptLimit: { value: 922000, unit: 'tokens' },
+      options: {
+        // GPT-6 reasoning models only accept the default sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000],
+      },
+    },
+    {
+      id: 'openai-gpt-6-sol-text',
+      name: 'GPT-6 Sol',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6-sol',
+      category: 'text',
+      promptLimit: { value: 922000, unit: 'tokens' },
+      options: {
+        // GPT-6 reasoning models only accept the default sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000],
+      },
+    },
+    {
+      id: 'openai-gpt-6-luna-text',
+      name: 'GPT-6 Luna',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6-luna',
+      category: 'text',
+      promptLimit: { value: 922000, unit: 'tokens' },
+      options: {
+        // GPT-6 reasoning models only accept the default sampling; temperature is not sent.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000],
+      },
+    },
+    {
       id: 'openai-gpt-5.6-text',
       name: 'GPT-5.6',
       generatorId: 'OpenAI',
@@ -1475,6 +1618,58 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   Claude: [
+    {
+      id: 'claude-fable-5-2-text',
+      name: 'Claude Fable 5.2',
+      generatorId: 'Claude',
+      modelId: 'claude-fable-5-2',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Fable 5.2 uses always-on adaptive thinking and rejects disabled/manual thinking controls.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'claude-opus-5-5-text',
+      name: 'Claude Opus 5.5',
+      generatorId: 'Claude',
+      modelId: 'claude-opus-5-5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Opus 5.5 always thinks and rejects non-default sampling parameters; only the default temperature is allowed.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'claude-sonnet-5-5-text',
+      name: 'Claude Sonnet 5.5',
+      generatorId: 'Claude',
+      modelId: 'claude-sonnet-5-5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Sonnet 5.5 rejects non-default sampling parameters; only the default temperature is allowed.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
+    {
+      id: 'claude-haiku-5-5-text',
+      name: 'Claude Haiku 5.5',
+      generatorId: 'Claude',
+      modelId: 'claude-haiku-5-5',
+      category: 'text',
+      promptLimit: { value: 1000000, unit: 'tokens' },
+      options: {
+        // Haiku 5.5 rejects non-default sampling parameters; only the default temperature is allowed.
+        temperatures: [1.0],
+        maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072],
+      },
+    },
     {
       id: 'claude-fable-5-1-text',
       name: 'Claude Fable 5.1',

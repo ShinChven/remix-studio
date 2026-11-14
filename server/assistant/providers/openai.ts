@@ -16,13 +16,13 @@ import type { ChatMessage } from './types';
  * default base URL.
  */
 /**
- * GPT-5 and the o-series reject `max_tokens` outright and require
+ * GPT-5, GPT-6 and the o-series reject `max_tokens` outright and require
  * `max_completion_tokens`. Everything else — including OpenAI-compatible
  * third-party endpoints reached via a custom base URL — takes `max_tokens`.
  */
 function outputTokenParam(modelId: string, maxTokens: number): Record<string, number> {
   const id = modelId.toLowerCase();
-  const usesCompletionTokens = /^(gpt-5|o[1-9])/.test(id);
+  const usesCompletionTokens = /^(gpt-[56]|o[1-9])/.test(id);
   return usesCompletionTokens ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens };
 }
 

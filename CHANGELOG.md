@@ -2,6 +2,12 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [Unreleased]
+
+### Added
+
+- **Gemini 4, GPT-6 and Claude 5.5 models**: **Gemini 4 Carbon**, **Gemini 4 Argon** and **Gemini 4 Hydrogen** (`gemini-4-carbon`, `gemini-4-argon`, `gemini-4-hydrogen`) join the Google AI and Vertex AI text models with a 1M-token context; they run on Google's tuned sampling, so temperature is not sent. **GPT-6 Astra**, **GPT-6.1 Sol**, **GPT-6.1 Terra**, **GPT-6 Sol** and **GPT-6 Luna** join the OpenAI text models; the OpenAI text generator now omits temperature for GPT-6 and sends `max_completion_tokens` for GPT-5/GPT-6/o-series models. **Claude Fable 5.2**, **Claude Opus 5.5**, **Claude Sonnet 5.5** and **Claude Haiku 5.5** join the Claude text models with a 1M-token context and default temperature. The Claude text generator now falls back to Claude Sonnet 5.5, and assistant conversation summaries on Claude use Claude Haiku 5.5. Existing models stay listed so pinned projects keep working. Model explanations are available in all six locales.
+
 ## [1.26.1] - 2026-11-03
 
 ### Added
