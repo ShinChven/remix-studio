@@ -16,6 +16,9 @@ import { geminiSupportsSamplingParameters } from '../../utils/gemini';
  * model IDs accepted by the current Google API.
  */
 export function resolveRealGeminiModelId(modelId: string): string {
+  if (modelId.includes('gemini-4-carbon')) return 'gemini-4-carbon';
+  if (modelId.includes('gemini-4-argon')) return 'gemini-4-argon';
+  if (modelId.includes('gemini-4-hydrogen')) return 'gemini-4-hydrogen';
   if (modelId.includes('3.8-flash')) return 'gemini-3.8-flash';
   if (modelId.includes('3.7-flash')) return 'gemini-3.7-flash';
   if (modelId.includes('3.6-flash')) return 'gemini-3.6-flash';
@@ -81,6 +84,7 @@ export class GoogleAIChatProvider implements ChatProvider {
       const thinkingConfig: any = {};
       if (
         includeThoughts && (
+          realModelId.includes('gemini-4') ||
           realModelId.includes('gemini-3') ||
           realModelId.includes('gemini-2.5') ||
           realModelId.includes('thinking')
@@ -103,6 +107,7 @@ export class GoogleAIChatProvider implements ChatProvider {
     const shouldStreamThoughts = typeof req.onThought === 'function'
       && (
         realModelId.includes('gemma-4') ||
+        realModelId.includes('gemini-4') ||
         realModelId.includes('gemini-3') ||
         realModelId.includes('gemini-2.5') ||
         realModelId.includes('thinking')

@@ -18,7 +18,7 @@ server/generators/                    -- One generator class per provider per ca
     +-- build-generator.ts            -- Factory: provider type -> image generator
     +-- build-video-generator.ts      -- Factory: provider type -> video generator
     +-- build-audio-generator.ts      -- Factory: provider type -> audio generator
-    +-- claude-text-generator.ts      -- Default model: claude-sonnet-4-6
+    +-- claude-text-generator.ts      -- Default model: claude-sonnet-5-5
     +-- openai-text-generator.ts      -- Default model: gpt-5.6
     +-- grok-text-generator.ts        -- Default model: grok-4.6
     +-- minimax-text-generator.ts     -- Default model: MiniMax-M3
@@ -309,7 +309,7 @@ credentials, database, or paid generation requests.
 
 ---
 
-## Current Model Inventory (October 2026)
+## Current Model Inventory (November 2026)
 
 ### Google AI / Vertex AI
 | Name | Model ID | Category | Max Output |
@@ -317,6 +317,9 @@ credentials, database, or paid generation requests.
 | nano banana Pro | `gemini-3-pro-image` | image | 32,768 |
 | nano banana 2.1 | `gemini-nano-banana-2.1` | image | 32,768 |
 | nano banana 2 Lite | `gemini-3.1-flash-lite-image` | image | 32,768 |
+| Gemini 4 Carbon | `gemini-4-carbon` | text | 65,536 |
+| Gemini 4 Argon | `gemini-4-argon` | text | 65,536 |
+| Gemini 4 Hydrogen | `gemini-4-hydrogen` | text | 65,536 |
 | Gemini 3.8 Flash | `gemini-3.8-flash` | text | 65,536 |
 | Gemini 3.7 Flash | `gemini-3.7-flash` | text | 65,536 |
 | Gemini 3.6 Flash | `gemini-3.6-flash` | text | 65,536 |
@@ -332,6 +335,16 @@ credentials, database, or paid generation requests.
 | Gemini 3.1 Flash TTS Preview | `gemini-3.1-flash-tts-preview` | audio | 32k context window |
 | Gemini 2.5 Flash Preview TTS | `gemini-2.5-flash-preview-tts` | audio | 32k context window |
 | Gemini 2.5 Pro Preview TTS | `gemini-2.5-pro-preview-tts` | audio | 32k context window |
+
+Gemini 4 (`gemini-4-carbon`, `gemini-4-argon`, `gemini-4-hydrogen`) is listed
+on both Google AI and Vertex AI with the 3.8 Flash request shape. All three are
+in `MODELS_WITHOUT_SAMPLING_PARAMETERS`, and the thought flags in the REST
+generator and the assistant adapter match `gemini-4` alongside `gemini-3`. The
+`gemini-4-argon` ID is on Google's model docs and Carbon has an official
+launch post; `gemini-4-hydrogen` was confirmed only through gateways
+(OpenRouter, APIMart-style catalogs), so re-check it against ai.google.dev. The
+REST generators' fallback stays `gemini-3.8-flash` until Hydrogen's ID and
+pricing are confirmed.
 
 Gemini 3.x is progressively dropping the legacy sampling knobs (`temperature`,
 `topP`, `topK`) — the newer models are tuned for their defaults and either reject
@@ -376,6 +389,11 @@ the 2.1 docs.
 | GPT Image 2.5 Flare | `gpt-image-2.5-flare` | image | - |
 | GPT Image 2 | `gpt-image-2` | image | - |
 | GPT Image 1 Mini | `gpt-image-1-mini` | image | - |
+| GPT-6 Astra | `gpt-6-astra` | text | 128,000 |
+| GPT-6.1 Sol | `gpt-6.1-sol` | text | 128,000 |
+| GPT-6.1 Terra | `gpt-6.1-terra` | text | 128,000 |
+| GPT-6 Sol | `gpt-6-sol` | text | 128,000 |
+| GPT-6 Luna | `gpt-6-luna` | text | 128,000 |
 | GPT-5.6 | `gpt-5.6` | text | 131,072 |
 | GPT-5.6 Terra | `gpt-5.6-terra` | text | 131,072 |
 | GPT-5.6 Luna | `gpt-5.6-luna` | text | 131,072 |
@@ -429,6 +447,14 @@ Sora API's shutdown for September 24, 2026 with no successor model, so
 `buildVideoGenerator` now throws for `OpenAI` the way it does for the other
 providers that generate no video, and `openai-video-generator.ts` is gone.
 
+The GPT-6 family (`gpt-6-astra`, `gpt-6.1-sol`, `gpt-6.1-terra`, `gpt-6-sol`,
+`gpt-6-luna`) has reasoning always on and takes only the default sampling, so
+`openai-text-generator.ts` omits `temperature` for any `gpt-6*` model. Both it
+and the assistant's OpenAI adapter send `max_completion_tokens` instead of
+`max_tokens` for `gpt-5*`, `gpt-6*` and the o-series. The ~922K-token prompt
+limit comes from APIMart's catalog of the same IDs. The generator fallback
+stays `gpt-5.6`.
+
 ### Grok (xAI)
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
@@ -460,6 +486,10 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 ### Claude (Anthropic)
 | Name | Model ID | Category | Max Output |
 |---|---|---|---|
+| Claude Fable 5.2 | `claude-fable-5-2` | text | 128,000 |
+| Claude Opus 5.5 | `claude-opus-5-5` | text | 128,000 |
+| Claude Sonnet 5.5 | `claude-sonnet-5-5` | text | 128,000 |
+| Claude Haiku 5.5 | `claude-haiku-5-5` | text | 128,000 |
 | Claude Fable 5.1 | `claude-fable-5-1` | text | 128,000 |
 | Claude Fable 5 | `claude-fable-5` | text | 128,000 |
 | Claude Opus 5 | `claude-opus-5` | text | 128,000 |
@@ -468,6 +498,14 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | Claude Opus 4.7 | `claude-opus-4-7` | text | 128,000 |
 | Claude Sonnet 4.6 | `claude-sonnet-4-6` | text | 64,000 |
 | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | text | 64,000 |
+
+Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5 all reject non-default sampling
+parameters, so they carry the single-value `[1.0]` temperature list and
+`claude-text-generator.ts` omits `temperature` for them. The existing
+`claude-fable-5`, `claude-opus-5` and `claude-sonnet-5` prefixes already cover
+the point releases; `claude-haiku-5` was added for Haiku 5.5. Opus 5.5 cannot
+disable thinking at all — the generator never sends a `thinking` field, so it
+runs adaptive at the model's default `medium` effort.
 
 ### RunningHub
 | Name | Model ID | Category |
