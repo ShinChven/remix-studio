@@ -403,6 +403,8 @@
   gap: var(--md-sys-measurement-space150);
 }
 .v2-rail-footer[data-variant="collapsed"] {
+  /* The rail footer starts at the destinations' inset; match their 56px indicator so icons center on the same axis. */
+  width: 56px;
   align-items: center;
   gap: var(--md-sys-measurement-space100);
 }
