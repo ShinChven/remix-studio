@@ -1185,7 +1185,7 @@
   gap: var(--md-sys-measurement-space300);
   padding: var(--md-sys-measurement-space500) var(--md-sys-measurement-space400);
   border-radius: var(--md-sys-shape-corner-extra-extra-large);
-  background: color-mix(in srgb, var(--md-sys-color-surface-container) 88%, transparent);
+  background: var(--md-sys-color-surface-container);
   box-shadow: var(--md-sys-elevation-level3);
 }
 @media (max-width: 599.98px) {
@@ -2205,24 +2205,16 @@
 }
 
 /* ---------- Glass and card motion (shared preferences) ----------
-   Every backdrop-filter in v2 lives here, behind <html data-glass="on">, so the
-   Glass preference reaches all of them. Keep blur off surfaces that repeat per
-   grid item or sit on animated content: each such layer re-blurs on every frame
-   below it, which tears Chrome on macOS. */
-:root[data-glass="on"] .v2-login__panel { backdrop-filter: blur(24px); }
-:root[data-glass="on"] .v2-lightbox__counter { backdrop-filter: blur(16px); }
-:root[data-glass="on"] .v2-lib-drop { backdrop-filter: blur(12px); }
-:root[data-glass="on"] .v2-provider-form__bar { backdrop-filter: blur(16px) saturate(1.4); }
-:root[data-glass="on"] .m3-scaffold .m3-app-bar {
-  background: color-mix(in srgb, var(--md-sys-color-surface) 78%, transparent);
-  backdrop-filter: blur(20px) saturate(1.3);
-}
-:root[data-glass="on"] .m3-navigation-rail__modal .m3-navigation-rail,
-:root[data-glass="on"] .m3-menu {
-  backdrop-filter: blur(24px) saturate(1.3);
-}
+   Every backdrop-filter in v2 lives here, behind <html data-glass="on">, and
+   scripts/check-v2-ui.ts fails on one anywhere else. A glass rule owns both the
+   translucent fill and the blur, so the surface is solid with Glass off. Keep blur
+   off surfaces that repeat per grid item, sit over scrolled or animated content,
+   or have an animation of their own: the blur is redone on every such frame, which
+   tears Chrome on macOS. */
 :root[data-glass="on"] .m3-menu {
   background: color-mix(in srgb, var(--_container) 90%, transparent);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  backdrop-filter: blur(24px) saturate(1.3);
 }
 :root[data-motion="on"] :is(.v2-media-card, .v2-library-card) {
   transition:
@@ -3984,7 +3976,7 @@
   object-fit: cover;
   transition: scale var(--md-sys-motion-spring-slow-spatial-duration) var(--md-sys-motion-spring-slow-spatial);
 }
-.v2-shot:hover .v2-shot__open img { scale: 1.04; }
+:root[data-motion="on"] .v2-shot:hover .v2-shot__open img { scale: 1.04; }
 .v2-shot__frame::after {
   content: "";
   position: absolute;
@@ -4004,7 +3996,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--md-sys-color-scrim) 55%, transparent);
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 45%, transparent);
   color: var(--v2-on-media);
 }
 .v2-shot__check {
@@ -4041,6 +4033,7 @@
 .v2-shot:hover .v2-shot__tools,
 .v2-shot:focus-within .v2-shot__tools,
 .v2-shot__tools:has([aria-expanded="true"]) { opacity: 1; translate: 0 0; }
+:root[data-motion="off"] .v2-shot__tools { translate: none; }
 .v2-shots[data-selecting] .v2-shot__tools { display: none; }
 .v2-shot__tool.m3-icon-button { --md-sys-color-on-surface-variant: var(--v2-on-media); color: var(--v2-on-media); }
 .v2-shot__index {
@@ -4054,7 +4047,7 @@
 .v2-shot__index > span {
   padding: 1px 7px;
   border-radius: var(--md-sys-shape-corner-full);
-  background: color-mix(in srgb, var(--md-sys-color-scrim) 40%, transparent);
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 60%, transparent);
   color: var(--v2-on-media);
   font: var(--md-sys-typescale-label-small);
   font-variant-numeric: tabular-nums;
@@ -5390,7 +5383,7 @@
   z-index: 5;
   border: 2px dashed var(--v2-kind);
   border-radius: var(--md-sys-shape-corner-extra-large);
-  background: color-mix(in srgb, var(--v2-kind-container) 94%, transparent);
+  background: var(--v2-kind-container);
   color: var(--v2-on-kind-container);
   pointer-events: none;
   animation: v2-lib-drop-in var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
@@ -5919,7 +5912,7 @@
   align-self: flex-end;
   padding: 8px;
   border-radius: var(--md-sys-shape-corner-full);
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 88%, transparent);
+  background: var(--md-sys-color-surface-container-high);
   box-shadow: var(--md-sys-elevation-level2);
 }
 
