@@ -9,6 +9,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/v2');
+const M3_ROOT = path.resolve(ROOT, '../m3');
+const GLASS_SELECTOR = ':root[data-glass="on"]';
+const GLASS_MESSAGE = `Backdrop blur only under ${GLASS_SELECTOR}, in the glass block of styles/app.css, so the Glass preference reaches it.`;
 
 interface Rule {
   pattern: RegExp;
@@ -79,6 +82,27 @@ for (const file of walk(path.join(ROOT, 'styles'), ['.css'])) {
         problems.push({ file: relative, line, message: 'Raw transition time: use an M3 motion duration token.' });
       }
     });
+}
+
+// Every blur v2 renders, in its own CSS or the M3 library's, sits behind the Glass preference.
+for (const [root, prefix] of [[ROOT, ''], [M3_ROOT, '../m3/']] as const) {
+  for (const file of walk(root, ['.ts', '.tsx'])) {
+    const relative = prefix + path.relative(root, file).split(path.sep).join('/');
+    fs.readFileSync(file, 'utf8').split('\n').forEach((text, index) => {
+      if (/backdropFilter|backdrop-(?:blur|filter)/.test(text)) problems.push({ file: relative, line: index + 1, message: GLASS_MESSAGE });
+    });
+  }
+  for (const file of walk(root, ['.css'])) {
+    const relative = prefix + path.relative(root, file).split(path.sep).join('/');
+    const source = fs.readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ' '));
+    for (const rule of source.matchAll(/([^{};]+)\{([^{}]*)\}/g)) {
+      if (!/backdrop-filter\s*:/.test(rule[2])) continue;
+      const selectors = rule[1].split(',').map((selector) => selector.trim());
+      if (selectors.every((selector) => selector.startsWith(GLASS_SELECTOR))) continue;
+      const line = source.slice(0, (rule.index ?? 0) + rule[0].indexOf(rule[2])).split('\n').length;
+      problems.push({ file: relative, line, message: GLASS_MESSAGE });
+    }
+  }
 }
 
 if (problems.length > 0) {
