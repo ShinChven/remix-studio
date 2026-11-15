@@ -121,7 +121,7 @@ The collection supports selection, page-size choices, filename changes, tagging,
 
 The active tab, page, and supported filters live in URL search parameters, so navigation and shared links can preserve the same view. The album opens at 500 items per page; a page size you pick (25 to 500, or all) is remembered for that project in this browser, and an `albumSize` parameter in a shared link still takes precedence.
 
-Each card or row has a **Copy ID for AI** button. It copies `project:<projectId>/album-item:<itemId>`, a reference the [assistant](/concepts/assistant) or an [MCP](/integrations/mcp) client can act on directly — paste it into a chat to say exactly which result you mean.
+Each card or row has a **Copy ID for AI** button. It copies `project:<projectId>/album-item:<itemId>`, a reference the [assistant](/concepts/assistant) or an [MCP](/integrations/mcp) client can act on directly — paste it into a chat to say exactly which result you mean. **Start chat with AI** beside it opens a new assistant conversation with the reference already filled in.
 
 Album files are renamed one at a time from the album; an MCP client can rename many at once with `rename_album_items`, replacing, adding or stripping a filename prefix, and the job record and file variants are kept in sync either way. Filenames cannot contain `%`, `?` or `#`.
 

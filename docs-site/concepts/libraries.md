@@ -26,7 +26,7 @@ Inside a library you can:
 - Edit an item's title and tags; text items can also be edited in the Prompt Editor.
 - Let a vision model tag image and text items with the wand button, for the selection, the matching items or the whole library. See [Auto-Tagging](/concepts/projects#auto-tagging).
 - Watermark a single image with the stamp button on its card and download the result, without saving a copy. See [Watermarking a Single Image](/concepts/projects#watermarking-a-single-image).
-- Copy an item's reference for the assistant or another AI chat with **Copy ID for AI**. The copied text, `library:<libraryId>/item:<itemId>`, names both the library and the item, which is what every tool that acts on an item needs.
+- Copy an item's reference for the assistant or another AI chat with **Copy ID for AI**. The copied text, `library:<libraryId>/item:<itemId>`, names both the library and the item, which is what every tool that acts on an item needs. **Start chat with AI** beside it opens a new assistant conversation with that reference already filled in.
 - Select items with the checkbox on each card — Shift-click a second checkbox to select the range between — for batch tagging, copying, moving, or deletion.
 - Copy or move items only to a library of the same media type.
 - Duplicate a whole library, including its items.
@@ -99,12 +99,12 @@ A library can be referenced by workflow items in more than one project. If it is
 Cleanup lists the projects that use the library and lets you remove those workflow references one project at a time, or remove all references and then delete the library. It does **not** scan for or delete “orphaned” items inside the library.
 
 ::: warning
-Removing a reference changes the affected project's workflow. Deleting the library and its stored media is permanent; library items do not go to the project recycle bin.
+Removing a reference changes the affected project's workflow. Deleting the library and its stored media is permanent. Deleting individual library items moves them to the [recycle bin](/concepts/trash), where they can be restored.
 :::
 
 ## Assistant and MCP Access
 
-The shared tool layer can list and search libraries, browse their items or read one item by ID (`get_library_item`, which takes the reference **Copy ID for AI** copies), create and update libraries, create prompts individually or in batches, and update item metadata one item or many at a time. Text prompts can also be deleted through the explicitly confirmed destructive tool. External MCP clients can also upload media files into a library.
+The shared tool layer can list and search libraries, browse their items or read one item by ID (`get_library_item`, which takes the reference **Copy ID for AI** copies), create and update libraries, create prompts individually or in batches, and update item metadata one item or many at a time. Items of any library type can be moved to the recycle bin with `delete_library_items`, up to 100 at a time. External MCP clients can also upload media files into a library.
 
 See [The Assistant](/concepts/assistant) for the in-app approval flow and [MCP Support](/integrations/mcp) for external clients.
 

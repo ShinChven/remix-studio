@@ -26,13 +26,13 @@ Deleting a visible record therefore may involve several keys. Orphan analysis co
 
 ## Storage Analysis and Limits
 
-Each user has a byte limit (5 GB by default for a newly created database record, unless changed by an admin). Account storage analysis reports:
+Each user has a byte limit (5 GB by default for a newly created database record, unless changed by an admin). Admins assign one of five tiers: **Free** (5 GB), **Professional** (100 GB), **Premium** (500 GB), **Ultra** (1 TB) or **Max** (2 TB). Account storage analysis reports:
 
 - **Projects** — album media, workflow assets, and orphaned objects under the project prefix, each shown separately.
 - **Libraries** — reusable media items.
 - **Campaigns** — post media uploaded to or processed for campaigns.
 - **Archives** — ZIPs in the export bucket.
-- **Recycle bin** — soft-deleted project album media.
+- **Recycle bin** — soft-deleted project album media and library items.
 
 Files an MCP client has staged with `create_upload` but not yet attached also count toward the limit until they expire 24 hours later; `get_storage_usage` lists them under `staging`.
 

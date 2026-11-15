@@ -14,6 +14,7 @@ The chat runtime currently supports provider records of these types:
 - **Alibaba Cloud**
 - **Kimi (Moonshot AI)**
 - **MiniMax**
+- **APIMart**
 
 Other provider families may generate project assets without being available as the assistant's chat model. A saved provider must belong to the user and contain a decryptable API key. API URL overrides are honored after the same URL-safety validation used elsewhere in the server.
 
@@ -30,7 +31,7 @@ The assistant can read account-scoped workspace data through tools rather than r
 - Usable provider/model pairings.
 - Social accounts, campaigns, posts, post text, and post media metadata.
 
-The composer can bind workspace context: type `@` to mention a library, project, campaign or post, or paste a reference copied with **Copy ID for AI** from a library item, album item or post — `library:<libraryId>/item:<itemId>`, `project:<projectId>/album-item:<itemId>` or `campaign:<campaignId>/post:<postId>`. The assistant's instructions describe these shapes, so it reads the exact item instead of searching for it.
+The composer can bind workspace context: type `@` to mention a library, project, campaign or post, or paste a reference copied with **Copy ID for AI** from a library item, album item or post — `library:<libraryId>/item:<itemId>`, `project:<projectId>/album-item:<itemId>` or `campaign:<campaignId>/post:<postId>`. The assistant's instructions describe these shapes, so it reads the exact item instead of searching for it. **Start chat with AI**, next to **Copy ID for AI**, opens a new conversation with that reference already in the composer.
 
 The composer also takes images: attach or paste them, and on Android pick a copied image, GIF or sticker in Gboard, in versions of Chrome that let a keyboard insert images. With a Google AI provider selected, the microphone control records audio in the browser and transcribes it through the configured Google provider before sending the resulting text.
 

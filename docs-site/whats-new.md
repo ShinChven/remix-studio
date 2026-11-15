@@ -8,6 +8,39 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.27.0 — APIMart for every modality, a recycle bin for libraries, and new frontier models
+
+*Generate text, video and music through APIMart, recover deleted library items, rename finished exports, and pick up Gemini 4, GPT-6 and Claude 5.5.*
+
+**Added**
+
+- **APIMart text, video and audio** — APIMart now covers every modality: 121 chat models (also usable by the assistant), 54 video models across Seedance, Veo 3.1, Kling, MiniMax Hailuo and H3, Wan, Vidu, Grok Imagine, Gemini Omni, PixVerse and more, and Suno V6, Flow Music and GPT-4o Mini TTS for audio. The provider profile marks only the models your key can reach. See [Model Profiles](/concepts/models).
+- **MiniMax H3 Image on APIMart** — **MiniMax H3 Image** and its faster **Highspeed** channel generate or edit with up to 16 reference images at 1K, 2K or 4K.
+- **Gemini 4, GPT-6 and Claude 5.5** — **Gemini 4 Carbon**, **Argon** and **Hydrogen** on Google AI and Vertex AI; **GPT-6 Astra**, **GPT-6.1 Sol**, **GPT-6.1 Terra**, **GPT-6 Sol** and **GPT-6 Luna** on OpenAI; and **Claude Fable 5.2**, **Opus 5.5**, **Sonnet 5.5** and **Haiku 5.5** on Claude. Older models stay listed, so pinned projects keep working.
+- **Deleted library items go to the recycle bin** — Deleting a library item, in the app or through MCP, now moves it to the recycle bin instead of removing it. A **Projects** / **Libraries** switch picks which side you see, and library items can be restored, deleted forever or emptied on their own. See [Recycle Bin](/concepts/trash).
+- **Rename finished exports** — Give an export a new name from the Exports page; it becomes both the download name and the folder the archive unzips into, without rebuilding it. See [Exports](/concepts/exports).
+- **Ultra and Max storage tiers** — Admins can assign **Ultra** (1 TB) and **Max** (2 TB) alongside Free, Professional and Premium. See [Storage](/concepts/storage).
+- **Start chat with AI** — Next to **Copy ID for AI** on library items, album items and posts, one click opens a new assistant conversation with that item's reference already in the composer.
+- **Floating selection bar in projects** — In the new interface, selecting drafts, queued jobs, finished jobs or album items brings up a floating action bar, so the results bar and its tools stay put. Press `D` to delete the selection and `Escape` to clear it.
+- **Album item details** — The new interface's album item details show the image, video and audio inputs a result was made from.
+
+**Improved**
+
+- **Faster jobs that share reference images** — RunningHub and APIMart upload a reference image once and reuse it across jobs, checking that the uploaded copy still opens before reusing it.
+- **Redesigned campaign pages** — In the new interface, campaigns get a summary band, status filter chips with counts, a card grid of posts, a floating toolbar for batch actions, and a sticky side rail on post and campaign forms. Campaign pages are translated in all six languages.
+- **Consistent lists everywhere** — Every list in the new interface shares one search, sort, paging and selection bar, keeps its view in the address, stays on screen while refreshing, and fits its labels to the space available in any language.
+- **Tags save as you edit** — The album's **Edit tags** dialog saves each change immediately; close it with **Done**.
+
+**Fixed**
+
+- **Blank or broken page after an update** — The app no longer keeps a cached copy of an old build after a redeploy, and reloads once by itself if a piece of the previous build is gone.
+- **Album flicker in Chrome** — The new interface's album no longer tears or flickers in Chrome on macOS while scrolling or hovering.
+- **Album images reloading** — Album images no longer reload every time a job finishes.
+- **Lightbox stuck on the previous image** — Stepping through or deleting in the lightbox keeps the image and counter in sync, and the slideshow countdown matches its timer.
+- **Smaller fixes** — Workflow steps can be dragged to the last position, mobile project rows show item counts, empty campaigns hide pagination, long search placeholders are no longer cut off, and Docker image builds no longer fail on the translation check.
+
+---
+
 ## 1.26.1 — More APIMart models and simpler mobile project navigation
 
 *Choose from 48 APIMart image profiles and switch between your workflow and results directly from a compact mobile control.*

@@ -1,6 +1,6 @@
 # Recycle Bin (Trash)
 
-Trash provides recoverable deletion for project album results. It is user-scoped and preserves enough album metadata and storage references to restore an item to its original project.
+Trash provides recoverable deletion for project album results and library items. It is user-scoped and preserves enough metadata and storage references to restore an item to its original project or library. A **Projects** / **Libraries** switch at the top of the recycle bin chooses which kind you are looking at; each side is restored, deleted and emptied on its own.
 
 ## What Uses Trash
 
@@ -15,7 +15,11 @@ Deleting one or several album items from a project moves them to Trash, and so d
 - Size, duration, and resolution where applicable.
 - For a Civitai result, the record of what it was made with — checkpoint or video engine, LoRAs, negative prompt, seed and settings.
 
-Deleting a library, an entire project, an export, a job record, or a project orphan follows a different path and is not recoverable here.
+## Library Items
+
+Deleting one or several items from a library, in the app or through the MCP tool `delete_library_items`, moves them to the library side of the recycle bin with their title, tags, content and storage keys. Restoring puts them back in their library. Deleting forever removes an item's stored files only when no job, album item, workflow item, other library item or trashed item still uses them.
+
+Deleting a whole library, an entire project, an export, a job record, or a project orphan follows a different path and is not recoverable here.
 
 ## Restore
 
@@ -29,7 +33,7 @@ Trash supports:
 
 - Permanent deletion of one item.
 - Batch permanent deletion of selected items.
-- **Empty Trash** for every item owned by the current user.
+- **Empty Trash** for every item owned by the current user, on the side currently shown (project results or library items).
 
 Permanent deletion gathers the original, optimized, thumbnail, and context keys that belong to the trash records, deletes the objects, then removes the records.
 
@@ -39,9 +43,9 @@ Permanent deletion cannot be undone. Verify your selection and backups before us
 
 ## Storage Accounting
 
-Moving an item to Trash does not reclaim its bytes because the underlying objects remain available. Trash is shown as a separate category in account storage analysis and counts against the user's limit until permanently deleted.
+Moving an item to Trash does not reclaim its bytes because the underlying objects remain available. Trash, library items included, is shown as a separate category in account storage analysis and counts against the user's limit until permanently deleted.
 
-Project orphan analysis treats trash references as live, so valid trashed objects are not incorrectly offered as orphans.
+Orphan analysis treats project and library trash references as live, so valid trashed objects are not incorrectly offered as orphans.
 
 ## Working Safely
 

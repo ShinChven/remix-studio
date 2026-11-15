@@ -45,7 +45,9 @@ The global page lists exports across projects and shows:
 - Completed size and a download action.
 - Failure messages.
 - Active drive or storefront release progress, and the upload history of each export.
-- Delete, drive release, and sell actions when eligible.
+- Rename, delete, drive release, and sell actions when eligible.
+
+Renaming a finished export changes both its download name and the folder it unzips into, without rebuilding the archive. Names keep spaces, non-Latin text and punctuation; only characters a filesystem rejects are replaced. Drive and Gumroad releases use the new name too.
 
 Download URLs are presigned when the task is read and expire after 24 hours. Reload the page to obtain a new URL; the archive itself is not deleted merely because a link expires.
 

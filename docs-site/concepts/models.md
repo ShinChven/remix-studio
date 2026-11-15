@@ -23,7 +23,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Kling AI** | - | ✅ | ✅ | - |
 | **Black Forest Labs** | - | ✅ | - | - |
 | **Replicate** | - | ✅ | ✅ | - |
-| **APIMart** | - | ✅ | - | - |
+| **APIMart** | ✅ | ✅ | ✅ | ✅ |
 | **Civitai** | - | ✅ | ✅ | - |
 
 **Civitai** has no bundled profiles. A [Civitai project](/concepts/projects#civitai-projects) picks its checkpoint, LoRAs and embeddings from Civitai's catalog, or for video one of Civitai's engines (Wan 2.1, 2.2, 2.2 5B, 2.5, 2.7, 3.0 and Hunyuan). [ComfyUI projects](/concepts/projects#comfyui-projects) need no provider or profile at all: they run whatever models your own ComfyUI workflow loads.
@@ -32,14 +32,15 @@ This matrix reflects the profiles shipped with the current release. Model availa
 
 | Provider | Supported Models |
 | :--- | :--- |
-| **Google AI** | `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
-| **Vertex AI** | `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
-| **OpenAI** | `GPT-5.6`, `GPT-5.6 Terra`, `GPT-5.6 Luna`, `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
+| **Google AI** | `Gemini 4 Carbon`, `Gemini 4 Argon`, `Gemini 4 Hydrogen`, `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
+| **Vertex AI** | `Gemini 4 Carbon`, `Gemini 4 Argon`, `Gemini 4 Hydrogen`, `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
+| **OpenAI** | `GPT-6 Astra`, `GPT-6.1 Sol`, `GPT-6.1 Terra`, `GPT-6 Sol`, `GPT-6 Luna`, `GPT-5.6`, `GPT-5.6 Terra`, `GPT-5.6 Luna`, `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
 | **Grok** | `Grok 4.6`, `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
-| **Claude** | `Claude Fable 5.1`, `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
+| **Claude** | `Claude Fable 5.2`, `Claude Opus 5.5`, `Claude Sonnet 5.5`, `Claude Haiku 5.5`, `Claude Fable 5.1`, `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
 | **Alibaba Cloud DashScope** | `Qwen3.8 Max`, `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
 | **Kimi (Moonshot AI)** | `Kimi K3` |
 | **MiniMax** | `MiniMax M3`, `MiniMax M2.7`, `MiniMax M2.7 Highspeed`, `MiniMax M2.5`, `MiniMax M2.5 Highspeed`, `MiniMax M2.1`, `MiniMax M2.1 Highspeed`, `MiniMax M2` |
+| **APIMart** | 121 chat models served through APIMart's Chat Completions API, including GPT-5, GPT-4.1, GPT-4o, o-series, Claude, Gemini 3 and DeepSeek. The provider profile marks the ones your key can reach. |
 
 ## 3. Image Generation
 
@@ -68,6 +69,7 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **BytePlus** | `Seedance 2.5`, `Seedance 1.5 Pro`, `Seedance 1.0 Pro`, `Seedance 1.0 Pro Fast` |
 | **Kling AI** | `Kling Video O1`, `Kling V3 Omni Video` |
 | **Replicate** | `Seedance 2.0 Fast`, `Seedance 2.0` |
+| **APIMart** | `Seedance 2.5`, `Seedance 2.0`, `seedance-2.0-fast`, `seedance-2.0-mini`, `Seedance 1.5 Pro`, `seedance-1-0-pro-fast`, `seedance-1-0-pro-quality`, `veo3.1-fast`, `veo3.1-quality`, `veo3.1-lite`, `veo3.1-fast-official`, `veo3.1-quality-official`, `Kling V4`, `Kling 3.0 Turbo`, `kling-v3`, `kling-v3-omni`, `kling-v2-6`, `kling-video-o1`, `kling-v2-6-motion-control`, `kling-v3-motion-control`, `MiniMax H3`, `MiniMax H3 Max`, `MiniMax-Hailuo-2.3`, `MiniMax-Hailuo-2.3-Fast`, `MiniMax Hailuo 02`, `wan3.0-video`, `wan3.0-video-prime`, `Wan 2.7`, `Wan 2.7 Reference to Video`, `Wan 2.7 Video Editing`, `Wan 2.6`, `wan2.6-i2v`, `wan2.6-i2v-flash`, `Wan 2.5 Preview`, `Vidu Q4 Preview`, `Vidu Q3`, `Vidu Q3 Mix`, `viduq3-pro`, `viduq3-turbo`, `Grok Imagine Video`, `Grok Imagine Video 1.5`, `Grok Imagine Video 1.5 Ext`, `Gemini Omni 1.1 Flash`, `Gemini Omni 1.2 Flash`, `Gemini Omni Flash Preview`, `Gemini Omni 1.1 Flash Ext`, `happyhorse-1.0`, `happyhorse-1.1`, `FLUX 3 Video`, `skyreels-v4-fast`, `skyreels-v4-std`, `pixverse-v6`, `pixverse-v6-max`, `Muse Video Ext` |
 
 ## 5. Audio Generation
 
@@ -78,6 +80,8 @@ This matrix reflects the profiles shipped with the current release. Model availa
 | **Vertex AI** | `Lyria 3 Clip`, `Lyria 3 Pro` | Music Generation |
 | **Vertex AI** | `Gemini 3.1 Flash TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS` | Text-to-Speech |
 | **MiniMax** | `MiniMax Music 3.0` | Music Generation |
+| **APIMart** | `Suno V6`, `Suno V6 Wild`, `Suno V6 Mini`, `Flow Music`, `Flow Music Lyria 3.5` | Music Generation |
+| **APIMart** | `GPT-4o Mini TTS` | Text-to-Speech |
 
 ## 6. Chat Assistant Models
 
@@ -89,6 +93,7 @@ The in-app [Assistant](/concepts/assistant) can use text profiles belonging to p
 - **Alibaba Cloud**
 - **Kimi (Moonshot AI)**
 - **MiniMax**
+- **APIMart**
 
 Vertex AI and Grok profiles can be used by generation projects where supported, but their provider types are not accepted by the current assistant chat adapter.
 
