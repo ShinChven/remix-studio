@@ -201,16 +201,19 @@ export function AlbumTab(props: AlbumTabProps) {
     }
   };
 
-  const saveItemTags = async (tags: string[]) => {
+  // Each add or remove in the tag dialog saves on its own. Chain the writes so a
+  // slow request can't land after a newer one and put back tags already removed.
+  const tagSaveChainRef = useRef<Promise<void>>(Promise.resolve());
+  const saveItemTags = (tags: string[]) => {
     if (!tagItem) return;
-    const item = tagItem;
-    setTagItem(null);
-    try {
-      await props.onUpdateAlbumItemTags(item.id, tags);
-      toast.success(t('projectViewer.album.tagsUpdated'));
-    } catch (err) {
-      toast.error((err as Error).message || t('projectViewer.album.tagsUpdateFailed'));
-    }
+    const itemId = tagItem.id;
+    tagSaveChainRef.current = tagSaveChainRef.current.then(async () => {
+      try {
+        await props.onUpdateAlbumItemTags(itemId, tags);
+      } catch (err) {
+        toast.error((err as Error).message || t('projectViewer.album.tagsUpdateFailed'));
+      }
+    });
   };
 
   const submitRename = async (value: string) => {
@@ -691,7 +694,7 @@ export function AlbumTab(props: AlbumTabProps) {
           }}
         />
       )}
-      <TagDialog open={tagItem !== null} initialTags={tagItem?.tags || []} title={t('projectViewer.album.editTags')} description={tagItem ? albumFilename(tagItem) : undefined} onClose={() => setTagItem(null)} onSave={(tags) => void saveItemTags(tags)} />
+      <TagDialog open={tagItem !== null} initialTags={tagItem?.tags || []} title={t('projectViewer.album.editTags')} description={tagItem ? albumFilename(tagItem) : undefined} onClose={() => setTagItem(null)} onSave={saveItemTags} autoSave />
       <AlbumBatchTagDialog open={batchTagOpen} targetCount={hasSelection ? selectedIds.length : total} isAllScope={!hasSelection} suggestions={tagCounts} onClose={() => setBatchTagOpen(false)} onApply={applyBatchTags} />
       <AutoTagDialog open={autoTagOpen} itemCount={hasSelection ? selectedIds.length : total} onClose={() => setAutoTagOpen(false)} onStart={startAlbumAutoTag} />
     </section>

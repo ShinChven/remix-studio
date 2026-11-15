@@ -10,10 +10,12 @@ export interface TagDialogProps {
   title?: string;
   description?: string;
   saveButtonText?: string;
+  /** Save every add and remove as it happens; the dialog then only offers Done. */
+  autoSave?: boolean;
 }
 
 /** Edits a list of tags: type one or several (comma separated), remove with the chip's ×. */
-export function TagDialog({ open, onClose, onSave, initialTags = [], title, description, saveButtonText }: TagDialogProps) {
+export function TagDialog({ open, onClose, onSave, initialTags = [], title, description, saveButtonText, autoSave = false }: TagDialogProps) {
   const { t } = useTranslation();
   const [tags, setTags] = useState<string[]>([]);
   const [input, setInput] = useState('');
@@ -27,34 +29,56 @@ export function TagDialog({ open, onClose, onSave, initialTags = [], title, desc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  const commit = (next: string[]) => {
+    setTags(next);
+    if (autoSave) onSave(next);
+  };
+
+  /** Folds whatever is typed in the field into the list; returns the resulting list. */
   const add = () => {
-    const next = input.split(',').map((x) => x.trim()).filter(Boolean);
-    setTags((current) => Array.from(new Set([...current, ...next])));
+    const typed = input.split(',').map((x) => x.trim()).filter(Boolean);
     setInput('');
+    const next = Array.from(new Set([...tags, ...typed]));
+    if (next.length !== tags.length) commit(next);
+    return next;
+  };
+
+  const remove = (tag: string) => commit(tags.filter((x) => x !== tag));
+
+  // Closing an auto-saving dialog keeps anything still typed in the field.
+  const close = () => {
+    if (autoSave) add();
+    onClose();
   };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={close}
       icon="sell"
       headline={title ?? t('tagModal.title')}
       maxWidth={520}
       actions={
-        <>
-          <Button variant="text" onClick={onClose}>
-            {t('confirmModal.cancel')}
+        autoSave ? (
+          <Button variant="filled" onClick={close}>
+            {t('tagFilter.done')}
           </Button>
-          <Button
-            variant="filled"
-            onClick={() => {
-              onSave(tags);
-              onClose();
-            }}
-          >
-            {saveButtonText ?? t('tagModal.saveTags')}
-          </Button>
-        </>
+        ) : (
+          <>
+            <Button variant="text" onClick={onClose}>
+              {t('confirmModal.cancel')}
+            </Button>
+            <Button
+              variant="filled"
+              onClick={() => {
+                onSave(tags);
+                onClose();
+              }}
+            >
+              {saveButtonText ?? t('tagModal.saveTags')}
+            </Button>
+          </>
+        )
       }
     >
       <div className="flex flex-col gap-4">
@@ -88,7 +112,7 @@ export function TagDialog({ open, onClose, onSave, initialTags = [], title, desc
         ) : (
           <ChipSet>
             {tags.map((tag) => (
-              <InputChip key={tag} label={tag} icon="sell" onRemove={() => setTags((current) => current.filter((x) => x !== tag))} />
+              <InputChip key={tag} label={tag} icon="sell" onRemove={() => remove(tag)} />
             ))}
           </ChipSet>
         )}
