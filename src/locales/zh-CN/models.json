@@ -195,6 +195,8 @@
     "apimart-gpt-image-2-6": "通过 APIMart 使用 GPT Image 2.6 生成图片或根据参考图编辑。",
     "apimart-mai-image-2-7": "通过 APIMart 使用 MAI Image 2.7 编辑图片；必须提供一张原图，输出尺寸由模型决定。",
     "apimart-seedream-5-5": "通过 APIMart 使用 Seedream 5.5 生成图片或根据参考图编辑。",
+    "apimart-minimax-h3-image": "通过 APIMart 使用 MiniMax H3 Image 生成或编辑图片，支持 1K、2K、4K，比例 1:3 到 3:1，最多 16 张参考图。",
+    "apimart-minimax-h3-image-highspeed": "通过 APIMart 使用 MiniMax H3 Image 高速版，出图更快，支持 1K、2K、4K 和最多 16 张参考图，token 单价为标准版的两倍。",
     "apimart-gpt-6.1-terra-text": "通过 APIMart 调用 gpt-6.1-terra，用于文本生成与问答。 使用模型默认采样，不发送温度参数。",
     "apimart-gemini-4-argon-text": "通过 APIMart 调用 gemini-4-argon，用于文本生成与问答。 使用模型默认采样，不发送温度参数。",
     "apimart-claude-haiku-5-5-text": "通过 APIMart 调用 claude-haiku-5-5，用于文本生成与问答。 可同时输入提示词和参考图片。",
