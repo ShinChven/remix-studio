@@ -36,9 +36,9 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 88%, transparent);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  backdrop-filter: blur(16px) saturate(1.4);
+  /* Solid, not glass: rows and album grids scroll under this bar, and a blur here
+     would re-rasterize on every scrolled frame. */
+  background: var(--md-sys-color-surface-container-lowest);
 }
 .v2-list-pane[data-variant="surface"] > .v2-list-head {
   border-radius: var(--md-sys-shape-corner-extra-large) var(--md-sys-shape-corner-extra-large) 0 0;
@@ -46,8 +46,6 @@
 .v2-list-pane[data-variant="flush"] > .v2-list-head {
   position: static;
   background: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
 }
 .v2-list-bar {
   display: flex;

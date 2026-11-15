@@ -1185,7 +1185,6 @@
   border-radius: var(--md-sys-shape-corner-extra-extra-large);
   background: color-mix(in srgb, var(--md-sys-color-surface-container) 88%, transparent);
   box-shadow: var(--md-sys-elevation-level3);
-  backdrop-filter: blur(24px);
 }
 @media (max-width: 599.98px) {
   .v2-login__panel {
@@ -1913,7 +1912,6 @@
   padding: 6px 16px;
   border-radius: 9999px;
   background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 85%, transparent);
-  backdrop-filter: blur(16px);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -2204,7 +2202,15 @@
   .v2-trash-dialog__art > svg { animation: none; }
 }
 
-/* ---------- Glass and card motion (shared preferences) ---------- */
+/* ---------- Glass and card motion (shared preferences) ----------
+   Every backdrop-filter in v2 lives here, behind <html data-glass="on">, so the
+   Glass preference reaches all of them. Keep blur off surfaces that repeat per
+   grid item or sit on animated content: each such layer re-blurs on every frame
+   below it, which tears Chrome on macOS. */
+:root[data-glass="on"] .v2-login__panel { backdrop-filter: blur(24px); }
+:root[data-glass="on"] .v2-lightbox__counter { backdrop-filter: blur(16px); }
+:root[data-glass="on"] .v2-lib-drop { backdrop-filter: blur(12px); }
+:root[data-glass="on"] .v2-provider-form__bar { backdrop-filter: blur(16px) saturate(1.4); }
 :root[data-glass="on"] .m3-scaffold .m3-app-bar {
   background: color-mix(in srgb, var(--md-sys-color-surface) 78%, transparent);
   backdrop-filter: blur(20px) saturate(1.3);
@@ -3996,10 +4002,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--md-sys-color-scrim) 45%, transparent);
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 55%, transparent);
   color: var(--v2-on-media);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
 }
 .v2-shot__check {
   position: absolute;
@@ -4025,9 +4029,7 @@
   gap: 2px;
   padding: 2px;
   border-radius: var(--md-sys-shape-corner-full);
-  background: color-mix(in srgb, var(--md-sys-color-scrim) 35%, transparent);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--md-sys-color-scrim) 50%, transparent);
   opacity: 0;
   translate: 0 -4px;
   transition:
@@ -4054,8 +4056,6 @@
   color: var(--v2-on-media);
   font: var(--md-sys-typescale-label-small);
   font-variant-numeric: tabular-nums;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
 }
 @media (hover: none) {
   .v2-shot__tools, .v2-shot__check { opacity: 1; translate: 0 0; }
@@ -5390,8 +5390,6 @@
   border-radius: var(--md-sys-shape-corner-extra-large);
   background: color-mix(in srgb, var(--v2-kind-container) 94%, transparent);
   color: var(--v2-on-kind-container);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   pointer-events: none;
   animation: v2-lib-drop-in var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
 }
@@ -5921,8 +5919,6 @@
   border-radius: var(--md-sys-shape-corner-full);
   background: color-mix(in srgb, var(--md-sys-color-surface-container-high) 88%, transparent);
   box-shadow: var(--md-sys-elevation-level2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
-  backdrop-filter: blur(16px) saturate(1.4);
 }
 
 .v2-provider-form__aside {
