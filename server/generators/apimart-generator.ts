@@ -87,6 +87,20 @@ function isGptImage2(model: string): boolean {
   return lower === 'gpt-image-2' || lower.startsWith('gpt-image-2-');
 }
 
+const MINIMAX_H3_RESOLUTIONS = ['1K', '2K', '4K'];
+
+function isMinimaxH3Image(model: string): boolean {
+  return model === 'minimax-h3-image' || model === 'minimax-h3-image-highspeed';
+}
+
+/** H3 accepts named ratios between 1:3 and 3:1; anything else falls back to `auto`. */
+function minimaxH3Size(aspectRatio: string | undefined): string {
+  const match = /^(\d+):(\d+)$/.exec(aspectRatio || '');
+  if (!match) return 'auto';
+  const ratio = Number(match[1]) / Number(match[2]);
+  return ratio >= 1 / 3 && ratio <= 3 ? `${match[1]}:${match[2]}` : 'auto';
+}
+
 function omitsResolution(model: string): boolean {
   const lower = model.toLowerCase();
   return (
@@ -268,6 +282,14 @@ export class APIMartGenerator extends ImageGenerator {
       delete payload.resolution;
     }
 
+    // H3 renders 4K when `resolution` is omitted, so an unknown tier carried
+    // over from another model resolves to 2K rather than the costliest output.
+    if (isMinimaxH3Image(model)) {
+      const tier = (req.imageSize || '').toUpperCase();
+      payload.size = minimaxH3Size(aspectRatio);
+      payload.resolution = MINIMAX_H3_RESOLUTIONS.includes(tier) ? tier : '2K';
+    }
+
     if (imageUrls.length > 0) {
       payload.image_urls = imageUrls;
     }
@@ -280,6 +302,10 @@ export class APIMartGenerator extends ImageGenerator {
       const textOnlyModel = ['imagen-4.0-apimart', 'z-image-turbo', 'grok-imagine-2.0-ext'].includes(req.modelId);
       if (textOnlyModel && (req.refImagesBase64?.length || req.refImageUrls?.length)) {
         return { ok: false, error: `APIMart ${req.modelId} supports text-to-image only; remove reference images.` };
+      }
+      const refCount = (req.refImagesBase64?.length || 0) || (req.refImageUrls?.length || 0);
+      if (isMinimaxH3Image(req.modelId) && refCount > 16) {
+        return { ok: false, error: `MiniMax H3 Image accepts at most 16 reference images; got ${refCount}.` };
       }
       const resolvedRefs = await this.resolveImageUrls(req);
       if (resolvedRefs.ok === false) {

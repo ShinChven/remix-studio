@@ -217,8 +217,8 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 ### APIMart catalog (verified November 5, 2026)
 
 The APIMart entries in `src/types.ts` include the text, video and audio
-subcatalogs from `src/lib/apimart-models.ts`. Together they expose 232 selectable
-configurations: 51 image, 121 text, 54 video and 6 audio. Existing image IDs are
+subcatalogs from `src/lib/apimart-models.ts`. Together they expose 234 selectable
+configurations: 53 image, 121 text, 54 video and 6 audio. Existing image IDs are
 preserved. Suno V6 / Wild / Mini and Flow Music Lyria 3.5 use `modelVariant` to
 send `version` while keeping their real API `model` value (`suno` / `flowmusic`).
 
@@ -235,7 +235,9 @@ Sources used for the inventory and request contracts:
 - Official workspaces for [GPT Image 2.6](https://apimart.ai/model/gpt-image-2-6),
   [MAI Image 2.7](https://apimart.ai/model/mai-image-2-7),
   [Seedream 5.5](https://apimart.ai/model/seedream-5-5), and
-  [Gemini Omni 1.2 Flash](https://apimart.ai/model/gemini-omni-1-2-flash).
+  [Gemini Omni 1.2 Flash](https://apimart.ai/model/gemini-omni-1-2-flash), and
+  [MiniMax H3 Image](https://docs.apimart.ai/en/api-reference/images/minimax-h3-image/generation)
+  (verified November 15, 2026; the Highspeed channel shares its contract).
 
 The snapshot contains three embedding models and two transcription models.
 They are explicitly excluded because Remix Studio has generation projects,
@@ -298,6 +300,10 @@ exceptions:
   Turbo and Grok 2.0 Ext only accept text-to-image requests in this integration.
 - Wan 2.7 Pro supports 4K for text-to-image; editing a reference at a selected
   4K uses 2K. MAI editing lets the model determine output dimensions.
+- MiniMax H3 Image and its Highspeed channel always send `resolution`, because
+  the API renders 4K when it is omitted; a tier carried over from another model
+  falls back to 2K. `size` only takes ratios between 1:3 and 3:1, so any other
+  ratio is sent as `auto`. More than 16 reference images fail before upload.
 - Midjourney submits to `/v1/midjourney/generations`, then uses the same task
   poller. Native prompt flags select MJ versions and Niji. Its quality is not
   an image resolution; stale values such as `1K` are omitted.

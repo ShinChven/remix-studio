@@ -235,6 +235,23 @@ test('new image models submit their exact parameter contracts', async () => {
   });
 });
 
+test('MiniMax H3 Image always names a resolution and stays within its ratio range', async () => {
+  await withFetch(accepted, async (calls) => {
+    const generator = new APIMartGenerator('key');
+    await generator.generate({ modelId: 'minimax-h3-image', prompt: 'cat', aspectRatio: '16:9', imageSize: '4K' });
+    assert.deepEqual(calls[0].body, { prompt: 'cat', model: 'minimax-h3-image', n: 1, size: '16:9', resolution: '4K' });
+    await generator.generate({ modelId: 'minimax-h3-image-highspeed', prompt: 'cat', aspectRatio: '1:8', imageSize: '0.5K' });
+    assert.equal(calls[1].body.size, 'auto');
+    assert.equal(calls[1].body.resolution, '2K');
+    await generator.generate({ modelId: 'minimax-h3-image', prompt: 'edit', imageSize: '1k', refImageUrls: ['https://example.com/a.png'] });
+    assert.deepEqual(calls[2].body.image_urls, ['https://example.com/a.png']);
+    assert.equal(calls[2].body.resolution, '1K');
+    const tooMany = Array.from({ length: 17 }, (_, i) => `https://example.com/${i}.png`);
+    assert.equal((await generator.generate({ modelId: 'minimax-h3-image', prompt: 'edit', refImageUrls: tooMany })).ok, false);
+    assert.equal(calls.length, 3);
+  });
+});
+
 test('audio queue persists the task and recovered tasks never repeat the paid POST', async () => {
   const updates: any[] = [];
   const manager = new QueueManager({} as any, {} as any, { updateJob: async (...args: any[]) => updates.push(args[3]) } as any,

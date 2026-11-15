@@ -2841,6 +2841,26 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
         qualities: ['1K', '1.5K', '2K'],
       },
     },
+    {
+      id: 'apimart-minimax-h3-image', name: 'MiniMax H3 Image', generatorId: 'APIMart',
+      modelId: 'minimax-h3-image', category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: {
+        aspectRatios: ['auto', '1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', '3:1', '1:3'],
+        qualities: ['2K', '1K', '4K'],
+        supportsReferenceImages: true,
+      },
+    },
+    {
+      id: 'apimart-minimax-h3-image-highspeed', name: 'MiniMax H3 Image Highspeed', generatorId: 'APIMart',
+      modelId: 'minimax-h3-image-highspeed', category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: {
+        aspectRatios: ['auto', '1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', '9:21', '3:1', '1:3'],
+        qualities: ['2K', '1K', '4K'],
+        supportsReferenceImages: true,
+      },
+    },
     ...APIMART_TEXT_MODELS,
     ...APIMART_VIDEO_MODELS,
     ...APIMART_AUDIO_MODELS,

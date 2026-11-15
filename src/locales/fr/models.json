@@ -195,6 +195,8 @@
     "apimart-gpt-image-2-6": "GPT Image 2.6 : génération et retouche d’images de référence via APIMart.",
     "apimart-mai-image-2-7": "Retouche MAI Image 2.7 via APIMart : exactement une image source, dimensions choisies par le modèle.",
     "apimart-seedream-5-5": "Seedream 5.5 : génération et retouche d’images de référence via APIMart.",
+    "apimart-minimax-h3-image": "MiniMax H3 Image via APIMart : génération et retouche en 1K, 2K ou 4K, formats de 1:3 à 3:1, jusqu’à 16 images de référence.",
+    "apimart-minimax-h3-image-highspeed": "MiniMax H3 Image Highspeed via APIMart : le canal H3 plus rapide, en 1K, 2K ou 4K avec jusqu’à 16 images de référence, facturé au double du tarif par token.",
     "apimart-gpt-6.1-terra-text": "gpt-6.1-terra via l’API de conversation APIMart. Échantillonnage par défaut du modèle, sans paramètre de température.",
     "apimart-gemini-4-argon-text": "gemini-4-argon via l’API de conversation APIMart. Échantillonnage par défaut du modèle, sans paramètre de température.",
     "apimart-claude-haiku-5-5-text": "claude-haiku-5-5 via l’API de conversation APIMart. Accepte des images de référence avec le texte.",

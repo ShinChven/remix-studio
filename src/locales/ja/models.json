@@ -195,6 +195,8 @@
     "apimart-gpt-image-2-6": "APIMart 経由の GPT Image 2.6 画像生成・参照画像編集。",
     "apimart-mai-image-2-7": "MAI Image 2.7 の画像編集。元画像がちょうど1枚必要で、出力サイズはモデルが決定。",
     "apimart-seedream-5-5": "APIMart 経由の Seedream 5.5 画像生成・参照画像編集。",
+    "apimart-minimax-h3-image": "APIMart 経由の MiniMax H3 Image。1K・2K・4K、1:3〜3:1 の比率で生成・編集でき、参照画像は最大16枚。",
+    "apimart-minimax-h3-image-highspeed": "APIMart 経由の MiniMax H3 Image 高速版。1K・2K・4K、参照画像最大16枚で、トークン単価は標準版の2倍。",
     "apimart-gpt-6.1-terra-text": "APIMart 経由で gpt-6.1-terra を利用するテキスト生成・チャットモデル。 モデル既定のサンプリングを使い、温度は送信しません。",
     "apimart-gemini-4-argon-text": "APIMart 経由で gemini-4-argon を利用するテキスト生成・チャットモデル。 モデル既定のサンプリングを使い、温度は送信しません。",
     "apimart-claude-haiku-5-5-text": "APIMart 経由で claude-haiku-5-5 を利用するテキスト生成・チャットモデル。 プロンプトと参照画像を一緒に入力できます。",
