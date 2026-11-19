@@ -1,5 +1,5 @@
 import { uiLocale } from '../../lib/format';
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Icon, IconButton, LoadingIndicator, Ripple, Text } from '../../../m3';
 
@@ -37,26 +37,69 @@ export interface RunDockProps {
   addStep?: ReactNode;
 }
 
-/** How many drafts to add: a compact stepper, and the combination count that fills it in. */
+/**
+ * How many drafts to add: a compact stepper, and the combination count that fills it in.
+ * The field keeps its own draft so it can be cleared while typing; an empty field restores the
+ * committed count on blur. ↑ / ↓ step by one (Shift by ten), Enter commits, Escape reverts.
+ */
 function QuantityStepper({ value, onChange, max }: { value: number; onChange: (value: number) => void; max: number }) {
   const { t } = useTranslation();
+  const [draft, setDraft] = useState(() => String(value));
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!focused.current) setDraft(String(value));
+  }, [value]);
+
+  const set = (next: number) => {
+    const clamped = Math.max(1, Math.floor(next));
+    setDraft(String(clamped));
+    if (clamped !== value) onChange(clamped);
+  };
+  const current = () => {
+    const parsed = Number(draft);
+    return draft !== '' && Number.isFinite(parsed) && parsed >= 1 ? parsed : value;
+  };
+
   return (
     <div className="v2-qty" role="group" aria-label={t('projectViewer.settings.jobQuantity')}>
-      <IconButton icon="remove" size="xs" label={t('v2.project.fewer')} disabled={value <= 1} onClick={() => onChange(Math.max(1, value - 1))} />
+      <IconButton icon="remove" size="xs" label={t('v2.project.fewer')} disabled={value <= 1} onClick={() => set(current() - 1)} />
       <input
         className="v2-qty__input"
         type="text"
         inputMode="numeric"
+        role="spinbutton"
+        aria-valuemin={1}
+        aria-valuenow={value}
         aria-label={t('projectViewer.settings.jobQuantity')}
-        value={value}
+        value={draft}
         onChange={(e) => {
-          const next = Math.floor(Number(e.target.value.replace(/\D/g, '')));
-          onChange(Number.isFinite(next) && next >= 1 ? next : 1);
+          const raw = e.target.value.replace(/\D/g, '');
+          setDraft(raw);
+          const next = Number(raw);
+          if (raw !== '' && next >= 1 && next !== value) onChange(next);
         }}
-        onFocus={(e) => e.target.select()}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            set(current() + (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1));
+          } else if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          } else if (e.key === 'Escape' && draft !== String(value)) {
+            e.stopPropagation();
+            setDraft(String(value));
+          }
+        }}
+        onFocus={(e) => {
+          focused.current = true;
+          e.target.select();
+        }}
+        onBlur={() => {
+          focused.current = false;
+          set(current());
+        }}
       />
-      <IconButton icon="add" size="xs" label={t('v2.project.more')} onClick={() => onChange(value + 1)} />
-      <button type="button" className="v2-qty__max m3-focus-ring" disabled={max === 0} title={t('projectViewer.settings.setToMaxCombinations')} onClick={() => onChange(Math.max(1, max))}>
+      <IconButton icon="add" size="xs" label={t('v2.project.more')} onClick={() => set(current() + 1)} />
+      <button type="button" className="v2-qty__max m3-focus-ring" disabled={max === 0} title={t('projectViewer.settings.setToMaxCombinations')} onClick={() => set(Math.max(1, max))}>
         <Ripple disabled={max === 0} />/ {max.toLocaleString(uiLocale())}
       </button>
     </div>

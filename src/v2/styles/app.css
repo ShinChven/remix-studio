@@ -3103,12 +3103,15 @@
 
 /* ---------- Project page ---------- */
 /*
- * Two rounded panes on the app's surface, set apart by tone and space rather than outlines:
- * the workflow (tinted) and the results (lightest). Text stays small and quiet; actions show
- * on hover and focus, and fold into menus where a row would otherwise carry many.
+ * Two rounded panes on the app's surface, set apart from it by space and one shared tone
+ * (--v2-pane-bg), so neither pane reads as heavier than the other. Cards inside them (steps,
+ * the run dock, an expanded job) take the lightest container or a step above the pane.
+ * Text stays small and quiet; actions show on hover and focus, and fold into menus where a
+ * row would otherwise carry many.
  */
 .v2-project {
   --v2-pane-radius: var(--md-sys-shape-corner-extra-large);
+  --v2-pane-bg: var(--md-sys-color-surface-container-low);
   position: relative;
   display: grid;
   height: 100%;
@@ -3160,8 +3163,12 @@
   overflow: hidden;
   border-radius: var(--v2-pane-radius);
 }
-.v2-project__workflow { background: var(--md-sys-color-surface-container); }
-.v2-project__results { background: var(--md-sys-color-surface-container-lowest); }
+.v2-project__workflow,
+.v2-project__results { background: var(--v2-pane-bg); }
+/* The results' sticky bar paints over rows scrolling under it, so it takes the pane's tone. */
+.v2-project__results .v2-list-head { background: var(--v2-pane-bg); }
+/* One step above the pane, so the section switcher's track still reads as a track on it. */
+.v2-project .v2-section-nav { background: var(--md-sys-color-surface-container-high); }
 .v2-project__scroll { position: relative; display: flex; min-height: 0; flex: 1; flex-direction: column; overflow-y: auto; }
 .v2-project__section-nav { display: contents; }
 .v2-project__mobile-sections { border-radius: var(--md-sys-shape-corner-full); }
@@ -3663,7 +3670,7 @@
     border-radius var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects),
     margin var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial);
 }
-.v2-jobrow:hover { background: var(--md-sys-color-surface-container-low); }
+.v2-jobrow:hover { background: var(--md-sys-color-surface-container); }
 .v2-jobrow[data-expanded] { margin-block: 6px; border-radius: var(--md-sys-shape-corner-extra-large); background: var(--md-sys-color-surface-container); }
 .v2-jobrow[data-selected] { background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
 .v2-jobrow__head {
