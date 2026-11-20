@@ -179,11 +179,14 @@
     },
     "empty": {
       "title": "Recycle Bin is Empty",
-      "description": "Deleted album items will appear here"
+      "description": "Deleted album items will appear here",
+      "descriptionLibraries": "Deleted library items will appear here"
     },
     "card": {
       "restore": "Restore",
-      "delete": "Delete Permanently"
+      "delete": "Delete Permanently",
+      "projectGone": "Its project was deleted, so it can only be deleted",
+      "libraryGone": "Its library was deleted, so it can only be deleted"
     },
     "confirm": {
       "empty": {
@@ -197,11 +200,22 @@
         "confirm": "Delete Permanently"
       },
       "deleteSingle": {
-        "title": "Permanently Delete Image",
-        "message": "Are you sure you want to permanently delete this image? This action cannot be undone.",
+        "title": "Permanently Delete Item",
+        "message": "Are you sure you want to permanently delete this item? This action cannot be undone.",
         "confirm": "Delete Permanently"
       },
       "deleting": "Deleting..."
+    },
+    "sources": {
+      "label": "Recycle bin source",
+      "projects": "Projects",
+      "libraries": "Libraries"
+    },
+    "kind": {
+      "image": "Image",
+      "video": "Video",
+      "audio": "Audio",
+      "text": "Text"
     }
   },
   "promptEditor": {

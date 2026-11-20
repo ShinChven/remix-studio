@@ -130,11 +130,14 @@
     },
     "empty": {
       "title": "La corbeille est vide",
-      "description": "Les éléments d'album supprimés apparaîtront ici"
+      "description": "Les éléments d'album supprimés apparaîtront ici",
+      "descriptionLibraries": "Les éléments de bibliothèque supprimés apparaîtront ici"
     },
     "card": {
       "restore": "Restaurer",
-      "delete": "Supprimer définitivement"
+      "delete": "Supprimer définitivement",
+      "projectGone": "Son projet a été supprimé : il ne peut qu’être supprimé",
+      "libraryGone": "Sa bibliothèque a été supprimée : il ne peut qu’être supprimé"
     },
     "confirm": {
       "empty": {
@@ -148,11 +151,22 @@
         "confirm": "Supprimer définitivement"
       },
       "deleteSingle": {
-        "title": "Supprimer définitivement l'image",
-        "message": "Êtes-vous sûr de vouloir supprimer définitivement cette image ? Cette action ne peut pas être annulée.",
+        "title": "Supprimer définitivement l’élément",
+        "message": "Voulez-vous vraiment supprimer définitivement cet élément ? Cette action est irréversible.",
         "confirm": "Supprimer définitivement"
       },
       "deleting": "Suppression..."
+    },
+    "sources": {
+      "label": "Source de la corbeille",
+      "projects": "Projets",
+      "libraries": "Bibliothèques"
+    },
+    "kind": {
+      "image": "Image",
+      "video": "Vidéo",
+      "audio": "Audio",
+      "text": "Texte"
     }
   },
   "promptEditor": {
