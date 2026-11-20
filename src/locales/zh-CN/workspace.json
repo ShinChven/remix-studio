@@ -179,11 +179,14 @@
     },
     "empty": {
       "title": "回收站为空",
-      "description": "已删除的相册项目将显示在这里"
+      "description": "已删除的相册项目将显示在这里",
+      "descriptionLibraries": "已删除的素材库项目会显示在这里"
     },
     "card": {
       "restore": "还原",
-      "delete": "永久删除"
+      "delete": "永久删除",
+      "projectGone": "所属项目已删除，只能永久删除",
+      "libraryGone": "所属素材库已删除，只能永久删除"
     },
     "confirm": {
       "empty": {
@@ -197,11 +200,22 @@
         "confirm": "永久删除"
       },
       "deleteSingle": {
-        "title": "永久删除图片",
-        "message": "确定要永久删除此图片吗？此操作无法撤销。",
+        "title": "永久删除项目",
+        "message": "确定要永久删除此项目吗？此操作无法撤销。",
         "confirm": "永久删除"
       },
       "deleting": "正在删除..."
+    },
+    "sources": {
+      "label": "回收站来源",
+      "projects": "项目",
+      "libraries": "素材库"
+    },
+    "kind": {
+      "image": "图片",
+      "video": "视频",
+      "audio": "音频",
+      "text": "文本"
     }
   },
   "promptEditor": {

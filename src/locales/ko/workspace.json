@@ -130,11 +130,14 @@
     },
     "empty": {
       "title": "휴지통이 비어 있습니다",
-      "description": "삭제된 앨범 항목이 여기에 표시됩니다"
+      "description": "삭제된 앨범 항목이 여기에 표시됩니다",
+      "descriptionLibraries": "삭제한 라이브러리 항목이 여기에 표시됩니다"
     },
     "card": {
       "restore": "복원",
-      "delete": "영구 삭제"
+      "delete": "영구 삭제",
+      "projectGone": "프로젝트가 삭제되어 영구 삭제만 할 수 있습니다",
+      "libraryGone": "라이브러리가 삭제되어 영구 삭제만 할 수 있습니다"
     },
     "confirm": {
       "empty": {
@@ -148,11 +151,22 @@
         "confirm": "영구 삭제"
       },
       "deleteSingle": {
-        "title": "이미지 영구 삭제",
-        "message": "이 이미지를 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+        "title": "항목 영구 삭제",
+        "message": "이 항목을 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
         "confirm": "영구 삭제"
       },
       "deleting": "삭제 중..."
+    },
+    "sources": {
+      "label": "휴지통 출처",
+      "projects": "프로젝트",
+      "libraries": "라이브러리"
+    },
+    "kind": {
+      "image": "이미지",
+      "video": "동영상",
+      "audio": "오디오",
+      "text": "텍스트"
     }
   },
   "promptEditor": {

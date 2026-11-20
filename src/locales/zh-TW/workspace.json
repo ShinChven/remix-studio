@@ -130,11 +130,14 @@
     },
     "empty": {
       "title": "回收站為空",
-      "description": "已刪除的相簿項目將顯示在這裡"
+      "description": "已刪除的相簿項目將顯示在這裡",
+      "descriptionLibraries": "已刪除的素材庫項目會顯示在這裡"
     },
     "card": {
       "restore": "還原",
-      "delete": "永久刪除"
+      "delete": "永久刪除",
+      "projectGone": "所屬專案已刪除，只能永久刪除",
+      "libraryGone": "所屬素材庫已刪除，只能永久刪除"
     },
     "confirm": {
       "empty": {
@@ -148,11 +151,22 @@
         "confirm": "永久刪除"
       },
       "deleteSingle": {
-        "title": "永久刪除圖片",
-        "message": "確定要永久刪除此圖片嗎？此操作無法撤銷。",
+        "title": "永久刪除項目",
+        "message": "確定要永久刪除此項目嗎？此操作無法復原。",
         "confirm": "永久刪除"
       },
       "deleting": "正在刪除..."
+    },
+    "sources": {
+      "label": "回收桶來源",
+      "projects": "專案",
+      "libraries": "素材庫"
+    },
+    "kind": {
+      "image": "圖片",
+      "video": "影片",
+      "audio": "音訊",
+      "text": "文字"
     }
   },
   "promptEditor": {

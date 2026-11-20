@@ -130,11 +130,14 @@
     },
     "empty": {
       "title": "ゴミ箱は空です",
-      "description": "削除されたアルバムアイテムがここに表示されます"
+      "description": "削除されたアルバムアイテムがここに表示されます",
+      "descriptionLibraries": "削除したライブラリのアイテムがここに表示されます"
     },
     "card": {
       "restore": "元に戻す",
-      "delete": "永久に削除"
+      "delete": "永久に削除",
+      "projectGone": "プロジェクトが削除されたため、完全に削除することしかできません",
+      "libraryGone": "ライブラリが削除されたため、完全に削除することしかできません"
     },
     "confirm": {
       "empty": {
@@ -148,11 +151,22 @@
         "confirm": "永久に削除"
       },
       "deleteSingle": {
-        "title": "画像を永久に削除",
-        "message": "この画像を永久に削除してもよろしいですか？この操作は元に戻せません。",
+        "title": "アイテムを完全に削除",
+        "message": "このアイテムを完全に削除しますか？この操作は元に戻せません。",
         "confirm": "永久に削除"
       },
       "deleting": "削除中..."
+    },
+    "sources": {
+      "label": "ごみ箱の対象",
+      "projects": "プロジェクト",
+      "libraries": "ライブラリ"
+    },
+    "kind": {
+      "image": "画像",
+      "video": "動画",
+      "audio": "音声",
+      "text": "テキスト"
     }
   },
   "promptEditor": {
