@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button, cx, IconButton, Text, Toolbar } from '../../m3';
 import { useFitLevel } from '../lib/useFitLevel';
@@ -31,13 +31,65 @@ export function useEscapeClears(active: boolean, onClear: () => void, onDelete?:
   }, [active]);
 }
 
+// Floating toolbars on screen; the snackbar rises above the highest of them.
+const liftingBars = new Set<HTMLElement>();
+let liftFrame = 0;
+const SNACKBAR_GAP = 8;
+
+function updateSnackbarLift() {
+  liftFrame = 0;
+  let offset = 0;
+  for (const bar of liftingBars) {
+    const toolbar = bar.querySelector<HTMLElement>('.m3-toolbar');
+    if (!toolbar) continue;
+    const rect = toolbar.getBoundingClientRect();
+    if (rect.height === 0 || rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+    offset = Math.max(offset, window.innerHeight - rect.top + SNACKBAR_GAP);
+  }
+  const root = document.documentElement;
+  if (offset > 0) root.style.setProperty('--m3-snackbar-offset', `${Math.round(offset)}px`);
+  else root.style.removeProperty('--m3-snackbar-offset');
+}
+
+function scheduleSnackbarLift() {
+  if (!liftFrame) liftFrame = window.requestAnimationFrame(updateSnackbarLift);
+}
+
+/** Keeps the snackbar above this floating toolbar while it is shown, so neither covers the other. */
+function useSnackbarLift(bar: HTMLElement | null) {
+  useEffect(() => {
+    if (!bar) return;
+    liftingBars.add(bar);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleSnackbarLift);
+    observer?.observe(bar);
+    const toolbar = bar.querySelector('.m3-toolbar');
+    if (toolbar) observer?.observe(toolbar);
+    // The toolbar slides in; measure again once it settles.
+    bar.addEventListener('animationend', scheduleSnackbarLift, true);
+    window.addEventListener('resize', scheduleSnackbarLift);
+    window.addEventListener('scroll', scheduleSnackbarLift, true);
+    scheduleSnackbarLift();
+    return () => {
+      liftingBars.delete(bar);
+      observer?.disconnect();
+      bar.removeEventListener('animationend', scheduleSnackbarLift, true);
+      window.removeEventListener('resize', scheduleSnackbarLift);
+      window.removeEventListener('scroll', scheduleSnackbarLift, true);
+      scheduleSnackbarLift();
+    };
+  }, [bar]);
+}
+
 /**
  * A floating toolbar (M3 Expressive) that rides the foot of its list. Put it last in the list's
- * section: it sticks to the bottom of the scroller and never grows wider than the section.
+ * section: it sticks to the bottom of the scroller and never grows wider than the section. While
+ * shown, it lifts the snackbar above itself.
  */
 export function FloatBar({ children, label, className, fit }: { children: ReactNode; label: string; className?: string; fit?: { ref: (element: HTMLDivElement | null) => void; level: number } }) {
+  const [bar, setBar] = useState<HTMLDivElement | null>(null);
+  useSnackbarLift(bar);
   return (
-    <div className={cx('v2-float-bar', className)}>
+    <div ref={setBar} className={cx('v2-float-bar', className)}>
       <div ref={fit?.ref} className="v2-float-bar__fit" data-fit={fit?.level ?? 0}>
         <Toolbar type="floating" color="vibrant" aria-label={label}>
           {children}

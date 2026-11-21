@@ -361,6 +361,7 @@
   inset-inline: 0;
   bottom: var(--m3-snackbar-offset, 16px);
   z-index: var(--m3-z-snackbar);
+  transition: bottom var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-emphasized-decelerate);
   display: flex;
   justify-content: center;
   padding-inline: 16px;
