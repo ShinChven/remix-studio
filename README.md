@@ -22,20 +22,10 @@ One account-scoped tool layer powers both AI control surfaces. The assistant and
 
 The assistant can bind projects and libraries as context, work with images and voice input, use reusable prompt skills, and preserve conversations. Both agent paths can discover current data instead of reasoning over a stale prompt: they can curate libraries, inspect albums and files, find usable models, assemble project workflows, and prepare campaigns and scheduled posts.
 
-```mermaid
-flowchart LR
-    H["Human"] --> UI["Project Studio"]
-    H --> A["Built-in Assistant"]
-    G["Claude · Codex · Other Agents"] --> M["MCP"]
-    A --> T["Shared account-scoped tools"]
-    M --> T
-    UI --> W["Live Workspace"]
-    T --> W
-    W --> E["Combination / Shuffle Engine"]
-    E --> Q["Recoverable Provider Queues"]
-    Q --> O["Text · Image · Video · Audio · ComfyUI · Civitai"]
-    O --> D["Albums · Exports · Campaigns · Releases"]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/architecture-dark.svg">
+  <img alt="Remix Studio architecture: Project Studio, the built-in assistant, and MCP clients share one account-scoped tool layer over a live workspace that feeds combination, recoverable queues, providers, and distribution" src="assets/architecture-light.svg" width="100%">
+</picture>
 
 ## From Intent to Distribution
 
