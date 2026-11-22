@@ -72,7 +72,9 @@ When a session has expired, the sign-in page remembers the page you were opening
 
 ## Rate Limiting and Proxies
 
-Login, 2FA, and related authentication flows use an in-memory rate limiter keyed partly by client address. Behind a reverse proxy, enable `TRUST_PROXY` only when the proxy is trusted and overwrites forwarding headers.
+Password login is limited three ways: per client address and email, per email from any address, and per client address across all emails. The per-address limit applies only when `TRUST_PROXY` is set, since the app cannot otherwise tell clients apart. A correct password clears that account's failed attempts but not the address's. 2FA codes are limited per sign-in attempt and per user, and signed-in actions that ask for the current password or a 2FA code again (changing or removing the password, setting up, enabling or disabling 2FA) are limited per user.
+
+Behind a reverse proxy, set `TRUST_PROXY` to the number of proxies in front of the app; see [Configuration](/guide/configuration).
 
 Rate-limit state is per server process. For a multi-instance public deployment, add upstream rate limiting at the load balancer or gateway.
 
@@ -101,6 +103,6 @@ See [Storage](/concepts/storage) for what is counted and where estimates can dif
 - Keep the encryption key out of the database backup and store a recoverable secret backup.
 - Configure exact public `APP_URL`, WebAuthn origin/RP ID, and OAuth callbacks.
 - Restrict `/api/internal/*` at the proxy if the deployment is public.
-- Enable `TRUST_PROXY` only behind a controlled proxy.
+- Set `TRUST_PROXY` to the number of controlled proxies in front of the app, and leave it unset without one.
 - Leave `DLNA_ENABLED` off unless every device on the LAN may browse the albums it publishes, and never forward `DLNA_HTTP_PORT`.
 - Disable unused accounts and revoke unused passkeys, MCP tokens, social channels, and store connections.
