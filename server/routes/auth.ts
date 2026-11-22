@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { getCookie, setCookie } from 'hono/cookie';
 import { authMiddleware, adminOnly, hashPassword, verifyPassword, signToken, JwtPayload, signFlowToken, verifyFlowToken, AuthFlowPayload, generateRefreshToken, hashToken } from '../auth/auth';
 import { SESSION_ROTATION_GRACE_MS, UserRepository } from '../auth/user-repository';
-import { checkRateLimit, getClientAddress } from '../utils/rate-limiter';
+import { checkRateLimit, getClientAddress, isKnownClientAddress, resetRateLimit } from '../utils/rate-limiter';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
 import { FREE_STORAGE_TIER, storageTierForKey } from '../../src/lib/storage-tiers';
@@ -16,8 +16,20 @@ const VALID_STATUSES: UserStatus[] = ['active', 'disabled'];
 const DEFAULT_STORAGE_LIMIT = FREE_STORAGE_TIER.bytes;
 const LOGIN_MAX_ATTEMPTS = 10;
 const LOGIN_WINDOW_MS = 60_000;
+// Caps guesses at one account however many addresses they come from.
+const LOGIN_ACCOUNT_MAX_ATTEMPTS = 30;
+const LOGIN_ACCOUNT_WINDOW_MS = 15 * 60_000;
+// Caps one address trying many accounts. Only applied when the address is known.
+const LOGIN_ADDRESS_MAX_ATTEMPTS = 100;
+const LOGIN_ADDRESS_WINDOW_MS = 15 * 60_000;
 const TWO_FACTOR_MAX_ATTEMPTS = 5;
 const TWO_FACTOR_WINDOW_MS = 5 * 60_000;
+// Spans every 2FA flow token of one user, since each password login mints a new one.
+const TWO_FACTOR_USER_MAX_ATTEMPTS = 10;
+const TWO_FACTOR_USER_WINDOW_MS = 15 * 60_000;
+// Signed-in endpoints that ask for the current password or a 2FA code again.
+const REAUTH_MAX_ATTEMPTS = 10;
+const REAUTH_WINDOW_MS = 15 * 60_000;
 const GOOGLE_REGISTER_MAX_ATTEMPTS = 10;
 const GOOGLE_REGISTER_WINDOW_MS = 5 * 60_000;
 
@@ -152,6 +164,17 @@ function buildLoginUrl(params: {
   return `${url.pathname}${url.search}`;
 }
 
+function reauthRateLimitKey(userId: string) {
+  return { bucket: 'auth-reauth', keyParts: [userId] };
+}
+
+/** Counts a signed-in request that checks the password or a 2FA code again. */
+function reauthAllowed(userId: string) {
+  return checkRateLimit({ ...reauthRateLimitKey(userId), maxAttempts: REAUTH_MAX_ATTEMPTS, windowMs: REAUTH_WINDOW_MS });
+}
+
+const TOO_MANY_REAUTH_ATTEMPTS = { error: 'Too many attempts. Please try again later.' };
+
 function hashRateLimitValue(value: string) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
@@ -200,12 +223,18 @@ export function createAuthRouter(userRepository: UserRepository) {
       if (!email || !password) return c.json({ error: 'Email and password are required' }, 400);
 
       const clientAddress = getClientAddress(c.req.raw);
-      if (!checkRateLimit({
-        bucket: 'auth-login',
-        keyParts: [clientAddress, email],
-        maxAttempts: LOGIN_MAX_ATTEMPTS,
-        windowMs: LOGIN_WINDOW_MS,
-      })) {
+      const addressEmailKey = { bucket: 'auth-login', keyParts: [clientAddress, email] };
+      const accountKey = { bucket: 'auth-login-account', keyParts: [email] };
+      const allowed =
+        checkRateLimit({ ...addressEmailKey, maxAttempts: LOGIN_MAX_ATTEMPTS, windowMs: LOGIN_WINDOW_MS })
+        && checkRateLimit({ ...accountKey, maxAttempts: LOGIN_ACCOUNT_MAX_ATTEMPTS, windowMs: LOGIN_ACCOUNT_WINDOW_MS })
+        && (!isKnownClientAddress(clientAddress) || checkRateLimit({
+          bucket: 'auth-login-address',
+          keyParts: [clientAddress],
+          maxAttempts: LOGIN_ADDRESS_MAX_ATTEMPTS,
+          windowMs: LOGIN_ADDRESS_WINDOW_MS,
+        }));
+      if (!allowed) {
         return c.json({ error: 'Too many login attempts. Please try again later.' }, 429);
       }
 
@@ -216,6 +245,12 @@ export function createAuthRouter(userRepository: UserRepository) {
 
       const isValid = await verifyPassword(password, user.passwordHash);
       if (!isValid) return c.json({ error: 'Invalid credentials' }, 401);
+
+      // The password was right, so the account buckets keep counting only
+      // failures. The address bucket is left alone: one valid account must not
+      // clear the count of an address that is trying many others.
+      resetRateLimit(addressEmailKey);
+      resetRateLimit(accountKey);
 
       if (user.twoFactorEnabled && user.twoFactorSecret) {
         const tempToken = signFlowToken({
@@ -251,6 +286,7 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.put('/api/auth/password', authMiddleware, async (c) => {
     try {
       const payload = c.get('user') as JwtPayload;
+      if (!reauthAllowed(payload.userId)) return c.json(TOO_MANY_REAUTH_ATTEMPTS, 429);
       const body = await c.req.json();
       const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
       const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : '';
@@ -281,6 +317,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const passwordHash = await hashPassword(newPassword);
       await userRepository.updatePassword(payload.userId, passwordHash);
 
+      resetRateLimit(reauthRateLimitKey(payload.userId));
       return c.json({ success: true });
     } catch (e) {
       console.error('[PUT /api/auth/password]', e);
@@ -291,6 +328,7 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.delete('/api/auth/password', authMiddleware, async (c) => {
     try {
       const payload = c.get('user') as JwtPayload;
+      if (!reauthAllowed(payload.userId)) return c.json(TOO_MANY_REAUTH_ATTEMPTS, 429);
       const body = await c.req.json().catch(() => ({}));
       const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
 
@@ -314,6 +352,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       }
 
       await userRepository.removePassword(payload.userId);
+      resetRateLimit(reauthRateLimitKey(payload.userId));
       return c.json({ success: true });
     } catch (e) {
       console.error('[DELETE /api/auth/password]', e);
@@ -440,6 +479,11 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.json({ error: 'Invalid 2FA flow token' }, 400);
       }
 
+      const userKey = { bucket: 'auth-login-2fa-user', keyParts: [flow.userId] };
+      if (!checkRateLimit({ ...userKey, maxAttempts: TWO_FACTOR_USER_MAX_ATTEMPTS, windowMs: TWO_FACTOR_USER_WINDOW_MS })) {
+        return c.json({ error: 'Too many verification attempts. Please try again later.' }, 429);
+      }
+
       const user = await userRepository.findById(flow.userId);
       if (!user) return c.json({ error: 'User not found' }, 404);
       if (!user.twoFactorEnabled || !user.twoFactorSecret) {
@@ -451,6 +495,7 @@ export function createAuthRouter(userRepository: UserRepository) {
         return c.json({ error: 'Invalid verification code' }, 401);
       }
 
+      resetRateLimit(userKey);
       return finalizeLogin(c, userRepository, user);
     } catch (e) {
       console.error('[POST /api/auth/2fa/verify-login]', e);
@@ -659,6 +704,7 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.post('/api/auth/2fa/setup', authMiddleware, async (c) => {
     try {
       const payload = c.get('user') as JwtPayload;
+      if (!reauthAllowed(payload.userId)) return c.json(TOO_MANY_REAUTH_ATTEMPTS, 429);
       const body = await c.req.json();
       const password = typeof body?.password === 'string' ? body.password : '';
 
@@ -679,6 +725,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await userRepository.startTwoFactorSetup(payload.userId, encrypt(secret), expiresAt);
 
+      resetRateLimit(reauthRateLimitKey(payload.userId));
       return c.json({
         secret,
         otpauthUri: generateOtpAuthUri(user.email, secret),
@@ -693,6 +740,7 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.post('/api/auth/2fa/enable', authMiddleware, async (c) => {
     try {
       const payload = c.get('user') as JwtPayload;
+      if (!reauthAllowed(payload.userId)) return c.json(TOO_MANY_REAUTH_ATTEMPTS, 429);
       const body = await c.req.json();
       const code = typeof body?.code === 'string' ? body.code : '';
 
@@ -712,6 +760,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       }
 
       await userRepository.enableTwoFactor(payload.userId, encrypt(secret));
+      resetRateLimit(reauthRateLimitKey(payload.userId));
       return c.json({ success: true });
     } catch (e) {
       console.error('[POST /api/auth/2fa/enable]', e);
@@ -722,6 +771,7 @@ export function createAuthRouter(userRepository: UserRepository) {
   router.post('/api/auth/2fa/disable', authMiddleware, async (c) => {
     try {
       const payload = c.get('user') as JwtPayload;
+      if (!reauthAllowed(payload.userId)) return c.json(TOO_MANY_REAUTH_ATTEMPTS, 429);
       const body = await c.req.json();
       const password = typeof body?.password === 'string' ? body.password : '';
       const code = typeof body?.code === 'string' ? body.code : '';
@@ -752,6 +802,7 @@ export function createAuthRouter(userRepository: UserRepository) {
       }
 
       await userRepository.disableTwoFactor(payload.userId);
+      resetRateLimit(reauthRateLimitKey(payload.userId));
       return c.json({ success: true });
     } catch (e) {
       console.error('[POST /api/auth/2fa/disable]', e);

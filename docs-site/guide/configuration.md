@@ -20,13 +20,13 @@ Remix Studio is configured through environment variables. This page documents th
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `NODE_ENV` | development tooling dependent | Use `production` for the built server. Also changes secure defaults such as storage bucket auto-creation. |
-| `TRUST_PROXY` | `false` | When `1`, `true`, or `yes`, rate limiting uses the leading `X-Forwarded-For` address. Enable only behind a trusted proxy that overwrites this header. |
+| `TRUST_PROXY` | `false` | Number of reverse proxies in front of the app; `true` or `yes` mean `1`. Rate limiting then reads the client address from the `X-Forwarded-For` entry the outermost proxy appended (the Nth from the end), falling back to `X-Real-IP`. Unset, the app trusts no forwarded header. |
 | `JOB_PROCESSING_TIMEOUT_MS` | `7200000` (2 hours) | Maximum time an observed detached provider task may remain non-terminal before the job is failed and its concurrency slot released. |
 | `DISABLE_HMR` | unset | Development-only Vite switch used when hot-module-reload WebSockets are unsuitable. |
 | `GEMINI_API_KEY` | unset | Build-time/development compatibility variable exposed by Vite. Normal Remix Studio generation and assistant use provider credentials stored in the app. |
 
 ::: warning Trust proxy carefully
-If clients can connect directly to the app and supply their own `X-Forwarded-For`, enabling `TRUST_PROXY` lets them choose the address used by the in-memory authentication rate limiter. Restrict direct access and configure the proxy to replace forwarded headers.
+Set `TRUST_PROXY` to the exact number of proxies. Too high a count reads an entry the client wrote, which lets clients choose the address used by the in-memory authentication rate limiter; too low a count treats every request as coming from a proxy. If clients can also reach the app directly, they can send any `X-Forwarded-For` they like, so restrict direct access.
 :::
 
 ## Database
