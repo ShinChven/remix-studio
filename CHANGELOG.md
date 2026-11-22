@@ -2,6 +2,24 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [1.27.1] - 2026-11-22
+
+### Improved
+
+- **Job Quantity Field Can Be Cleared and Stepped (`/v2`)**: The quantity stepper in a project's `RunDock` keeps its own draft, so the field can be emptied while typing and an empty field restores the committed count on blur. `ArrowUp` and `ArrowDown` step by 1 (`Shift` by 10), `Enter` commits and `Escape` reverts, matching the classic interface; the input is exposed as a `spinbutton` with `aria-valuemin` and `aria-valuenow`.
+- **One Tone for Both Project Panes (`/v2`)**: The workflow and results panes share a single `--v2-pane-bg` (surface container low) instead of container and lowest, so neither reads as heavier. The results' sticky bar, the job row hover and the section switcher track are retuned for the new tone.
+- **Architecture Diagram in the README**: The Mermaid flow is replaced by a themed architecture diagram, rendered as `assets/architecture-light.svg` and `assets/architecture-dark.svg` by `scripts/generate-architecture-diagram.mjs`.
+
+### Fixed
+
+- **Snackbar Hidden Behind the Selection Bar (`/v2`)**: The selection bar sticks to the foot of its list while the snackbar is fixed to the bottom of the window, so a snackbar covered the bar. While a floating bar is on screen, `FloatBar` now sets `--m3-snackbar-offset` so the snackbar sits just above the highest one, and clears it when the bar goes away; the snackbar host animates the change.
+- **Classic Recycle Bin Missed Library Items and Non-Image Content**: The classic Trash page listed only album items and drew each as an image, so text, audio and video items appeared broken and library items deleted in the classic library editor never showed. `TrashView` now has a **Projects** / **Libraries** switch (`?from=libraries`) backed by `/api/trash` and `/api/library-trash`, previews each kind (images open the lightbox, text shows its excerpt, audio and video play inline) with a kind badge, disables **Restore** for items whose project or library no longer exists, and counts optimized copies and thumbnails in sizes. New strings are available in all six locales.
+- **Backdrop Blur on Animated Surfaces (`/v2`)**: The login panel, lightbox counter, library drop overlay and provider form bar no longer blur what is behind them; each sat over spinning shapes, slideshow transitions, a scrolled form or an animation of its own, so it re-blurred every frame. The panel, drop overlay and form bar are solid and the counter keeps the unblurred tint of its neighbouring interval field. The glass block keeps only the menu, which owns both its translucent fill and its blur with an explicit `-webkit-` pair; the dead app-bar rule and the modal rail blur behind an opaque fill are removed. `scripts/check-v2-ui.ts` now fails on any backdrop blur in v2 or M3 outside `:root[data-glass="on"]`. Album card hover zoom and the tools slide-in follow the **Hover animations** preference, the index and aspect pills use the 60% scrim of other unblurred labels over media, and the play badge returns to 45%.
+
+### Security
+
+- **Rate-Limit Bypasses on Login and Re-authentication**: The client address was read from the first `X-Forwarded-For` entry, which the client writes itself, so a forged value per request put every login attempt in a fresh bucket. `TRUST_PROXY` now takes the number of proxies in front of the app (`true` and `yes` mean 1) and the address is the entry the outermost proxy appended, the Nth from the end. Deployments behind more than one proxy with `TRUST_PROXY=true` must set it to the proxy count, or every client is keyed by the inner proxy's upstream address. Login is now limited per address and email, per email from any address (30 per 15 minutes) and, when the address is known, per address across all emails (100 per 15 minutes); a correct password clears the account buckets but not the address bucket. 2FA login codes are also limited per user across flow tokens (10 per 15 minutes), since each password login mints a new token. Password change and removal and 2FA setup, enable and disable are limited per user (10 per 15 minutes, cleared on success). Expired limiter entries are pruned every minute (`server/routes/auth.ts`, `server/utils/rate-limiter.ts`).
+
 ## [1.27.0] - 2026-11-15
 
 ### Added

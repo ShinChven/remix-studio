@@ -8,6 +8,24 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 1.27.1 — Safer sign-in limits and recycle bin fixes
+
+*Sign-in rate limits can no longer be sidestepped, the classic recycle bin shows library items and every content type, and a few rough edges in the new interface are smoothed out.*
+
+**Improved**
+
+- **Sign-in attempt limits** — Password login is now limited per address and email, per email from any address, and per address across all emails. Two-factor codes are limited per user, and changing or removing a password or setting up, enabling or disabling two-factor is limited per user. If you run behind a reverse proxy, set `TRUST_PROXY` to the number of proxies in front of the app. See [Account and Security](/guide/account-and-security).
+- **Job quantity in new projects** — In the new interface, the quantity field can be cleared while you type (leaving it empty restores the count), Up and Down step by 1 (Shift for 10), Enter commits and Escape reverts.
+- **One tone for both project panes** — In the new interface, the workflow and results panes now share the same background.
+- **Smoother animations** — In the new interface, the sign-in panel, lightbox counter, library drop overlay and provider form bar no longer use a blurred backdrop, and album card hover effects follow the Hover animations preference.
+
+**Fixed**
+
+- **Classic recycle bin** — The classic [Recycle Bin](/concepts/trash) now has a **Projects** / **Libraries** switch and previews text, audio and video items correctly instead of showing them broken. Restore is unavailable for items whose project or library no longer exists.
+- **Snackbar hidden by the selection bar** — In the new interface, messages now appear above the floating selection bar instead of behind it.
+
+---
+
 ## 1.27.0 — APIMart for every modality, a recycle bin for libraries, and new frontier models
 
 *Generate text, video and music through APIMart, recover deleted library items, rename finished exports, and pick up Gemini 4, GPT-6 and Claude 5.5.*
