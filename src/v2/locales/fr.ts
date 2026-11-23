@@ -1143,6 +1143,7 @@ const messages: V2Messages = {
     deleteFailed: 'Impossible de supprimer le projet',
   },
   queueMonitor: {
+    idleProviders: 'Fournisseurs inactifs',
     confirm: {
       clearProjectFailed: 'Effacer les tâches échouées du projet « {{name}} » ?',
       clearProviderFailed: 'Effacer les tâches échouées de la file « {{name}} » ?',

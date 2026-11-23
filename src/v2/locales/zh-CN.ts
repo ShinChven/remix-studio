@@ -1143,6 +1143,7 @@ const messages: V2Messages = {
     deleteFailed: '删除项目失败',
   },
   queueMonitor: {
+    idleProviders: '空闲的服务商',
     confirm: {
       clearProjectFailed: '清除项目“{{name}}”的失败任务？',
       clearProviderFailed: '清除服务商队列“{{name}}”的失败任务？',

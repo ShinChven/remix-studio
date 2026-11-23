@@ -6065,3 +6065,19 @@ button.v2-model-row__id:is(:hover, :focus-visible) .m3-icon { opacity: 1; }
 
 /* Recycle bin: which bin is shown, projects or libraries. */
 .v2-trash__sources { align-self: flex-start; }
+
+/* ---------- Queue monitor ---------- */
+.v2-feed-thumb[data-tone="primary"] { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.v2-feed-thumb[data-tone="warning"] { background: var(--v2-color-warning-container); color: var(--v2-color-on-warning-container); }
+.v2-feed-thumb[data-tone="error"] { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.v2-queue-row__spin { animation: v2-spin 1.4s linear infinite; }
+.v2-queue-row__state { font-weight: 500; }
+.v2-queue-row__state[data-tone="primary"] { color: var(--md-sys-color-primary); }
+.v2-queue-row__state[data-tone="warning"] { color: var(--v2-color-warning); }
+.v2-queue-row__state[data-tone="error"] { color: var(--md-sys-color-error); }
+.v2-queue-row__chevron { display: inline-flex; transition: rotate var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial); }
+.v2-queue-row[data-selected] .v2-queue-row__chevron { rotate: 180deg; }
+.v2-queue-row[data-selected] { align-items: flex-start; }
+.v2-queue-row__detail { display: flex; flex-direction: column; gap: var(--md-sys-measurement-space100); margin-top: var(--md-sys-measurement-space100); }
+/* Stacked panes, one per project or provider: each is only as tall as its jobs. */
+.v2-list-pane.v2-queue-pane[data-variant] { min-height: 0; }

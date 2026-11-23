@@ -1143,6 +1143,7 @@ const messages: V2Messages = {
     deleteFailed: 'プロジェクトを削除できませんでした',
   },
   queueMonitor: {
+    idleProviders: '待機中のプロバイダー',
     confirm: {
       clearProjectFailed: 'プロジェクト「{{name}}」の失敗したジョブを削除しますか？',
       clearProviderFailed: 'プロバイダーキュー「{{name}}」の失敗したジョブを削除しますか？',
