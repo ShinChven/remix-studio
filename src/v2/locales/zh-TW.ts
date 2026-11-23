@@ -1143,6 +1143,7 @@ const messages: V2Messages = {
     deleteFailed: '刪除專案失敗',
   },
   queueMonitor: {
+    idleProviders: '閒置的服務商',
     confirm: {
       clearProjectFailed: '清除專案「{{name}}」的失敗工作？',
       clearProviderFailed: '清除服務商佇列「{{name}}」的失敗工作？',

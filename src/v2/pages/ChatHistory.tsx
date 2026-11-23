@@ -20,7 +20,7 @@ export function ChatHistory() {
   const total = chats.data?.total ?? 0;
 
   return (
-    <Page width="default">
+    <Page density="compact">
       <PageHeader
         title={t('v2.chatHistory.title', { defaultValue: 'Chat History' })}
         description={t('v2.chatHistory.description', { defaultValue: 'Search across conversation titles and message content.' })}

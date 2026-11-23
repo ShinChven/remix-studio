@@ -1143,6 +1143,7 @@ const messages: V2Messages = {
     deleteFailed: '프로젝트 삭제 실패',
   },
   queueMonitor: {
+    idleProviders: '유휴 공급자',
     confirm: {
       clearProjectFailed: '“{{name}}” 프로젝트의 실패한 작업을 지울까요?',
       clearProviderFailed: '“{{name}}” 제공자 대기열의 실패한 작업을 지울까요?',

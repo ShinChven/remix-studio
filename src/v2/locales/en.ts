@@ -1142,6 +1142,7 @@ const en = {
     deleteFailed: 'Failed to delete project',
   },
   queueMonitor: {
+    idleProviders: 'Idle providers',
     confirm: {
       clearProjectFailed: 'Clear failed jobs for project “{{name}}”?',
       clearProviderFailed: 'Clear failed jobs for provider queue “{{name}}”?',
