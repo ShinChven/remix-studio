@@ -352,7 +352,7 @@ async function assertPostMediaReady(prisma: PrismaClient, postId: string) {
   }
 }
 
-function isInternalStorageValue(value: string) {
+export function isInternalStorageValue(value: string) {
   return !/^https?:\/\//i.test(value) && !value.startsWith('data:') && !value.startsWith('/');
 }
 

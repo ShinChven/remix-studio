@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --exclude \"agent/**\" --exclude \"data/**\" --exclude \"dist/**\" --exclude \"dist-server/**\" --exclude \"docs/**\" --exclude \"docs-site/**\" server.ts",
-    "build": "vite build && node scripts/build-tv.mjs && tsup server.ts --format esm --out-dir dist-server --clean --external @prisma/client --external esbuild",
+    "build": "vite build && node scripts/build-tv.mjs && node scripts/build-mcp-apps.mjs && tsup server.ts --format esm --out-dir dist-server --clean --external @prisma/client --external esbuild",
     "start": "NODE_ENV=production node dist-server/server.js",
     "preview": "vite preview",
     "build:tv": "node scripts/build-tv.mjs",
+    "build:mcp-apps": "node scripts/build-mcp-apps.mjs",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit && tsx scripts/check-v2-ui.ts",
     "i18n:check": "tsx scripts/compare-i18n.ts && tsx scripts/check-v2-i18n.ts",
@@ -30,6 +31,7 @@
     "@google/genai": "^2.16.0",
     "@hono/node-server": "^2.1.0",
     "@material/material-color-utilities": "^0.4.0",
+    "@modelcontextprotocol/ext-apps": "^2.0.4",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@tailwindcss/vite": "^4.3.3",
@@ -88,6 +90,7 @@
     "tsup": "^8.5.1",
     "tsx": "^4.23.11",
     "typescript": "~7.0.2",
-    "vite": "^8.2.1"
+    "vite": "^8.2.1",
+    "vite-plugin-singlefile": "^2.3.4"
   }
 }

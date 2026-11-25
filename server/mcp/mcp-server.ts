@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import { createAssistantToolDefinitions, AssistantToolDefinition, ToolDependencies } from './tool-definitions';
 import { getTransportInputSchema, resolveExternalToolCall } from './tool-confirmation';
 import { RESOURCE_REF_GUIDE } from './resource-refs';
+import { buildMcpAppResultMeta, getMcpAppToolMeta, registerMcpAppResources } from './apps/mcp-apps';
 
 type Variables = { mcpUserId: string };
 
@@ -54,7 +55,8 @@ async function resolveBearer(prisma: PrismaClient, authHeader: string | undefine
   return null;
 }
 
-function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, userId: string) {
+function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, userId: string, toolDeps: ToolDependencies) {
+  const appMeta = getMcpAppToolMeta(tool.name);
   server.registerTool(
     tool.name,
     {
@@ -67,6 +69,7 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
         idempotentHint: tool.annotations.idempotentHint,
         openWorldHint: tool.annotations.openWorldHint,
       },
+      ...(appMeta ? { _meta: appMeta } : {}),
     },
     async (input: unknown) => {
       const resolution = resolveExternalToolCall(tool, input);
@@ -77,9 +80,13 @@ function registerToolOnServer(server: McpServer, tool: AssistantToolDefinition, 
       const structuredContent = isStructuredContent(result.structuredContent)
         ? result.structuredContent
         : undefined;
+      const resultMeta = appMeta && !result.isError
+        ? await buildMcpAppResultMeta(tool.name, structuredContent, toolDeps.storage)
+        : undefined;
       return {
         content: [{ type: 'text' as const, text: result.text }],
         ...(structuredContent ? { structuredContent } : {}),
+        ...(resultMeta ? { _meta: resultMeta } : {}),
         ...(result.isError ? { isError: true } : {}),
       };
     },
@@ -99,8 +106,9 @@ function createMcpServerInstance(toolDeps: ToolDependencies, userId: string, app
   // of the shared dependencies rather than stored with them.
   const tools = createAssistantToolDefinitions({ ...toolDeps, appBaseUrl });
   for (const tool of tools) {
-    registerToolOnServer(server, tool, userId);
+    registerToolOnServer(server, tool, userId, toolDeps);
   }
+  registerMcpAppResources(server, toolDeps.storage);
 
   return server;
 }

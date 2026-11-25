@@ -1,0 +1,151 @@
+.qm-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+.qm-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--rs-radius-lg);
+  background: var(--rs-surface);
+}
+.qm-stat-value {
+  font-size: 24px;
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.qm-stat[data-tone='info'] .qm-stat-value {
+  color: var(--rs-info);
+}
+.qm-stat[data-tone='warning'] .qm-stat-value {
+  color: var(--rs-warning);
+}
+.qm-stat[data-tone='danger'] .qm-stat-value {
+  color: var(--rs-danger);
+}
+.qm-stat-of {
+  font-size: 15px;
+  font-weight: var(--font-weight-normal, 400);
+  color: var(--rs-text-faint);
+}
+.qm-stat-label {
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qm-stat-slots .qm-meter {
+  flex: none;
+  margin-top: 6px;
+}
+
+.qm-meter {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 48px;
+  height: 6px;
+  border-radius: var(--rs-radius-full);
+  background: var(--rs-surface-strong);
+  overflow: hidden;
+}
+.qm-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--rs-accent);
+  transition: width 240ms ease;
+}
+
+.qm-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--rs-radius-full);
+  background: var(--rs-surface);
+  align-self: flex-start;
+  max-width: 100%;
+}
+.rs-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--rs-radius-full);
+  background: transparent;
+  font-size: var(--rs-text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.rs-tab[aria-selected='true'] {
+  background: var(--rs-bg);
+  font-weight: var(--font-weight-medium, 500);
+  box-shadow: var(--shadow-hairline, 0 0 0 1px var(--rs-border-soft));
+}
+.rs-tab:disabled {
+  cursor: default;
+}
+
+.qm-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--rs-radius-lg);
+  overflow: hidden;
+}
+.qm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: var(--rs-surface);
+  text-align: left;
+  cursor: pointer;
+}
+.qm-row:hover {
+  background: var(--rs-surface-strong);
+}
+.qm-row-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.qm-row-title {
+  font-weight: var(--font-weight-medium, 500);
+}
+.qm-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 220px;
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.qm-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  max-width: 50%;
+}
+.qm-more {
+  margin: 0;
+  color: var(--rs-text-faint);
+  font-size: var(--rs-text-sm);
+}
