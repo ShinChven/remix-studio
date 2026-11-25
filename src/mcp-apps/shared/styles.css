@@ -1,0 +1,314 @@
+/*
+ * Hosts pass their own design tokens (the MCP Apps style variables); the
+ * fallbacks below apply only when a host sends none, so the view blends into
+ * whichever chat client renders it.
+ */
+:root {
+  color-scheme: light dark;
+  --rs-bg: var(--color-background-primary, #fdfbff);
+  --rs-surface: var(--color-background-secondary, #f1eef6);
+  --rs-surface-strong: var(--color-background-tertiary, #e6e1ec);
+  --rs-text: var(--color-text-primary, #1b1b21);
+  --rs-text-muted: var(--color-text-secondary, #47464f);
+  --rs-text-faint: var(--color-text-tertiary, #78767f);
+  --rs-border: var(--color-border-primary, #c8c5d0);
+  --rs-border-soft: var(--color-border-secondary, #e3e0ea);
+  --rs-accent: var(--color-ring-primary, #5b4fc4);
+  --rs-success: var(--color-text-success, #1e7a3c);
+  --rs-success-bg: var(--color-background-success, #d9f5df);
+  --rs-danger: var(--color-text-danger, #ba1a1a);
+  --rs-danger-bg: var(--color-background-danger, #ffdad6);
+  --rs-info: var(--color-text-info, #2459a8);
+  --rs-info-bg: var(--color-background-info, #dbe6ff);
+  --rs-warning: var(--color-text-warning, #7a5900);
+  --rs-warning-bg: var(--color-background-warning, #ffefc7);
+  --rs-radius-sm: var(--border-radius-sm, 8px);
+  --rs-radius-md: var(--border-radius-md, 12px);
+  --rs-radius-lg: var(--border-radius-lg, 20px);
+  --rs-radius-full: var(--border-radius-full, 999px);
+  --rs-font: var(--font-sans, 'Roboto Flex', system-ui, -apple-system, 'Segoe UI', sans-serif);
+  --rs-text-sm: var(--font-text-sm-size, 13px);
+  --rs-text-md: var(--font-text-md-size, 14px);
+  --rs-heading: var(--font-heading-sm-size, 16px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --rs-bg: var(--color-background-primary, #131318);
+    --rs-surface: var(--color-background-secondary, #1f1f25);
+    --rs-surface-strong: var(--color-background-tertiary, #2a2930);
+    --rs-text: var(--color-text-primary, #e4e1e9);
+    --rs-text-muted: var(--color-text-secondary, #c8c5d0);
+    --rs-text-faint: var(--color-text-tertiary, #928f99);
+    --rs-border: var(--color-border-primary, #47464f);
+    --rs-border-soft: var(--color-border-secondary, #2f2e35);
+    --rs-accent: var(--color-ring-primary, #c5bfff);
+    --rs-success: var(--color-text-success, #8ad79d);
+    --rs-success-bg: var(--color-background-success, #0f3a1d);
+    --rs-danger: var(--color-text-danger, #ffb4ab);
+    --rs-danger-bg: var(--color-background-danger, #5c1111);
+    --rs-info: var(--color-text-info, #afc6ff);
+    --rs-info-bg: var(--color-background-info, #12305e);
+    --rs-warning: var(--color-text-warning, #f2c25b);
+    --rs-warning-bg: var(--color-background-warning, #3d2e00);
+  }
+}
+
+:root[data-theme='dark'] {
+  --rs-bg: var(--color-background-primary, #131318);
+  --rs-surface: var(--color-background-secondary, #1f1f25);
+  --rs-surface-strong: var(--color-background-tertiary, #2a2930);
+  --rs-text: var(--color-text-primary, #e4e1e9);
+  --rs-text-muted: var(--color-text-secondary, #c8c5d0);
+  --rs-text-faint: var(--color-text-tertiary, #928f99);
+  --rs-border: var(--color-border-primary, #47464f);
+  --rs-border-soft: var(--color-border-secondary, #2f2e35);
+  --rs-accent: var(--color-ring-primary, #c5bfff);
+  --rs-success: var(--color-text-success, #8ad79d);
+  --rs-success-bg: var(--color-background-success, #0f3a1d);
+  --rs-danger: var(--color-text-danger, #ffb4ab);
+  --rs-danger-bg: var(--color-background-danger, #5c1111);
+  --rs-info: var(--color-text-info, #afc6ff);
+  --rs-info-bg: var(--color-background-info, #12305e);
+  --rs-warning: var(--color-text-warning, #f2c25b);
+  --rs-warning-bg: var(--color-background-warning, #3d2e00);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--rs-bg);
+  color: var(--rs-text);
+  font-family: var(--rs-font);
+  font-size: var(--rs-text-md);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.rs-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  min-width: 0;
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.rs-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.rs-header-text {
+  flex: 1;
+  min-width: 0;
+}
+.rs-title {
+  margin: 0;
+  font-size: var(--rs-heading);
+  font-weight: var(--font-weight-semibold, 600);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-subtitle {
+  margin: 2px 0 0;
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-header-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Buttons & chips ────────────────────────────────── */
+.rs-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius-full);
+  background: transparent;
+  font-size: var(--rs-text-sm);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms ease, border-radius 160ms ease;
+}
+.rs-button:hover:not(:disabled) {
+  background: var(--rs-surface);
+}
+.rs-button:active:not(:disabled) {
+  border-radius: var(--rs-radius-sm);
+}
+.rs-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.rs-button:focus-visible,
+.rs-tile:focus-visible,
+.rs-chip:focus-visible,
+.rs-tab:focus-visible {
+  outline: 2px solid var(--rs-accent);
+  outline-offset: 2px;
+}
+.rs-icon-button {
+  width: 34px;
+  padding: 0;
+}
+/* A narrow view keeps the icon and drops the label. */
+@media (max-width: 420px) {
+  .rs-button .rs-label-collapsible {
+    display: none;
+  }
+  .rs-button:has(.rs-label-collapsible) {
+    width: 34px;
+    padding: 0;
+  }
+}
+
+.rs-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.rs-chips::-webkit-scrollbar {
+  display: none;
+}
+.rs-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--rs-border-soft);
+  border-radius: var(--rs-radius-sm);
+  background: transparent;
+  font-size: var(--rs-text-sm);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.rs-chip[aria-pressed='true'] {
+  background: var(--rs-surface-strong);
+  border-color: transparent;
+  font-weight: var(--font-weight-medium, 500);
+}
+.rs-chip-count {
+  color: var(--rs-text-faint);
+}
+
+.rs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--rs-radius-full);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+  background: var(--rs-surface-strong);
+  color: var(--rs-text-muted);
+}
+.rs-badge[data-tone='success'] {
+  background: var(--rs-success-bg);
+  color: var(--rs-success);
+}
+.rs-badge[data-tone='danger'] {
+  background: var(--rs-danger-bg);
+  color: var(--rs-danger);
+}
+.rs-badge[data-tone='info'] {
+  background: var(--rs-info-bg);
+  color: var(--rs-info);
+}
+.rs-badge[data-tone='warning'] {
+  background: var(--rs-warning-bg);
+  color: var(--rs-warning);
+}
+
+/* ── States ─────────────────────────────────────────── */
+.rs-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 96px;
+  padding: 16px;
+  border-radius: var(--rs-radius-md);
+  background: var(--rs-surface);
+  color: var(--rs-text-muted);
+  text-align: center;
+}
+.rs-state[data-tone='danger'] {
+  background: var(--rs-danger-bg);
+  color: var(--rs-danger);
+}
+.rs-spin {
+  animation: rs-spin 900ms linear infinite;
+}
+@keyframes rs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.rs-busy {
+  opacity: 0.6;
+  transition: opacity 120ms ease;
+}
+
+/* ── Pager ──────────────────────────────────────────── */
+.rs-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-sm);
+}
+.rs-pager-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.rs-clamp-2,
+.rs-clamp-4 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.rs-clamp-2 {
+  -webkit-line-clamp: 2;
+}
+.rs-clamp-4 {
+  -webkit-line-clamp: 4;
+}

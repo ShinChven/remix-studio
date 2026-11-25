@@ -109,6 +109,22 @@ Tools return absolute Remix Studio links next to the raw ids, so a client can sh
 
 The origin comes from `APP_URL` when it is configured; otherwise the server falls back to the origin of the incoming MCP request (honoring `X-Forwarded-Proto` / `X-Forwarded-Host`). Set `APP_URL` to the browser-visible origin of your deployment so the links are shareable.
 
+### Interactive views (MCP Apps)
+
+Clients that support the [MCP Apps](https://modelcontextprotocol.io/extensions/apps) extension render some tool results as interactive views inline in the conversation instead of raw JSON:
+
+| Tool | View |
+|------|------|
+| `get_album_items`, `get_library_items` | Thumbnail grid with tag filters, paging, and a full-size viewer for images, video, and audio. Text libraries show as cards. |
+| `get_queue_status` | Queue totals, slot usage, and per-project or per-provider rows. Refreshes itself while jobs are running or queued. |
+| `get_post` | The post's text, media, schedule, and per-account publishing status. |
+
+Each tool names its view in `_meta.ui.resourceUri` (a `ui://remix-studio/…` resource). Views follow the client's theme and language, and their links open through the client. Paging, filters, and refresh call the same read-only tools again through the client.
+
+Media in a view loads from presigned storage URLs. The server signs them into the result's `_meta`, which clients pass to the view but keep out of the model's context, and adds the storage origin to the view's content security policy. The browser displaying the view must be able to reach that origin, the same as when the app shows media, so set `S3_PUBLIC_ENDPOINT` when the internal endpoint is not public.
+
+Clients without MCP Apps support ignore the metadata and show the usual text result. The views are built into `dist/mcp-apps` by `npm run build` (or `npm run build:mcp-apps` on its own); a dev server without that build serves a placeholder telling you to run it.
+
 ## Authentication
 
 MCP requests require a bearer token obtained through either:
