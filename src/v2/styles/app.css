@@ -2996,6 +2996,44 @@
 .v2-tag-panel__list { max-height: 40vh; overflow-y: auto; }
 
 /* ---------- Pickers and previews ---------- */
+/* The search stays put. Only the library list scrolls, so focusing or scrolling cannot slide the field up. */
+.m3-dialog:has(.v2-lib-select) .m3-dialog__content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.v2-lib-select {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space150);
+}
+.v2-lib-select__head {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--md-sys-measurement-space150);
+  padding: 0 var(--md-sys-measurement-space300);
+}
+.m3-dialog[data-fullscreen] .v2-lib-select__head {
+  padding-top: 8px;
+}
+.v2-lib-select__scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--md-sys-measurement-space300);
+}
+.m3-dialog[data-fullscreen] .v2-lib-select__scroll {
+  padding-bottom: 24px;
+}
+.v2-lib-select .v2-search-field {
+  width: 100%;
+  min-width: 0;
+}
 .v2-pick-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

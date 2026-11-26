@@ -57,61 +57,65 @@ export function LibrarySelectionDialog({ open, onClose, onSelect, libraries, sel
         </Button>
       }
     >
-      <div className="flex flex-col gap-3" data-density="compact">
-        <Text variant="body-medium" className="text-on-surface-variant">
-          {description || t('projectViewer.librarySelection.description')}
-        </Text>
-        {libraries.length > 0 && <SearchField value={query} onChange={setQuery} placeholder={t('projectViewer.librarySelection.searchPlaceholder')} shape="field" autoFocus />}
-        {error && libraries.length > 0 && (
-          <div className="v2-notice" data-tone="warning">
-            <Icon name="warning" />
-            <Text variant="body-small">{t('v2.projectEditor.librarySelection.refreshFailed', { defaultValue: 'Could not refresh libraries. Showing the last loaded data.' })}</Text>
-          </div>
-        )}
-        {isLoading && libraries.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-12 text-on-surface-variant">
-            <LoadingIndicator />
-            <Text variant="label-medium">{t('v2.projectEditor.librarySelection.loading', { defaultValue: 'Loading libraries...' })}</Text>
-          </div>
-        ) : libraries.length === 0 ? (
-          <EmptyState icon="library_books" title={t('projectViewer.librarySelection.noLibraries')} size="inline" />
-        ) : filtered.length === 0 ? (
-          <EmptyState icon="search_off" title={t('projectViewer.librarySelection.noResults', { query })} size="inline" />
-        ) : (
-          <div className="v2-pick-grid">
-            {filtered.map((lib) => {
-              const count = usage.get(lib.id) || 0;
-              const cover = lib.coverUrl || (lib.type === 'image' ? lib.items[0]?.thumbnailUrl || lib.items[0]?.content : lib.items[0]?.thumbnailUrl);
-              return (
-                <button key={lib.id} type="button" className="v2-pick-card m3-focus-ring" onClick={() => onSelect(lib.id)}>
-                  <Ripple />
-                  <span className="v2-pick-card__media">{(lib.type === 'image' || lib.type === 'video') && cover ? <img src={cover} alt="" loading="lazy" /> : <KindBadge kind={lib.type || 'text'} size={40} />}</span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-1 text-start">
-                    <span className="flex items-center justify-between gap-2">
-                      <Text as="span" variant="title-small" emphasized className="truncate">
-                        {lib.name}
-                      </Text>
-                      {count > 0 && (
-                        <StatusPill tone="success" icon="check">
-                          {t('projectViewer.librarySelection.added')}
-                          {count > 1 ? ` ×${count}` : ''}
-                        </StatusPill>
-                      )}
+      <div className="v2-lib-select" data-density="compact">
+        <div className="v2-lib-select__head">
+          <Text variant="body-medium" className="text-on-surface-variant">
+            {description || t('projectViewer.librarySelection.description')}
+          </Text>
+          {libraries.length > 0 && <SearchField value={query} onChange={setQuery} placeholder={t('projectViewer.librarySelection.searchPlaceholder')} shape="field" autoFocus />}
+          {error && libraries.length > 0 && (
+            <div className="v2-notice" data-tone="warning">
+              <Icon name="warning" />
+              <Text variant="body-small">{t('v2.projectEditor.librarySelection.refreshFailed', { defaultValue: 'Could not refresh libraries. Showing the last loaded data.' })}</Text>
+            </div>
+          )}
+        </div>
+        <div className="v2-lib-select__scroll">
+          {isLoading && libraries.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-12 text-on-surface-variant">
+              <LoadingIndicator />
+              <Text variant="label-medium">{t('v2.projectEditor.librarySelection.loading', { defaultValue: 'Loading libraries...' })}</Text>
+            </div>
+          ) : libraries.length === 0 ? (
+            <EmptyState icon="library_books" title={t('projectViewer.librarySelection.noLibraries')} size="inline" />
+          ) : filtered.length === 0 ? (
+            <EmptyState icon="search_off" title={t('projectViewer.librarySelection.noResults', { query })} size="inline" />
+          ) : (
+            <div className="v2-pick-grid">
+              {filtered.map((lib) => {
+                const count = usage.get(lib.id) || 0;
+                const cover = lib.coverUrl || (lib.type === 'image' ? lib.items[0]?.thumbnailUrl || lib.items[0]?.content : lib.items[0]?.thumbnailUrl);
+                return (
+                  <button key={lib.id} type="button" className="v2-pick-card m3-focus-ring" onClick={() => onSelect(lib.id)}>
+                    <Ripple />
+                    <span className="v2-pick-card__media">{(lib.type === 'image' || lib.type === 'video') && cover ? <img src={cover} alt="" loading="lazy" /> : <KindBadge kind={lib.type || 'text'} size={40} />}</span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-1 text-start">
+                      <span className="flex items-center justify-between gap-2">
+                        <Text as="span" variant="title-small" emphasized className="truncate">
+                          {lib.name}
+                        </Text>
+                        {count > 0 && (
+                          <StatusPill tone="success" icon="check">
+                            {t('projectViewer.librarySelection.added')}
+                            {count > 1 ? ` ×${count}` : ''}
+                          </StatusPill>
+                        )}
+                      </span>
+                      <span className="flex items-center gap-2 text-on-surface-variant">
+                        <Text as="span" variant="label-small" className="uppercase tracking-widest">
+                          {typeLabel(lib.type)}
+                        </Text>
+                        <Text as="span" variant="label-small">
+                          {t('projectViewer.workflow.itemsCount', { count: lib.itemCount ?? lib.items.length })}
+                        </Text>
+                      </span>
                     </span>
-                    <span className="flex items-center gap-2 text-on-surface-variant">
-                      <Text as="span" variant="label-small" className="uppercase tracking-widest">
-                        {typeLabel(lib.type)}
-                      </Text>
-                      <Text as="span" variant="label-small">
-                        {t('projectViewer.workflow.itemsCount', { count: lib.itemCount ?? lib.items.length })}
-                      </Text>
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </Dialog>
   );
