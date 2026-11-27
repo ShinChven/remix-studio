@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { cx, TextField } from '../../m3';
 
 export interface SearchFieldProps {
@@ -15,8 +16,15 @@ export interface SearchFieldProps {
 
 /** Search input for filtering a list: Enter applies, the clear button resets. */
 export function SearchField({ value, onChange, onSubmit, placeholder, className, shape = 'pill', autoFocus, ...rest }: SearchFieldProps) {
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+  // Native autofocus scrolls every ancestor to reveal the field, which slides it up inside a dialog.
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus({ preventScroll: true });
+  }, [autoFocus]);
+
   return (
     <TextField
+      ref={inputRef}
       variant="outlined"
       type="search"
       leadingIcon="search"
@@ -38,7 +46,6 @@ export function SearchField({ value, onChange, onSubmit, placeholder, className,
             }
           : undefined
       }
-      autoFocus={autoFocus}
       className={cx('v2-search-field', shape === 'pill' && 'v2-search-field--pill', className)}
     />
   );
