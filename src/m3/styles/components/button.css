@@ -44,9 +44,15 @@
   outline: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    border-radius var(--md-sys-motion-spring-fast-effects-duration)
-    var(--md-sys-motion-spring-fast-effects),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    transform var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
     width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
+    flex-grow var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    padding var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
     box-shadow var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
     background-color var(--md-sys-motion-spring-fast-effects-duration)
@@ -82,6 +88,9 @@
   --_radius: var(--_radius-round);
 }
 /* Shape morph (on by default): smaller corners while pressed, excluding toggle buttons that morph to square. */
+.m3-button:active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(0.97);
+}
 .m3-button[data-morph]:active:not(:disabled, [aria-disabled="true"], [data-toggle]) {
   border-radius: var(--_radius-pressed);
 }
@@ -259,8 +268,10 @@
   outline: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    border-radius var(--md-sys-motion-spring-fast-effects-duration)
-    var(--md-sys-motion-spring-fast-effects),
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    transform var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
     width var(--md-sys-motion-spring-fast-spatial-duration) var(--md-sys-motion-spring-fast-spatial),
     background-color var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
@@ -291,6 +302,9 @@
   --_radius: var(--_radius-round);
 }
 /* Shape morph (on by default): smaller corners while pressed, excluding toggle buttons that morph to square. */
+.m3-icon-button:active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(0.94);
+}
 .m3-icon-button[data-morph]:active:not(:disabled, [aria-disabled="true"], [data-toggle]) {
   border-radius: var(--_radius-pressed);
 }
@@ -429,6 +443,10 @@
   outline: none;
   -webkit-tap-highlight-color: transparent;
   transition:
+    border-radius var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
+    transform var(--md-sys-motion-spring-fast-spatial-duration)
+    var(--md-sys-motion-spring-fast-spatial),
     box-shadow var(--md-sys-motion-spring-fast-effects-duration)
     var(--md-sys-motion-spring-fast-effects),
     padding var(--md-sys-motion-spring-default-spatial-duration)
@@ -436,6 +454,9 @@
 }
 .m3-fab:hover {
   box-shadow: var(--_elevation-hover);
+}
+.m3-fab:active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(0.96);
 }
 .m3-fab > .m3-icon {
   position: relative;

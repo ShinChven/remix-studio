@@ -73,13 +73,17 @@ export interface WorkflowPanelProps {
   isRefreshingLibraries: boolean;
   libraryRefreshError: string | null;
   onRefreshLibraries: () => Promise<unknown>;
+  infoOpen?: boolean;
+  onInfoOpenChange?: (open: boolean) => void;
 }
 
 /** The project's left pane: its name and menu, the workflow steps, and the settings that turn them into drafts. */
 export function WorkflowPanel(props: WorkflowPanelProps) {
   const { localProject, providers, isExpanded, workflowListRef, isLoading } = props;
   const { t } = useTranslation();
-  const [infoOpen, setInfoOpen] = useState(false);
+  const [internalInfoOpen, setInternalInfoOpen] = useState(false);
+  const infoOpen = props.infoOpen ?? internalInfoOpen;
+  const setInfoOpen = props.onInfoOpenChange ?? setInternalInfoOpen;
   const [dragOverFiles, setDragOverFiles] = useState(false);
   const endDropRef = useRef<HTMLDivElement>(null);
   const isComfy = localProject.type === 'comfyui';
@@ -236,7 +240,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
               </MenuItem>
             )}
             <MenuDivider />
-            <MenuItem icon="info" onSelect={() => setInfoOpen(true)}>
+            <MenuItem icon="info" trailingText="I" onSelect={() => setInfoOpen(true)}>
               {t('v2.projectEditor.main.projectInfo', { defaultValue: 'Project info' })}
             </MenuItem>
             <MenuItem icon="edit" onSelect={props.onNavigateToEdit}>
@@ -248,7 +252,7 @@ export function WorkflowPanel(props: WorkflowPanelProps) {
             <MenuItem icon="ink_eraser" onSelect={props.onNavigateToOrphans}>
               {t('v2.project.manageOrphans')}
             </MenuItem>
-            <MenuItem icon={props.isArchived ? 'unarchive' : 'archive'} disabled={props.isTogglingArchive} onSelect={() => void props.onToggleArchive()}>
+            <MenuItem icon={props.isArchived ? 'unarchive' : 'archive'} trailingText="A" disabled={props.isTogglingArchive} onSelect={() => void props.onToggleArchive()}>
               {t(props.isArchived ? 'v2.project.unarchiveProject' : 'v2.project.archiveProject')}
             </MenuItem>
             <MenuDivider />

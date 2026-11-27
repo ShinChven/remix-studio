@@ -330,6 +330,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'workflow' | 'jobs'>('workflow');
   const [isWorkflowExpanded, setIsWorkflowExpanded] = useState(false);
+  const [isProjectInfoOpen, setIsProjectInfoOpen] = useState(false);
   const [showDeleteAlbumModal, setShowDeleteAlbumModal] = useState(false);
   const [showDeleteCompletedSelectedModal, setShowDeleteCompletedSelectedModal] = useState(false);
   const [showDeleteQueueSelectedModal, setShowDeleteQueueSelectedModal] = useState(false);
@@ -2289,13 +2290,13 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
     }
   }, [showDisabledItems, localProject.id, t]);
 
-  // Pressing H toggles the disabled-item filter, mirroring the workflow menu entry.
-  // Ignored while typing, while a modifier is held (so browser and OS shortcuts still
-  // work), and while a modal, lightbox, or drawer is open — those cover the workflow
-  // list and some carry single-letter shortcuts of their own.
+  // Keyboard shortcuts: H toggles disabled steps, F toggles workflow full-screen,
+  // A toggles archive status, and I toggles the Project Info dialog.
+  // Ignored while typing, while a modifier is held, and while another modal/lightbox is open.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'h' && e.key !== 'H') return;
+      const key = e.key.toLowerCase();
+      if (key !== 'h' && key !== 'f' && key !== 'a' && key !== 'i') return;
       if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
 
       const active = (e.target as HTMLElement | null) ?? (document.activeElement as HTMLElement | null);
@@ -2304,8 +2305,35 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
         if (tagName === 'input' || tagName === 'textarea' || tagName === 'select' || active.isContentEditable) return;
       }
 
+      // Pressing I while Project Info is open closes it; other modals block all shortcuts.
+      if (key === 'i' && isProjectInfoOpen) {
+        e.preventDefault();
+        setIsProjectInfoOpen(false);
+        return;
+      }
+
       // Dialogs, sheets and the lightbox are modal layers; any one of them sits on top.
       if (document.querySelector('[aria-modal="true"], .m3-dialog-root')) return;
+
+      if (key === 'f') {
+        if (window.innerWidth < 1200) return;
+        e.preventDefault();
+        setIsWorkflowExpanded((prev) => !prev);
+        return;
+      }
+
+      if (key === 'a') {
+        if (isTogglingArchive) return;
+        e.preventDefault();
+        void handleToggleArchive();
+        return;
+      }
+
+      if (key === 'i') {
+        e.preventDefault();
+        setIsProjectInfoOpen(true);
+        return;
+      }
 
       // No-op with nothing to hide, matching the menu entry being disabled then.
       if (!(localProject.workflow || []).some((item) => item.disabled)) return;
@@ -2316,7 +2344,7 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [localProject.workflow, handleToggleShowDisabledItems]);
+  }, [localProject.workflow, handleToggleShowDisabledItems, handleToggleArchive, isTogglingArchive, isProjectInfoOpen]);
 
   const handleToggleItemDisable = (id: string) => {
     const updated = {
@@ -2420,6 +2448,8 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
           isSettingsCollapsed={isSettingsCollapsed}
           isExpanded={isWorkflowExpanded}
           onToggleExpand={() => setIsWorkflowExpanded((prev) => !prev)}
+          infoOpen={isProjectInfoOpen}
+          onInfoOpenChange={setIsProjectInfoOpen}
           queueCount={queueCount}
           workflowError={workflowError}
           uploadingItemIds={uploadingItemIds}
