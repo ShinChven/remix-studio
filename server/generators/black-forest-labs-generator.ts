@@ -158,6 +158,18 @@ export class BlackForestLabsGenerator extends ImageGenerator {
       output_format: 'jpeg',
     };
 
+    if (model.startsWith('flux-3-image')) {
+      const klein = model === 'flux-3-image-klein';
+      const images = this.resolveInputImages(req, 10);
+      return {
+        prompt: req.prompt,
+        ...(images.length ? { images } : {}),
+        ...(req.aspectRatio && req.aspectRatio !== 'match_input_image' ? { aspect_ratio: req.aspectRatio } : {}),
+        ...(req.imageSize ? { resolution: req.imageSize.toLowerCase() } : {}),
+        ...(klein && typeof req.seed === 'number' ? { seed: req.seed } : {}),
+      };
+    }
+
     const dims = this.resolveDimensions(req.aspectRatio, req.imageSize);
     if (dims) {
       payload.width = dims.width;
@@ -184,18 +196,18 @@ export class BlackForestLabsGenerator extends ImageGenerator {
     return payload;
   }
 
-  private resolveInputImages(req: GenerateRequest): string[] {
+  private resolveInputImages(req: GenerateRequest, limit = MAX_INPUT_IMAGES): string[] {
     const base64 = (req.refImagesBase64 || []).filter((b) => typeof b === 'string' && b.length > 0);
     if (base64.length > 0) {
       // Prefer inline image data over URLs because BFL fetches URL inputs from their
       // own infrastructure, which breaks on local/private/presigned storage hosts.
       return base64
-        .slice(0, MAX_INPUT_IMAGES)
+        .slice(0, limit)
         .map((b) => (b.startsWith('data:') ? b : `data:image/png;base64,${b}`));
     }
 
     const urls = (req.refImageUrls || []).filter((u) => typeof u === 'string' && u.length > 0);
-    return urls.slice(0, MAX_INPUT_IMAGES);
+    return urls.slice(0, limit);
   }
 
   /**

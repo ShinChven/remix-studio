@@ -1,5 +1,6 @@
 import {
   createDefaultAudioProjectConfig,
+  MINIMAX_TTS_VOICES,
   type AudioMusicProjectConfig,
 } from '../../src/types';
 import { AudioGenerator, AudioGenerateRequest, AudioGenerateResult } from './audio-generator';
@@ -45,6 +46,7 @@ export class MiniMaxAudioGenerator extends AudioGenerator {
 
   async generate(req: AudioGenerateRequest): Promise<AudioGenerateResult> {
     const model = req.modelId || DEFAULT_MODEL;
+    if (model.startsWith('speech-')) return this.generateSpeech(req, model);
     const audioConfig: AudioMusicProjectConfig = req.audioConfig.kind === 'remix-audio-music'
       ? req.audioConfig
       : (createDefaultAudioProjectConfig('music') as AudioMusicProjectConfig);
@@ -97,6 +99,36 @@ export class MiniMaxAudioGenerator extends AudioGenerator {
       };
     } catch (e: any) {
       return { ok: false, error: `${e?.name || 'Error'}: ${e?.message}` };
+    }
+  }
+
+  private async generateSpeech(req: AudioGenerateRequest, model: string): Promise<AudioGenerateResult> {
+    try {
+      const text = req.prompt.trim();
+      if (!text) return { ok: false, error: 'MiniMax speech synthesis requires text' };
+      const voice = req.audioConfig.kind === 'remix-audio-tts' ? req.audioConfig.speakers[0]?.voice : undefined;
+      const format = this.resolveFormat(req.outputFormat);
+      const response = await fetch(`${this.baseUrl}/t2a_v2`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model,
+          text,
+          stream: false,
+          output_format: 'hex',
+          voice_setting: { voice_id: MINIMAX_TTS_VOICES.find((candidate) => candidate === voice) || MINIMAX_TTS_VOICES[0] },
+          audio_setting: { sample_rate: 32000, format },
+        }),
+      });
+      if (!response.ok) return { ok: false, error: `HTTP ${response.status}: ${await response.text()}` };
+      const result = await response.json() as MiniMaxMusicResponse;
+      const error = miniMaxBaseRespError(result.base_resp);
+      if (error) return { ok: false, error };
+      const hex = result.data?.audio;
+      if (!hex || !/^(?:[0-9a-f]{2})+$/i.test(hex)) return { ok: false, error: 'MiniMax returned invalid speech audio' };
+      return { ok: true, audioBytes: Buffer.from(hex, 'hex'), mimeType: format === 'wav' ? 'audio/wav' : 'audio/mpeg' };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 

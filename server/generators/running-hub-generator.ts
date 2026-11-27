@@ -234,6 +234,7 @@ export class RunningHubGenerator extends ImageGenerator {
     const isQwen = isQwenImage3(modelId, reqApiUrl);
     const isGrok = isGrokImagineQuality(modelId, reqApiUrl);
     const isLayers = isLayerDecomposition(modelId, reqApiUrl);
+    const isSeedream55Layers = isLayers && /seedream-v5\.5/i.test(`${modelId || ''} ${reqApiUrl || ''}`);
     const isSeedream = !isLayers && isSeedream5Pro(modelId, reqApiUrl);
     const isWan = isWan27Pro(modelId, reqApiUrl);
     const isNanoPro = isRhartImageNPro(modelId, reqApiUrl);
@@ -294,12 +295,13 @@ export class RunningHubGenerator extends ImageGenerator {
       const resolution = imageSize.toLowerCase();
       payload = {
         imageUrl: imageUrls[0],
-        resolution: LAYER_RESOLUTIONS.includes(resolution) ? resolution : 'auto',
+        resolution: LAYER_RESOLUTIONS.includes(resolution) || (isSeedream55Layers && resolution === '3k') ? resolution : 'auto',
+        ...(isSeedream55Layers ? { maxImages: 100, textRecognition: 'false' } : {}),
       };
       // The prompt is optional: without one the API splits out every major
       // element it finds.
       const layerPrompt = prompt.trim();
-      if (layerPrompt) {
+      if (layerPrompt && !isSeedream55Layers) {
         payload.prompt = layerPrompt.slice(0, LAYER_MAX_PROMPT_LENGTH);
       }
       // Sets the base image only — the layers are always PNG — and the enum is

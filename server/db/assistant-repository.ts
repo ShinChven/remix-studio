@@ -27,6 +27,9 @@ export interface AssistantToolCall {
   name: string;
   arguments: unknown;
   thoughtSignature?: string;
+  openAIReasoning?: { id: string; encryptedContent: string }[];
+  kimiReasoningContent?: string;
+  kimiRawArguments?: string;
 }
 
 export interface AssistantConversationRecord {

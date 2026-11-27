@@ -29,15 +29,17 @@ export class ReplicateGenerator extends ImageGenerator {
     const model = req.modelId || DEFAULT_MODEL;
 
     try {
-      const bodyInput = await this.buildInput(req);
-      const response = await fetch(`${this.base}/predictions`, {
+      const isFlux3 = model === 'black-forest-labs/flux-3-image';
+      const bodyInput = await this.buildInput(req, isFlux3);
+      const path = isFlux3 ? `models/${model}/predictions` : 'predictions';
+      const response = await fetch(`${this.base}/${path}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          version: model,
+          ...(!isFlux3 ? { version: model } : {}),
           input: bodyInput,
         }),
         // @ts-ignore
@@ -137,22 +139,22 @@ export class ReplicateGenerator extends ImageGenerator {
     }
   }
 
-  private async buildInput(req: GenerateRequest) {
+  private async buildInput(req: GenerateRequest, isFlux3: boolean) {
     const input: Record<string, unknown> = {
       prompt: req.prompt,
     };
 
     if (req.aspectRatio) input.aspect_ratio = req.aspectRatio;
-    if (req.imageSize) input.resolution = req.imageSize;
-    if (typeof req.seed === 'number') input.seed = req.seed;
-    if (typeof req.steps === 'number') input.steps = req.steps;
-    if (typeof req.guidance === 'number') input.guidance = req.guidance;
-    if (typeof req.promptUpsampling === 'boolean') input.prompt_upsampling = req.promptUpsampling;
+    if (req.imageSize) input.resolution = isFlux3 ? req.imageSize.toLowerCase() : req.imageSize;
+    if (!isFlux3 && typeof req.seed === 'number') input.seed = req.seed;
+    if (!isFlux3 && typeof req.steps === 'number') input.steps = req.steps;
+    if (!isFlux3 && typeof req.guidance === 'number') input.guidance = req.guidance;
+    if (!isFlux3 && typeof req.promptUpsampling === 'boolean') input.prompt_upsampling = req.promptUpsampling;
 
     const imageRefs = await this.resolveImageReferences(req);
     if (imageRefs.length > 0) {
       // Flux 2 Pro supports up to 8, Flex supports up to 10
-      input.input_images = imageRefs.slice(0, 10);
+      input[isFlux3 ? 'images' : 'input_images'] = imageRefs.slice(0, 10);
     }
 
     // Default settings

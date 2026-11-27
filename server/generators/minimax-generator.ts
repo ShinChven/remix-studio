@@ -96,6 +96,7 @@ export class MiniMaxGenerator extends ImageGenerator {
     const model = req.modelId || DEFAULT_MODEL;
 
     try {
+      if (/^minimax-h3-image/i.test(model)) return await this.generateH3(req, model);
       const payload: Record<string, unknown> = {
         model,
         prompt: req.prompt,
@@ -142,6 +143,34 @@ export class MiniMaxGenerator extends ImageGenerator {
     } catch (e: any) {
       return { ok: false, error: `${e?.name || 'Error'}: ${e?.message}` };
     }
+  }
+
+  private async generateH3(req: GenerateRequest, model: string): Promise<GenerateResult> {
+    const refs = req.refImagesBase64?.length
+      ? req.refImagesBase64.map((data) => `data:${detectImageMimeType(data)};base64,${data}`)
+      : req.refImageUrls || [];
+    if (refs.length > 16) return { ok: false, error: 'MiniMax H3 Image accepts at most 16 reference images' };
+
+    const area = ['1K', '2K', '4K'].includes(req.imageSize || '') ? req.imageSize : '2K';
+    const response = await fetch(`${this.baseUrl}/images/${refs.length ? 'edits' : 'generations'}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        prompt: req.prompt,
+        size: 'auto',
+        aspect_ratio: req.aspectRatio || 'auto',
+        area,
+        response_format: 'url',
+        ...(refs.length ? { images: refs.map((image_url) => ({ image_url })) } : { n: 1 }),
+      }),
+    });
+    if (!response.ok) return { ok: false, error: `HTTP ${response.status}: ${await response.text()}` };
+
+    const result = await response.json() as { data?: { url?: string; error?: { message?: string } }[] };
+    const image = result.data?.[0];
+    if (!image?.url) return { ok: false, error: image?.error?.message || 'MiniMax H3 Image returned no image' };
+    return this.extractImage({ data: { image_urls: [image.url] } });
   }
 
   /**

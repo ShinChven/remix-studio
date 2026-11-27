@@ -23,6 +23,9 @@ export interface ToolCall {
   name: string;
   arguments: unknown;
   thoughtSignature?: string;
+  openAIReasoning?: { id: string; encryptedContent: string }[];
+  kimiReasoningContent?: string;
+  kimiRawArguments?: string;
   /**
    * The provider's own identifier for this call, when it issues one. Gemini
    * 3.5+ hands out an id on every parallel function call and rejects the next

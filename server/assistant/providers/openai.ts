@@ -58,13 +58,15 @@ export class OpenAIChatProvider implements ChatProvider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
-    const messages = mapMessages(req.messages);
+    if (/^gpt-6\.2-(?:astra|sol)(?:-|$)/i.test(req.modelId)) return this.chatWithResponses(req);
+    const kimiK31 = /^kimi-k3\.1-pro/i.test(req.modelId);
+    const messages = mapMessages(req.messages, kimiK31);
     const tools = req.tools.length > 0 ? req.tools.map(mapTool) : undefined;
 
     const params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
       model: req.modelId,
       messages,
-      ...(typeof req.temperature === 'number' ? { temperature: req.temperature } : {}),
+      ...(typeof req.temperature === 'number' && !/^(gpt-6|qwen4-max|kimi-k3\.1-pro)/i.test(req.modelId) ? { temperature: req.temperature } : {}),
       ...(typeof req.maxTokens === 'number' ? outputTokenParam(req.modelId, req.maxTokens) : {}),
       ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
     };
@@ -88,7 +90,12 @@ export class OpenAIChatProvider implements ChatProvider {
         id: tc.id,
         name: tc.function.name,
         arguments: safeParseJsonArgs(tc.function.arguments),
+        ...(kimiK31 ? { kimiRawArguments: tc.function.arguments } : {}),
       }));
+    const reasoningContent = (message as typeof message & { reasoning_content?: string }).reasoning_content;
+    if (kimiK31 && toolCalls[0] && typeof reasoningContent === 'string') {
+      toolCalls[0].kimiReasoningContent = reasoningContent;
+    }
 
     const rawUsage = response.usage as
       | (typeof response.usage & {
@@ -114,6 +121,75 @@ export class OpenAIChatProvider implements ChatProvider {
       } : undefined,
     };
   }
+
+  private async chatWithResponses(req: ChatRequest): Promise<ChatResponse> {
+    const tools: OpenAI.Responses.Tool[] = req.tools.map((tool) => ({
+      type: 'function',
+      name: tool.name,
+      description: tool.description,
+      parameters: toolParametersJsonSchema(tool),
+      strict: false,
+    }));
+    const response = await this.client.responses.create({
+      model: req.modelId,
+      input: mapResponsesInput(req.messages),
+      store: false,
+      include: ['reasoning.encrypted_content'],
+      ...(req.maxTokens !== undefined ? { max_output_tokens: req.maxTokens } : {}),
+      ...(tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),
+    }, { signal: req.abortSignal });
+
+    const toolCalls: ToolCall[] = [];
+    const reasoning: NonNullable<ToolCall['openAIReasoning']> = [];
+    for (const item of response.output) {
+      if (item.type === 'reasoning' && item.encrypted_content) {
+        reasoning.push({ id: item.id, encryptedContent: item.encrypted_content });
+      } else if (item.type === 'function_call') {
+        toolCalls.push({ id: item.call_id, name: item.name, arguments: safeParseJsonArgs(item.arguments) });
+      }
+    }
+    if (toolCalls[0] && reasoning.length) toolCalls[0].openAIReasoning = reasoning;
+
+    return {
+      text: response.output_text || '',
+      toolCalls,
+      stopReason: toolCalls.length > 0 ? 'tool_use'
+        : response.incomplete_details?.reason === 'max_output_tokens' ? 'max_tokens'
+        : response.status === 'completed' ? 'end_turn' : 'error',
+      usage: response.usage ? {
+        inputTokens: response.usage.input_tokens,
+        outputTokens: response.usage.output_tokens,
+      } : undefined,
+    };
+  }
+}
+
+function mapResponsesInput(messages: ChatMessage[]): OpenAI.Responses.ResponseInput {
+  const input: OpenAI.Responses.ResponseInput = [];
+  for (const message of messages) {
+    if (message.role === 'tool') {
+      input.push({ type: 'function_call_output', call_id: message.toolCallId, output: message.content });
+    } else if (message.role === 'assistant') {
+      for (const call of message.toolCalls || []) {
+        for (const item of call.openAIReasoning || []) {
+          input.push({ type: 'reasoning', id: item.id, encrypted_content: item.encryptedContent, summary: [] });
+        }
+      }
+      if (message.content) input.push({ role: 'assistant', content: message.content });
+      for (const call of message.toolCalls || []) {
+        input.push({ type: 'function_call', call_id: call.id, name: call.name, arguments: JSON.stringify(call.arguments ?? {}) });
+      }
+    } else if (message.role === 'user' && message.images?.length) {
+      const content: OpenAI.Responses.ResponseInputContent[] = message.images.map((image_url) => ({
+        type: 'input_image', image_url, detail: 'auto',
+      }));
+      if (message.content) content.push({ type: 'input_text', text: message.content });
+      input.push({ role: 'user', content });
+    } else {
+      input.push({ role: message.role, content: message.content });
+    }
+  }
+  return input;
 }
 
 function mapTool(tool: Parameters<typeof toolParametersJsonSchema>[0]) {
@@ -127,7 +203,7 @@ function mapTool(tool: Parameters<typeof toolParametersJsonSchema>[0]) {
   };
 }
 
-function mapMessages(messages: ChatMessage[]): any[] {
+function mapMessages(messages: ChatMessage[], preserveKimiReasoning: boolean): any[] {
   const out: any[] = [];
   for (const m of messages) {
     if (m.role === 'system') {
@@ -153,8 +229,12 @@ function mapMessages(messages: ChatMessage[]): any[] {
         entry.tool_calls = m.toolCalls.map((tc) => ({
           id: tc.id,
           type: 'function',
-          function: { name: tc.name, arguments: JSON.stringify(tc.arguments ?? {}) },
+          function: { name: tc.name, arguments: (preserveKimiReasoning && tc.kimiRawArguments) || JSON.stringify(tc.arguments ?? {}) },
         }));
+        if (preserveKimiReasoning) {
+          const reasoning = m.toolCalls.find((tc) => tc.kimiReasoningContent)?.kimiReasoningContent;
+          if (reasoning) entry.reasoning_content = reasoning;
+        }
       }
       out.push(entry);
     } else if (m.role === 'tool') {

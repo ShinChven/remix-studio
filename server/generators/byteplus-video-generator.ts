@@ -74,7 +74,9 @@ export class BytePlusVideoGenerator extends VideoGenerator {
   }
 
   async generate(req: VideoGenerateRequest): Promise<VideoGenerateResult> {
-    const model = req.modelId || DEFAULT_MODEL;
+    const model = req.modelId === 'seedance-1-5-pro-251215'
+      ? 'dreamina-seedance-2-0-mini-260615'
+      : req.modelId || DEFAULT_MODEL;
 
     try {
       const content = this.buildContent(model, req);
@@ -275,7 +277,7 @@ export class BytePlusVideoGenerator extends VideoGenerator {
       throw new Error('BytePlus video generation requires a prompt or at least one reference image or video');
     }
 
-    if (audioUrls.length > 0 && imageUrls.length === 0 && videoUrls.length === 0) {
+    if (audioUrls.length > 0 && !model.includes('seedance-2-5') && imageUrls.length === 0 && videoUrls.length === 0) {
       throw new Error('Seedance reference audio requires at least one reference image or video');
     }
 

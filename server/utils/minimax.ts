@@ -32,7 +32,7 @@ export function normalizeMiniMaxBaseUrl(apiUrl?: string | null): string {
 
     // Drop a known endpoint path so a pasted endpoint URL still resolves.
     pathname = pathname.replace(
-      /\/(chat\/completions|image_generation|music_generation|video_generation|t2a_v2|files\/upload)$/,
+      /\/(chat\/completions|images\/(?:generations|edits)|image_generation|music_generation|video_generation|t2a_v2|files\/upload)$/,
       '',
     );
 

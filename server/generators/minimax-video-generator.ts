@@ -61,11 +61,11 @@ export class MiniMaxVideoGenerator extends VideoGenerator {
       const payload: Record<string, unknown> = {
         model,
         content,
-        resolution: this.resolveResolution(req.resolution),
+        resolution: this.resolveResolution(model, req.resolution),
         duration: this.resolveDuration(req.duration),
       };
 
-      const ratio = this.resolveRatio(req, content);
+      const ratio = this.resolveRatio(model, req, content);
       if (ratio) payload.ratio = ratio;
 
       const res = await fetch(`${this.baseUrl}/video_generation`, {
@@ -200,7 +200,7 @@ export class MiniMaxVideoGenerator extends VideoGenerator {
    * Image-to-video derives the ratio from the input frame and rejects nothing,
    * text-to-video rejects `adaptive`, and reference-to-video takes either.
    */
-  private resolveRatio(req: VideoGenerateRequest, content: MiniMaxContentItem[]): string | undefined {
+  private resolveRatio(model: string, req: VideoGenerateRequest, content: MiniMaxContentItem[]): string | undefined {
     const framed = content.some(
       (item) => 'role' in item && (item.role === 'first_frame' || item.role === 'last_frame'),
     );
@@ -210,15 +210,15 @@ export class MiniMaxVideoGenerator extends VideoGenerator {
     const ratio = req.aspectRatio;
 
     if (!ratio || ratio === 'adaptive') {
-      return textOnly ? DEFAULT_TEXT_TO_VIDEO_RATIO : 'adaptive';
+      return textOnly || model === 'MiniMax-H3-Lite' ? DEFAULT_TEXT_TO_VIDEO_RATIO : 'adaptive';
     }
 
     return ratio;
   }
 
-  private resolveResolution(resolution?: string): string {
+  private resolveResolution(model: string, resolution?: string): string {
     const normalized = (resolution || '').trim().toUpperCase();
-    return normalized === '2K' || normalized === '768P' ? normalized : '768P';
+    return normalized === '480P' || (normalized === '2K' && !/^MiniMax-H3-(?:Highspeed|Lite)$/i.test(model)) ? normalized : '768P';
   }
 
   private resolveDuration(duration?: number): number {

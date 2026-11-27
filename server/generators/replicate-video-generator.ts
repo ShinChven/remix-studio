@@ -29,15 +29,17 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     const model = req.modelId || DEFAULT_MODEL;
 
     try {
-      const bodyInput = await this.buildInput(req);
-      const response = await fetch(`${this.base}/predictions`, {
+      const isOfficial = model === 'bytedance/seedance-2.5' || model === 'black-forest-labs/flux-3';
+      const bodyInput = await this.buildInput(req, model);
+      const path = isOfficial ? `models/${model}/predictions` : 'predictions';
+      const response = await fetch(`${this.base}/${path}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          version: model,
+          ...(!isOfficial ? { version: model } : {}),
           input: bodyInput,
         }),
         // @ts-ignore
@@ -138,7 +140,7 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     }
   }
 
-  private async buildInput(req: VideoGenerateRequest) {
+  private async buildInput(req: VideoGenerateRequest, model: string) {
     const input: Record<string, unknown> = {
       prompt: req.prompt,
       generate_audio: (req.sound || 'on') === 'on',
@@ -150,21 +152,38 @@ export class ReplicateVideoGenerator extends VideoGenerator {
     if (typeof req.seed === 'number') input.seed = req.seed;
 
     const imageRefs = await this.resolveImageReferences(req);
-    if (imageRefs.length === 1) {
+    if (model === 'black-forest-labs/flux-3') {
+      const videos = req.refVideoUrls || [];
+      if (videos.length > 1 || (videos.length && imageRefs.length) || imageRefs.length > 10) {
+        throw new Error('FLUX 3 accepts one source video or up to ten keyframes');
+      }
+      delete input.seed;
+      if (videos[0]) input.start_video = videos[0];
+      if (imageRefs.length) input.images = imageRefs;
+      return input;
+    }
+
+    const seedance25 = model === 'bytedance/seedance-2.5';
+    const hasMediaRefs = Boolean(req.refVideoUrls?.length || req.refAudioUrls?.length);
+    if (seedance25 && imageRefs.length > 0 && imageRefs.length <= 2 && !hasMediaRefs) {
       input.image = imageRefs[0];
-    } else if (imageRefs.length > 1) {
-      input.reference_images = imageRefs.slice(0, 9);
+      if (imageRefs[1]) input.last_frame_image = imageRefs[1];
+      input.aspect_ratio = 'adaptive';
+    } else if (imageRefs.length === 1 && !seedance25) {
+      input.image = imageRefs[0];
+    } else if (imageRefs.length > 0) {
+      input.reference_images = imageRefs.slice(0, seedance25 ? 30 : 9);
     }
 
     if (req.refVideoUrls && req.refVideoUrls.length > 0) {
-      input.reference_videos = req.refVideoUrls.slice(0, 3);
+      input.reference_videos = req.refVideoUrls.slice(0, seedance25 ? 10 : 3);
     }
 
     if (req.refAudioUrls && req.refAudioUrls.length > 0) {
       if (imageRefs.length === 0 && (!req.refVideoUrls || req.refVideoUrls.length === 0)) {
         throw new Error('Seedance reference audio requires at least one reference image or video');
       }
-      input.reference_audios = req.refAudioUrls.slice(0, 3);
+      input.reference_audios = req.refAudioUrls.slice(0, seedance25 ? 10 : 3);
     }
 
     return input;
