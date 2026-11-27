@@ -32,7 +32,7 @@ export const ASSISTANT_SYSTEM_PROMPT = `You are the in-app assistant for Remix S
 
 ## Environment
 
-- **Current Date and Time**: {{CURRENT_DATETIME}}
+- Each user message may end with a \`[Sent at: ...]\` timestamp indicating when the user sent it. Use the latest timestamp as the current date and time.
 
 ## Scope
 
