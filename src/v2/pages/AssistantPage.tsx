@@ -52,6 +52,7 @@ import { ApprovedToolsDialog } from '../components/assistant/ApprovedToolsDialog
 import { McpAppFrame } from '../components/assistant/McpAppFrame';
 import { Composer, type AttachedImage, type BoundContext, type ComposerHandle } from '../components/assistant/Composer';
 import { AssistantHero } from '../components/assistant/Hero';
+import type { ConversationUsage } from '../components/assistant/ContextUsage';
 import { ResourcePanel } from '../components/assistant/ResourcePanel';
 import { Lightbox } from '../components/Lightbox';
 import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
@@ -920,6 +921,18 @@ export function AssistantPage() {
     }
     return latest;
   }, 0);
+  const conversationUsage = useMemo<ConversationUsage | null>(() => {
+    const replies = messages.filter((m) => m.role === 'assistant' && (typeof m.inputTokens === 'number' || typeof m.outputTokens === 'number'));
+    if (replies.length === 0) return null;
+    const last = replies[replies.length - 1];
+    return {
+      replies: replies.length,
+      totalInputTokens: replies.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0),
+      totalOutputTokens: replies.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0),
+      lastInputTokens: last.inputTokens,
+      lastOutputTokens: last.outputTokens,
+    };
+  }, [messages]);
 
   // ─── New conversation (handled implicitly in send) ───
   const handleNewConversationClick = () => {
@@ -1672,6 +1685,7 @@ export function AssistantPage() {
                 selectedModelId={selectedModelId}
                 setSelectedModelId={setSelectedModelId}
                 contextUsageTokens={contextUsageTokens}
+                usage={conversationUsage}
                 providers={providers}
                 isSending={isSending}
                 isStopping={isStopping}
@@ -1692,6 +1706,7 @@ export function AssistantPage() {
               selectedModelId={selectedModelId}
               setSelectedModelId={setSelectedModelId}
               contextUsageTokens={contextUsageTokens}
+              usage={conversationUsage}
               providers={providers}
               isSending={isSending}
               onSend={handleSend}

@@ -989,6 +989,37 @@
   color: var(--md-sys-color-on-surface);
 }
 .v2-model-chip:disabled { opacity: 0.38; cursor: default; }
+.v2-usage-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding-inline: 8px;
+  border: none;
+  border-radius: var(--md-sys-shape-corner-full);
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  cursor: pointer;
+  transition: background-color var(--md-sys-motion-spring-fast-effects-duration) var(--md-sys-motion-spring-fast-effects);
+}
+.v2-usage-chip:hover:not(:disabled) {
+  background: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface);
+}
+.v2-usage-chip:disabled { opacity: 0.38; cursor: default; }
+.v2-usage-rows { display: flex; flex-direction: column; margin: 0; }
+.v2-usage-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 6px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+.v2-usage-row:last-child { border-bottom: none; }
+.v2-usage-row dd { margin: 0; }
 .v2-record-chip {
   display: inline-flex;
   align-items: center;

@@ -1,4 +1,3 @@
-import { uiLocale } from '../../lib/format';
 import {
   useCallback,
   useEffect,
@@ -16,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { fetchLibraries, fetchLibraryItems, fetchProjects, transcribeAssistantAudio } from '../../../api';
 import { resolveAssistantSkillsLibraryId } from '../../../lib/assistant-skills';
 import {
-  CircularProgress,
   cx,
   Icon,
   IconButton,
@@ -33,6 +31,7 @@ import { SuggestionList } from '../../ui/SuggestionList';
 import { ProviderLogo } from '../ProviderLogo';
 import { useToast } from '../../ui/useToast';
 import { errorText } from '../../lib/errors';
+import { ContextUsage, type ConversationUsage } from './ContextUsage';
 
 export type BoundContextType = 'project' | 'library' | 'campaign' | 'post';
 
@@ -68,6 +67,8 @@ export interface ComposerProps {
   initialBoundContexts?: BoundContext[];
   initialAttachedImages?: AttachedImage[];
   contextUsageTokens?: number | null;
+  /** Token totals of the conversation, shown in the usage dialog. */
+  usage?: ConversationUsage | null;
   selectedProviderId: string;
   setSelectedProviderId: (id: string) => void;
   selectedModelId: string;
@@ -142,28 +143,6 @@ async function compressImage(file: File): Promise<string> {
   });
 }
 
-/** Context window usage as a small determinate ring next to the model name. */
-function ContextUsage({ used, limit, unit }: { used: number; limit?: number; unit?: string }) {
-  const { t } = useTranslation();
-  if (!limit || limit <= 0 || used <= 0) return null;
-  const percent = Math.min(100, (used / limit) * 100);
-  const label = t('v2.accessibility.contextUsed', { used: used.toLocaleString(uiLocale()), limit: limit.toLocaleString(uiLocale()), unit: !unit || unit === 'tokens' ? t('v2.accessibility.tokens') : unit, percent: Math.round(percent) });
-  return (
-    <span className="inline-flex items-center gap-1" title={label}>
-      <CircularProgress
-        value={percent}
-        size={18}
-        thickness={3}
-        aria-label={label}
-        className={percent >= 90 ? 'v2-progress-error' : percent >= 70 ? 'v2-progress-warning' : undefined}
-      />
-      <span className="m3-visually-hidden">
-        {label}
-      </span>
-    </span>
-  );
-}
-
 /**
  * The assistant message composer: model picker, `@` resources, `/` preset prompts, images
  * (pick, paste, drop), voice input through Gemini transcription, and send / stop.
@@ -173,6 +152,7 @@ export function Composer({
   initialBoundContexts = [],
   initialAttachedImages = [],
   contextUsageTokens = 0,
+  usage,
   selectedProviderId,
   setSelectedProviderId,
   selectedModelId,
@@ -690,7 +670,6 @@ export function Composer({
             <button {...props} type="button" className="v2-model-chip m3-focus-ring" disabled={isSending}>
               {selectedProvider ? <ProviderLogo type={selectedProvider.type} size={16} /> : <Icon name="smart_toy" size={18} />}
               <span className="truncate">{selectedModelLabel}</span>
-              <ContextUsage used={contextUsageTokens ?? 0} limit={selectedModel?.promptLimit?.value} unit={selectedModel?.promptLimit?.unit} />
               <Icon name="arrow_drop_down" size={18} />
             </button>
           )}
@@ -729,6 +708,13 @@ export function Composer({
             ];
           })}
         </MenuButton>
+        <ContextUsage
+          used={contextUsageTokens ?? 0}
+          limit={selectedModel?.promptLimit?.value}
+          unit={selectedModel?.promptLimit?.unit}
+          modelLabel={selectedModelLabel}
+          usage={usage}
+        />
 
         <div className="ms-auto flex items-center gap-1">
           {micProvider &&
