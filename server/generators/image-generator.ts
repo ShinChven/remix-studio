@@ -5,6 +5,7 @@ import type { UploadCache } from './upload-cache';
 export interface GenerateRequest {
   prompt: string;
   modelId?: string;       // The actual API model string
+  modelVariant?: string;  // Provider-specific selection sharing that ID
   apiUrl?: string;        // Optional override URL
   aspectRatio?: string;   // e.g. "2:3", "1:1", "16:9"
   imageSize?: string;     // e.g. "1K", "4K"

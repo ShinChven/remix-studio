@@ -46,7 +46,7 @@ export class OpenAITextGenerator extends TextGenerator {
 
       // GPT-6 reasoning models accept only the default sampling, and the GPT-5+
       // and o-series models take `max_completion_tokens` instead of `max_tokens`.
-      const supportsTemperature = !/^gpt-6/i.test(model);
+      const supportsTemperature = !/^(gpt-6|qwen4-max|kimi-k3\.1-pro)/i.test(model);
       const usesCompletionTokens = /^(gpt-[56]|o[1-9])/i.test(model);
 
       const response = await this.client.chat.completions.create({

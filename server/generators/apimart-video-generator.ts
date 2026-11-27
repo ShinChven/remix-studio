@@ -30,7 +30,8 @@ export class APIMartVideoGenerator extends VideoGenerator {
       const duration = options?.durations
         ? (req.duration !== undefined && options.durations.includes(req.duration) ? req.duration : options.durations.includes(5) ? 5 : options.durations[0])
         : undefined;
-      const usesSize = /^(seedance-2\.|wan(?:2\.[57]|3\.)|happyhorse|grok-imagine-1\.5-video-ext)/.test(model);
+      const isSeedance = /^seedance-2[.-]/.test(model);
+      const usesSize = isSeedance || /^(wan(?:2\.[57]|3\.)|happyhorse|grok-imagine-1\.5-video-ext)/.test(model);
       if (ratio && options?.aspectRatios) payload[usesSize ? 'size' : 'aspect_ratio'] = ratio;
       if (resolution) payload.resolution = resolution;
       if (duration !== undefined) payload.duration = duration;
@@ -39,7 +40,7 @@ export class APIMartVideoGenerator extends VideoGenerator {
       if (audios.length) payload.audio_urls = audios;
       if (req.seed !== undefined) payload.seed = req.seed;
       if (req.sound && options?.sounds) {
-        const field = /^seedance-2\.|^veo3\.1-.*official$/.test(model) ? 'generate_audio' : 'audio';
+        const field = isSeedance || /^veo3\.1-.*official$/.test(model) ? 'generate_audio' : 'audio';
         payload[field] = options.sounds.includes(req.sound) ? req.sound === 'on' : options.sounds[0] === 'on';
       }
 

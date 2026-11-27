@@ -1,3 +1,4 @@
+import { GoogleInteractionsClient } from '../utils/google-interactions';
 import {
   VideoGenerator,
   VideoGenerateRequest,
@@ -6,7 +7,7 @@ import {
 } from './video-generator';
 
 const DEFAULT_BASE = 'https://generativelanguage.googleapis.com';
-const DEFAULT_MODEL = 'veo-3.1-generate-preview';
+const DEFAULT_MODEL = 'gemini-omni-1.2-flash';
 
 /**
  * Google AI Veo video generator.
@@ -50,6 +51,9 @@ export class GoogleAIVideoGenerator extends VideoGenerator {
 
   async generate(req: VideoGenerateRequest): Promise<VideoGenerateResult> {
     const model = req.modelId || DEFAULT_MODEL;
+    if (model.startsWith('gemini-omni') || /^veo-3\.1-.*generate-preview$/.test(model)) {
+      return this.generateOmni(req, model.startsWith('gemini-omni') ? model : DEFAULT_MODEL);
+    }
     const url = this.buildGenerateUrl(model);
 
     const instance: any = { prompt: req.prompt };
@@ -102,7 +106,50 @@ export class GoogleAIVideoGenerator extends VideoGenerator {
     }
   }
 
+  private async generateOmni(req: VideoGenerateRequest, model: string): Promise<VideoGenerateResult> {
+    try {
+      const refs = req.refImagesBase64 || [];
+      const urls = refs.length ? [] : req.refImageUrls || [];
+      const videos = req.refVideoUrls || [];
+      if (refs.length + urls.length > 6 || videos.length > 1) {
+        throw new Error('Gemini Omni accepts up to six reference images and one source video');
+      }
+      const input = [
+        ...refs.map((data) => ({ type: 'image', data, mime_type: 'image/png' })),
+        ...urls.map((uri) => ({ type: 'image', uri, mime_type: 'image/png' })),
+        ...videos.map((uri) => ({ type: 'video', uri, mime_type: 'video/mp4' })),
+        { type: 'text', text: req.prompt },
+      ];
+      const requestedDuration = req.duration ?? 10;
+      const duration = Math.max(3, Math.min(videos.length ? 10 : 15, Math.round(requestedDuration)));
+      const result = await new GoogleInteractionsClient(this.apiKey, this.base).create({
+        model,
+        input,
+        response_format: {
+          type: 'video',
+          aspect_ratio: req.aspectRatio === '9:16' ? '9:16' : '16:9',
+          resolution: req.resolution || '720p',
+          duration: `${duration}s`,
+        },
+        ...(req.seed !== undefined ? { generation_config: { seed: req.seed } } : {}),
+      });
+      if (!result.id) throw new Error(result.error?.message || 'Google Omni did not return an interaction ID');
+      return { ok: true, status: 'processing', taskId: `omni:${result.id}` };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
   async checkStatus(taskId: string): Promise<VideoCheckStatusResult> {
+    if (taskId.startsWith('omni:')) {
+      const result = await new GoogleInteractionsClient(this.apiKey, this.base).check(taskId.slice('omni:'.length));
+      if (result.status !== 'completed') return result;
+      const video = result.content.find((part) => part.type === 'video' && part.data);
+      return video?.data
+        ? { status: 'completed', videoBytes: Buffer.from(video.data, 'base64'), mimeType: video.mime_type || 'video/mp4' }
+        : { status: 'failed', error: 'Google Omni completed without video data' };
+    }
+
     const url = this.buildOperationUrl(taskId);
     try {
       const res = await fetch(url, {

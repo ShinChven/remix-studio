@@ -92,7 +92,7 @@ export class OpenAIGenerator extends ImageGenerator {
   }
 
   private getClient(apiUrl?: string): OpenAI {
-    const baseURL = this.normalizeBaseUrl(apiUrl);
+    const baseURL = apiUrl ? this.normalizeBaseUrl(apiUrl) : this.baseURL;
     if (baseURL === this.baseURL) {
       return this.client;
     }
@@ -139,9 +139,9 @@ export class OpenAIGenerator extends ImageGenerator {
       case 'hd':
         return 'high';
       case 'xhigh':
-        return this.isGptImage25Model(model) ? 'xhigh' : 'high';
+        return this.supportsExtendedImageOptions(model) ? 'xhigh' : 'high';
       case 'max':
-        return this.isGptImage25Model(model) ? 'max' : 'high';
+        return this.supportsExtendedImageOptions(model) ? 'max' : 'high';
       case 'auto':
         return 'auto';
       default:
@@ -335,14 +335,14 @@ export class OpenAIGenerator extends ImageGenerator {
     return model.toLowerCase().startsWith('gpt-image-2');
   }
 
-  private isGptImage25Model(model: string): boolean {
-    return model.toLowerCase().startsWith('gpt-image-2.5');
+  private supportsExtendedImageOptions(model: string): boolean {
+    return /^gpt-image-2\.[56](?:-|$)/i.test(model);
   }
 
   // gpt-image-2 is the one model in the family that dropped transparency;
-  // gpt-image-2.5 brought it back.
+  // gpt-image-2.5 and 2.6 support it.
   private supportsTransparentBackground(model: string): boolean {
-    return !this.usesGptImage2Geometry(model) || this.isGptImage25Model(model);
+    return !this.usesGptImage2Geometry(model) || this.supportsExtendedImageOptions(model);
   }
 
   private async bufferToFile(buffer: Buffer, filename: string): Promise<any> {

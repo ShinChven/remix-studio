@@ -15,7 +15,8 @@ export class GrokTextGenerator extends TextGenerator {
   async generate(req: TextGenerateRequest): Promise<TextGenerateResult> {
     try {
       const { prompt, systemPrompt, modelId, temperature = 0.7, maxTokens = 2048, refImagesBase64 } = req;
-      const model = modelId || 'grok-4.6';
+      const model = modelId || 'grok-4.7';
+      const usesReasoning = /^grok-4\.7(?:-|$)/.test(model);
 
       const messages: Array<{ role: string; content: any }> = [];
 
@@ -47,7 +48,7 @@ export class GrokTextGenerator extends TextGenerator {
         body: JSON.stringify({
           model,
           messages,
-          temperature,
+          ...(usesReasoning ? {} : { temperature }),
           max_tokens: maxTokens,
         }),
         // @ts-ignore — node-fetch timeout

@@ -141,7 +141,7 @@ const ALL_QUALITIES = ['1K', '2K', '3K', '4K'];
 function resolveTraits(model: string): ModelTraits {
   const id = model.toLowerCase();
 
-  if (/seedream-5[-.]0-pro/.test(id)) {
+  if (/seedream-5[-.](?:0-pro|5)/.test(id)) {
     return {
       qualities: ['1K', '1.5K', '2K'],
       defaultQuality: '2K',

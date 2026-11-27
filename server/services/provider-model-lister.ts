@@ -1,6 +1,7 @@
 import type { ProviderType } from '../../src/types';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 import { APIMartClient } from '../utils/apimart';
+import { vertexProjectRoot } from '../utils/vertex-project';
 
 export interface ProviderModel {
   id: string;
@@ -146,7 +147,7 @@ function categorizeGoogleModel(m: any): 'text' | 'image' | 'video' | 'audio' {
 
   if (name.includes('lyria')) return 'audio';
   if (name.includes('tts') || name.includes('text-to-speech') || name.includes('speech')) return 'audio';
-  if (name.includes('veo') || name.includes('video')) return 'video';
+  if (name.includes('veo') || name.includes('gemini-omni') || name.includes('video')) return 'video';
   if (name.includes('imagen') || name.includes('image-generation')) return 'image';
 
   // Models supporting generateContent with "image" in the name might generate images.
@@ -166,7 +167,18 @@ async function listVertexAIModels(
   apiKey: string,
   apiUrl?: string | null,
 ): Promise<ProviderModelsResult> {
-  // Vertex AI with API key can use the same generativelanguage endpoint
+  // Cloud project endpoints do not expose the Gemini Developer API model list.
+  // Show the Veo profiles for a configured project without sending an OAuth
+  // token or service account JSON to that unrelated API.
+  if (vertexProjectRoot(apiUrl)) {
+    return {
+      models: PROVIDER_MODELS_MAP.VertexAI.filter((model) => model.category === 'video' || model.options.audioGenerationKind === 'tts').map((model) => ({
+        id: model.modelId, name: model.name, category: model.category, supported: true,
+      })),
+    };
+  }
+
+  // Vertex AI with an API key uses the Gemini Developer API for discovery.
   const base = (apiUrl || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
   const url = `${base}/v1beta/models?key=${apiKey}&pageSize=100`;
 

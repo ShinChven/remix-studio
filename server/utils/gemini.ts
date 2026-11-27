@@ -7,6 +7,7 @@
  * on which models still accept them.
  */
 const MODELS_WITHOUT_SAMPLING_PARAMETERS = new Set([
+  'gemini-4-neon',
   'gemini-4-carbon',
   'gemini-4-argon',
   'gemini-4-hydrogen',

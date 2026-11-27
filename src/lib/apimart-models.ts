@@ -4,6 +4,11 @@ import type { ModelConfig } from '../types';
 // See agent/model-maintenance-guide.md for sources and catalog scope.
 // Tuple: API ID, display name, max input, max output, image input, sampling.
 const TEXT_MODELS: Array<[string, string, number | null, number | null, boolean, boolean]> = [
+  ["gpt-6.2-sol", "GPT-6.2 Sol", 1050000, 128000, true, false],
+  ["gpt-6.2-astra", "GPT-6.2 Astra", 1050000, 128000, true, false],
+  ["gemini-4-neon", "Gemini 4 Neon", 1048576, 65536, true, false],
+  ["qwen4-max", "Qwen4 Max", 983616, 131072, true, false],
+  ["claude-fable-5.2", "Claude Fable 5.2", 1000000, 128000, true, false],
   ["gpt-6.1-terra", "gpt-6.1-terra", 922000, 12800, true, false],
   ["gemini-4-argon", "gemini-4-argon", 128000, 16000, true, false],
   ["claude-haiku-5-5", "claude-haiku-5-5", 1000000, 128000, true, true],
@@ -140,6 +145,15 @@ export const APIMART_TEXT_MODELS: ModelConfig[] = TEXT_MODELS.map(
 );
 
 export const APIMART_VIDEO_MODELS: ModelConfig[] = [
+    {
+      id: 'apimart-seedance-2-5-flash-video',
+      name: 'Seedance 2.5 Flash',
+      generatorId: 'APIMart',
+      modelId: 'seedance-2-5-flash',
+      category: 'video',
+      promptLimit: { value: 20480, unit: 'characters' },
+      options: { aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'], resolutions: ['720p', '480p'], durations: [4, 5, 6, 8, 10, 12, 15, 20, 25, 30, -1], sounds: ['on', 'off'], supportsReferenceImages: true, supportsReferenceVideo: true, supportsReferenceAudio: true },
+    },
   {
     id: 'apimart-seedance-2.5-video',
     name: 'Seedance 2.5',

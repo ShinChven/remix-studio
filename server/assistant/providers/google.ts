@@ -16,6 +16,7 @@ import { geminiSupportsSamplingParameters } from '../../utils/gemini';
  * model IDs accepted by the current Google API.
  */
 export function resolveRealGeminiModelId(modelId: string): string {
+  if (modelId.includes('gemini-4-neon')) return 'gemini-4-neon';
   if (modelId.includes('gemini-4-carbon')) return 'gemini-4-carbon';
   if (modelId.includes('gemini-4-argon')) return 'gemini-4-argon';
   if (modelId.includes('gemini-4-hydrogen')) return 'gemini-4-hydrogen';
