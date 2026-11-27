@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
-import { createLibraryItem, deleteLibraryItem, fetchAssistantProviders, fetchAssistantTools, fetchLibraryItems, updateLibraryItem, type AssistantToolMetadata } from '../../api';
+import { createLibraryItem, deleteLibraryItem, fetchAssistantProviders, fetchAssistantTools, fetchLibraryItems, updateLibraryItem, type AssistantSwarmPreset, type AssistantSwarmToolScope, type AssistantToolMetadata } from '../../api';
 import { loadAssistantSettings, normalizeAssistantProviderSelection, resolveEnabledAssistantProviderIds, saveAssistantSettings } from '../../lib/assistant-provider-settings';
 import { ensureAssistantSkillsLibrary } from '../../lib/assistant-skills';
-import { Button, ChipSet, Dialog, FilterChip, Icon, Tab, Tabs, Text, TextField } from '../../m3';
+import { DEFAULT_SWARM_PRESETS } from '../../lib/assistant-swarm-presets';
+import { Button, ChipSet, Dialog, FilterChip, Icon, MenuButton, MenuDivider, MenuGroup, MenuItem, Switch, Tab, Tabs, Text, TextField } from '../../m3';
 import { getTextModelsForProvider, type Library, type LibraryItem, type Provider } from '../../types';
 import { McpConnections } from '../components/assistant/McpConnections';
 import { ProviderLogo } from '../components/ProviderLogo';
@@ -17,7 +18,7 @@ import { ListSearch } from '../ui/ListSearch';
 import { StatTile, StatusPill } from '../ui/Stat';
 import { useToast } from '../ui/useToast';
 
-type AssistantSettingsTab = 'providers' | 'skills' | 'tools' | 'mcp';
+type AssistantSettingsTab = 'providers' | 'swarm' | 'skills' | 'tools' | 'mcp';
 
 type SkillEditorState = {
   mode: 'create' | 'edit';
@@ -27,7 +28,7 @@ type SkillEditorState = {
 const SKILLS_PAGE_SIZE = 8;
 
 function isAssistantSettingsTab(value: string | null): value is AssistantSettingsTab {
-  return value === 'providers' || value === 'skills' || value === 'tools' || value === 'mcp';
+  return value === 'providers' || value === 'swarm' || value === 'skills' || value === 'tools' || value === 'mcp';
 }
 
 function summarizeSkillContent(content: string) {
@@ -92,6 +93,20 @@ export function AssistantSettings() {
   const [isLoadingProviders, setIsLoadingProviders] = useState(true);
   const [isSavingProviders, setIsSavingProviders] = useState(false);
 
+  // Swarm settings & reusable presets
+  const [swarmEnabled, setSwarmEnabled] = useState(false);
+  const [swarmWorkerProviderId, setSwarmWorkerProviderId] = useState<string | null>(null);
+  const [swarmWorkerModelId, setSwarmWorkerModelId] = useState<string | null>(null);
+  const [swarmPresets, setSwarmPresets] = useState<AssistantSwarmPreset[]>([]);
+  const [presetDialogOpen, setPresetDialogOpen] = useState(false);
+  const [presetName, setPresetName] = useState('');
+  const [presetDesc, setPresetDesc] = useState('');
+  const [presetGoal, setPresetGoal] = useState('');
+  const [presetWorkerRole, setPresetWorkerRole] = useState('Prompt Engineer');
+  const [presetWorkerBrief, setPresetWorkerBrief] = useState('');
+  const [presetWorkerScope, setPresetWorkerScope] = useState<AssistantSwarmToolScope>('propose');
+  const [deletePresetTarget, setDeletePresetTarget] = useState<AssistantSwarmPreset | null>(null);
+
   const [skillsLibrary, setSkillsLibrary] = useState<Library | null>(null);
   const [skillItems, setSkillItems] = useState<LibraryItem[]>([]);
   const [skillPage, setSkillPage] = useState(1);
@@ -153,6 +168,10 @@ export function AssistantSettings() {
 
         setProviders(result.providers);
         setEnabledProviderIds(resolveEnabledAssistantProviderIds(result.providers, settings.enabledProviderIds));
+        setSwarmEnabled(settings.swarmEnabled);
+        setSwarmWorkerProviderId(settings.swarmWorkerProviderId);
+        setSwarmWorkerModelId(settings.swarmWorkerModelId);
+        setSwarmPresets(settings.swarmPresets);
       } catch (error) {
         console.error('Failed to load assistant providers:', error);
         toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
@@ -410,6 +429,7 @@ export function AssistantSettings() {
       />
       <Tabs value={activeTab} onChange={(v) => handleTabChange(v as AssistantSettingsTab)} variant="secondary" scrollable className="mb-4">
         <Tab value="providers" icon="key" inlineIcon label={t('v2.assistant.providersTab', { defaultValue: 'Providers' })} />
+        <Tab value="swarm" icon="hub" inlineIcon label={t('v2.assistant.swarmTab', { defaultValue: 'Swarm' })} />
         <Tab value="skills" icon="auto_awesome" inlineIcon label={t('v2.assistant.skillsTab', { defaultValue: 'Skills' })} />
         <Tab value="tools" icon="build" inlineIcon label={t('v2.assistant.toolsTab', { defaultValue: 'Tools' })} />
         <Tab value="mcp" icon="hub" inlineIcon label={t('sidebar.mcp', { defaultValue: 'MCP' })} />
@@ -471,6 +491,220 @@ export function AssistantSettings() {
             </RowList>
           )}
         </Section>
+      )}
+
+      {activeTab === 'swarm' && (
+        <>
+          <Section
+            variant="plain"
+            title={t('v2.assistant.swarm.settingsTitle', { defaultValue: 'Multi-agent Swarm defaults' })}
+            description={t('v2.assistant.swarm.settingsDescription', { defaultValue: 'Configure default Swarm Mode behavior and an optional faster/cheaper model for parallel workers.' })}
+          >
+            <RowList>
+              <Row
+                lead={<Icon name="hub" size={24} />}
+                title={t('v2.assistant.swarm.defaultEnabled', { defaultValue: 'Enable Swarm Mode by default' })}
+                meta={t('v2.assistant.swarm.defaultEnabledDesc', { defaultValue: 'Allow the Coordinator to spawn parallel specialist workers in new chats.' })}
+                actions={
+                  <Switch
+                    checked={swarmEnabled}
+                    onChange={async (e) => {
+                      const next = e.target.checked;
+                      setSwarmEnabled(next);
+                      try {
+                        await saveAssistantSettings({ swarmEnabled: next });
+                      } catch {
+                        toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
+                      }
+                    }}
+                  />
+                }
+              />
+              <Row
+                lead={<Icon name="bolt" size={24} />}
+                title={t('v2.assistant.swarm.workerModel', { defaultValue: 'Swarm worker model' })}
+                meta={t('v2.assistant.swarm.workerModelDesc', { defaultValue: 'Pair a frontier Coordinator model with a fast worker model for parallel shards.' })}
+                actions={
+                  <MenuButton
+                    placement="bottom-end"
+                    aria-label={t('v2.assistant.swarm.workerModel', { defaultValue: 'Swarm worker model' })}
+                    trigger={(props) => {
+                      const wp = providers.find((p) => p.id === swarmWorkerProviderId);
+                      const wm = wp ? getTextModelsForProvider(wp.type).find((m) => m.id === swarmWorkerModelId) : null;
+                      return (
+                        <button {...props} type="button" className="v2-model-chip m3-focus-ring">
+                          {wp ? <ProviderLogo type={wp.type} size={16} /> : <Icon name="sync" size={16} />}
+                          <span className="truncate">{wm?.name || t('v2.assistant.swarm.sameAsCoordinator', { defaultValue: 'Same as Coordinator' })}</span>
+                          <Icon name="arrow_drop_down" size={18} />
+                        </button>
+                      );
+                    }}
+                  >
+                    <MenuItem
+                      icon="sync"
+                      selected={!swarmWorkerProviderId}
+                      onSelect={async () => {
+                        setSwarmWorkerProviderId(null);
+                        setSwarmWorkerModelId(null);
+                        await saveAssistantSettings({ swarmWorkerProviderId: null, swarmWorkerModelId: null }).catch(() => {});
+                      }}
+                    >
+                      {t('v2.assistant.swarm.sameAsCoordinator', { defaultValue: 'Same as Coordinator' })}
+                    </MenuItem>
+                    {providerEntries.map(({ provider, models }) => {
+                      if (models.length === 0) return null;
+                      return [
+                        <MenuDivider key={`${provider.id}-sw-div`} />,
+                        <MenuGroup key={`${provider.id}-sw`} label={provider.name}>
+                          {models.map((model) => (
+                            <MenuItem
+                              key={`${provider.id}::${model.id}`}
+                              icon={<ProviderLogo type={provider.type} size={16} />}
+                              type="radio"
+                              checked={provider.id === swarmWorkerProviderId && model.id === swarmWorkerModelId}
+                              onSelect={async () => {
+                                setSwarmWorkerProviderId(provider.id);
+                                setSwarmWorkerModelId(model.id);
+                                await saveAssistantSettings({ swarmWorkerProviderId: provider.id, swarmWorkerModelId: model.id }).catch(() => {});
+                              }}
+                            >
+                              {model.name}
+                            </MenuItem>
+                          ))}
+                        </MenuGroup>,
+                      ];
+                    })}
+                  </MenuButton>
+                }
+              />
+            </RowList>
+          </Section>
+
+          <Section
+            variant="plain"
+            title={t('v2.assistant.swarm.presetsTitle', { defaultValue: 'Swarm presets' })}
+            description={t('v2.assistant.swarm.presetsDescription', { defaultValue: 'Reusable team templates available from the Agent Side Panel Tools tab.' })}
+            actions={
+              <Button variant="filled" size="sm" icon="add" onClick={() => setPresetDialogOpen(true)}>
+                {t('v2.assistant.swarm.newPreset', { defaultValue: 'New preset' })}
+              </Button>
+            }
+          >
+            <RowList>
+              {swarmPresets.map((preset) => (
+                <Row
+                  key={preset.id}
+                  lead={<Icon name="groups" size={22} />}
+                  title={preset.name}
+                  meta={`${preset.workers.length} · ${preset.description || preset.goalTemplate}`}
+                  actions={
+                    <Button variant="text" size="sm" icon="delete" onClick={() => setDeletePresetTarget(preset)}>
+                      {t('v2.assistant.swarm.delete', { defaultValue: 'Delete' })}
+                    </Button>
+                  }
+                />
+              ))}
+              {DEFAULT_SWARM_PRESETS.map((preset) => (
+                <Row
+                  key={preset.id}
+                  lead={<Icon name="auto_awesome" size={22} />}
+                  title={
+                    <span className="flex items-center gap-2">
+                      {preset.name}
+                      <span className="v2-info-chip">{t('v2.assistant.swarm.builtIn', { defaultValue: 'Built-in' })}</span>
+                    </span>
+                  }
+                  meta={`${preset.workers.length} · ${preset.description}`}
+                />
+              ))}
+            </RowList>
+          </Section>
+
+          <Dialog
+            open={presetDialogOpen}
+            onClose={() => setPresetDialogOpen(false)}
+            icon="hub"
+            headline={t('v2.assistant.swarm.newPreset', { defaultValue: 'New preset' })}
+            maxWidth={560}
+            actions={
+              <>
+                <Button variant="text" onClick={() => setPresetDialogOpen(false)}>{t('assistant.cancel', { defaultValue: 'Cancel' })}</Button>
+                <Button
+                  variant="filled"
+                  onClick={async () => {
+                    if (!presetName.trim() || !presetWorkerBrief.trim()) {
+                      toast.error(t('v2.assistant.skillValidation', { defaultValue: 'A title and prompt content are required.' }));
+                      return;
+                    }
+                    const nextPreset: AssistantSwarmPreset = {
+                      id: crypto.randomUUID(),
+                      name: presetName.trim(),
+                      description: presetDesc.trim(),
+                      goalTemplate: presetGoal.trim() || presetDesc.trim(),
+                      workers: [
+                        {
+                          name: presetWorkerRole.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'worker-1',
+                          role: presetWorkerRole.trim() || 'Specialist',
+                          brief: presetWorkerBrief.trim(),
+                          toolScope: presetWorkerScope,
+                        },
+                      ],
+                    };
+                    const updated = [nextPreset, ...swarmPresets];
+                    try {
+                      await saveAssistantSettings({ swarmPresets: updated });
+                      setSwarmPresets(updated);
+                      setPresetDialogOpen(false);
+                      setPresetName('');
+                      setPresetDesc('');
+                      setPresetGoal('');
+                      setPresetWorkerBrief('');
+                      toast.success(t('v2.assistant.swarm.presetSaved', { defaultValue: 'Swarm preset saved.' }));
+                    } catch {
+                      toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
+                    }
+                  }}
+                >
+                  {t('v2.assistant.swarm.save', { defaultValue: 'Save' })}
+                </Button>
+              </>
+            }
+          >
+            <div className="flex flex-col gap-3">
+              <TextField label={t('v2.assistant.swarm.name', { defaultValue: 'Name' })} value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+              <TextField label={t('v2.assistant.swarm.description', { defaultValue: 'Description' })} value={presetDesc} onChange={(e) => setPresetDesc(e.target.value)} />
+              <TextField label={t('v2.assistant.swarm.goalTemplate', { defaultValue: 'Goal template' })} value={presetGoal} onChange={(e) => setPresetGoal(e.target.value)} />
+              <TextField label={t('v2.assistant.swarm.workerRole', { defaultValue: 'Worker role' })} value={presetWorkerRole} onChange={(e) => setPresetWorkerRole(e.target.value)} />
+              <TextField multiline rows={3} label={t('v2.assistant.swarm.workerBrief', { defaultValue: 'Worker brief' })} value={presetWorkerBrief} onChange={(e) => setPresetWorkerBrief(e.target.value)} />
+              <ChipSet>
+                {(['read', 'propose', 'write'] as AssistantSwarmToolScope[]).map((scope) => (
+                  <FilterChip key={scope} label={scope} selected={presetWorkerScope === scope} onClick={() => setPresetWorkerScope(scope)} />
+                ))}
+              </ChipSet>
+            </div>
+          </Dialog>
+
+          <ConfirmDialog
+            open={!!deletePresetTarget}
+            title={t('v2.assistant.swarm.deletePresetTitle', { defaultValue: 'Delete swarm preset' })}
+            message={t('v2.assistant.swarm.deletePresetMessage', { defaultValue: 'Remove this saved swarm preset?' })}
+            confirmLabel={t('confirmModal.confirm', { defaultValue: 'Confirm' })}
+            tone="danger"
+            icon="delete"
+            onConfirm={async () => {
+              if (!deletePresetTarget) return;
+              const updated = swarmPresets.filter((p) => p.id !== deletePresetTarget.id);
+              try {
+                await saveAssistantSettings({ swarmPresets: updated });
+                setSwarmPresets(updated);
+                setDeletePresetTarget(null);
+              } catch {
+                toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
+              }
+            }}
+            onClose={() => setDeletePresetTarget(null)}
+          />
+        </>
       )}
 
       {activeTab === 'skills' && (

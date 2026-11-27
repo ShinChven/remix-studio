@@ -30,7 +30,7 @@ import type {
   ToolCall,
 } from './providers/types';
 import { toolParametersJsonSchema } from './providers/types';
-import { ASSISTANT_SYSTEM_PROMPT, wrapToolResult } from './system-prompt';
+import { ASSISTANT_SYSTEM_PROMPT, SWARM_COORDINATOR_APPENDIX, wrapToolResult } from './system-prompt';
 import { estimateMessages, estimateToolDefinitions, sumCategories, type ContextCategories, type ToolDefinitionEstimate } from './context-estimate';
 import { extractAssistantResourceTarget } from './resource-target';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
@@ -87,15 +87,74 @@ export interface AssistantToolMetadata {
   inputSchema: Record<string, unknown>;
 }
 
+export interface SwarmEventContext {
+  swarmRunId?: string;
+  agentId?: string;
+  agentName?: string;
+}
+
 export type AssistantStatusEvent =
-  | { type: 'provider_call_started'; iteration: number }
-  | { type: 'provider_thinking'; iteration: number; title: string; content?: string }
-  | { type: 'provider_call_finished'; iteration: number; stopReason: ChatStopReason }
-  | { type: 'tool_call_started'; call: ToolCall }
-  | { type: 'tool_call_finished'; call: ToolCall; isError: boolean }
-  | { type: 'confirmation_required'; call: ToolCall; confirmationId: string }
-  | { type: 'circuit_open'; reason: string }
-  | { type: 'stop_requested' };
+  | ({ type: 'provider_call_started'; iteration: number } & SwarmEventContext)
+  | ({ type: 'provider_thinking'; iteration: number; title: string; content?: string } & SwarmEventContext)
+  | ({ type: 'provider_call_finished'; iteration: number; stopReason: ChatStopReason } & SwarmEventContext)
+  | ({ type: 'tool_call_started'; call: ToolCall } & SwarmEventContext)
+  | ({ type: 'tool_call_finished'; call: ToolCall; isError: boolean } & SwarmEventContext)
+  | ({ type: 'confirmation_required'; call: ToolCall; confirmationId: string } & SwarmEventContext)
+  | ({ type: 'circuit_open'; reason: string } & SwarmEventContext)
+  | ({ type: 'stop_requested' } & SwarmEventContext)
+  | { type: 'swarm_started'; swarmRunId: string; goal: string }
+  | {
+      type: 'agent_spawned';
+      swarmRunId: string;
+      agentId: string;
+      agentName: string;
+      role: string;
+      toolScope: 'read' | 'propose' | 'write';
+      modelConfigId: string | null;
+    }
+  | { type: 'agent_status_changed'; swarmRunId: string; agentId: string; agentName: string; status: string }
+  | {
+      type: 'agent_completed';
+      swarmRunId: string;
+      agentId: string;
+      agentName: string;
+      status: string;
+      summary?: string | null;
+    }
+  | { type: 'swarm_completed'; swarmRunId: string; status: string };
+
+export interface SwarmCoordinatorToolProvider {
+  createCoordinatorTools(ctx: {
+    userId: string;
+    conversationId: string;
+    defaultProviderId: string;
+    defaultModelId: string;
+    workerProviderId?: string | null;
+    workerModelId?: string | null;
+    abortSignal?: AbortSignal;
+    onStatusEvent?: (event: AssistantStatusEvent) => void;
+  }): AssistantToolDefinition[];
+}
+
+export interface ScopedLoopOptions {
+  userId: string;
+  conversationId: string;
+  providerId: string;
+  modelId: string;
+  abortSignal?: AbortSignal;
+  onStatusEvent?: (event: AssistantStatusEvent) => void;
+  systemPromptOverride?: string;
+  extraTools?: AssistantToolDefinition[];
+  allowedToolNames?: Set<string>;
+  toolScope?: 'read' | 'propose' | 'write';
+  swarmRunId?: string;
+  swarmAgentId?: string;
+  swarmAgentName?: string;
+  entityLockAcquire?: (toolName: string, args: unknown) => Promise<() => void>;
+  maxIterations?: number;
+  maxToolCalls?: number;
+  onTokenUsage?: (inputTokens: number, outputTokens: number) => void;
+}
 
 export type TurnResult =
   | { kind: 'final'; finalMessage: AssistantMessageRecord }
@@ -112,6 +171,9 @@ export interface SendUserMessageInput {
   userId: string;
   conversationId: string;
   content: string;
+  swarmMode?: boolean;
+  workerProviderId?: string | null;
+  workerModelId?: string | null;
   abortSignal?: AbortSignal;
   onStatusEvent?: (event: AssistantStatusEvent) => void;
 }
@@ -121,6 +183,9 @@ export interface ResumeInput {
   conversationId: string;
   confirmationId: string;
   decision: 'confirm' | 'confirm_tool' | 'confirm_session' | 'cancel';
+  swarmMode?: boolean;
+  workerProviderId?: string | null;
+  workerModelId?: string | null;
   abortSignal?: AbortSignal;
   onStatusEvent?: (event: AssistantStatusEvent) => void;
 }
@@ -190,6 +255,7 @@ export class AssistantRunner {
   private toolsByName: Map<string, AssistantToolDefinition>;
   private sessionApprovedToolsByConversation = new Map<string, Set<string>>();
   private storage: S3Storage;
+  private swarmToolProvider: SwarmCoordinatorToolProvider | null = null;
 
   constructor(
     private repo: AssistantRepository,
@@ -199,6 +265,10 @@ export class AssistantRunner {
     this.storage = toolDeps.storage;
     this.tools = createAssistantToolDefinitions(toolDeps).filter((tool) => !tool.mcpOnly);
     this.toolsByName = new Map(this.tools.map((t) => [t.name, t]));
+  }
+
+  setSwarmToolProvider(provider: SwarmCoordinatorToolProvider): void {
+    this.swarmToolProvider = provider;
   }
 
   listToolMetadata(): AssistantToolMetadata[] {
@@ -245,8 +315,7 @@ export class AssistantRunner {
   ): Promise<{ toolName: string; arguments: unknown; result: AppToolResult } | null> {
     const conversation = await this.repo.getConversation(userId, conversationId);
     if (!conversation) return null;
-    const messages = await this.repo.listMessages(conversationId);
-    const message = messages.find((entry) => entry.role === 'tool' && entry.toolCallId === toolCallId);
+    const message = await this.repo.findToolMessageByCallId(conversationId, toolCallId);
     if (!message?.toolName || !getMcpAppResourceUri(message.toolName)) return null;
     const text = unwrapStoredToolResult(message.content);
     const structured = asStructured(message.toolResultJson) ?? parseStructured(text);
@@ -303,6 +372,22 @@ export class AssistantRunner {
       });
       await this.repo.touchConversation(conversation.id);
 
+      const swarmExtras = input.swarmMode && this.swarmToolProvider
+        ? {
+            systemPromptOverride: `${ASSISTANT_SYSTEM_PROMPT}\n${SWARM_COORDINATOR_APPENDIX}`,
+            extraTools: this.swarmToolProvider.createCoordinatorTools({
+              userId: input.userId,
+              conversationId: conversation.id,
+              defaultProviderId: conversation.providerId,
+              defaultModelId: conversation.modelConfigId,
+              workerProviderId: input.workerProviderId,
+              workerModelId: input.workerModelId,
+              abortSignal: input.abortSignal,
+              onStatusEvent: input.onStatusEvent,
+            }),
+          }
+        : {};
+
       return this.runLoop({
         userId: input.userId,
         conversationId: conversation.id,
@@ -310,6 +395,7 @@ export class AssistantRunner {
         modelId: conversation.modelConfigId,
         abortSignal: input.abortSignal,
         onStatusEvent: input.onStatusEvent,
+        ...swarmExtras,
       });
     });
   }
@@ -370,6 +456,22 @@ export class AssistantRunner {
         });
         await this.repo.touchConversation(conversation.id);
 
+        const swarmExtras = input.swarmMode && this.swarmToolProvider
+          ? {
+              systemPromptOverride: `${ASSISTANT_SYSTEM_PROMPT}\n${SWARM_COORDINATOR_APPENDIX}`,
+              extraTools: this.swarmToolProvider.createCoordinatorTools({
+                userId: input.userId,
+                conversationId: conversation.id,
+                defaultProviderId: conversation.providerId,
+                defaultModelId: conversation.modelConfigId,
+                workerProviderId: input.workerProviderId,
+                workerModelId: input.workerModelId,
+                abortSignal: input.abortSignal,
+                onStatusEvent: input.onStatusEvent,
+              }),
+            }
+          : {};
+
         return this.runLoop({
           userId: input.userId,
           conversationId: conversation.id,
@@ -377,6 +479,7 @@ export class AssistantRunner {
           modelId: conversation.modelConfigId,
           abortSignal: input.abortSignal,
           onStatusEvent: input.onStatusEvent,
+          ...swarmExtras,
         });
       }
 
@@ -419,6 +522,22 @@ export class AssistantRunner {
 
       await this.repo.touchConversation(conversation.id);
 
+      const swarmExtras = input.swarmMode && this.swarmToolProvider
+        ? {
+            systemPromptOverride: `${ASSISTANT_SYSTEM_PROMPT}\n${SWARM_COORDINATOR_APPENDIX}`,
+            extraTools: this.swarmToolProvider.createCoordinatorTools({
+              userId: input.userId,
+              conversationId: conversation.id,
+              defaultProviderId: conversation.providerId,
+              defaultModelId: conversation.modelConfigId,
+              workerProviderId: input.workerProviderId,
+              workerModelId: input.workerModelId,
+              abortSignal: input.abortSignal,
+              onStatusEvent: input.onStatusEvent,
+            }),
+          }
+        : {};
+
       return this.runLoop({
         userId: input.userId,
         conversationId: conversation.id,
@@ -426,8 +545,127 @@ export class AssistantRunner {
         modelId: conversation.modelConfigId,
         abortSignal: input.abortSignal,
         onStatusEvent: input.onStatusEvent,
+        ...swarmExtras,
       });
     });
+  }
+
+  /**
+   * Public scoped loop entry point used by `SwarmOrchestrator` to run isolated
+   * workers without duplicating the LLM/tool loop.
+   */
+  async runScopedLoop(options: ScopedLoopOptions): Promise<TurnResult> {
+    const conversation = await this.repo.getConversation(options.userId, options.conversationId);
+    if (conversation) {
+      this.hydrateApprovedToolsCache(conversation.id, conversation.approvedTools);
+    }
+    return this.runLoop(options);
+  }
+
+  /**
+   * Resolve a confirmation proposed by a write-capable swarm worker, executing
+   * the confirmed tool under `entityLockAcquire` before resuming that worker's
+   * isolated loop.
+   */
+  async resumeWorkerConfirmation(input: {
+    userId: string;
+    conversationId: string;
+    confirmation: AssistantPendingConfirmationRecord;
+    decision: 'confirm' | 'confirm_tool' | 'cancel';
+    loopOptions: ScopedLoopOptions;
+  }): Promise<TurnResult> {
+    const { userId, conversationId, confirmation, decision, loopOptions } = input;
+    const swarmAgentId = confirmation.swarmAgentId ?? loopOptions.swarmAgentId ?? null;
+    const conversation = await this.repo.getConversation(userId, conversationId);
+    if (!conversation) return errorResult('Conversation not found');
+    this.hydrateApprovedToolsCache(conversation.id, conversation.approvedTools);
+
+    if (confirmation.status !== 'pending') {
+      return errorResult(`Confirmation already ${confirmation.status}`);
+    }
+    if (confirmation.expiresAt < Date.now()) {
+      await this.repo.updatePendingConfirmationStatus(confirmation.id, 'expired');
+      await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
+      await this.repo.appendMessage({
+        conversationId,
+        swarmAgentId,
+        role: 'tool',
+        toolCallId: confirmation.toolCallId,
+        toolName: confirmation.toolName,
+        toolArgsJson: confirmation.toolArgsJson,
+        content: wrapToolResult(confirmation.toolName, JSON.stringify({
+          expired: true,
+          message: 'Confirmation expired before user responded.',
+        })),
+        status: 'error',
+      });
+      return errorResult('Confirmation expired');
+    }
+
+    if (decision === 'cancel') {
+      await this.repo.updatePendingConfirmationStatus(confirmation.id, 'cancelled');
+      await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
+      await this.repo.appendMessage({
+        conversationId,
+        swarmAgentId,
+        role: 'tool',
+        toolCallId: confirmation.toolCallId,
+        toolName: confirmation.toolName,
+        toolArgsJson: confirmation.toolArgsJson,
+        content: wrapToolResult(confirmation.toolName, JSON.stringify({
+          cancelled: true,
+          message: 'User cancelled this action.',
+        })),
+        status: 'cancelled',
+      });
+      return this.runLoop(loopOptions);
+    }
+
+    const tool = this.toolsByName.get(confirmation.toolName);
+    if (decision === 'confirm_tool' && tool?.category === 'mutate') {
+      this.rememberSessionApprovedTool(conversationId, tool.name);
+      await this.repo.addApprovedTool(conversationId, tool.name).catch((err) => {
+        console.error('[AssistantRunner] Failed to persist approved tool', err);
+      });
+    }
+
+    await this.repo.updatePendingConfirmationStatus(confirmation.id, 'confirmed');
+    await this.repo.updateMessageStatus(confirmation.messageId, 'completed');
+
+    if (!tool) {
+      await this.repo.appendMessage({
+        conversationId,
+        swarmAgentId,
+        role: 'tool',
+        toolCallId: confirmation.toolCallId,
+        toolName: confirmation.toolName,
+        toolArgsJson: confirmation.toolArgsJson,
+        content: wrapToolResult(confirmation.toolName, JSON.stringify({
+          error: true,
+          message: `Tool '${confirmation.toolName}' no longer exists`,
+        })),
+        status: 'error',
+      });
+      return errorResult(`Tool '${confirmation.toolName}' no longer exists`);
+    }
+
+    const eventCtx: SwarmEventContext = {
+      ...(loopOptions.swarmRunId ? { swarmRunId: loopOptions.swarmRunId } : {}),
+      ...(loopOptions.swarmAgentId ? { agentId: loopOptions.swarmAgentId } : {}),
+      ...(loopOptions.swarmAgentName ? { agentName: loopOptions.swarmAgentName } : {}),
+    };
+
+    const executed = await this.executeToolCall(
+      userId,
+      conversationId,
+      tool,
+      { id: confirmation.toolCallId, name: confirmation.toolName, arguments: confirmation.toolArgsJson },
+      loopOptions.onStatusEvent,
+      { swarmAgentId, eventCtx, entityLockAcquire: loopOptions.entityLockAcquire },
+    );
+    if (!executed) return errorResult('Tool execution failed');
+
+    return this.runLoop(loopOptions);
   }
 
   async summarizeConversation(userId: string, conversationId: string): Promise<string | null> {
@@ -511,22 +749,52 @@ export class AssistantRunner {
   // ─── internals ───
 
 
-  private async runLoop(input: {
-    userId: string;
-    conversationId: string;
-    providerId: string;
-    modelId: string;
-    abortSignal?: AbortSignal;
-    onStatusEvent?: (event: AssistantStatusEvent) => void;
-  }): Promise<TurnResult> {
-    const { userId, conversationId, providerId: providerIdOriginal, modelId: modelConfigId, abortSignal, onStatusEvent } = input;
+  private async runLoop(input: ScopedLoopOptions): Promise<TurnResult> {
+    const {
+      userId,
+      conversationId,
+      providerId: providerIdOriginal,
+      modelId: modelConfigId,
+      abortSignal,
+      onStatusEvent,
+      systemPromptOverride,
+      extraTools,
+      allowedToolNames,
+      toolScope,
+      swarmRunId,
+      swarmAgentId = null,
+      swarmAgentName,
+      entityLockAcquire,
+      maxIterations = ASSISTANT_LIMITS.MAX_ITERATIONS,
+      maxToolCalls = ASSISTANT_LIMITS.MAX_TOOL_CALLS,
+      onTokenUsage,
+    } = input;
+
+    const eventCtx: SwarmEventContext = {
+      ...(swarmRunId ? { swarmRunId } : {}),
+      ...(swarmAgentId ? { agentId: swarmAgentId } : {}),
+      ...(swarmAgentName ? { agentName: swarmAgentName } : {}),
+    };
+
+    // Resolve the active tool set for this loop (Coordinator or scoped Worker).
+    let activeTools: AssistantToolDefinition[] = this.tools;
+    if (toolScope === 'read' || toolScope === 'propose') {
+      activeTools = activeTools.filter((t) => t.category === 'read');
+    }
+    if (allowedToolNames) {
+      activeTools = activeTools.filter((t) => allowedToolNames.has(t.name));
+    }
+    if (extraTools && extraTools.length > 0) {
+      activeTools = [...activeTools, ...extraTools];
+    }
+    const activeToolsByName = new Map(activeTools.map((t) => [t.name, t]));
 
     let providerHandle: { provider: ChatProvider; type: string };
     try {
       providerHandle = await resolveChatProvider(this.providerRepo, userId, providerIdOriginal);
     } catch (e: any) {
       const rawError = `Could not load chat provider: ${e?.message ?? 'unknown error'}`;
-      const partial = await this.recordConfigurationError(conversationId, rawError);
+      const partial = await this.recordConfigurationError(conversationId, rawError, swarmAgentId);
       return { kind: 'error', error: rawError, partialMessage: partial };
     }
     const { provider, type: providerType } = providerHandle;
@@ -535,12 +803,12 @@ export class AssistantRunner {
     const modelConfig = availableModels.find(m => m.id === modelConfigId);
     if (!modelConfig) {
       const rawError = `Model config '${modelConfigId}' is not available for provider '${providerType}'`;
-      const partial = await this.recordConfigurationError(conversationId, rawError);
+      const partial = await this.recordConfigurationError(conversationId, rawError, swarmAgentId);
       return { kind: 'error', error: rawError, partialMessage: partial };
     }
     const realModelId = modelConfig.modelId;
 
-    let toolCallBudget = ASSISTANT_LIMITS.MAX_TOOL_CALLS;
+    let toolCallBudget = maxToolCalls;
     const recentCallHashes: string[] = [];
     let lastTurnEnd = Date.now();
     // Truncation recovery: `retryHint` is injected into the next provider call
@@ -549,66 +817,74 @@ export class AssistantRunner {
     let truncationRetries = 0;
     let retryHint: string | undefined;
 
-    for (let iter = 0; iter < ASSISTANT_LIMITS.MAX_ITERATIONS; iter++) {
-      if (abortSignal?.aborted) return this.stopTurn(conversationId);
+    for (let iter = 0; iter < maxIterations; iter++) {
+      if (abortSignal?.aborted) return this.stopTurn(conversationId, swarmAgentId);
 
-      if (Date.now() - lastTurnEnd > ASSISTANT_LIMITS.MAX_TURN_GAP_MS) {
-        emit(onStatusEvent, { type: 'circuit_open', reason: 'turn_gap_exceeded' });
-        const partial = await this.recordCircuitStop(conversationId, 'Turn paused — exceeded time budget between model turns.');
+      // Coordinator turns waiting on long-running swarm tools may exceed 60s between
+      // iterations, so skip the inter-turn gap circuit breaker when extraTools include swarm tools.
+      const hasLongRunningTools = Boolean(extraTools && extraTools.some((t) => t.name === 'spawn_workers' || t.name === 'wait_for_workers'));
+      if (!hasLongRunningTools && Date.now() - lastTurnEnd > ASSISTANT_LIMITS.MAX_TURN_GAP_MS) {
+        emit(onStatusEvent, { type: 'circuit_open', reason: 'turn_gap_exceeded', ...eventCtx });
+        const partial = await this.recordCircuitStop(conversationId, 'Turn paused — exceeded time budget between model turns.', swarmAgentId);
         return { kind: 'error', error: 'Turn gap exceeded', partialMessage: partial };
       }
 
       // Rebuild chat history from DB on every iteration — keeps the truncation
       // policy simple and ensures confirmation/resume paths see fresh state.
-      const messages = await this.buildChatHistory(conversationId);
+      const messages = await this.buildChatHistory(conversationId, swarmAgentId, systemPromptOverride);
       if (retryHint) {
         messages.push({ role: 'user', content: retryHint });
         retryHint = undefined;
       }
 
-      emit(onStatusEvent, { type: 'provider_call_started', iteration: iter });
+      emit(onStatusEvent, { type: 'provider_call_started', iteration: iter, ...eventCtx });
       let response: ChatResponse;
       try {
         response = await this.callProviderWithRetry(provider, {
           modelId: realModelId,
           messages,
-          tools: this.tools,
+          tools: activeTools,
           maxTokens: ASSISTANT_LIMITS.MAX_OUTPUT_TOKENS,
           abortSignal,
-          cacheKey: conversationId,
+          cacheKey: swarmAgentId ? `${conversationId}:${swarmAgentId}` : conversationId,
           onThought: (update) => {
             emit(onStatusEvent, {
               type: 'provider_thinking',
               iteration: iter,
               title: update.title,
               content: update.content,
+              ...eventCtx,
             });
           },
         });
       } catch (e: any) {
         // Stopping abandons the model call; that is not a provider failure.
-        if (abortSignal?.aborted) return this.stopTurn(conversationId);
-        console.error(`[Assistant] Provider error: conversation=${conversationId} iter=${iter} error=${e?.message}`);
-        const partial = await this.recordProviderError(conversationId, e?.message ?? 'Provider call failed');
+        if (abortSignal?.aborted) return this.stopTurn(conversationId, swarmAgentId);
+        console.error(`[Assistant] Provider error: conversation=${conversationId} agent=${swarmAgentId ?? 'coordinator'} iter=${iter} error=${e?.message}`);
+        const partial = await this.recordProviderError(conversationId, e?.message ?? 'Provider call failed', swarmAgentId);
         return { kind: 'error', error: e?.message ?? 'Provider call failed', partialMessage: partial };
       }
       if (response.usage) {
         const { inputTokens, outputTokens, cachedInputTokens, cacheCreationInputTokens } = response.usage;
+        if (onTokenUsage && (inputTokens || outputTokens)) {
+          onTokenUsage(inputTokens ?? 0, outputTokens ?? 0);
+        }
         const cacheParts: string[] = [];
         if (typeof cachedInputTokens === 'number') cacheParts.push(`cached=${cachedInputTokens}`);
         if (typeof cacheCreationInputTokens === 'number') cacheParts.push(`cacheWrite=${cacheCreationInputTokens}`);
         console.log(
-          `[Assistant] Usage: conversation=${conversationId} iter=${iter} provider=${providerType} in=${inputTokens ?? 0}`
+          `[Assistant] Usage: conversation=${conversationId} agent=${swarmAgentId ?? 'coordinator'} iter=${iter} provider=${providerType} in=${inputTokens ?? 0}`
           + (cacheParts.length > 0 ? ` (${cacheParts.join(', ')})` : '')
           + ` out=${outputTokens ?? 0}`,
         );
       }
-      emit(onStatusEvent, { type: 'provider_call_finished', iteration: iter, stopReason: response.stopReason });
+      emit(onStatusEvent, { type: 'provider_call_finished', iteration: iter, stopReason: response.stopReason, ...eventCtx });
 
       // Persist the assistant message — we may later rewrite its `toolCalls`
       // to reflect the halt point, so keep the id.
       let assistantMessage = await this.repo.appendMessage({
         conversationId,
+        swarmAgentId,
         role: 'assistant',
         content: response.text,
         toolCalls: response.toolCalls.length > 0 ? response.toolCalls : undefined,
@@ -621,8 +897,8 @@ export class AssistantRunner {
       // Stop arrived while the model was answering. A plain answer is complete
       // and is kept as the turn's result; proposed tool calls are not run.
       if (abortSignal?.aborted && response.toolCalls.length > 0) {
-        await this.recordStoppedToolCalls(conversationId, response.toolCalls);
-        return this.stopTurn(conversationId);
+        await this.recordStoppedToolCalls(conversationId, response.toolCalls, swarmAgentId);
+        return this.stopTurn(conversationId, swarmAgentId);
       }
 
       // A `max_tokens` stop means the provider cut generation off mid-response —
@@ -633,10 +909,11 @@ export class AssistantRunner {
       if (response.stopReason === 'max_tokens') {
         if (response.toolCalls.length === 0) {
           if (++truncationRetries > ASSISTANT_LIMITS.MAX_TRUNCATION_RETRIES) {
-            emit(onStatusEvent, { type: 'circuit_open', reason: 'output_truncated' });
+            emit(onStatusEvent, { type: 'circuit_open', reason: 'output_truncated', ...eventCtx });
             const partial = await this.recordCircuitStop(
               conversationId,
               'the model kept running past its output limit. Ask for this in smaller pieces.',
+              swarmAgentId,
             );
             return { kind: 'error', error: 'Output truncated repeatedly', partialMessage: partial };
           }
@@ -649,13 +926,13 @@ export class AssistantRunner {
       }
 
       if (response.toolCalls.length === 0) {
-        await this.repo.touchConversation(conversationId);
+        if (!swarmAgentId) await this.repo.touchConversation(conversationId);
         return { kind: 'final', finalMessage: assistantMessage };
       }
 
       if (response.toolCalls.length > ASSISTANT_LIMITS.MAX_PARALLEL_TOOLS) {
-        emit(onStatusEvent, { type: 'circuit_open', reason: 'parallel_tools_exceeded' });
-        const partial = await this.recordCircuitStop(conversationId, 'Too many tool calls in a single turn — stopped for safety.');
+        emit(onStatusEvent, { type: 'circuit_open', reason: 'parallel_tools_exceeded', ...eventCtx });
+        const partial = await this.recordCircuitStop(conversationId, 'Too many tool calls in a single turn — stopped for safety.', swarmAgentId);
         return { kind: 'error', error: 'Parallel tool cap exceeded', partialMessage: partial };
       }
 
@@ -666,13 +943,13 @@ export class AssistantRunner {
         // A tool already running is let finish so its result is on record;
         // the ones after it never start.
         if (abortSignal?.aborted) {
-          await this.recordStoppedToolCalls(conversationId, response.toolCalls.slice(callIndex));
-          return this.stopTurn(conversationId);
+          await this.recordStoppedToolCalls(conversationId, response.toolCalls.slice(callIndex), swarmAgentId);
+          return this.stopTurn(conversationId, swarmAgentId);
         }
 
         if (--toolCallBudget < 0) {
-          emit(onStatusEvent, { type: 'circuit_open', reason: 'tool_call_budget_exceeded' });
-          const partial = await this.recordCircuitStop(conversationId, 'Hit the tool-call budget for this turn — stopped for safety.');
+          emit(onStatusEvent, { type: 'circuit_open', reason: 'tool_call_budget_exceeded', ...eventCtx });
+          const partial = await this.recordCircuitStop(conversationId, 'Hit the tool-call budget for this turn — stopped for safety.', swarmAgentId);
           return { kind: 'error', error: 'Tool-call budget exceeded', partialMessage: partial };
         }
 
@@ -680,20 +957,21 @@ export class AssistantRunner {
         recentCallHashes.push(hash);
         if (recentCallHashes.length > ASSISTANT_LIMITS.RECENT_CALL_WINDOW) recentCallHashes.shift();
         if (isRepetitionDetected(recentCallHashes, hash)) {
-          emit(onStatusEvent, { type: 'circuit_open', reason: 'repetition_detected' });
-          const partial = await this.recordCircuitStop(conversationId, 'Detected repeated tool call — stopped for safety.');
+          emit(onStatusEvent, { type: 'circuit_open', reason: 'repetition_detected', ...eventCtx });
+          const partial = await this.recordCircuitStop(conversationId, 'Detected repeated tool call — stopped for safety.', swarmAgentId);
           return { kind: 'error', error: 'Repeated tool call detected', partialMessage: partial };
         }
 
-          const tool = this.toolsByName.get(call.name);
+          const tool = activeToolsByName.get(call.name);
           if (!tool) {
             await this.repo.appendMessage({
               conversationId,
+              swarmAgentId,
               role: 'tool',
               toolCallId: call.id,
               toolName: call.name,
               toolArgsJson: call.arguments,
-              content: wrapToolResult(call.name, JSON.stringify({ error: `Unknown tool '${call.name}'` }), { error: true }),
+              content: wrapToolResult(call.name, JSON.stringify({ error: `Unknown or disallowed tool '${call.name}'` }), { error: true }),
               status: 'error',
             });
             processedCalls.push(call);
@@ -708,6 +986,7 @@ export class AssistantRunner {
             const truncatedArgs = response.stopReason === 'max_tokens';
             await this.repo.appendMessage({
               conversationId,
+              swarmAgentId,
               role: 'tool',
               toolCallId: call.id,
               toolName: call.name,
@@ -724,11 +1003,17 @@ export class AssistantRunner {
 
           if (toolRequiresConfirmation(tool)) {
             if (this.shouldAutoApproveWriteActions(conversationId, tool)) {
-              emit(onStatusEvent, { type: 'tool_call_started', call });
+              emit(onStatusEvent, { type: 'tool_call_started', call, ...eventCtx });
               const startMs = Date.now();
-              const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
+              const isError = await this.executeToolCallInner(
+                userId,
+                conversationId,
+                tool,
+                { ...call, arguments: parsed.value },
+                { swarmAgentId, entityLockAcquire },
+              );
               console.log(`[Assistant] Tool auto-approved for session: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId}`);
-              emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
+              emit(onStatusEvent, { type: 'tool_call_finished', call, isError, ...eventCtx });
               processedCalls.push(call);
               continue;
             }
@@ -758,6 +1043,7 @@ export class AssistantRunner {
             const finalSummary = summarizeToolEffect(tool, parsed.value, labels);
             const confirmation = await this.repo.createPendingConfirmation({
               conversationId,
+              swarmAgentId,
               messageId: assistantMessage.id,
               toolCallId: call.id,
               toolName: call.name,
@@ -765,9 +1051,9 @@ export class AssistantRunner {
               summary: finalSummary,
               expiresAt: new Date(Date.now() + ASSISTANT_LIMITS.CONFIRMATION_TTL_MS),
             });
-          emit(onStatusEvent, { type: 'confirmation_required', call, confirmationId: confirmation.id });
+          emit(onStatusEvent, { type: 'confirmation_required', call, confirmationId: confirmation.id, ...eventCtx });
           await this.repo.updateMessageStatus(assistantMessage.id, 'awaiting_confirmation');
-          await this.repo.touchConversation(conversationId);
+          if (!swarmAgentId) await this.repo.touchConversation(conversationId);
           return {
             kind: 'awaiting_confirmation',
             assistantMessage: { ...assistantMessage, toolCalls: trimmedToolCalls, status: 'awaiting_confirmation' },
@@ -775,20 +1061,33 @@ export class AssistantRunner {
           };
         }
 
-        emit(onStatusEvent, { type: 'tool_call_started', call });
+        emit(onStatusEvent, { type: 'tool_call_started', call, ...eventCtx });
         const startMs = Date.now();
-        await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
-        console.log(`[Assistant] Tool executed: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId}`);
-        emit(onStatusEvent, { type: 'tool_call_finished', call, isError: false });
+        // Swarm orchestration tools (spawn_workers, wait_for_workers, message_worker) run
+        // multiple LLM turns and need a much higher timeout than ordinary 15s DB/API tools.
+        const isSwarmControlTool = call.name === 'spawn_workers' || call.name === 'wait_for_workers' || call.name === 'message_worker';
+        const isError = await this.executeToolCallInner(
+          userId,
+          conversationId,
+          tool,
+          { ...call, arguments: parsed.value },
+          {
+            swarmAgentId,
+            entityLockAcquire,
+            timeoutMs: isSwarmControlTool ? 10 * 60_000 : ASSISTANT_LIMITS.TOOL_TIMEOUT_MS,
+          },
+        );
+        console.log(`[Assistant] Tool executed: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId} agent=${swarmAgentId ?? 'coordinator'}`);
+        emit(onStatusEvent, { type: 'tool_call_finished', call, isError, ...eventCtx });
         processedCalls.push(call);
       }
 
       lastTurnEnd = Date.now();
     }
 
-    emit(onStatusEvent, { type: 'circuit_open', reason: 'max_iterations' });
-    console.warn(`[Assistant] Circuit open: max_iterations conversation=${input.conversationId}`);
-    const partial = await this.recordCircuitStop(input.conversationId, 'Reached the maximum number of model turns — stopped for safety.');
+    emit(onStatusEvent, { type: 'circuit_open', reason: 'max_iterations', ...eventCtx });
+    console.warn(`[Assistant] Circuit open: max_iterations conversation=${input.conversationId} agent=${swarmAgentId ?? 'coordinator'}`);
+    const partial = await this.recordCircuitStop(input.conversationId, 'Reached the maximum number of model turns — stopped for safety.', swarmAgentId);
     return { kind: 'error', error: 'Max iterations reached', partialMessage: partial };
   }
 
@@ -802,12 +1101,18 @@ export class AssistantRunner {
     tool: AssistantToolDefinition,
     call: ToolCall,
     onStatusEvent?: (event: AssistantStatusEvent) => void,
+    options?: {
+      swarmAgentId?: string | null;
+      eventCtx?: SwarmEventContext;
+      entityLockAcquire?: (toolName: string, args: unknown) => Promise<() => void>;
+    },
   ): Promise<boolean> {
     const parsed = safeParseToolInput(tool, call.arguments);
     if (!parsed.ok) {
       const errMsg = (parsed as { ok: false; error: string }).error;
       await this.repo.appendMessage({
         conversationId,
+        swarmAgentId: options?.swarmAgentId ?? null,
         role: 'tool',
         toolCallId: call.id,
         toolName: call.name,
@@ -817,9 +1122,18 @@ export class AssistantRunner {
       });
       return false;
     }
-    emit(onStatusEvent, { type: 'tool_call_started', call });
-    const isError = await this.executeToolCallInner(userId, conversationId, tool, { ...call, arguments: parsed.value });
-    emit(onStatusEvent, { type: 'tool_call_finished', call, isError });
+    emit(onStatusEvent, { type: 'tool_call_started', call, ...(options?.eventCtx ?? {}) });
+    const isError = await this.executeToolCallInner(
+      userId,
+      conversationId,
+      tool,
+      { ...call, arguments: parsed.value },
+      {
+        swarmAgentId: options?.swarmAgentId ?? null,
+        entityLockAcquire: options?.entityLockAcquire,
+      },
+    );
+    emit(onStatusEvent, { type: 'tool_call_finished', call, isError, ...(options?.eventCtx ?? {}) });
     return !isError;
   }
 
@@ -856,15 +1170,25 @@ export class AssistantRunner {
     conversationId: string,
     tool: AssistantToolDefinition,
     call: ToolCall,
+    options?: {
+      swarmAgentId?: string | null;
+      entityLockAcquire?: (toolName: string, args: unknown) => Promise<() => void>;
+      timeoutMs?: number;
+    },
   ): Promise<boolean> {
+    let releaseLock: (() => void) | null = null;
     try {
+      if (tool.category !== 'read' && options?.entityLockAcquire) {
+        releaseLock = await options.entityLockAcquire(call.name, call.arguments);
+      }
       const result = await withTimeout(
         tool.handler(userId, call.arguments),
-        ASSISTANT_LIMITS.TOOL_TIMEOUT_MS,
+        options?.timeoutMs ?? ASSISTANT_LIMITS.TOOL_TIMEOUT_MS,
         `Tool '${call.name}' timed out`,
       );
       await this.repo.appendMessage({
         conversationId,
+        swarmAgentId: options?.swarmAgentId ?? null,
         role: 'tool',
         toolCallId: call.id,
         toolName: call.name,
@@ -880,6 +1204,7 @@ export class AssistantRunner {
     } catch (e: any) {
       await this.repo.appendMessage({
         conversationId,
+        swarmAgentId: options?.swarmAgentId ?? null,
         role: 'tool',
         toolCallId: call.id,
         toolName: call.name,
@@ -893,6 +1218,8 @@ export class AssistantRunner {
         errorText: e?.message ?? 'Tool execution failed',
       });
       return true;
+    } finally {
+      releaseLock?.();
     }
   }
 
@@ -995,13 +1322,20 @@ export class AssistantRunner {
     };
   }
 
-  private async buildChatHistory(conversationId: string): Promise<ChatMessage[]> {
-    const records = await this.repo.listMessages(conversationId);
-    return this.historyFromRecords(records).messages;
+  private async buildChatHistory(
+    conversationId: string,
+    swarmAgentId: string | null = null,
+    systemPromptOverride?: string,
+  ): Promise<ChatMessage[]> {
+    const records = await this.repo.listMessages(conversationId, { swarmAgentId });
+    return this.historyFromRecords(records, systemPromptOverride).messages;
   }
 
   /** The system prompt and the (truncated) history a model call is sent. */
-  private historyFromRecords(records: AssistantMessageRecord[]): { messages: ChatMessage[]; omitted: number } {
+  private historyFromRecords(
+    records: AssistantMessageRecord[],
+    systemPromptOverride?: string,
+  ): { messages: ChatMessage[]; omitted: number } {
     const body: ChatMessage[] = [];
     for (const m of records) {
       if (m.status === 'awaiting_confirmation') continue; // skip halted-turn stubs
@@ -1037,7 +1371,10 @@ export class AssistantRunner {
     const omitted = truncated === body ? 0 : body.length - (truncated.length - 1);
     // Keep the system prompt 100% static so provider KV / prefix caches stay
     // warm across tool-loop iterations and multi-turn follow-ups.
-    return { messages: [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }, ...truncated], omitted };
+    return {
+      messages: [{ role: 'system', content: systemPromptOverride ?? ASSISTANT_SYSTEM_PROMPT }, ...truncated],
+      omitted,
+    };
   }
 
   private async callProviderWithRetry(
@@ -1068,15 +1405,16 @@ export class AssistantRunner {
   }
 
   /** End a turn the user stopped, leaving a note in the transcript. */
-  private async stopTurn(conversationId: string): Promise<TurnResult> {
-    console.log(`[Assistant] Turn stopped by user: conversation=${conversationId}`);
+  private async stopTurn(conversationId: string, swarmAgentId: string | null = null): Promise<TurnResult> {
+    console.log(`[Assistant] Turn stopped by user: conversation=${conversationId} agent=${swarmAgentId ?? 'coordinator'}`);
     const stoppedMessage = await this.repo.appendMessage({
       conversationId,
+      swarmAgentId,
       role: 'assistant',
       content: 'Stopped at your request.',
       status: 'cancelled',
     });
-    await this.repo.touchConversation(conversationId);
+    if (!swarmAgentId) await this.repo.touchConversation(conversationId);
     return { kind: 'stopped', stoppedMessage };
   }
 
@@ -1085,10 +1423,15 @@ export class AssistantRunner {
    * needs a result in the history, or the next request to the provider is
    * rejected for an unanswered tool call.
    */
-  private async recordStoppedToolCalls(conversationId: string, calls: ToolCall[]): Promise<void> {
+  private async recordStoppedToolCalls(
+    conversationId: string,
+    calls: ToolCall[],
+    swarmAgentId: string | null = null,
+  ): Promise<void> {
     for (const call of calls) {
       await this.repo.appendMessage({
         conversationId,
+        swarmAgentId,
         role: 'tool',
         toolCallId: call.id,
         toolName: call.name,
@@ -1102,9 +1445,14 @@ export class AssistantRunner {
     }
   }
 
-  private async recordCircuitStop(conversationId: string, message: string): Promise<AssistantMessageRecord> {
+  private async recordCircuitStop(
+    conversationId: string,
+    message: string,
+    swarmAgentId: string | null = null,
+  ): Promise<AssistantMessageRecord> {
     return this.repo.appendMessage({
       conversationId,
+      swarmAgentId,
       role: 'assistant',
       content: `I stopped because ${message}`,
       status: 'error',
@@ -1112,9 +1460,14 @@ export class AssistantRunner {
     });
   }
 
-  private async recordProviderError(conversationId: string, rawError: string): Promise<AssistantMessageRecord> {
+  private async recordProviderError(
+    conversationId: string,
+    rawError: string,
+    swarmAgentId: string | null = null,
+  ): Promise<AssistantMessageRecord> {
     return this.repo.appendMessage({
       conversationId,
+      swarmAgentId,
       role: 'assistant',
       content: "The model couldn't finish this turn. You can try again.",
       status: 'error',
@@ -1123,9 +1476,14 @@ export class AssistantRunner {
     });
   }
 
-  private async recordConfigurationError(conversationId: string, rawError: string): Promise<AssistantMessageRecord> {
+  private async recordConfigurationError(
+    conversationId: string,
+    rawError: string,
+    swarmAgentId: string | null = null,
+  ): Promise<AssistantMessageRecord> {
     return this.repo.appendMessage({
       conversationId,
+      swarmAgentId,
       role: 'assistant',
       content: "This chat can't continue because its provider or model is unavailable or no longer supported.",
       status: 'error',

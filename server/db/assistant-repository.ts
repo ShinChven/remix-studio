@@ -44,6 +44,7 @@ export interface AssistantConversationRecord {
 export interface AssistantMessageRecord {
   id: string;
   conversationId: string;
+  swarmAgentId: string | null;
   role: AssistantMessageRole;
   content: string;
   toolCalls: AssistantToolCall[] | null;
@@ -95,6 +96,8 @@ export type AssistantPendingConfirmationStatus = 'pending' | 'confirmed' | 'canc
 export interface AssistantPendingConfirmationRecord {
   id: string;
   conversationId: string;
+  swarmAgentId: string | null;
+  swarmAgentName?: string | null;
   messageId: string;
   toolCallId: string;
   toolName: string;
@@ -103,6 +106,83 @@ export interface AssistantPendingConfirmationRecord {
   status: AssistantPendingConfirmationStatus;
   expiresAt: number;
   createdAt: number;
+}
+
+export type AssistantSwarmRunStatus =
+  | 'running'
+  | 'awaiting_confirmation'
+  | 'completed'
+  | 'stopped'
+  | 'failed';
+
+export type AssistantSwarmAgentStatus =
+  | 'queued'
+  | 'running'
+  | 'waiting'
+  | 'awaiting_confirmation'
+  | 'completed'
+  | 'failed'
+  | 'stopped';
+
+export type AssistantSwarmToolScope = 'read' | 'propose' | 'write';
+
+export interface AssistantSwarmAgentRecord {
+  id: string;
+  swarmRunId: string;
+  name: string;
+  role: string;
+  brief: string;
+  providerId: string | null;
+  modelConfigId: string | null;
+  toolScope: AssistantSwarmToolScope;
+  status: AssistantSwarmAgentStatus;
+  summary: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AssistantSwarmBlackboardEntryRecord {
+  id: string;
+  swarmRunId: string;
+  conversationId: string;
+  key: string;
+  title: string | null;
+  content: string;
+  dataJson: unknown | null;
+  authorAgentId: string | null;
+  authorName: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AssistantSwarmRunRecord {
+  id: string;
+  conversationId: string;
+  goal: string;
+  status: AssistantSwarmRunStatus;
+  createdAt: number;
+  completedAt: number | null;
+  agents: AssistantSwarmAgentRecord[];
+  blackboardEntries: AssistantSwarmBlackboardEntryRecord[];
+}
+
+export interface AssistantSwarmPresetWorker {
+  name: string;
+  role: string;
+  brief: string;
+  toolScope: AssistantSwarmToolScope;
+  providerId?: string | null;
+  modelConfigId?: string | null;
+}
+
+export interface AssistantSwarmPreset {
+  id: string;
+  name: string;
+  description: string;
+  goalTemplate: string;
+  workers: AssistantSwarmPresetWorker[];
 }
 
 export interface CreateConversationInput {
@@ -121,6 +201,7 @@ export interface UpdateConversationInput {
 
 export interface AppendMessageInput {
   conversationId: string;
+  swarmAgentId?: string | null;
   role: AssistantMessageRole;
   content?: string;
   toolCalls?: AssistantToolCall[];
@@ -137,6 +218,7 @@ export interface AppendMessageInput {
 
 export interface CreatePendingConfirmationInput {
   conversationId: string;
+  swarmAgentId?: string | null;
   messageId: string;
   toolCallId: string;
   toolName: string;
@@ -188,6 +270,7 @@ function toMessage(record: any): AssistantMessageRecord {
   return {
     id: record.id,
     conversationId: record.conversationId,
+    swarmAgentId: record.swarmAgentId ?? null,
     role: record.role as AssistantMessageRole,
     content: record.content ?? '',
     toolCalls: Array.isArray(record.toolCalls) ? (record.toolCalls as AssistantToolCall[]) : null,
@@ -208,6 +291,8 @@ function toPendingConfirmation(record: any): AssistantPendingConfirmationRecord 
   return {
     id: record.id,
     conversationId: record.conversationId,
+    swarmAgentId: record.swarmAgentId ?? null,
+    swarmAgentName: record.swarmAgent?.name ?? null,
     messageId: record.messageId,
     toolCallId: record.toolCallId,
     toolName: record.toolName,
@@ -216,6 +301,56 @@ function toPendingConfirmation(record: any): AssistantPendingConfirmationRecord 
     status: record.status as AssistantPendingConfirmationStatus,
     expiresAt: toDateMs(record.expiresAt),
     createdAt: toDateMs(record.createdAt),
+  };
+}
+
+function toSwarmAgent(record: any): AssistantSwarmAgentRecord {
+  return {
+    id: record.id,
+    swarmRunId: record.swarmRunId,
+    name: record.name,
+    role: record.role,
+    brief: record.brief,
+    providerId: record.providerId ?? null,
+    modelConfigId: record.modelConfigId ?? null,
+    toolScope: (record.toolScope ?? 'read') as AssistantSwarmToolScope,
+    status: (record.status ?? 'queued') as AssistantSwarmAgentStatus,
+    summary: record.summary ?? null,
+    inputTokens: record.inputTokens ?? 0,
+    outputTokens: record.outputTokens ?? 0,
+    createdAt: toDateMs(record.createdAt),
+    updatedAt: toDateMs(record.updatedAt),
+  };
+}
+
+function toBlackboardEntry(record: any): AssistantSwarmBlackboardEntryRecord {
+  return {
+    id: record.id,
+    swarmRunId: record.swarmRunId,
+    conversationId: record.conversationId,
+    key: record.key,
+    title: record.title ?? null,
+    content: record.content ?? '',
+    dataJson: record.dataJson ?? null,
+    authorAgentId: record.authorAgentId ?? null,
+    authorName: record.authorName ?? 'Coordinator',
+    createdAt: toDateMs(record.createdAt),
+    updatedAt: toDateMs(record.updatedAt),
+  };
+}
+
+function toSwarmRun(record: any): AssistantSwarmRunRecord {
+  return {
+    id: record.id,
+    conversationId: record.conversationId,
+    goal: record.goal,
+    status: (record.status ?? 'running') as AssistantSwarmRunStatus,
+    createdAt: toDateMs(record.createdAt),
+    completedAt: record.completedAt ? toDateMs(record.completedAt) : null,
+    agents: Array.isArray(record.agents) ? record.agents.map(toSwarmAgent) : [],
+    blackboardEntries: Array.isArray(record.blackboardEntries)
+      ? record.blackboardEntries.map(toBlackboardEntry)
+      : [],
   };
 }
 
@@ -242,9 +377,25 @@ export interface AssistantSettingsRecord {
   enabledProviderIds: string[];
   lastProviderId: string | null;
   lastModelId: string | null;
+  swarmEnabled: boolean;
+  swarmWorkerProviderId: string | null;
+  swarmWorkerModelId: string | null;
+  swarmPresets: AssistantSwarmPreset[];
 }
 
 export type AssistantSettingsPatch = Partial<AssistantSettingsRecord>;
+
+function toSettings(row: any): AssistantSettingsRecord {
+  return {
+    enabledProviderIds: row?.enabledProviderIds ?? [],
+    lastProviderId: row?.lastProviderId ?? null,
+    lastModelId: row?.lastModelId ?? null,
+    swarmEnabled: Boolean(row?.swarmEnabled),
+    swarmWorkerProviderId: row?.swarmWorkerProviderId ?? null,
+    swarmWorkerModelId: row?.swarmWorkerModelId ?? null,
+    swarmPresets: Array.isArray(row?.swarmPresetsJson) ? (row.swarmPresetsJson as AssistantSwarmPreset[]) : [],
+  };
+}
 
 export class AssistantRepository {
   constructor(private prisma: PrismaClient) {}
@@ -253,28 +404,24 @@ export class AssistantRepository {
 
   async getSettings(userId: string): Promise<AssistantSettingsRecord> {
     const row = await this.prisma.assistantSetting.findUnique({ where: { userId } });
-    return {
-      enabledProviderIds: row?.enabledProviderIds ?? [],
-      lastProviderId: row?.lastProviderId ?? null,
-      lastModelId: row?.lastModelId ?? null,
-    };
+    return toSettings(row);
   }
 
   async updateSettings(userId: string, patch: AssistantSettingsPatch): Promise<AssistantSettingsRecord> {
-    const data: AssistantSettingsPatch = {};
+    const data: Record<string, unknown> = {};
     if (patch.enabledProviderIds !== undefined) data.enabledProviderIds = [...new Set(patch.enabledProviderIds)];
     if (patch.lastProviderId !== undefined) data.lastProviderId = patch.lastProviderId;
     if (patch.lastModelId !== undefined) data.lastModelId = patch.lastModelId;
+    if (patch.swarmEnabled !== undefined) data.swarmEnabled = patch.swarmEnabled;
+    if (patch.swarmWorkerProviderId !== undefined) data.swarmWorkerProviderId = patch.swarmWorkerProviderId;
+    if (patch.swarmWorkerModelId !== undefined) data.swarmWorkerModelId = patch.swarmWorkerModelId;
+    if (patch.swarmPresets !== undefined) data.swarmPresetsJson = patch.swarmPresets;
     const row = await this.prisma.assistantSetting.upsert({
       where: { userId },
       create: { userId, ...data },
       update: data,
     });
-    return {
-      enabledProviderIds: row.enabledProviderIds,
-      lastProviderId: row.lastProviderId,
-      lastModelId: row.lastModelId,
-    };
+    return toSettings(row);
   }
 
   // ─── Conversations ───
@@ -469,21 +616,34 @@ export class AssistantRepository {
 
   async listMessages(
     conversationId: string,
-    options: { limit?: number } = {},
+    options: { limit?: number; swarmAgentId?: string | null } = {},
   ): Promise<AssistantMessageRecord[]> {
     const take = options.limit ? Math.min(Math.max(options.limit, 1), 500) : undefined;
+    // Default to Coordinator messages (swarmAgentId: null) unless a specific worker id is requested.
+    const swarmAgentId = options.swarmAgentId === undefined ? null : options.swarmAgentId;
     const records = await this.prisma.assistantMessage.findMany({
-      where: { conversationId },
+      where: { conversationId, swarmAgentId },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       ...(take ? { take } : {}),
     });
     return records.map(toMessage);
   }
 
+  async findToolMessageByCallId(
+    conversationId: string,
+    toolCallId: string,
+  ): Promise<AssistantMessageRecord | null> {
+    const record = await this.prisma.assistantMessage.findFirst({
+      where: { conversationId, role: 'tool', toolCallId },
+    });
+    return record ? toMessage(record) : null;
+  }
+
   async appendMessage(input: AppendMessageInput): Promise<AssistantMessageRecord> {
     const record = await this.prisma.assistantMessage.create({
       data: {
         conversationId: input.conversationId,
+        swarmAgentId: input.swarmAgentId ?? null,
         role: input.role,
         content: input.content ?? '',
         toolCalls: (input.toolCalls ?? undefined) as any,
@@ -514,6 +674,7 @@ export class AssistantRepository {
     const record = await this.prisma.assistantPendingConfirmation.create({
       data: {
         conversationId: input.conversationId,
+        swarmAgentId: input.swarmAgentId ?? null,
         messageId: input.messageId,
         toolCallId: input.toolCallId,
         toolName: input.toolName,
@@ -521,12 +682,16 @@ export class AssistantRepository {
         summary: input.summary ?? null,
         expiresAt: input.expiresAt,
       },
+      include: { swarmAgent: { select: { name: true } } },
     });
     return toPendingConfirmation(record);
   }
 
   async getPendingConfirmation(id: string): Promise<AssistantPendingConfirmationRecord | null> {
-    const record = await this.prisma.assistantPendingConfirmation.findUnique({ where: { id } });
+    const record = await this.prisma.assistantPendingConfirmation.findUnique({
+      where: { id },
+      include: { swarmAgent: { select: { name: true } } },
+    });
     return record ? toPendingConfirmation(record) : null;
   }
 
@@ -541,10 +706,24 @@ export class AssistantRepository {
     now: Date = new Date(),
   ): Promise<AssistantPendingConfirmationRecord | null> {
     const record = await this.prisma.assistantPendingConfirmation.findFirst({
-      where: { conversationId, status: 'pending', expiresAt: { gt: now } },
+      where: { conversationId, swarmAgentId: null, status: 'pending', expiresAt: { gt: now } },
       orderBy: { createdAt: 'desc' },
+      include: { swarmAgent: { select: { name: true } } },
     });
     return record ? toPendingConfirmation(record) : null;
+  }
+
+  /** All active pending confirmations across the Coordinator and every swarm worker. */
+  async listActivePendingConfirmations(
+    conversationId: string,
+    now: Date = new Date(),
+  ): Promise<AssistantPendingConfirmationRecord[]> {
+    const records = await this.prisma.assistantPendingConfirmation.findMany({
+      where: { conversationId, status: 'pending', expiresAt: { gt: now } },
+      orderBy: { createdAt: 'asc' },
+      include: { swarmAgent: { select: { name: true } } },
+    });
+    return records.map(toPendingConfirmation);
   }
 
   async findPendingConfirmationForCall(
@@ -641,6 +820,195 @@ export class AssistantRepository {
     });
     if (result.count === 0) {
       throw new Error('Resource not found');
+    }
+  }
+
+  // ─── Swarm runs, agents & blackboard ───
+
+  async createSwarmRun(input: { conversationId: string; goal: string }): Promise<AssistantSwarmRunRecord> {
+    const record = await this.prisma.assistantSwarmRun.create({
+      data: {
+        conversationId: input.conversationId,
+        goal: input.goal,
+        status: 'running',
+      },
+      include: {
+        agents: { orderBy: { createdAt: 'asc' } },
+        blackboardEntries: { orderBy: { updatedAt: 'desc' } },
+      },
+    });
+    return toSwarmRun(record);
+  }
+
+  async updateSwarmRun(
+    swarmRunId: string,
+    updates: { status?: AssistantSwarmRunStatus; completedAt?: Date | null },
+  ): Promise<AssistantSwarmRunRecord> {
+    const data: Record<string, unknown> = {};
+    if (updates.status !== undefined) data.status = updates.status;
+    if (updates.completedAt !== undefined) data.completedAt = updates.completedAt;
+    const record = await this.prisma.assistantSwarmRun.update({
+      where: { id: swarmRunId },
+      data,
+      include: {
+        agents: { orderBy: { createdAt: 'asc' } },
+        blackboardEntries: { orderBy: { updatedAt: 'desc' } },
+      },
+    });
+    return toSwarmRun(record);
+  }
+
+  async listSwarmRuns(conversationId: string, limit = 20): Promise<AssistantSwarmRunRecord[]> {
+    const records = await this.prisma.assistantSwarmRun.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(limit, 1), 50),
+      include: {
+        agents: { orderBy: { createdAt: 'asc' } },
+        blackboardEntries: { orderBy: { updatedAt: 'desc' } },
+      },
+    });
+    return records.map(toSwarmRun);
+  }
+
+  async getSwarmRun(swarmRunId: string): Promise<AssistantSwarmRunRecord | null> {
+    const record = await this.prisma.assistantSwarmRun.findUnique({
+      where: { id: swarmRunId },
+      include: {
+        agents: { orderBy: { createdAt: 'asc' } },
+        blackboardEntries: { orderBy: { updatedAt: 'desc' } },
+      },
+    });
+    return record ? toSwarmRun(record) : null;
+  }
+
+  async createSwarmAgent(input: {
+    swarmRunId: string;
+    name: string;
+    role: string;
+    brief: string;
+    providerId?: string | null;
+    modelConfigId?: string | null;
+    toolScope?: AssistantSwarmToolScope;
+    status?: AssistantSwarmAgentStatus;
+  }): Promise<AssistantSwarmAgentRecord> {
+    const record = await this.prisma.assistantSwarmAgent.create({
+      data: {
+        swarmRunId: input.swarmRunId,
+        name: input.name,
+        role: input.role,
+        brief: input.brief,
+        providerId: input.providerId ?? null,
+        modelConfigId: input.modelConfigId ?? null,
+        toolScope: input.toolScope ?? 'read',
+        status: input.status ?? 'queued',
+      },
+    });
+    return toSwarmAgent(record);
+  }
+
+  async updateSwarmAgent(
+    agentId: string,
+    updates: {
+      status?: AssistantSwarmAgentStatus;
+      summary?: string | null;
+      inputTokens?: number;
+      outputTokens?: number;
+    },
+  ): Promise<AssistantSwarmAgentRecord> {
+    const data: Record<string, unknown> = {};
+    if (updates.status !== undefined) data.status = updates.status;
+    if (updates.summary !== undefined) data.summary = updates.summary;
+    if (updates.inputTokens !== undefined) data.inputTokens = updates.inputTokens;
+    if (updates.outputTokens !== undefined) data.outputTokens = updates.outputTokens;
+    const record = await this.prisma.assistantSwarmAgent.update({
+      where: { id: agentId },
+      data,
+    });
+    return toSwarmAgent(record);
+  }
+
+  async addSwarmAgentTokens(agentId: string, inputTokens: number, outputTokens: number): Promise<void> {
+    await this.prisma.assistantSwarmAgent.update({
+      where: { id: agentId },
+      data: {
+        inputTokens: { increment: Math.max(0, inputTokens) },
+        outputTokens: { increment: Math.max(0, outputTokens) },
+      },
+    });
+  }
+
+  async getSwarmAgent(agentId: string): Promise<(AssistantSwarmAgentRecord & { conversationId: string }) | null> {
+    const record = await this.prisma.assistantSwarmAgent.findUnique({
+      where: { id: agentId },
+      include: { swarmRun: { select: { conversationId: true } } },
+    });
+    if (!record) return null;
+    return {
+      ...toSwarmAgent(record),
+      conversationId: record.swarmRun.conversationId,
+    };
+  }
+
+  async upsertBlackboardEntry(input: {
+    swarmRunId: string;
+    conversationId: string;
+    key: string;
+    title?: string | null;
+    content: string;
+    dataJson?: unknown;
+    authorAgentId?: string | null;
+    authorName: string;
+  }): Promise<AssistantSwarmBlackboardEntryRecord> {
+    const record = await this.prisma.assistantSwarmBlackboardEntry.upsert({
+      where: {
+        swarmRunId_key: {
+          swarmRunId: input.swarmRunId,
+          key: input.key,
+        },
+      },
+      create: {
+        swarmRunId: input.swarmRunId,
+        conversationId: input.conversationId,
+        key: input.key,
+        title: input.title ?? null,
+        content: input.content,
+        dataJson: (input.dataJson ?? undefined) as any,
+        authorAgentId: input.authorAgentId ?? null,
+        authorName: input.authorName,
+      },
+      update: {
+        title: input.title ?? undefined,
+        content: input.content,
+        dataJson: (input.dataJson ?? undefined) as any,
+        authorAgentId: input.authorAgentId ?? null,
+        authorName: input.authorName,
+      },
+    });
+    return toBlackboardEntry(record);
+  }
+
+  async listBlackboardEntries(
+    conversationId: string,
+    swarmRunId?: string,
+  ): Promise<AssistantSwarmBlackboardEntryRecord[]> {
+    const records = await this.prisma.assistantSwarmBlackboardEntry.findMany({
+      where: {
+        conversationId,
+        ...(swarmRunId ? { swarmRunId } : {}),
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    });
+    return records.map(toBlackboardEntry);
+  }
+
+  async deleteBlackboardEntry(conversationId: string, entryId: string): Promise<void> {
+    const result = await this.prisma.assistantSwarmBlackboardEntry.deleteMany({
+      where: { id: entryId, conversationId },
+    });
+    if (result.count === 0) {
+      throw new Error('Blackboard entry not found');
     }
   }
 }

@@ -7,7 +7,15 @@ const LEGACY_ENABLED_PROVIDERS_KEY = 'assistant_enabled_provider_ids';
 const LEGACY_PROVIDER_KEY = 'assistant_last_provider';
 const LEGACY_MODEL_KEY = 'assistant_last_model';
 
-const EMPTY_SETTINGS: AssistantSettings = { enabledProviderIds: [], lastProviderId: null, lastModelId: null };
+const EMPTY_SETTINGS: AssistantSettings = {
+  enabledProviderIds: [],
+  lastProviderId: null,
+  lastModelId: null,
+  swarmEnabled: false,
+  swarmWorkerProviderId: null,
+  swarmWorkerModelId: null,
+  swarmPresets: [],
+};
 
 let cached: AssistantSettings | null = null;
 let loading: Promise<AssistantSettings> | null = null;
@@ -97,6 +105,18 @@ export async function saveAssistantSettings(patch: Partial<AssistantSettings>): 
   }
   if (patch.lastModelId !== undefined && (patch.lastModelId || null) !== current.lastModelId) {
     changed.lastModelId = patch.lastModelId || null;
+  }
+  if (patch.swarmEnabled !== undefined && patch.swarmEnabled !== current.swarmEnabled) {
+    changed.swarmEnabled = patch.swarmEnabled;
+  }
+  if (patch.swarmWorkerProviderId !== undefined && (patch.swarmWorkerProviderId || null) !== current.swarmWorkerProviderId) {
+    changed.swarmWorkerProviderId = patch.swarmWorkerProviderId || null;
+  }
+  if (patch.swarmWorkerModelId !== undefined && (patch.swarmWorkerModelId || null) !== current.swarmWorkerModelId) {
+    changed.swarmWorkerModelId = patch.swarmWorkerModelId || null;
+  }
+  if (patch.swarmPresets !== undefined) {
+    changed.swarmPresets = patch.swarmPresets;
   }
   if (Object.keys(changed).length === 0) return current;
   // Update the cache first so quick successive picks compare against the latest choice.

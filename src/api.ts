@@ -1907,6 +1907,8 @@ export interface AssistantConversationResource {
 export interface AssistantPendingConfirmation {
   id: string;
   conversationId: string;
+  swarmAgentId?: string | null;
+  swarmAgentName?: string | null;
   messageId: string;
   toolCallId: string;
   toolName: string;
@@ -1915,6 +1917,89 @@ export interface AssistantPendingConfirmation {
   status: string;
   expiresAt: number;
   createdAt: number;
+}
+
+export type AssistantSwarmRunStatus =
+  | 'running'
+  | 'awaiting_confirmation'
+  | 'completed'
+  | 'stopped'
+  | 'failed';
+
+export type AssistantSwarmAgentStatus =
+  | 'queued'
+  | 'running'
+  | 'waiting'
+  | 'awaiting_confirmation'
+  | 'completed'
+  | 'failed'
+  | 'stopped';
+
+export type AssistantSwarmToolScope = 'read' | 'propose' | 'write';
+
+export interface AssistantSwarmAgent {
+  id: string;
+  swarmRunId: string;
+  name: string;
+  role: string;
+  brief: string;
+  providerId: string | null;
+  modelConfigId: string | null;
+  toolScope: AssistantSwarmToolScope;
+  status: AssistantSwarmAgentStatus;
+  summary: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AssistantSwarmBlackboardEntry {
+  id: string;
+  swarmRunId: string;
+  conversationId: string;
+  key: string;
+  title: string | null;
+  content: string;
+  dataJson: unknown | null;
+  authorAgentId: string | null;
+  authorName: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AssistantSwarmRun {
+  id: string;
+  conversationId: string;
+  goal: string;
+  status: AssistantSwarmRunStatus;
+  createdAt: number;
+  completedAt: number | null;
+  agents: AssistantSwarmAgent[];
+  blackboardEntries: AssistantSwarmBlackboardEntry[];
+}
+
+export interface AssistantSwarmPresetWorker {
+  name: string;
+  role: string;
+  brief: string;
+  toolScope: AssistantSwarmToolScope;
+  providerId?: string | null;
+  modelConfigId?: string | null;
+}
+
+export interface AssistantSwarmPreset {
+  id: string;
+  name: string;
+  description: string;
+  goalTemplate: string;
+  workers: AssistantSwarmPresetWorker[];
+}
+
+export interface AssistantTurnSwarmOptions {
+  swarmMode?: boolean;
+  workerProviderId?: string | null;
+  workerModelId?: string | null;
 }
 
 /** A turn still running server-side, as reported when a conversation loads. */
@@ -1993,6 +2078,12 @@ export async function fetchAssistantConversation(id: string): Promise<{
   resources: AssistantConversationResource[];
   /** The confirmation this conversation is waiting on, if any. */
   pendingConfirmation: AssistantPendingConfirmation | null;
+  /** All active pending confirmations across Coordinator and swarm workers. */
+  pendingConfirmations: AssistantPendingConfirmation[];
+  /** Swarm runs associated with this conversation (newest first). */
+  swarmRuns: AssistantSwarmRun[];
+  /** Shared blackboard entries across swarm runs in this conversation. */
+  blackboardEntries: AssistantSwarmBlackboardEntry[];
   /** Set when a turn is still running server-side and can be reattached to. */
   activeTurn: AssistantActiveTurn | null;
 }> {
@@ -2002,12 +2093,18 @@ export async function fetchAssistantConversation(id: string): Promise<{
     messages: AssistantMessage[];
     resources?: AssistantConversationResource[];
     pendingConfirmation?: AssistantPendingConfirmation | null;
+    pendingConfirmations?: AssistantPendingConfirmation[];
+    swarmRuns?: AssistantSwarmRun[];
+    blackboardEntries?: AssistantSwarmBlackboardEntry[];
     activeTurn?: AssistantActiveTurn | null;
   }>(res, 'Failed to get conversation');
   return {
     ...data,
     resources: data.resources ?? [],
     pendingConfirmation: data.pendingConfirmation ?? null,
+    pendingConfirmations: data.pendingConfirmations ?? (data.pendingConfirmation ? [data.pendingConfirmation] : []),
+    swarmRuns: data.swarmRuns ?? [],
+    blackboardEntries: data.blackboardEntries ?? [],
     activeTurn: data.activeTurn ?? null,
   };
 }
@@ -2068,11 +2165,12 @@ export async function sendAssistantMessage(
   content: string,
   onStatusEvent?: AssistantTurnStatusHandler,
   signal?: AbortSignal,
+  swarmOptions?: AssistantTurnSwarmOptions,
 ): Promise<AssistantTurnResult | null> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, ...(swarmOptions ?? {}) }),
     signal,
   });
   return handleAssistantTurnStream(res, onStatusEvent);
@@ -2084,11 +2182,12 @@ export async function editAssistantMessage(
   content: string,
   onStatusEvent?: AssistantTurnStatusHandler,
   signal?: AbortSignal,
+  swarmOptions?: AssistantTurnSwarmOptions,
 ): Promise<AssistantTurnResult | null> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/messages/${messageId}/edit`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, ...(swarmOptions ?? {}) }),
     signal,
   });
   return handleAssistantTurnStream(res, onStatusEvent);
@@ -2100,14 +2199,74 @@ export async function confirmAssistantTool(
   decision: 'confirm' | 'confirm_tool' | 'cancel',
   onStatusEvent?: AssistantTurnStatusHandler,
   signal?: AbortSignal,
+  swarmOptions?: AssistantTurnSwarmOptions,
 ): Promise<AssistantTurnResult | null> {
   const res = await apiFetch(`/api/assistant/conversations/${conversationId}/confirm`, {
     method: 'POST',
     headers: getHeaders(),
-    body: JSON.stringify({ confirmationId, decision }),
+    body: JSON.stringify({ confirmationId, decision, ...(swarmOptions ?? {}) }),
     signal,
   });
   return handleAssistantTurnStream(res, onStatusEvent);
+}
+
+export async function confirmAssistantToolsBatch(
+  conversationId: string,
+  confirmationIds: string[],
+  decision: 'confirm' | 'confirm_tool' | 'cancel',
+): Promise<{ resolved: Array<{ confirmationId: string; agentId: string | null; status: string; summary?: string }> }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/confirm-batch`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ confirmationIds, decision }),
+  });
+  return handleResponse(res, 'Failed to resolve confirmations');
+}
+
+export async function fetchAssistantSwarmState(conversationId: string): Promise<{
+  swarmRuns: AssistantSwarmRun[];
+  blackboardEntries: AssistantSwarmBlackboardEntry[];
+  pendingConfirmations: AssistantPendingConfirmation[];
+}> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/swarm`, { headers: getHeaders(false) });
+  return handleResponse(res, 'Failed to load swarm state');
+}
+
+export async function fetchAssistantSwarmAgentTranscript(
+  conversationId: string,
+  agentId: string,
+): Promise<{
+  agent: AssistantSwarmAgent;
+  messages: AssistantMessage[];
+  pendingConfirmations: AssistantPendingConfirmation[];
+}> {
+  const res = await apiFetch(
+    `/api/assistant/conversations/${conversationId}/swarm/agents/${encodeURIComponent(agentId)}/messages`,
+    { headers: getHeaders(false) },
+  );
+  return handleResponse(res, 'Failed to load worker transcript');
+}
+
+export async function stopAssistantSwarmAgent(
+  conversationId: string,
+  agentId: string,
+): Promise<{ stopping: boolean }> {
+  const res = await apiFetch(
+    `/api/assistant/conversations/${conversationId}/swarm/agents/${encodeURIComponent(agentId)}/stop`,
+    { method: 'POST', headers: getHeaders() },
+  );
+  return handleResponse<{ stopping: boolean }>(res, 'Failed to stop worker');
+}
+
+export async function deleteAssistantBlackboardEntry(
+  conversationId: string,
+  entryId: string,
+): Promise<void> {
+  const res = await apiFetch(
+    `/api/assistant/conversations/${conversationId}/blackboard/${encodeURIComponent(entryId)}`,
+    { method: 'DELETE', headers: getHeaders(false) },
+  );
+  await handleResponse<{ success: boolean }>(res, 'Failed to remove blackboard entry');
 }
 
 /**
@@ -2176,6 +2335,10 @@ export interface AssistantSettings {
   enabledProviderIds: string[];
   lastProviderId: string | null;
   lastModelId: string | null;
+  swarmEnabled: boolean;
+  swarmWorkerProviderId: string | null;
+  swarmWorkerModelId: string | null;
+  swarmPresets: AssistantSwarmPreset[];
 }
 
 export async function fetchAssistantSettings(): Promise<AssistantSettings> {
