@@ -451,6 +451,19 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── Context breakdown of a conversation's next model call ───
+  router.get('/api/assistant/conversations/:id/context', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const estimate = await runner.estimateContext(user.userId, c.req.param('id'));
+      if (!estimate) return c.json({ error: 'Conversation not found' }, 404);
+      return c.json(estimate);
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/context]', e);
+      return c.json({ error: 'Failed to estimate context usage' }, 500);
+    }
+  });
+
   // ─── Chat preferences (enabled providers, last picked model) ───
   const settingsPatchSchema = z.object({
     enabledProviderIds: z.array(z.string().min(1).max(200)).max(200).optional(),

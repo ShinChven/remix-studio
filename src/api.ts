@@ -2146,6 +2146,31 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
   return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }
 
+/** Where a conversation's next model call spends its context, estimated by category. */
+export interface AssistantContextEstimate {
+  categories: {
+    systemPrompt: number;
+    tools: number;
+    userMessages: number;
+    assistantMessages: number;
+    toolResults: number;
+    images: number;
+  };
+  total: number;
+  /** Input tokens the model reported for the latest reply, which the estimates are scaled to. */
+  reportedInputTokens: number | null;
+  calibrated: boolean;
+  tools: { name: string; tokens: number }[];
+  imageCount: number;
+  messageCount: number;
+  omittedMessageCount: number;
+}
+
+export async function fetchAssistantContextEstimate(conversationId: string): Promise<AssistantContextEstimate> {
+  const res = await apiFetch(`/api/assistant/conversations/${encodeURIComponent(conversationId)}/context`, { headers: getHeaders(false) });
+  return handleResponse<AssistantContextEstimate>(res, 'Failed to estimate context usage');
+}
+
 /** Per-user chat preferences, stored on the server. An empty `enabledProviderIds` means every chat provider. */
 export interface AssistantSettings {
   enabledProviderIds: string[];

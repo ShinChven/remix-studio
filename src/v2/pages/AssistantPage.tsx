@@ -1687,6 +1687,7 @@ export function AssistantPage() {
                 setSelectedModelId={setSelectedModelId}
                 contextUsageTokens={contextUsageTokens}
                 usage={conversationUsage}
+                conversationId={activeConversationId}
                 providers={providers}
                 isSending={isSending}
                 isStopping={isStopping}

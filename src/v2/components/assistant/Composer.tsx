@@ -69,6 +69,8 @@ export interface ComposerProps {
   contextUsageTokens?: number | null;
   /** Token totals of the conversation, shown in the usage dialog. */
   usage?: ConversationUsage | null;
+  /** The open conversation, for the usage dialog's breakdown. */
+  conversationId?: string | null;
   selectedProviderId: string;
   setSelectedProviderId: (id: string) => void;
   selectedModelId: string;
@@ -153,6 +155,7 @@ export function Composer({
   initialAttachedImages = [],
   contextUsageTokens = 0,
   usage,
+  conversationId,
   selectedProviderId,
   setSelectedProviderId,
   selectedModelId,
@@ -714,6 +717,7 @@ export function Composer({
           unit={selectedModel?.promptLimit?.unit}
           modelLabel={selectedModelLabel}
           usage={usage}
+          conversationId={conversationId}
         />
 
         <div className="ms-auto flex items-center gap-1">
