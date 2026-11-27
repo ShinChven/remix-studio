@@ -6,7 +6,7 @@ import { isPasskeySupported, serializeAssertionCredential, toPublicKeyRequestOpt
 import { Button, Divider, Shape, Text, TextField, type MaterialShapeName } from '../../m3';
 import type { User } from '../../types';
 import { useAuth } from '../app/auth';
-import { stripBase, withBase } from '../app/paths';
+import { stripLegacyBase } from '../app/paths';
 
 /** Paths the router can show; the OAuth and MCP endpoints need a full page load instead. */
 function isClientRoutablePath(url: string) {
@@ -47,8 +47,8 @@ export function Login() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const rawNext = searchParams.get('next') || '/';
-  // The API layer builds `next` from the browser path, which carries the /v2 prefix.
-  const nextUrl = rawNext.startsWith('/') ? stripBase(rawNext) : '/';
+  // Links made while the app lived under /v2 can still carry that prefix.
+  const nextUrl = rawNext.startsWith('/') ? stripLegacyBase(rawNext) : '/';
   const registerMode = searchParams.get('register') === '1';
 
   useEffect(() => {
@@ -152,7 +152,7 @@ export function Login() {
     try {
       const data = await completeGoogleRegistration(inviteCode.trim().toUpperCase());
       login(data.user);
-      go(data.nextUrl ? stripBase(data.nextUrl) : nextUrl);
+      go(data.nextUrl ? stripLegacyBase(data.nextUrl) : nextUrl);
     } catch (err) {
       setError((err as Error).message || t('login.errors.registrationFailed'));
     } finally {
@@ -162,7 +162,7 @@ export function Login() {
 
   const isTwoFactorStep = Boolean(twoFactorToken);
   const googleAuthUrl = `/api/auth/google?${new URLSearchParams({
-    next: isClientRoutablePath(nextUrl) ? withBase(nextUrl) : nextUrl,
+    next: nextUrl,
     ...(inviteCode ? { inviteCode } : {}),
   }).toString()}`;
 

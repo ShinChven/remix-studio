@@ -61,8 +61,6 @@ const en = {
     searchShort: 'Search ...',
     searchPlaceholder: 'Search, or type > for commands',
     navigation: 'Main',
-    classicUi: 'Classic interface',
-    classicUiHint: 'Switch back to the original interface',
     noResults: 'No results found.',
     commands: 'Commands',
     projects: 'Projects',

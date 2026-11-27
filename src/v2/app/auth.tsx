@@ -1,7 +1,6 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
 import { fetchCurrentUser } from '../../api';
 import type { User } from '../../types';
-import { withBase } from './paths';
 
 interface AuthContextValue {
   user: User | null;
@@ -31,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout failed:', e);
     }
     setUser(null);
-    window.location.href = withBase('/login');
+    window.location.href = '/login';
   };
 
   return (

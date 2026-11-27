@@ -62,22 +62,15 @@ const AUTH_FLOW_PREFIXES = [
   '/api/auth/google/',            // OAuth login flow
 ];
 
-/** Path prefix of the interface the page belongs to: the new UI lives under `/v2`. */
-function uiBase(): string {
-  const { pathname } = window.location;
-  return pathname === '/v2' || pathname.startsWith('/v2/') ? '/v2' : '';
-}
-
-/** Whether the current page is a sign-in page, where a 401 must not redirect again. */
+/** Whether the current page is the sign-in page, where a 401 must not redirect again. */
 function isOnLoginPage(): boolean {
-  return window.location.pathname.startsWith(`${uiBase()}/login`);
+  return window.location.pathname.startsWith('/login');
 }
 
 /** The login page, set to come back to the current page (e.g. a TV link opened from a QR code). */
 function loginUrlReturningHere(): string {
-  const base = uiBase();
   const here = window.location.pathname + window.location.search;
-  return here === '/' || here === `${base}/` || here === base ? `${base}/login` : `${base}/login?next=${encodeURIComponent(here)}`;
+  return here === '/' ? '/login' : `/login?next=${encodeURIComponent(here)}`;
 }
 
 async function apiFetch(url: string, init?: RequestInit): Promise<Response> {

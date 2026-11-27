@@ -19,9 +19,9 @@ export interface UiPrefs {
   /** Seed for the success and warning roles, harmonized with the theme seed. */
   successSeed: string;
   warningSeed: string;
-  /** Translucent bars and rail with a backdrop blur (shared with the classic UI). */
+  /** Translucent bars and rail with a backdrop blur. */
   glass: boolean;
-  /** Cards lift on hover (shared with the classic UI). */
+  /** Cards lift on hover. */
   motion: boolean;
 }
 
@@ -35,7 +35,7 @@ export const DEFAULT_UI_PREFS: UiPrefs = {
   motion: true,
 };
 
-/** Keys the classic UI also reads, so both interfaces keep the same choice. */
+/** Also read by the inline script in index.html, which applies them before the app loads. */
 const GLASS_KEY = 'glass';
 const MOTION_KEY = 'motion';
 

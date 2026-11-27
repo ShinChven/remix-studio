@@ -870,13 +870,15 @@ export function AssistantPage() {
   useEffect(() => {
     if (activeConversationId) {
       localStorage.setItem('assistant_last_conversation', activeConversationId);
-      if (justCreatedIdRef.current === activeConversationId) {
-        // Skip initial load for brand new conversation to avoid race with optimistic message
-        justCreatedIdRef.current = null;
-        return;
-      }
+      // A chat this page just created holds its first message optimistically
+      // until the turn settles. Loading it now — or again when the providers
+      // arrive and `loadConversation` changes — would swap in a transcript
+      // that doesn't have that message yet.
+      if (justCreatedIdRef.current === activeConversationId) return;
+      justCreatedIdRef.current = null;
       loadConversation(activeConversationId);
     } else {
+      justCreatedIdRef.current = null;
       setMessages([]);
       setResources([]);
       setPendingConfirmation(null);
