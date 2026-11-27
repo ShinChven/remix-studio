@@ -10,7 +10,9 @@ import {
   fetchProjects,
 } from '../../api';
 import { Dialog, Icon, LoadingIndicator, Ripple, Text, TextField } from '../../m3';
+import { useAuth } from '../app/auth';
 import { useToast } from '../ui/useToast';
+import { useOpenThemeEditor } from './ThemeEditorContext';
 
 interface PaletteItem {
   value: string;
@@ -41,6 +43,28 @@ const COMMANDS: Array<{ id: string; key: string; prefix: string }> = [
   { id: 'cmd-vid-lib', key: 'videoLibrary', prefix: '> create video library ' },
   { id: 'cmd-aud-lib', key: 'audioLibrary', prefix: '> create audio library ' },
   { id: 'cmd-camp', key: 'campaign', prefix: '> create campaign ' },
+];
+
+/** Prefix that switches the palette to settings, the way `>` switches it to commands. */
+const SETTINGS_PREFIX = '@';
+
+/** Settings the palette can jump to. `to: 'theme'` opens the appearance panel instead of a page. */
+const SETTINGS: Array<{ key: string; icon: string; to: string; keywords: string; adminOnly?: boolean }> = [
+  { key: 'appearance', icon: 'palette', to: 'theme', keywords: 'theme color dark light mode density font' },
+  { key: 'account', icon: 'account_circle', to: '/account?tab=overview', keywords: 'profile overview' },
+  { key: 'preferences', icon: 'tune', to: '/account?tab=preferences', keywords: 'language auto tag' },
+  { key: 'storage', icon: 'hard_drive', to: '/account?tab=storage', keywords: 'quota disk usage space' },
+  { key: 'security', icon: 'shield', to: '/account?tab=security', keywords: 'password passkey login' },
+  { key: 'twoFactor', icon: 'pin', to: '/account/security/2fa', keywords: '2fa totp authenticator otp' },
+  { key: 'devices', icon: 'devices', to: '/account?tab=devices', keywords: 'tv link webos dlna' },
+  { key: 'providers', icon: 'key', to: '/providers', keywords: 'api key model openai gemini' },
+  { key: 'addProvider', icon: 'add_link', to: '/provider/new', keywords: 'api key new' },
+  { key: 'assistantProviders', icon: 'smart_toy', to: '/assistant/settings?tab=providers', keywords: 'chat model ai' },
+  { key: 'assistantSkills', icon: 'auto_awesome', to: '/assistant/settings?tab=skills', keywords: 'ai prompt' },
+  { key: 'assistantTools', icon: 'build', to: '/assistant/settings?tab=tools', keywords: 'ai' },
+  { key: 'mcp', icon: 'hub', to: '/assistant/settings?tab=mcp', keywords: 'mcp connector server token' },
+  { key: 'users', icon: 'group', to: '/admin/users', keywords: 'admin members', adminOnly: true },
+  { key: 'invites', icon: 'mail', to: '/admin/invites', keywords: 'admin invitation', adminOnly: true },
 ];
 
 function parseCreate(query: string): CreateMatch | null {
@@ -108,6 +132,9 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   const { t } = useTranslation();
   const navigate = useNavigate();
   const toast = useToast();
+  const openTheme = useOpenThemeEditor();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [value, setValue] = useState('');
   const [debounced, setDebounced] = useState('');
   const [loading, setLoading] = useState(false);
@@ -123,11 +150,13 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
   }, [value]);
 
   const isCommandMode = value.trim().startsWith('>');
+  const isSettingsMode = value.trim().startsWith(SETTINGS_PREFIX);
+  const settingsQuery = isSettingsMode ? value.trim().slice(SETTINGS_PREFIX.length).trim().toLowerCase() : '';
   const commandQuery = isCommandMode ? value.trim().slice(1).trim().toLowerCase() : '';
   const createMatch = useMemo(() => (isCommandMode ? parseCreate(commandQuery) : null), [isCommandMode, commandQuery]);
 
   useEffect(() => {
-    if (debounced.trim().startsWith('>')) return;
+    if (debounced.trim().startsWith('>') || debounced.trim().startsWith(SETTINGS_PREFIX)) return;
     let cancelled = false;
     const query = debounced.trim();
     const limit = query ? 20 : 10;
@@ -198,6 +227,16 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
             t(`v2.shell.create.${cmd.key}`).toLowerCase().includes(value.toLowerCase().replace(/^>\s*/, '')),
         ).map((cmd) => ({ value: cmd.prefix, label: t(`v2.shell.create.${cmd.key}`), icon: 'terminal', keepOpen: true }));
     groups.push({ label: t('v2.shell.commands'), suggestions });
+  } else if (isSettingsMode) {
+    const terms = settingsQuery.split(/\s+/).filter(Boolean);
+    const suggestions = SETTINGS.filter((item) => isAdmin || !item.adminOnly)
+      .map((item) => ({ item, label: t(`v2.shell.settingsItems.${item.key}`) }))
+      .filter(({ item, label }) => {
+        const haystack = `${label} ${item.key} ${item.keywords}`.toLowerCase();
+        return terms.every((term) => haystack.includes(term));
+      })
+      .map(({ item, label }) => ({ value: `setting:${item.to}`, label, icon: item.icon }));
+    groups.push({ label: t('v2.shell.settings'), suggestions });
   } else {
     const add = (label: string, icon: string, kind: string, items: Named[]) => {
       if (items.length) groups.push({ label, suggestions: items.map((item) => ({ value: `${kind}:${item.id}`, label: item.name, icon })) });
@@ -225,6 +264,10 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
     if (kind === 'project') navigate(`/project/${id}`);
     else if (kind === 'library') navigate(`/library/${id}`);
     else if (kind === 'campaign') navigate(`/campaigns/${id}`);
+    else if (kind === 'setting') {
+      if (id === 'theme') openTheme();
+      else navigate(id);
+    }
   };
 
   const flat = groups.flatMap((g) => g.suggestions);
@@ -293,7 +336,7 @@ function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void 
         ))}
       </div>
       <Text as="div" variant="label-small" className="v2-palette__hint">
-        ↑↓ · ↵ · Esc · <code>&gt;</code> {t('v2.shell.commands')}
+        ↑↓ · ↵ · Esc · <code>&gt;</code> {t('v2.shell.commands')} · <code>{SETTINGS_PREFIX}</code> {t('v2.shell.settings')}
       </Text>
     </Dialog>
   );
