@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -14,6 +14,7 @@ import {
   fetchAssistantConversationResources,
   fetchAssistantConversations,
   fetchAssistantProviders,
+  fetchAssistantTools,
   fetchLibrary,
   fetchProject,
   fetchProjectWorkflow,
@@ -27,12 +28,12 @@ import {
   type AssistantMessage,
   type AssistantPendingConfirmation,
   type AssistantStatusEvent,
+  type AssistantToolCallData,
   type AssistantTurnResult,
 } from '../../api';
 import { filterEnabledAssistantProviders, normalizeAssistantProviderSelection } from '../../lib/assistant-provider-settings';
 import { consumePwaShareHandoff } from '../../lib/pwa-share';
 import {
-  Avatar,
   Button,
   ChatMessage,
   ChatThoughtAccordion,
@@ -48,6 +49,7 @@ import {
 import type { Library, Project, Provider } from '../../types';
 import { getTextModelsForProvider } from '../../types';
 import { ApprovedToolsDialog } from '../components/assistant/ApprovedToolsDialog';
+import { McpAppFrame } from '../components/assistant/McpAppFrame';
 import { Composer, type AttachedImage, type BoundContext, type ComposerHandle } from '../components/assistant/Composer';
 import { AssistantHero } from '../components/assistant/Hero';
 import { ResourcePanel } from '../components/assistant/ResourcePanel';
@@ -319,7 +321,7 @@ function summarizePendingConfirmation(
 
 
 export function AssistantPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const toast = useToast();
   const copyToClipboard = useCopy();
   // Wide enough to keep the conversation list docked beside the chat.
@@ -344,6 +346,23 @@ export function AssistantPage() {
     attachedImages: initialNavigationState?.draftAttachedImages || [],
     key: 0,
   }));
+
+  /** Tool name → the `ui://` MCP App view its results render with. */
+  const [appViews, setAppViews] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let cancelled = false;
+    fetchAssistantTools()
+      .then(({ tools }) => {
+        if (cancelled) return;
+        setAppViews(Object.fromEntries(tools.flatMap((tool) => (tool.appResourceUri ? [[tool.name, tool.appResourceUri]] : []))));
+      })
+      .catch(() => {
+        // Without the list the chat shows tool results as JSON, as before.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
@@ -1211,42 +1230,103 @@ export function AssistantPage() {
 
 
   // ─── Render helpers ───
-  const renderAssistantToolCalls = (msg: AssistantMessage) => {
-    if (!msg.toolCalls || msg.toolCalls.length === 0) return null;
+  const toolMessagesByCallId = useMemo(() => {
+    const byId = new Map<string, AssistantMessage>();
+    for (const entry of messages) {
+      if (entry.role === 'tool' && entry.toolCallId) byId.set(entry.toolCallId, entry);
+    }
+    return byId;
+  }, [messages]);
+
+  /**
+   * The tools one stretch of the turn ran, folded into a single row that opens
+   * onto each call's arguments and result. Calls with an MCP App view show it
+   * below the row, open, the way an MCP client shows them.
+   */
+  const renderToolGroup = (key: string, calls: { call: AssistantToolCallData; message: AssistantMessage }[]) => {
+    const errors = calls.filter(({ message }) => message.status === 'error').length;
+    const label = calls.length === 1
+      ? formatToolTitle(calls[0].call.name)
+      : t('v2.assistant.toolsUsed', { count: calls.length, defaultValue: `Used ${calls.length} tools` });
+    const views = activeConversationId
+      ? calls.filter(({ call, message }) => appViews[call.name] && message.status !== 'error')
+      : [];
     return (
-      <div className="v2-chat-tools">
-        {msg.toolCalls.map((tc) => {
-          const toolMessage = messages.find((entry) => entry.role === 'tool' && entry.toolCallId === tc.id);
-          if (!toolMessage) return null;
-          const isError = toolMessage.status === 'error';
-          const argsText = prettyToolData(toolMessage.toolArgsJson);
-          const resultData = toolMessage.toolResultJson != null ? toolMessage.toolResultJson : unwrapToolResult(toolMessage.content);
-          const resultText = prettyToolData(resultData);
-          return (
-            <details key={tc.id} className="v2-chat-tool" data-error={isError ? '' : undefined}>
-              <summary>
-                <Icon name={isError ? 'error' : 'build'} size={16} />
-                <span className="v2-ellipsis">{formatToolTitle(tc.name)}</span>
-              </summary>
-              <div className="v2-chat-tool__body">
-                {argsText && (
-                  <div>
-                    <Text variant="label-small" className="v2-chat-tool__label">{t('v2.assistant.toolArguments', 'Arguments')}</Text>
-                    <JsonView data={toolMessage.toolArgsJson} />
+      <div key={key} className="v2-chat-steps">
+        <details className="v2-chat-steps__group" data-error={errors > 0 ? '' : undefined}>
+          <summary className="m3-focus-ring">
+            <Icon name={errors > 0 ? 'error' : 'build'} size={18} />
+            <span className="v2-ellipsis">{label}</span>
+            <Icon name="chevron_right" size={18} className="v2-chat-steps__chevron" />
+          </summary>
+          <div className="v2-chat-steps__list">
+            {calls.map(({ call, message }) => {
+              const isError = message.status === 'error';
+              const resultData = message.toolResultJson != null ? message.toolResultJson : unwrapToolResult(message.content);
+              return (
+                <details key={call.id} className="v2-chat-tool" data-error={isError ? '' : undefined}>
+                  <summary className="m3-focus-ring">
+                    <Icon name={isError ? 'error' : 'check_circle'} size={16} />
+                    <span className="v2-ellipsis">{formatToolTitle(call.name)}</span>
+                  </summary>
+                  <div className="v2-chat-tool__body">
+                    {prettyToolData(message.toolArgsJson) && (
+                      <div>
+                        <Text variant="label-small" className="v2-chat-tool__label">{t('v2.assistant.toolArguments', 'Arguments')}</Text>
+                        <JsonView data={message.toolArgsJson} />
+                      </div>
+                    )}
+                    {prettyToolData(resultData) && (
+                      <div>
+                        <Text variant="label-small" className="v2-chat-tool__label">{t('v2.assistant.toolResult', 'Result')}</Text>
+                        <JsonView data={resultData} />
+                      </div>
+                    )}
                   </div>
-                )}
-                {resultText && (
-                  <div>
-                    <Text variant="label-small" className="v2-chat-tool__label">{t('v2.assistant.toolResult', 'Result')}</Text>
-                    <JsonView data={resultData} />
-                  </div>
-                )}
-              </div>
-            </details>
-          );
-        })}
+                </details>
+              );
+            })}
+          </div>
+        </details>
+        {views.map(({ call }) => (
+          <McpAppFrame
+            key={call.id}
+            conversationId={activeConversationId!}
+            toolCallId={call.id}
+            resourceUri={appViews[call.name]}
+          />
+        ))}
       </div>
     );
+  };
+
+  /** Messages in order, with each run of tool calls between two replies folded into one group. */
+  const renderThread = (visible: AssistantMessage[]) => {
+    const out: ReactNode[] = [];
+    let group: { call: AssistantToolCallData; message: AssistantMessage }[] = [];
+    const flush = () => {
+      if (group.length === 0) return;
+      out.push(renderToolGroup(`tools-${group[0].call.id}`, group));
+      group = [];
+    };
+    for (const msg of visible) {
+      if (msg.role === 'user') {
+        flush();
+        out.push(<div key={msg.id}>{renderUserMessage(msg)}</div>);
+        continue;
+      }
+      if (msg.role !== 'assistant') continue;
+      if (hasRenderableAssistantContent(msg)) {
+        flush();
+        out.push(<div key={msg.id}>{renderAssistantMessage(msg)}</div>);
+      }
+      for (const call of msg.toolCalls ?? []) {
+        const message = toolMessagesByCallId.get(call.id);
+        if (message) group.push({ call, message });
+      }
+    }
+    flush();
+    return out;
   };
 
   const renderConfirmationCard = () => {
@@ -1408,24 +1488,33 @@ export function AssistantPage() {
     );
   };
 
+  const formatMessageTime = (ts: number) => {
+    const date = new Date(ts);
+    const sameDay = date.toDateString() === new Date().toDateString();
+    return date.toLocaleString(i18n.language, sameDay
+      ? { hour: 'numeric', minute: '2-digit' }
+      : { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  };
+
   const renderAssistantMessage = (msg: AssistantMessage) => {
     const { thoughtContent, responseContent } = parseAssistantContent(msg.content);
-    const showBubble = hasRenderableAssistantBubble(msg);
-    const tokens = msg.inputTokens != null && msg.outputTokens != null ? `${msg.inputTokens}↑ ${msg.outputTokens}↓ tokens` : undefined;
+    const hasReply = hasRenderableAssistantBubble(msg);
+    const tokens = msg.inputTokens != null && msg.outputTokens != null ? `${msg.inputTokens}↑ ${msg.outputTokens}↓` : null;
+    const meta = hasReply ? [formatMessageTime(msg.createdAt), tokens].filter(Boolean).join(' · ') : undefined;
     return (
       <ChatMessage
+        className="v2-chat-reply"
         message={{
           id: msg.id,
           role: 'assistant',
           content: responseContent || '',
-          timestamp: tokens,
+          timestamp: meta,
           status: msg.status === 'error' ? 'error' : 'sent',
-          avatar: <Avatar src="/assistant-avatar.svg" name="Assistant" size={32} />,
         }}
-        bubble={showBubble}
+        showAvatar={false}
+        bubble={hasReply}
         before={thoughtContent && !responseContent ? thoughtAccordion(thoughtContent) : undefined}
-        after={renderAssistantToolCalls(msg)}
-        copyable={showBubble}
+        copyable={hasReply}
         onCopy={() => copyText(responseContent)}
       >
         {thoughtContent && responseContent && thoughtAccordion(thoughtContent)}
@@ -1558,18 +1647,10 @@ export function AssistantPage() {
           <>
             <div className="v2-chat__scroll">
               <div className="v2-chat__thread">
-                {visibleMessages.map((msg) => (
-                  <div key={msg.id}>
-                    {msg.role === 'user' && renderUserMessage(msg)}
-                    {msg.role === 'assistant' && renderAssistantMessage(msg)}
-                  </div>
-                ))}
+                {renderThread(visibleMessages)}
                 {isSending && (
                   <div className="m3-chat-message-row v2-chat-working" data-role="assistant" aria-live="polite">
-                    <div className="m3-chat-avatar-slot v2-chat-working__avatar">
-                      <Avatar src="/assistant-avatar.svg" name="Assistant" size={32} />
-                      <LoadingIndicator size={44} className="v2-chat-working__ring" aria-label={t('assistant.loading', 'Thinking...')} />
-                    </div>
+                    <LoadingIndicator size={36} className="v2-chat-working__indicator" aria-label={t('assistant.loading', 'Thinking...')} />
                     <Text variant="body-medium" className="v2-chat-working__label">
                       {isReconnecting
                         ? t('assistant.reconnecting', 'Reconnecting to the assistant...')

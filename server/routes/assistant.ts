@@ -460,6 +460,44 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── MCP App views (rendered next to tool results in the chat) ───
+  router.get('/api/assistant/apps/resource', authMiddleware, async (c) => {
+    try {
+      const uri = c.req.query('uri') ?? '';
+      const resource = await runner.readAppResource(uri);
+      if (!resource) return c.json({ error: 'View not found' }, 404);
+      return c.json({ resource });
+    } catch (e) {
+      console.error('[GET /api/assistant/apps/resource]', e);
+      return c.json({ error: 'Failed to read view' }, 500);
+    }
+  });
+
+  router.get('/api/assistant/conversations/:id/apps/:toolCallId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const found = await runner.getAppToolResult(user.userId, c.req.param('id'), c.req.param('toolCallId'));
+      if (!found) return c.json({ error: 'Tool result not found' }, 404);
+      return c.json(found);
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/apps/:toolCallId]', e);
+      return c.json({ error: 'Failed to read tool result' }, 500);
+    }
+  });
+
+  router.post('/api/assistant/apps/call-tool', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const body = await c.req.json().catch(() => ({}));
+      if (typeof body?.name !== 'string') return c.json({ error: 'Tool name is required' }, 400);
+      const result = await runner.callToolForApp(user.userId, body.name, body.arguments ?? {});
+      return c.json({ result });
+    } catch (e: any) {
+      console.error('[POST /api/assistant/apps/call-tool]', e);
+      return c.json({ result: { content: [{ type: 'text', text: JSON.stringify({ error: e?.message ?? 'Tool failed' }) }], isError: true } });
+    }
+  });
+
   // ─── Per-conversation tool approval preferences ───
   router.get('/api/assistant/conversations/:id/approved-tools', authMiddleware, async (c) => {
     try {
