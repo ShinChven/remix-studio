@@ -451,6 +451,7 @@ export class AssistantRunner {
           tools: this.tools,
           maxTokens: ASSISTANT_LIMITS.MAX_OUTPUT_TOKENS,
           abortSignal,
+          cacheKey: conversationId,
           onThought: (update) => {
             emit(onStatusEvent, {
               type: 'provider_thinking',
@@ -466,6 +467,17 @@ export class AssistantRunner {
         console.error(`[Assistant] Provider error: conversation=${conversationId} iter=${iter} error=${e?.message}`);
         const partial = await this.recordProviderError(conversationId, e?.message ?? 'Provider call failed');
         return { kind: 'error', error: e?.message ?? 'Provider call failed', partialMessage: partial };
+      }
+      if (response.usage) {
+        const { inputTokens, outputTokens, cachedInputTokens, cacheCreationInputTokens } = response.usage;
+        const cacheParts: string[] = [];
+        if (typeof cachedInputTokens === 'number') cacheParts.push(`cached=${cachedInputTokens}`);
+        if (typeof cacheCreationInputTokens === 'number') cacheParts.push(`cacheWrite=${cacheCreationInputTokens}`);
+        console.log(
+          `[Assistant] Usage: conversation=${conversationId} iter=${iter} provider=${providerType} in=${inputTokens ?? 0}`
+          + (cacheParts.length > 0 ? ` (${cacheParts.join(', ')})` : '')
+          + ` out=${outputTokens ?? 0}`,
+        );
       }
       emit(onStatusEvent, { type: 'provider_call_finished', iteration: iter, stopReason: response.stopReason });
 
@@ -816,7 +828,11 @@ export class AssistantRunner {
       if (m.status === 'awaiting_confirmation') continue; // skip halted-turn stubs
       if (m.role === 'user') {
         const { textContent, images } = parseUserMessageImages(m.content);
-        const userMsg: ChatMessage = { role: 'user', content: textContent };
+        const timestamp = formatMessageTimestamp(m.createdAt);
+        const contentWithTimestamp = timestamp
+          ? (textContent ? `${textContent}\n\n[Sent at: ${timestamp}]` : `[Sent at: ${timestamp}]`)
+          : textContent;
+        const userMsg: ChatMessage = { role: 'user', content: contentWithTimestamp };
         if (images.length > 0) (userMsg as any).images = images;
         body.push(userMsg);
       } else if (m.role === 'assistant') {
@@ -838,8 +854,9 @@ export class AssistantRunner {
     }
 
     const truncated = truncateHistory(body, ASSISTANT_LIMITS.MAX_HISTORY_MESSAGES);
-    const systemPrompt = ASSISTANT_SYSTEM_PROMPT.replace('{{CURRENT_DATETIME}}', new Date().toLocaleString());
-    return [{ role: 'system', content: systemPrompt }, ...truncated];
+    // Keep the system prompt 100% static so provider KV / prefix caches stay
+    // warm across tool-loop iterations and multi-turn follow-ups.
+    return [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }, ...truncated];
   }
 
   private async callProviderWithRetry(
@@ -1283,4 +1300,25 @@ function truncateHistory(messages: ChatMessage[], max: number): ChatMessage[] {
     content: `[${messages.length - head.length - tail.length} earlier message(s) truncated to stay within the model's context window.]`,
   };
   return [...head, placeholder, ...tail];
+}
+
+/**
+ * Deterministic local-time stamp for a persisted message's `createdAt`.
+ * Because each message's `createdAt` is immutable once stored, stamping user
+ * messages here keeps the system prompt 100% static and preserves byte-identical
+ * historical prefixes for provider KV / prompt caching.
+ */
+function formatMessageTimestamp(raw: Date | string | number | null | undefined): string | null {
+  if (!raw) return null;
+  const date = raw instanceof Date ? raw : new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const offsetMinutes = -date.getTimezoneOffset();
+  const sign = offsetMinutes >= 0 ? '+' : '-';
+  const absOffset = Math.abs(offsetMinutes);
+  const offsetStr = `${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`;
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} `
+    + `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())} UTC${offsetStr}`
+  );
 }

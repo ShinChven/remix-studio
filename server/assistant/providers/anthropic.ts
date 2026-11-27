@@ -26,12 +26,25 @@ export class ClaudeChatProvider implements ChatProvider {
     const { system, messages } = splitSystemAndMessages(req.messages);
     const tools = req.tools.length > 0 ? req.tools.map(mapTool) : undefined;
 
+    // Anthropic prompt caching requires explicit `cache_control` breakpoints
+    // (evaluated in order: tools → system → messages). Placing breakpoints on
+    // the last tool, the static system block, and the tail of `messages` lets
+    // every subsequent tool-loop iteration and follow-up turn read the entire
+    // prior prefix from KV cache.
+    if (tools && tools.length > 0) {
+      (tools[tools.length - 1] as any).cache_control = { type: 'ephemeral' };
+    }
+    const systemBlocks = system
+      ? [{ type: 'text' as const, text: system, cache_control: { type: 'ephemeral' as const } }]
+      : undefined;
+    attachTailCacheControl(messages);
+
     const response = await this.client.messages.create(
       {
         model: req.modelId,
         max_tokens: req.maxTokens ?? 2048,
         ...(typeof req.temperature === 'number' ? { temperature: clampTemperature(req.temperature) } : {}),
-        ...(system ? { system } : {}),
+        ...(systemBlocks ? { system: systemBlocks } : {}),
         messages,
         ...(tools ? { tools } : {}),
       } as any,
@@ -52,15 +65,48 @@ export class ClaudeChatProvider implements ChatProvider {
       }
     }
 
+    const rawUsage = response.usage as
+      | (typeof response.usage & {
+          cache_read_input_tokens?: number | null;
+          cache_creation_input_tokens?: number | null;
+        })
+      | undefined;
+    const cachedInputTokens = typeof rawUsage?.cache_read_input_tokens === 'number'
+      ? rawUsage.cache_read_input_tokens
+      : undefined;
+    const cacheCreationInputTokens = typeof rawUsage?.cache_creation_input_tokens === 'number'
+      ? rawUsage.cache_creation_input_tokens
+      : undefined;
+    const totalInputTokens = rawUsage
+      ? (rawUsage.input_tokens ?? 0) + (cachedInputTokens ?? 0) + (cacheCreationInputTokens ?? 0)
+      : undefined;
+
     return {
       text,
       toolCalls,
       stopReason: mapStopReason(response.stop_reason, toolCalls.length > 0),
-      usage: response.usage ? {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+      usage: rawUsage ? {
+        inputTokens: totalInputTokens,
+        outputTokens: rawUsage.output_tokens,
+        ...(cachedInputTokens !== undefined ? { cachedInputTokens } : {}),
+        ...(cacheCreationInputTokens !== undefined ? { cacheCreationInputTokens } : {}),
       } : undefined,
     };
+  }
+}
+
+/**
+ * Mark the final content block of the last message as an ephemeral cache
+ * breakpoint so the conversation prefix stays cached across tool-loop
+ * iterations and follow-up user turns.
+ */
+function attachTailCacheControl(messages: any[]): void {
+  if (messages.length === 0) return;
+  const last = messages[messages.length - 1];
+  if (!Array.isArray(last?.content) || last.content.length === 0) return;
+  const lastBlock = last.content[last.content.length - 1];
+  if (lastBlock && typeof lastBlock === 'object') {
+    lastBlock.cache_control = { type: 'ephemeral' };
   }
 }
 

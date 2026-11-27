@@ -154,6 +154,10 @@ export class GoogleAIChatProvider implements ChatProvider {
 
     void toolCallNameById;
 
+    const cachedInputTokens = typeof res.usageMetadata?.cachedContentTokenCount === 'number'
+      ? res.usageMetadata.cachedContentTokenCount
+      : undefined;
+
     return {
       text,
       toolCalls,
@@ -161,6 +165,7 @@ export class GoogleAIChatProvider implements ChatProvider {
       usage: res.usageMetadata ? {
         inputTokens: res.usageMetadata.promptTokenCount,
         outputTokens: res.usageMetadata.candidatesTokenCount,
+        ...(cachedInputTokens !== undefined ? { cachedInputTokens } : {}),
       } : undefined,
     };
   }

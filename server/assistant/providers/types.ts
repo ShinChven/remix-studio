@@ -41,6 +41,12 @@ export interface ChatRequest {
   abortSignal?: AbortSignal;
   includeThoughts?: boolean;
   onThought?: (update: ThoughtUpdate) => void;
+  /**
+   * Stable key identifying the conversation/session (e.g. `conversationId`).
+   * Used by providers that support routing/prefix cache keys (such as OpenAI's
+   * `prompt_cache_key`) to maximize KV cache hit rates across turns.
+   */
+  cacheKey?: string;
 }
 
 export type ChatStopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'error';
@@ -52,6 +58,10 @@ export interface ChatResponse {
   usage?: {
     inputTokens?: number;
     outputTokens?: number;
+    /** Input tokens served from the provider's prompt / KV cache. */
+    cachedInputTokens?: number;
+    /** Input tokens written into the provider's prompt / KV cache (Anthropic). */
+    cacheCreationInputTokens?: number;
   };
 }
 
