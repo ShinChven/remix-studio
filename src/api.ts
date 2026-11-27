@@ -2146,6 +2146,27 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
   return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }
 
+/** Per-user chat preferences, stored on the server. An empty `enabledProviderIds` means every chat provider. */
+export interface AssistantSettings {
+  enabledProviderIds: string[];
+  lastProviderId: string | null;
+  lastModelId: string | null;
+}
+
+export async function fetchAssistantSettings(): Promise<AssistantSettings> {
+  const res = await apiFetch('/api/assistant/settings', { headers: getHeaders(false) });
+  return handleResponse<AssistantSettings>(res, 'Failed to load assistant settings');
+}
+
+export async function updateAssistantSettings(patch: Partial<AssistantSettings>): Promise<AssistantSettings> {
+  const res = await apiFetch('/api/assistant/settings', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(patch),
+  });
+  return handleResponse<AssistantSettings>(res, 'Failed to save assistant settings');
+}
+
 export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetadata[] }> {
   const res = await apiFetch('/api/assistant/tools', { headers: getHeaders(false) });
   return handleResponse<{ tools: AssistantToolMetadata[] }>(res, 'Failed to list assistant tools');

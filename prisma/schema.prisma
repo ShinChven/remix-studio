@@ -46,6 +46,7 @@ model User {
   posts                   Post[]
   postWatermarkSetting    PostWatermarkSetting?
   autoTagSetting          AutoTagSetting?
+  assistantSetting        AssistantSetting?
   stores                  Store[]
   driveConnections        DriveConnection[]
   products                Product[]
@@ -879,6 +880,21 @@ model PostWatermarkSetting {
 // Which vision-capable text model tags a user's album and library media, and
 // how many tagging requests may run at once. Deleting the provider turns
 // auto-tagging off rather than deleting the setting.
+/// Per-user chat assistant preferences, so they follow the account across browsers.
+model AssistantSetting {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  /// Providers enabled for chat. Empty means every chat-capable provider.
+  enabledProviderIds String[] @default([])
+  /// Last provider and model picked in the composer.
+  lastProviderId     String?
+  lastModelId        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model AutoTagSetting {
   id               String   @id @default(uuid())
   userId           String   @unique

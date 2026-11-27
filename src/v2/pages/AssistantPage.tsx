@@ -31,7 +31,7 @@ import {
   type AssistantToolCallData,
   type AssistantTurnResult,
 } from '../../api';
-import { filterEnabledAssistantProviders, normalizeAssistantProviderSelection } from '../../lib/assistant-provider-settings';
+import { filterEnabledAssistantProviders, getCachedAssistantSettings, loadAssistantSettings, normalizeAssistantProviderSelection, rememberAssistantModel } from '../../lib/assistant-provider-settings';
 import { consumePwaShareHandoff } from '../../lib/pwa-share';
 import {
   Button,
@@ -338,8 +338,8 @@ export function AssistantPage() {
   const [resources, setResources] = useState<AssistantConversationResource[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<AssistantPendingConfirmation | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
-  const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(() => getCachedAssistantSettings()?.lastProviderId || '');
+  const [selectedModelId, setSelectedModelId] = useState<string>(() => getCachedAssistantSettings()?.lastModelId || '');
   const initialNavigationState = location.state as AssistantNavigationState | null;
   const [composerDraft, setComposerDraft] = useState(() => ({
     inputText: initialNavigationState?.draftMessage || '',
@@ -366,12 +366,8 @@ export function AssistantPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
-  }, [selectedProviderId]);
-
-  useEffect(() => {
-    if (selectedModelId) localStorage.setItem('assistant_last_model', selectedModelId);
-  }, [selectedModelId]);
+    rememberAssistantModel(selectedProviderId, selectedModelId);
+  }, [selectedProviderId, selectedModelId]);
   
   const [isSending, setIsSending] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -557,8 +553,13 @@ export function AssistantPage() {
 
   // ─── Load providers ───
   useEffect(() => {
-    fetchAssistantProviders()
-      .then((data) => setProviders(filterEnabledAssistantProviders(data.providers)))
+    Promise.all([fetchAssistantProviders(), loadAssistantSettings()])
+      .then(([data, settings]) => {
+        // An open conversation sets its own model; otherwise start from the account's last pick.
+        setSelectedProviderId((current) => current || settings.lastProviderId || '');
+        setSelectedModelId((current) => current || settings.lastModelId || '');
+        setProviders(filterEnabledAssistantProviders(data.providers, settings.enabledProviderIds));
+      })
       .catch(() => {});
   }, []);
 

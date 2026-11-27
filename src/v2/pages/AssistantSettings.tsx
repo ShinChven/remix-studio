@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createLibraryItem, deleteLibraryItem, fetchAssistantProviders, fetchAssistantTools, fetchLibraryItems, updateLibraryItem, type AssistantToolMetadata } from '../../api';
-import { normalizeAssistantProviderSelection, resolveEnabledAssistantProviderIds, setStoredEnabledAssistantProviderIds } from '../../lib/assistant-provider-settings';
+import { loadAssistantSettings, normalizeAssistantProviderSelection, resolveEnabledAssistantProviderIds, saveAssistantSettings } from '../../lib/assistant-provider-settings';
 import { ensureAssistantSkillsLibrary } from '../../lib/assistant-skills';
 import { Button, ChipSet, Dialog, FilterChip, Icon, Tab, Tabs, Text, TextField } from '../../m3';
 import { getTextModelsForProvider, type Library, type LibraryItem, type Provider } from '../../types';
@@ -24,26 +24,10 @@ type SkillEditorState = {
   item: LibraryItem | null;
 };
 
-const MODEL_STORAGE_KEY = 'assistant_last_model';
-const PROVIDER_STORAGE_KEY = 'assistant_last_provider';
 const SKILLS_PAGE_SIZE = 8;
 
 function isAssistantSettingsTab(value: string | null): value is AssistantSettingsTab {
   return value === 'providers' || value === 'skills' || value === 'tools' || value === 'mcp';
-}
-
-function getStoredValue(key: string) {
-  if (typeof window === 'undefined') return '';
-  return window.localStorage.getItem(key) || '';
-}
-
-function setStoredValue(key: string, value: string) {
-  if (typeof window === 'undefined') return;
-  if (!value) {
-    window.localStorage.removeItem(key);
-    return;
-  }
-  window.localStorage.setItem(key, value);
 }
 
 function summarizeSkillContent(content: string) {
@@ -164,11 +148,11 @@ export function AssistantSettings() {
       setIsLoadingProviders(true);
 
       try {
-        const result = await fetchAssistantProviders();
+        const [result, settings] = await Promise.all([fetchAssistantProviders(), loadAssistantSettings()]);
         if (!active) return;
 
         setProviders(result.providers);
-        setEnabledProviderIds(resolveEnabledAssistantProviderIds(result.providers));
+        setEnabledProviderIds(resolveEnabledAssistantProviderIds(result.providers, settings.enabledProviderIds));
       } catch (error) {
         console.error('Failed to load assistant providers:', error);
         toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
@@ -307,16 +291,18 @@ export function AssistantSettings() {
 
     setIsSavingProviders(true);
     try {
-      setStoredEnabledAssistantProviderIds(normalizedEnabledIds);
-
+      const current = await loadAssistantSettings();
       const enabledProviders = providers.filter((p) => normalizedEnabledIds.includes(p.id));
       const normalizedSelection = normalizeAssistantProviderSelection(
         enabledProviders,
-        getStoredValue(PROVIDER_STORAGE_KEY),
-        getStoredValue(MODEL_STORAGE_KEY),
+        current.lastProviderId || '',
+        current.lastModelId || '',
       );
-      setStoredValue(PROVIDER_STORAGE_KEY, normalizedSelection.providerId);
-      setStoredValue(MODEL_STORAGE_KEY, normalizedSelection.modelId);
+      await saveAssistantSettings({
+        enabledProviderIds: normalizedEnabledIds,
+        lastProviderId: normalizedSelection.providerId || null,
+        lastModelId: normalizedSelection.modelId || null,
+      });
 
       setEnabledProviderIds(normalizedEnabledIds);
       toast.success(
