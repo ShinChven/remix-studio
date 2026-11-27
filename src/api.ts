@@ -2146,6 +2146,52 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
   return handleResponse<{ providers: Provider[] }>(res, 'Failed to list assistant providers');
 }
 
+/** Where a conversation's next model call spends its context, estimated by category. */
+export interface AssistantContextEstimate {
+  categories: {
+    systemPrompt: number;
+    tools: number;
+    userMessages: number;
+    assistantMessages: number;
+    toolResults: number;
+    images: number;
+  };
+  total: number;
+  /** Input tokens the model reported for the latest reply, which the estimates are scaled to. */
+  reportedInputTokens: number | null;
+  calibrated: boolean;
+  tools: { name: string; tokens: number }[];
+  imageCount: number;
+  messageCount: number;
+  omittedMessageCount: number;
+}
+
+export async function fetchAssistantContextEstimate(conversationId: string): Promise<AssistantContextEstimate> {
+  const res = await apiFetch(`/api/assistant/conversations/${encodeURIComponent(conversationId)}/context`, { headers: getHeaders(false) });
+  return handleResponse<AssistantContextEstimate>(res, 'Failed to estimate context usage');
+}
+
+/** Per-user chat preferences, stored on the server. An empty `enabledProviderIds` means every chat provider. */
+export interface AssistantSettings {
+  enabledProviderIds: string[];
+  lastProviderId: string | null;
+  lastModelId: string | null;
+}
+
+export async function fetchAssistantSettings(): Promise<AssistantSettings> {
+  const res = await apiFetch('/api/assistant/settings', { headers: getHeaders(false) });
+  return handleResponse<AssistantSettings>(res, 'Failed to load assistant settings');
+}
+
+export async function updateAssistantSettings(patch: Partial<AssistantSettings>): Promise<AssistantSettings> {
+  const res = await apiFetch('/api/assistant/settings', {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(patch),
+  });
+  return handleResponse<AssistantSettings>(res, 'Failed to save assistant settings');
+}
+
 export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetadata[] }> {
   const res = await apiFetch('/api/assistant/tools', { headers: getHeaders(false) });
   return handleResponse<{ tools: AssistantToolMetadata[] }>(res, 'Failed to list assistant tools');

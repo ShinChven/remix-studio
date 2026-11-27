@@ -237,8 +237,45 @@ function toConversationResource(record: any): AssistantConversationResourceRecor
   };
 }
 
+/** Per-user chat preferences. An empty `enabledProviderIds` means every chat provider. */
+export interface AssistantSettingsRecord {
+  enabledProviderIds: string[];
+  lastProviderId: string | null;
+  lastModelId: string | null;
+}
+
+export type AssistantSettingsPatch = Partial<AssistantSettingsRecord>;
+
 export class AssistantRepository {
   constructor(private prisma: PrismaClient) {}
+
+  // ─── Settings ───
+
+  async getSettings(userId: string): Promise<AssistantSettingsRecord> {
+    const row = await this.prisma.assistantSetting.findUnique({ where: { userId } });
+    return {
+      enabledProviderIds: row?.enabledProviderIds ?? [],
+      lastProviderId: row?.lastProviderId ?? null,
+      lastModelId: row?.lastModelId ?? null,
+    };
+  }
+
+  async updateSettings(userId: string, patch: AssistantSettingsPatch): Promise<AssistantSettingsRecord> {
+    const data: AssistantSettingsPatch = {};
+    if (patch.enabledProviderIds !== undefined) data.enabledProviderIds = [...new Set(patch.enabledProviderIds)];
+    if (patch.lastProviderId !== undefined) data.lastProviderId = patch.lastProviderId;
+    if (patch.lastModelId !== undefined) data.lastModelId = patch.lastModelId;
+    const row = await this.prisma.assistantSetting.upsert({
+      where: { userId },
+      create: { userId, ...data },
+      update: data,
+    });
+    return {
+      enabledProviderIds: row.enabledProviderIds,
+      lastProviderId: row.lastProviderId,
+      lastModelId: row.lastModelId,
+    };
+  }
 
   // ─── Conversations ───
 

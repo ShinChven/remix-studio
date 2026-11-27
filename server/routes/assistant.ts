@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import type { Context } from 'hono';
 import { stream } from 'hono/streaming';
 import { authMiddleware, JwtPayload } from '../auth/auth';
@@ -447,6 +448,53 @@ export function createAssistantRouter(
     } catch (e) {
       console.error('[GET /api/assistant/providers]', e);
       return c.json({ error: 'Failed to list assistant providers' }, 500);
+    }
+  });
+
+  // ─── Context breakdown of a conversation's next model call ───
+  router.get('/api/assistant/conversations/:id/context', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const estimate = await runner.estimateContext(user.userId, c.req.param('id'));
+      if (!estimate) return c.json({ error: 'Conversation not found' }, 404);
+      return c.json(estimate);
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/context]', e);
+      return c.json({ error: 'Failed to estimate context usage' }, 500);
+    }
+  });
+
+  // ─── Chat preferences (enabled providers, last picked model) ───
+  const settingsPatchSchema = z.object({
+    enabledProviderIds: z.array(z.string().min(1).max(200)).max(200).optional(),
+    lastProviderId: z.string().max(200).nullable().optional(),
+    lastModelId: z.string().max(200).nullable().optional(),
+  }).strict();
+
+  router.get('/api/assistant/settings', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      return c.json(await repo.getSettings(user.userId));
+    } catch (e) {
+      console.error('[GET /api/assistant/settings]', e);
+      return c.json({ error: 'Failed to load assistant settings' }, 500);
+    }
+  });
+
+  router.put('/api/assistant/settings', authMiddleware, async (c) => {
+    const parsed = settingsPatchSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'Invalid assistant settings' }, 400);
+    try {
+      const user = c.get('user') as JwtPayload;
+      const patch = {
+        ...parsed.data,
+        lastProviderId: parsed.data.lastProviderId === '' ? null : parsed.data.lastProviderId,
+        lastModelId: parsed.data.lastModelId === '' ? null : parsed.data.lastModelId,
+      };
+      return c.json(await repo.updateSettings(user.userId, patch));
+    } catch (e) {
+      console.error('[PUT /api/assistant/settings]', e);
+      return c.json({ error: 'Failed to save assistant settings' }, 500);
     }
   });
 

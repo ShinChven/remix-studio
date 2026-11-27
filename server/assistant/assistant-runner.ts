@@ -31,6 +31,7 @@ import type {
 } from './providers/types';
 import { toolParametersJsonSchema } from './providers/types';
 import { ASSISTANT_SYSTEM_PROMPT, wrapToolResult } from './system-prompt';
+import { estimateMessages, estimateToolDefinitions, sumCategories, type ContextCategories, type ToolDefinitionEstimate } from './context-estimate';
 import { extractAssistantResourceTarget } from './resource-target';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
@@ -168,6 +169,20 @@ function toolResultPayload(result: ToolResult): unknown {
   } catch {
     return null;
   }
+}
+
+/** Where a conversation's next model call spends its context. */
+export interface AssistantContextEstimate {
+  categories: ContextCategories;
+  total: number;
+  /** Input tokens the model reported for the latest reply, which the estimates are scaled to. */
+  reportedInputTokens: number | null;
+  calibrated: boolean;
+  tools: ToolDefinitionEstimate[];
+  imageCount: number;
+  messageCount: number;
+  /** Older messages left out of the request to fit the history limit. */
+  omittedMessageCount: number;
 }
 
 export class AssistantRunner {
@@ -930,8 +945,63 @@ export class AssistantRunner {
     }).catch(() => {});
   }
 
+  /**
+   * What the next model call of a conversation would spend its context on, by
+   * category. The parts are estimates scaled so they agree with the input total
+   * the model reported for the latest reply.
+   */
+  async estimateContext(userId: string, conversationId: string): Promise<AssistantContextEstimate | null> {
+    const conversation = await this.repo.getConversation(userId, conversationId);
+    if (!conversation) return null;
+    const records = await this.repo.listMessages(conversationId);
+
+    const tools = estimateToolDefinitions(this.tools, toolParametersJsonSchema);
+    const toolTokens = tools.reduce((sum, tool) => sum + tool.tokens, 0);
+    const estimate = (history: ChatMessage[]): ContextCategories => {
+      const { imageCount: _imageCount, ...parts } = estimateMessages(history);
+      return { ...parts, tools: toolTokens };
+    };
+
+    const history = this.historyFromRecords(records);
+    const { imageCount, ...nextParts } = estimateMessages(history.messages);
+    const raw: ContextCategories = { ...nextParts, tools: toolTokens };
+
+    // The latest reply's reported input covered everything before it; compare
+    // that with our estimate of the same request to correct the estimates.
+    let reportedInputTokens: number | null = null;
+    let scale = 1;
+    for (let i = records.length - 1; i >= 0; i--) {
+      const record = records[i];
+      if (record.role === 'assistant' && typeof record.inputTokens === 'number' && record.inputTokens > 0) {
+        reportedInputTokens = record.inputTokens;
+        const estimatedThen = sumCategories(estimate(this.historyFromRecords(records.slice(0, i)).messages));
+        if (estimatedThen > 0) scale = Math.min(4, Math.max(0.25, record.inputTokens / estimatedThen));
+        break;
+      }
+    }
+
+    const categories = Object.fromEntries(
+      Object.entries(raw).map(([key, value]) => [key, Math.round(value * scale)]),
+    ) as unknown as ContextCategories;
+    return {
+      categories,
+      total: sumCategories(categories),
+      reportedInputTokens,
+      calibrated: reportedInputTokens != null,
+      tools: tools.map((tool) => ({ name: tool.name, tokens: Math.round(tool.tokens * scale) })),
+      imageCount,
+      messageCount: history.messages.length - 1,
+      omittedMessageCount: history.omitted,
+    };
+  }
+
   private async buildChatHistory(conversationId: string): Promise<ChatMessage[]> {
     const records = await this.repo.listMessages(conversationId);
+    return this.historyFromRecords(records).messages;
+  }
+
+  /** The system prompt and the (truncated) history a model call is sent. */
+  private historyFromRecords(records: AssistantMessageRecord[]): { messages: ChatMessage[]; omitted: number } {
     const body: ChatMessage[] = [];
     for (const m of records) {
       if (m.status === 'awaiting_confirmation') continue; // skip halted-turn stubs
@@ -963,9 +1033,11 @@ export class AssistantRunner {
     }
 
     const truncated = truncateHistory(body, ASSISTANT_LIMITS.MAX_HISTORY_MESSAGES);
+    // A truncated history drops messages and adds one placeholder in their place.
+    const omitted = truncated === body ? 0 : body.length - (truncated.length - 1);
     // Keep the system prompt 100% static so provider KV / prefix caches stay
     // warm across tool-loop iterations and multi-turn follow-ups.
-    return [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }, ...truncated];
+    return { messages: [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }, ...truncated], omitted };
   }
 
   private async callProviderWithRetry(

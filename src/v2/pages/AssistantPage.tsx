@@ -31,7 +31,7 @@ import {
   type AssistantToolCallData,
   type AssistantTurnResult,
 } from '../../api';
-import { filterEnabledAssistantProviders, normalizeAssistantProviderSelection } from '../../lib/assistant-provider-settings';
+import { filterEnabledAssistantProviders, getCachedAssistantSettings, loadAssistantSettings, normalizeAssistantProviderSelection, rememberAssistantModel } from '../../lib/assistant-provider-settings';
 import { consumePwaShareHandoff } from '../../lib/pwa-share';
 import {
   Button,
@@ -52,6 +52,7 @@ import { ApprovedToolsDialog } from '../components/assistant/ApprovedToolsDialog
 import { McpAppFrame } from '../components/assistant/McpAppFrame';
 import { Composer, type AttachedImage, type BoundContext, type ComposerHandle } from '../components/assistant/Composer';
 import { AssistantHero } from '../components/assistant/Hero';
+import type { ConversationUsage } from '../components/assistant/ContextUsage';
 import { ResourcePanel } from '../components/assistant/ResourcePanel';
 import { Lightbox } from '../components/Lightbox';
 import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
@@ -337,8 +338,8 @@ export function AssistantPage() {
   const [resources, setResources] = useState<AssistantConversationResource[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<AssistantPendingConfirmation | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState<string>(() => localStorage.getItem('assistant_last_provider') || '');
-  const [selectedModelId, setSelectedModelId] = useState<string>(() => localStorage.getItem('assistant_last_model') || '');
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(() => getCachedAssistantSettings()?.lastProviderId || '');
+  const [selectedModelId, setSelectedModelId] = useState<string>(() => getCachedAssistantSettings()?.lastModelId || '');
   const initialNavigationState = location.state as AssistantNavigationState | null;
   const [composerDraft, setComposerDraft] = useState(() => ({
     inputText: initialNavigationState?.draftMessage || '',
@@ -365,12 +366,8 @@ export function AssistantPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
-  }, [selectedProviderId]);
-
-  useEffect(() => {
-    if (selectedModelId) localStorage.setItem('assistant_last_model', selectedModelId);
-  }, [selectedModelId]);
+    rememberAssistantModel(selectedProviderId, selectedModelId);
+  }, [selectedProviderId, selectedModelId]);
   
   const [isSending, setIsSending] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -556,8 +553,13 @@ export function AssistantPage() {
 
   // ─── Load providers ───
   useEffect(() => {
-    fetchAssistantProviders()
-      .then((data) => setProviders(filterEnabledAssistantProviders(data.providers)))
+    Promise.all([fetchAssistantProviders(), loadAssistantSettings()])
+      .then(([data, settings]) => {
+        // An open conversation sets its own model; otherwise start from the account's last pick.
+        setSelectedProviderId((current) => current || settings.lastProviderId || '');
+        setSelectedModelId((current) => current || settings.lastModelId || '');
+        setProviders(filterEnabledAssistantProviders(data.providers, settings.enabledProviderIds));
+      })
       .catch(() => {});
   }, []);
 
@@ -920,6 +922,18 @@ export function AssistantPage() {
     }
     return latest;
   }, 0);
+  const conversationUsage = useMemo<ConversationUsage | null>(() => {
+    const replies = messages.filter((m) => m.role === 'assistant' && (typeof m.inputTokens === 'number' || typeof m.outputTokens === 'number'));
+    if (replies.length === 0) return null;
+    const last = replies[replies.length - 1];
+    return {
+      replies: replies.length,
+      totalInputTokens: replies.reduce((sum, m) => sum + (m.inputTokens ?? 0), 0),
+      totalOutputTokens: replies.reduce((sum, m) => sum + (m.outputTokens ?? 0), 0),
+      lastInputTokens: last.inputTokens,
+      lastOutputTokens: last.outputTokens,
+    };
+  }, [messages]);
 
   // ─── New conversation (handled implicitly in send) ───
   const handleNewConversationClick = () => {
@@ -1672,6 +1686,8 @@ export function AssistantPage() {
                 selectedModelId={selectedModelId}
                 setSelectedModelId={setSelectedModelId}
                 contextUsageTokens={contextUsageTokens}
+                usage={conversationUsage}
+                conversationId={activeConversationId}
                 providers={providers}
                 isSending={isSending}
                 isStopping={isStopping}
@@ -1692,6 +1708,7 @@ export function AssistantPage() {
               selectedModelId={selectedModelId}
               setSelectedModelId={setSelectedModelId}
               contextUsageTokens={contextUsageTokens}
+              usage={conversationUsage}
               providers={providers}
               isSending={isSending}
               onSend={handleSend}

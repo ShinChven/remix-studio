@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { deleteProject, fetchAssistantProviders, fetchCampaigns, fetchLibraries, fetchProjects } from '../../api';
 import { useLiveRefresh } from '../../hooks/useLiveRefresh';
-import { filterEnabledAssistantProviders, normalizeAssistantProviderSelection } from '../../lib/assistant-provider-settings';
+import { filterEnabledAssistantProviders, getCachedAssistantSettings, loadAssistantSettings, normalizeAssistantProviderSelection, rememberAssistantModel } from '../../lib/assistant-provider-settings';
 import { Button, Icon, IconButton, Shape, Text } from '../../m3';
 import type { Library, Project, Provider } from '../../types';
 import type { AttachedImage, BoundContext } from '../components/assistant/Composer';
@@ -43,15 +43,12 @@ export function Home() {
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [projectForm, setProjectForm] = useState<{ copyFromId?: string } | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState(() => localStorage.getItem('assistant_last_provider') || '');
-  const [selectedModelId, setSelectedModelId] = useState(() => localStorage.getItem('assistant_last_model') || '');
+  const [selectedProviderId, setSelectedProviderId] = useState(() => getCachedAssistantSettings()?.lastProviderId || '');
+  const [selectedModelId, setSelectedModelId] = useState(() => getCachedAssistantSettings()?.lastModelId || '');
 
   useEffect(() => {
-    if (selectedProviderId) localStorage.setItem('assistant_last_provider', selectedProviderId);
-  }, [selectedProviderId]);
-  useEffect(() => {
-    if (selectedModelId) localStorage.setItem('assistant_last_model', selectedModelId);
-  }, [selectedModelId]);
+    rememberAssistantModel(selectedProviderId, selectedModelId);
+  }, [selectedProviderId, selectedModelId]);
 
   useEffect(() => {
     let mounted = true;
@@ -64,13 +61,14 @@ export function Home() {
           fetchAssistantProviders(),
           fetchCampaigns({ pageSize: 8 }).catch(() => []),
         ]);
+        const settings = await loadAssistantSettings();
         if (!mounted) return;
-        const enabled = filterEnabledAssistantProviders(provRes.providers);
+        const enabled = filterEnabledAssistantProviders(provRes.providers, settings.enabledProviderIds);
         setProjects(projRes.items);
         setLibraries(libRes.items);
         setProviders(enabled);
         setCampaigns(Array.isArray(campRes) ? (campRes as CampaignSummary[]).slice(0, 8) : []);
-        const normalized = normalizeAssistantProviderSelection(enabled, selectedProviderId, selectedModelId);
+        const normalized = normalizeAssistantProviderSelection(enabled, settings.lastProviderId || '', settings.lastModelId || '');
         setSelectedProviderId(normalized.providerId);
         setSelectedModelId(normalized.modelId);
       } catch (err) {
