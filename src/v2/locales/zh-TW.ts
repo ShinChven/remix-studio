@@ -62,8 +62,6 @@ const messages: V2Messages = {
     searchShort: '搜尋 ...',
     searchPlaceholder: '搜尋，或輸入 > 執行指令',
     navigation: '主導覽',
-    classicUi: '經典介面',
-    classicUiHint: '切換回原本的介面',
     noResults: '找不到結果。',
     commands: '指令',
     projects: '專案',

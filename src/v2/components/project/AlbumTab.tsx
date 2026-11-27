@@ -6,7 +6,6 @@ import type { ProjectMediaType } from '../../../lib/project-media';
 import { copyText, resourceRef, startResourceChat } from '../../../lib/resource-ref';
 import { Button, Checkbox, Dialog, Icon, IconButton, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, SubMenu, Text } from '../../../m3';
 import type { AlbumItem, AlbumTagCount, AlbumTagMatch, AspectRatioCount, ProjectType } from '../../../types';
-import { withBase } from '../../app/paths';
 import { formatBytes, uiLocale } from '../../lib/format';
 import { ActionMenu, type ActionMenuItem } from '../../ui/ActionMenu';
 import { HoverMenuButton } from '../../ui/HoverMenuButton';
@@ -330,7 +329,7 @@ export function AlbumTab(props: AlbumTabProps) {
       { key: 'chat', label: t('resourceRef.startChat'), icon: 'chat', onSelect: () => startResourceChat(navigate, resourceRef.albumItem(projectId, item.id)) },
       { key: 'ref', label: t('resourceRef.copy'), icon: 'tag', onSelect: () => void copyReference(item) },
       { key: 'original', hidden: !opts.media, divider: true, label: t('projectViewer.album.openOriginal'), icon: 'open_in_new', href: imageDisplayUrl(item.imageUrl), target: '_blank' },
-      { key: 'watermark', hidden: !opts.media || isVideo, label: t('projectViewer.album.quickWatermark'), icon: 'approval', href: withBase(`/project/${projectId}/album/${item.id}/watermark`), target: '_blank' },
+      { key: 'watermark', hidden: !opts.media || isVideo, label: t('projectViewer.album.quickWatermark'), icon: 'approval', href: `/project/${projectId}/album/${item.id}/watermark`, target: '_blank' },
       { key: 'delete', divider: true, danger: true, label: t('projectViewer.common.delete'), icon: 'delete', onSelect: () => deleteItems([item]) },
     ];
     return <ActionMenu label={t('v2.project.moreActions')} items={items} size="xs" className={opts.className} />;

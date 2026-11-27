@@ -62,8 +62,6 @@ const messages: V2Messages = {
     searchShort: '搜索 ...',
     searchPlaceholder: '搜索，或输入 > 执行命令',
     navigation: '主导航',
-    classicUi: '经典界面',
-    classicUiHint: '切换回原来的界面',
     noResults: '未找到结果。',
     commands: '命令',
     projects: '项目',

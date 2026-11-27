@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { Button, LinkProvider, M3LocaleProvider, SnackbarProvider, Text, ThemeProvider } from '../m3';
 import { AuthProvider, useAuth } from './app/auth';
-import { setPreferNewUi, V2_BASE } from './app/paths';
 import { RouterLink } from './app/RouterLink';
 import { AppShell } from './shell/AppShell';
 import { DEFAULT_SEED, THEME_STORAGE_KEY, UiPrefsProvider } from './theme/prefs';
@@ -228,9 +227,6 @@ export function App() {
   const { i18n } = useTranslation();
   const messages = useM3Messages();
   useEffect(() => {
-    setPreferNewUi(true);
-  }, []);
-  useEffect(() => {
     document.documentElement.lang = i18n.language || i18n.resolvedLanguage || 'en';
   }, [i18n.language, i18n.resolvedLanguage]);
   return (
@@ -240,7 +236,7 @@ export function App() {
           <SnackbarProvider>
             <AuthProvider>
               <ApiKeyGate>
-                <BrowserRouter basename={V2_BASE}>
+                <BrowserRouter>
                   <LinkProvider component={RouterLink}>
                     <AppRoutes />
                   </LinkProvider>

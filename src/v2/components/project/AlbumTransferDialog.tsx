@@ -5,7 +5,6 @@ import type { ProjectMediaType } from '../../../lib/project-media';
 import { Button, Dialog, Icon, LoadingIndicator, Ripple, Text, TextField } from '../../../m3';
 import { KindBadge } from '../../ui/KindBadge';
 import type { AlbumItem, Library, Project, ProjectType } from '../../../types';
-import { withBase } from '../../app/paths';
 import { ChoiceTiles } from '../../ui/ChoiceTiles';
 import { SearchField } from '../../ui/SearchField';
 import { Segmented } from '../../ui/Toolbar';
@@ -21,8 +20,7 @@ const PROJECT_PAGE_SIZE = 200;
 const PREVIEW_LIMIT = 12;
 /**
  * The last completed copy or move picks where the next one starts: the kind of
- * destination per action, and the destination itself per kind and type. The
- * keys are shared with the classic interface, so either remembers for both.
+ * destination per action, and the destination itself per kind and type.
  */
 const TARGET_KEY_PREFIX = 'remix_studio_album_transfer_target_';
 const PROJECT_DESTINATION_KEY_PREFIX = 'remix_studio_album_move_destination_';
@@ -203,7 +201,7 @@ export function AlbumTransferDialog({ projectId, projectName, mediaType, project
       writeStored(target === 'library' ? `${LIBRARY_DESTINATION_KEY_PREFIX}${mediaType}` : `${PROJECT_DESTINATION_KEY_PREFIX}${projectType}`, destination.id);
       // The destination opens in a new tab so the album stays put.
       toast.success(t(isMove ? 'projectViewer.transfer.moved' : 'projectViewer.transfer.copied', { count, name: destination.name }), {
-        action: { label: destination.linkLabel, onClick: () => window.open(withBase(destination.href), '_blank', 'noopener') },
+        action: { label: destination.linkLabel, onClick: () => window.open(destination.href, '_blank', 'noopener') },
       });
       onDone(action, isMove ? items : []);
     } catch (error) {

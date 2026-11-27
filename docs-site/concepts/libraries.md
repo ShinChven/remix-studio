@@ -51,7 +51,7 @@ Matching is case-insensitive. Items without any selected tag are excluded. The f
 
 ## Adding and Reusing Items
 
-Text items can be created in the library editor, imported in batches, or created through the assistant/MCP tool layer. Media files can be uploaded directly (or by dropping files anywhere onto a media library), and an external MCP client can upload images, videos and audio into a library too (see [file uploads](/integrations/mcp#file-uploads)). In the Material 3 interface (`/v2`), pressing `Cmd/Ctrl+V` outside a text field on a library page also uploads clipboard files, creates items from pasted text or `.txt`/`.md` files in a text library, or fetches and uploads a copied `<img>` or media URL in a media library.
+Text items can be created in the library editor, imported in batches, or created through the assistant/MCP tool layer. Media files can be uploaded directly (or by dropping files anywhere onto a media library), and an external MCP client can upload images, videos and audio into a library too (see [file uploads](/integrations/mcp#file-uploads)). Pressing `Cmd/Ctrl+V` outside a text field on a library page also uploads clipboard files, creates items from pasted text or `.txt`/`.md` files in a text library, or fetches and uploads a copied `<img>` or media URL in a media library.
 
 From a project you can also:
 

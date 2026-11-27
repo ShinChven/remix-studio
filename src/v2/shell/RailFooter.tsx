@@ -17,7 +17,6 @@ import {
   type ThemeMode,
 } from '../../m3';
 import { useAuth } from '../app/auth';
-import { openClassicUi } from '../app/paths';
 import { formatBytes, isNewerVersion } from '../lib/format';
 import { setModeWithReveal } from '../theme/prefs';
 import { usePolling } from '../lib/usePolling';
@@ -87,9 +86,6 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
       <MenuItem icon="palette" onSelect={onOpenTheme}>
         {t('v2.theme.title')}
       </MenuItem>
-      <MenuItem icon="history_toggle_off" supportingText={t('v2.shell.classicUiHint')} onSelect={openClassicUi}>
-        {t('v2.shell.classicUi')}
-      </MenuItem>
       <MenuDivider />
       <MenuItem icon="logout" onSelect={() => void logout()}>
         {t('v2.shell.signOut')}
@@ -102,7 +98,6 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
       {/* Collapsed rail */}
       <div className="v2-rail-footer" data-variant="collapsed">
         <IconButton icon="palette" label={t('v2.theme.open')} tooltip onClick={onOpenTheme} />
-        <IconButton icon="swap_horiz" label={t('v2.shell.classicUiHint')} tooltip onClick={openClassicUi} />
         {isAdmin && updateUrl && (
           <IconButton icon="upgrade" label={t('v2.navigation.updateAvailable', 'Update Available')} tooltip href={updateUrl} target="_blank" rel="noopener noreferrer" badge={<Badge />} />
         )}
@@ -140,7 +135,6 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
             ))}
           </ButtonGroup>
           <div className="flex items-center gap-1">
-            <IconButton icon="swap_horiz" label={t('v2.shell.classicUiHint')} tooltip variant="tonal" size="xs" onClick={openClassicUi} />
             <IconButton icon="palette" label={t('v2.theme.open')} tooltip variant="tonal" size="xs" onClick={onOpenTheme} />
           </div>
         </div>

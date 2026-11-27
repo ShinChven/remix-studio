@@ -1,26 +1,19 @@
 /**
- * Entry point. The classic UI and the Material 3 Expressive UI (under `/v2`) are separate apps
- * that share the API layer; only the one being visited is loaded, along with its own styles.
+ * Entry point. The app used to be served under `/v2` beside an older interface; links and
+ * bookmarks into `/v2/...` now open the same page at the root.
  */
-const V2_BASE = '/v2';
-const UI_PREFERENCE_KEY = 'ui-version';
+import { stripLegacyBase } from './v2/app/paths';
 
 const { pathname, search, hash } = window.location;
-const isV2 = pathname === V2_BASE || pathname.startsWith(`${V2_BASE}/`);
+const path = stripLegacyBase(pathname);
+if (path !== pathname) window.history.replaceState(window.history.state, '', `${path}${search}${hash}`);
 
-let preferV2 = false;
 try {
-  preferV2 = localStorage.getItem(UI_PREFERENCE_KEY) === 'v2';
+  // Chose between the two interfaces; nothing reads it any more.
+  localStorage.removeItem('ui-version');
 } catch {
-  // Storage can be blocked; the classic UI stays the default.
+  // Storage can be blocked.
 }
 
-if (!isV2 && preferV2) {
-  // Links into the app (OAuth callbacks, share targets, bookmarks) keep their path in the new UI.
-  window.location.replace(`${V2_BASE}${pathname === '/' ? '' : pathname}${search}${hash}`);
-} else if (isV2) {
-  void import('./v2/styles/load');
-  void import('./v2/main');
-} else {
-  void import('./classic');
-}
+void import('./v2/styles/load');
+void import('./v2/main');

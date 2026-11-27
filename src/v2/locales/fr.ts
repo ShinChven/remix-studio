@@ -62,8 +62,6 @@ const messages: V2Messages = {
     searchShort: 'Rechercher ...',
     searchPlaceholder: 'Rechercher, ou tapez > pour les commandes',
     navigation: 'Principal',
-    classicUi: 'Interface classique',
-    classicUiHint: 'Revenir à l\'interface d\'origine',
     noResults: 'Aucun résultat.',
     commands: 'Commandes',
     projects: 'Projets',

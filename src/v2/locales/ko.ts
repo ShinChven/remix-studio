@@ -62,8 +62,6 @@ const messages: V2Messages = {
     searchShort: '검색 ...',
     searchPlaceholder: '검색하거나 > 를 입력해 명령 실행',
     navigation: '메인',
-    classicUi: '클래식 인터페이스',
-    classicUiHint: '원래 인터페이스로 돌아가기',
     noResults: '결과가 없습니다.',
     commands: '명령',
     projects: '프로젝트',

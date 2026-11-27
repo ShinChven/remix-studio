@@ -25,7 +25,6 @@ import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import { resourceRef, startResourceChat } from '../../lib/resource-ref';
 import { Button, Dialog, Icon, IconButton, LinearProgress, LoadingIndicator, MenuDivider, MenuGroup, MenuItem, Shape, SubMenu, Text, useMediaQuery } from '../../m3';
 import type { Library, LibraryItem } from '../../types';
-import { withBase } from '../app/paths';
 import { AutoTagDialog } from '../components/AutoTagDialog';
 import { AutoTagProgress } from '../components/AutoTagProgress';
 import { CopyMoveItemsDialog } from '../components/library/CopyMoveItemsDialog';
@@ -429,7 +428,7 @@ function LibraryEditor({ library, onChanged }: { library: Library; onChanged: ()
     { key: 'chat', label: t('resourceRef.startChat'), icon: 'chat', onSelect: () => startResourceChat(navigate, resourceRef.libraryItem(library.id, item.id)) },
     { key: 'ref', label: t('resourceRef.copy'), icon: 'tag', onSelect: () => void copyReference(item) },
     { key: 'original', hidden: isText, divider: true, label: t('projectViewer.album.openOriginal'), icon: 'open_in_new', href: isText ? undefined : imageDisplayUrl(item.content), target: '_blank' },
-    { key: 'watermark', hidden: type !== 'image', label: t('libraryEditor.quickWatermark'), icon: 'approval', href: withBase(`/library/${library.id}/items/${item.id}/watermark`), target: '_blank' },
+    { key: 'watermark', hidden: type !== 'image', label: t('libraryEditor.quickWatermark'), icon: 'approval', href: `/library/${library.id}/items/${item.id}/watermark`, target: '_blank' },
     { key: 'delete', divider: true, danger: true, label: t('libraryEditor.deleteItem'), icon: 'delete', onSelect: () => setRemoveItem(item) },
   ];
 
