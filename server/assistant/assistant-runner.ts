@@ -14,6 +14,13 @@ import {
   createAssistantToolDefinitions,
 } from '../mcp/tool-definitions';
 import { summarizeToolEffect, toolRequiresConfirmation } from '../mcp/tool-confirmation';
+import {
+  buildMcpAppResultMeta,
+  getMcpAppResourceUri,
+  readMcpAppResource,
+  type McpAppResourceContents,
+} from '../mcp/apps/mcp-apps';
+import type { S3Storage } from '../storage/s3-storage';
 import { resolveChatProvider } from './chat-provider-factory';
 import type {
   ChatMessage,
@@ -73,6 +80,8 @@ export interface AssistantToolMetadata {
   title: string;
   description: string;
   category: AssistantToolDefinition['category'];
+  /** `ui://` MCP App view the chat renders this tool's result with. */
+  appResourceUri?: string;
   requiresConfirmation: boolean;
   inputSchema: Record<string, unknown>;
 }
@@ -123,6 +132,35 @@ const activeTurnsByUser = new Map<string, number>();
  * The payload a tool actually produced. Most tools skip `structuredContent`
  * and put their JSON in `text`, so both have to be read to see a result.
  */
+/** An MCP `CallToolResult`, as a view expects to receive it. */
+export interface AppToolResult {
+  content: { type: 'text'; text: string }[];
+  structuredContent?: Record<string, unknown>;
+  _meta?: Record<string, unknown>;
+  isError?: boolean;
+}
+
+function asStructured(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function parseStructured(text: string): Record<string, unknown> | undefined {
+  try {
+    return asStructured(JSON.parse(text));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The tool output inside a stored `<tool_result>` wrapper. */
+function unwrapStoredToolResult(content: string | null | undefined): string {
+  if (!content) return '';
+  const match = content.match(/<tool_result\b[^>]*>([\s\S]*?)<\/tool_result>/i);
+  return (match?.[1] ?? content).trim();
+}
+
 function toolResultPayload(result: ToolResult): unknown {
   if (result.structuredContent != null) return result.structuredContent;
   try {
@@ -136,12 +174,14 @@ export class AssistantRunner {
   private tools: AssistantToolDefinition[];
   private toolsByName: Map<string, AssistantToolDefinition>;
   private sessionApprovedToolsByConversation = new Map<string, Set<string>>();
+  private storage: S3Storage;
 
   constructor(
     private repo: AssistantRepository,
     private providerRepo: ProviderRepository,
     toolDeps: ToolDependencies,
   ) {
+    this.storage = toolDeps.storage;
     this.tools = createAssistantToolDefinitions(toolDeps).filter((tool) => !tool.mcpOnly);
     this.toolsByName = new Map(this.tools.map((t) => [t.name, t]));
   }
@@ -154,7 +194,76 @@ export class AssistantRunner {
       category: tool.category,
       requiresConfirmation: toolRequiresConfirmation(tool),
       inputSchema: toolParametersJsonSchema(tool),
+      ...(getMcpAppResourceUri(tool.name) ? { appResourceUri: getMcpAppResourceUri(tool.name) } : {}),
     }));
+  }
+
+  /** The HTML of an MCP App view, for the chat to render in a sandboxed frame. */
+  readAppResource(uri: string): Promise<McpAppResourceContents | null> {
+    return readMcpAppResource(uri, this.storage);
+  }
+
+  private async toAppToolResult(
+    toolName: string,
+    text: string,
+    structured: Record<string, unknown> | undefined,
+    isError: boolean,
+  ): Promise<AppToolResult> {
+    const meta = isError ? undefined : await buildMcpAppResultMeta(toolName, structured, this.storage);
+    return {
+      content: [{ type: 'text', text }],
+      ...(structured ? { structuredContent: structured } : {}),
+      ...(meta ? { _meta: meta } : {}),
+      ...(isError ? { isError: true } : {}),
+    };
+  }
+
+  /**
+   * A stored tool result in the shape an MCP App view reads, with its media
+   * signed again: the links the turn produced have expired by the time an old
+   * conversation is reopened.
+   */
+  async getAppToolResult(
+    userId: string,
+    conversationId: string,
+    toolCallId: string,
+  ): Promise<{ toolName: string; arguments: unknown; result: AppToolResult } | null> {
+    const conversation = await this.repo.getConversation(userId, conversationId);
+    if (!conversation) return null;
+    const messages = await this.repo.listMessages(conversationId);
+    const message = messages.find((entry) => entry.role === 'tool' && entry.toolCallId === toolCallId);
+    if (!message?.toolName || !getMcpAppResourceUri(message.toolName)) return null;
+    const text = unwrapStoredToolResult(message.content);
+    const structured = asStructured(message.toolResultJson) ?? parseStructured(text);
+    return {
+      toolName: message.toolName,
+      arguments: message.toolArgsJson ?? {},
+      result: await this.toAppToolResult(message.toolName, text, structured, message.status === 'error'),
+    };
+  }
+
+  /**
+   * Runs a tool a view asked for (paging, refreshing). Only read tools: a view
+   * is not the model and has no confirmation step, so anything that changes
+   * data stays with the conversation.
+   */
+  async callToolForApp(userId: string, toolName: string, args: unknown): Promise<AppToolResult> {
+    const tool = this.toolsByName.get(toolName);
+    if (!tool || tool.category !== 'read') {
+      return this.toAppToolResult(toolName, JSON.stringify({ error: `Tool '${toolName}' is not available to views` }), undefined, true);
+    }
+    const parsed = safeParseToolInput(tool, args);
+    if (!parsed.ok) {
+      const error = (parsed as { ok: false; error: string }).error;
+      return this.toAppToolResult(toolName, JSON.stringify({ error }), undefined, true);
+    }
+    const result = await withTimeout(
+      tool.handler(userId, parsed.value),
+      ASSISTANT_LIMITS.TOOL_TIMEOUT_MS,
+      `Tool '${toolName}' timed out`,
+    );
+    const structured = asStructured(result.structuredContent) ?? parseStructured(result.text);
+    return this.toAppToolResult(toolName, result.text, structured, result.isError === true);
   }
 
   async sendUserMessage(input: SendUserMessageInput): Promise<TurnResult> {

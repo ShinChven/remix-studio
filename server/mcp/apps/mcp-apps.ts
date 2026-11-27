@@ -161,6 +161,36 @@ async function storageOrigin(storage: S3Storage): Promise<string | undefined> {
   }
 }
 
+/** The `ui://` view a tool renders its result with, if any. */
+export function getMcpAppResourceUri(toolName: string): string | undefined {
+  return APP_TOOLS[toolName]?.view.uri;
+}
+
+export interface McpAppResourceContents {
+  uri: string;
+  mimeType: string;
+  text: string;
+  _meta: { ui: { csp: { resourceDomains: string[] }; prefersBorder: boolean } };
+}
+
+/** Reads one view resource, or null when the URI names no view. */
+export async function readMcpAppResource(uri: string, storage: S3Storage): Promise<McpAppResourceContents | null> {
+  const view = Object.values(VIEWS).find((candidate) => candidate.uri === uri);
+  if (!view) return null;
+  const origin = await storageOrigin(storage);
+  return {
+    uri: view.uri,
+    mimeType: MCP_APP_MIME_TYPE,
+    text: readViewHtml(view),
+    _meta: {
+      ui: {
+        csp: { resourceDomains: origin ? [origin] : [] },
+        prefersBorder: true,
+      },
+    },
+  };
+}
+
 export function registerMcpAppResources(server: McpServer, storage: S3Storage) {
   for (const view of Object.values(VIEWS)) {
     server.registerResource(
@@ -168,22 +198,8 @@ export function registerMcpAppResources(server: McpServer, storage: S3Storage) {
       view.uri,
       { title: view.title, description: view.description, mimeType: MCP_APP_MIME_TYPE },
       async () => {
-        const origin = await storageOrigin(storage);
-        return {
-          contents: [
-            {
-              uri: view.uri,
-              mimeType: MCP_APP_MIME_TYPE,
-              text: readViewHtml(view),
-              _meta: {
-                ui: {
-                  csp: { resourceDomains: origin ? [origin] : [] },
-                  prefersBorder: true,
-                },
-              },
-            },
-          ],
-        };
+        const contents = await readMcpAppResource(view.uri, storage);
+        return { contents: contents ? [contents] : [] };
       },
     );
   }

@@ -1935,6 +1935,8 @@ export interface AssistantToolMetadata {
   category: 'read' | 'mutate' | 'destructive';
   requiresConfirmation: boolean;
   inputSchema: Record<string, unknown>;
+  /** `ui://` MCP App view the chat renders this tool's result with. */
+  appResourceUri?: string;
 }
 
 export interface AssistantStatusEvent {
@@ -2147,6 +2149,49 @@ export async function fetchAssistantProviders(): Promise<{ providers: Provider[]
 export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetadata[] }> {
   const res = await apiFetch('/api/assistant/tools', { headers: getHeaders(false) });
   return handleResponse<{ tools: AssistantToolMetadata[] }>(res, 'Failed to list assistant tools');
+}
+
+/** An MCP `CallToolResult`, as an MCP App view receives it. */
+export interface AssistantAppToolResult {
+  content: { type: 'text'; text: string }[];
+  structuredContent?: Record<string, unknown>;
+  _meta?: Record<string, unknown>;
+  isError?: boolean;
+}
+
+export interface AssistantAppResource {
+  uri: string;
+  mimeType: string;
+  text: string;
+  _meta?: { ui?: { csp?: { resourceDomains?: string[] }; prefersBorder?: boolean } };
+}
+
+export async function fetchAssistantAppResource(uri: string): Promise<{ resource: AssistantAppResource }> {
+  const res = await apiFetch(`/api/assistant/apps/resource?uri=${encodeURIComponent(uri)}`, { headers: getHeaders(false) });
+  return handleResponse<{ resource: AssistantAppResource }>(res, 'Failed to load the view');
+}
+
+export async function fetchAssistantAppToolResult(
+  conversationId: string,
+  toolCallId: string,
+): Promise<{ toolName: string; arguments: Record<string, unknown>; result: AssistantAppToolResult }> {
+  const res = await apiFetch(
+    `/api/assistant/conversations/${conversationId}/apps/${encodeURIComponent(toolCallId)}`,
+    { headers: getHeaders(false) },
+  );
+  return handleResponse(res, 'Failed to load the tool result');
+}
+
+export async function callAssistantAppTool(
+  name: string,
+  args: Record<string, unknown>,
+): Promise<{ result: AssistantAppToolResult }> {
+  const res = await apiFetch('/api/assistant/apps/call-tool', {
+    method: 'POST',
+    headers: getHeaders(true),
+    body: JSON.stringify({ name, arguments: args }),
+  });
+  return handleResponse<{ result: AssistantAppToolResult }>(res, 'The view could not call the tool');
 }
 
 export async function fetchAssistantConversationApprovedTools(
