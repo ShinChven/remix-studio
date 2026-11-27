@@ -5111,9 +5111,27 @@
 
 .v2-chat-markdown > :first-child { margin-top: 0; }
 .v2-chat-markdown > :last-child { margin-bottom: 0; }
-.v2-chat-thought { margin: 0; max-width: 100%; }
-.v2-chat-thought .m3-chat-thought__content { max-height: 320px; overflow-y: auto; font: var(--md-sys-typescale-body-small); }
-.m3-chat-bubble .v2-chat-thought { margin-bottom: 10px; }
+/* Reasoning reads like the tool steps: a quiet pill that opens onto indented text, no box. */
+.v2-chat-thought {
+  display: flex; flex-direction: column; align-items: flex-start; max-width: 100%; margin: 0;
+  overflow: visible; border: 0; border-radius: 0; background: transparent;
+}
+.v2-chat-thought .m3-chat-thought__summary {
+  width: auto; max-width: 100%; min-height: 32px; gap: 8px;
+  margin-inline-start: -10px; padding: 4px 8px 4px 10px; box-sizing: border-box;
+  border-radius: var(--md-sys-shape-corner-full);
+  font: var(--md-sys-typescale-label-large); color: var(--md-sys-color-on-surface-variant);
+  transition: background-color var(--md-sys-motion-duration-short3) var(--md-sys-motion-easing-standard);
+}
+.v2-chat-thought .m3-chat-thought__summary:hover { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); color: var(--md-sys-color-on-surface); }
+.v2-chat-thought .m3-chat-thought__summary:focus-visible { outline: 2px solid var(--md-sys-color-primary); outline-offset: 2px; }
+.v2-chat-thought .m3-chat-thought__content {
+  align-self: stretch; max-height: 320px; overflow-y: auto;
+  margin: 6px 0 0 7px; padding: 2px 0 2px 14px;
+  border: 0; border-inline-start: 2px solid var(--md-sys-color-outline-variant);
+  font: var(--md-sys-typescale-body-medium); line-height: 1.6; color: var(--md-sys-color-on-surface-variant);
+}
+.m3-chat-bubble .v2-chat-thought { margin-bottom: 12px; }
 
 .v2-chat-user { display: flex; flex-direction: column; gap: 8px; }
 .v2-chat-user__images { display: flex; flex-wrap: wrap; gap: 6px; }
