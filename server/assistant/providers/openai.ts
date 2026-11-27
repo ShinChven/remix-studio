@@ -28,6 +28,7 @@ function outputTokenParam(modelId: string, maxTokens: number): Record<string, nu
 
 export class OpenAIChatProvider implements ChatProvider {
   protected client: OpenAI;
+  private isOfficialOpenAI: boolean;
 
   /**
    * Extra request-body fields for OpenAI-compatible endpoints that need one
@@ -37,11 +38,22 @@ export class OpenAIChatProvider implements ChatProvider {
     return {};
   }
 
+  /**
+   * Whether the endpoint accepts OpenAI's `prompt_cache_key` parameter.
+   * Restrict to official OpenAI endpoints so third-party OpenAI-compatible
+   * gateways (Grok, Kimi, DashScope, MiniMax, APIMart, custom proxies) don't
+   * reject an unknown field; they still benefit from automatic prefix caching.
+   */
+  protected supportsPromptCacheKey(): boolean {
+    return this.constructor === OpenAIChatProvider && this.isOfficialOpenAI;
+  }
+
   constructor(apiKey: string, apiUrl?: string) {
     let finalBaseUrl = apiUrl || undefined;
     if (finalBaseUrl && !finalBaseUrl.includes('/v1') && !finalBaseUrl.includes('openai.azure.com') && !finalBaseUrl.includes('localhost') && !finalBaseUrl.includes('127.0.0.1')) {
       finalBaseUrl = `${finalBaseUrl.endsWith('/') ? finalBaseUrl.slice(0, -1) : finalBaseUrl}/v1`;
     }
+    this.isOfficialOpenAI = !finalBaseUrl || /https?:\/\/api\.openai\.com(\/|$)/i.test(finalBaseUrl);
     this.client = new OpenAI({ apiKey, baseURL: finalBaseUrl });
   }
 
@@ -57,8 +69,12 @@ export class OpenAIChatProvider implements ChatProvider {
       ...(tools ? { tools, tool_choice: 'auto' as const } : {}),
     };
 
+    const cacheBody = req.cacheKey && this.supportsPromptCacheKey()
+      ? { prompt_cache_key: req.cacheKey }
+      : {};
+
     const response = await this.client.chat.completions.create(
-      { ...params, ...this.extraBody() } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+      { ...params, ...cacheBody, ...this.extraBody() } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
       { signal: req.abortSignal },
     );
 
@@ -74,13 +90,27 @@ export class OpenAIChatProvider implements ChatProvider {
         arguments: safeParseJsonArgs(tc.function.arguments),
       }));
 
+    const rawUsage = response.usage as
+      | (typeof response.usage & {
+          prompt_tokens_details?: { cached_tokens?: number };
+          cached_tokens?: number;
+        })
+      | undefined;
+    const cachedInputTokens =
+      typeof rawUsage?.prompt_tokens_details?.cached_tokens === 'number'
+        ? rawUsage.prompt_tokens_details.cached_tokens
+        : typeof rawUsage?.cached_tokens === 'number'
+          ? rawUsage.cached_tokens
+          : undefined;
+
     return {
       text: message.content ?? '',
       toolCalls,
       stopReason: mapStopReason(choice.finish_reason, toolCalls.length > 0),
-      usage: response.usage ? {
-        inputTokens: response.usage.prompt_tokens,
-        outputTokens: response.usage.completion_tokens,
+      usage: rawUsage ? {
+        inputTokens: rawUsage.prompt_tokens,
+        outputTokens: rawUsage.completion_tokens,
+        ...(cachedInputTokens !== undefined ? { cachedInputTokens } : {}),
       } : undefined,
     };
   }
