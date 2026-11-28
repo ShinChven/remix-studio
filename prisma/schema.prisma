@@ -29,6 +29,7 @@ model User {
   providers               Provider[]
   libraries               Library[]
   projects                Project[]
+  jobBatches              JobBatch[]
   trashItems              TrashItem[]
   libraryTrashItems       LibraryTrashItem[]
   exportTasks             ExportTask[]
@@ -249,6 +250,7 @@ model Project {
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs          Job[]
+  jobBatches    JobBatch[]
   workflowItems WorkflowItem[]
   albumItems    AlbumItem[]
   exportTasks   ExportTask[]
@@ -261,6 +263,7 @@ model Job {
   id               String   @id @default(uuid())
   projectId        String
   userId           String
+  batchId          String?
   prompt           String   @db.Text
   status           String   @default("pending")
   imageContexts    Json? // String[]
@@ -296,10 +299,38 @@ model Job {
 
   project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   provider Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+  batch    JobBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
 
   @@index([projectId])
   @@index([userId, status])
   @@index([status, taskId])
+  @@index([batchId])
+}
+
+/// A wave of jobs started together (e.g. via start_jobs), optionally bound to
+/// an assistant conversation so completion can resume the chat automatically.
+model JobBatch {
+  id             String    @id @default(uuid())
+  userId         String
+  projectId      String
+  conversationId String?
+  totalCount     Int
+  autoResume     Boolean   @default(false)
+  resumeHint     String?   @db.Text
+  notifiedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  conversation AssistantConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  jobs         Job[]
+  albumItems   AlbumItem[]
+
+  @@index([userId, createdAt])
+  @@index([projectId, createdAt])
+  @@index([conversationId, createdAt])
+  @@index([autoResume, notifiedAt])
 }
 
 model WorkflowItem {
@@ -326,6 +357,7 @@ model AlbumItem {
   projectId     String
   userId        String
   jobId         String?
+  batchId       String?
   prompt        String?  @db.Text
   textContent   String?  @db.Text
   imageContexts Json? // String[]
@@ -350,10 +382,12 @@ model AlbumItem {
   civitaiParams Json? // CivitaiGenerationConfig (Civitai projects)
   createdAt     DateTime @default(now())
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  batch   JobBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
 
   @@index([projectId, createdAt])
   @@index([userId])
+  @@index([batchId])
   @@index([sourceItems(ops: JsonbPathOps)], type: Gin)
 }
 
@@ -681,6 +715,7 @@ model AssistantConversation {
   pendingConfirmations AssistantPendingConfirmation[]
   resources            AssistantConversationResource[]
   swarmRuns            AssistantSwarmRun[]
+  jobBatches           JobBatch[]
 
   @@index([userId])
   @@index([userId, updatedAt])

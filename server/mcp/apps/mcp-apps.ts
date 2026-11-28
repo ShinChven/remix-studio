@@ -55,6 +55,12 @@ const VIEWS = {
     title: 'Remix Studio project overview',
     description: 'Previews a project configuration, workflow steps, and draft/queue/album counts.',
   },
+  batch: {
+    file: 'generation-batch',
+    uri: 'ui://remix-studio/generation-batch.html',
+    title: 'Remix Studio generation batch',
+    description: 'Tracks live progress and generated outputs for a batch of jobs started together.',
+  },
 } satisfies Record<string, McpAppView>;
 
 type StructuredResult = Record<string, any>;
@@ -105,7 +111,14 @@ const APP_TOOLS: Record<string, McpAppTool> = {
     view: VIEWS.project,
   },
   start_jobs: {
-    view: VIEWS.project,
+    view: VIEWS.batch,
+    mediaKeys: (result) =>
+      (result.items ?? []).flatMap((item: any) => [item.thumbnailKey, item.optimizedKey, item.storageKey]),
+  },
+  get_generation_batch: {
+    view: VIEWS.batch,
+    mediaKeys: (result) =>
+      (result.items ?? []).flatMap((item: any) => [item.thumbnailKey, item.optimizedKey, item.storageKey]),
   },
   get_project_job_counts: {
     view: VIEWS.project,

@@ -9,6 +9,7 @@ import {
   stopAssistantSwarmAgent,
   updateAssistantConversationApprovedTools,
   type AssistantConversationResource,
+  type AssistantJobBatch,
   type AssistantMessage,
   type AssistantPendingConfirmation,
   type AssistantSwarmAgent,
@@ -73,6 +74,7 @@ export interface AgentSidePanelProps {
   liveAgentActivity: Record<string, LiveAgentActivity>;
   swarmRuns: AssistantSwarmRun[];
   blackboardEntries: AssistantSwarmBlackboardEntry[];
+  jobBatches: AssistantJobBatch[];
   resources: AssistantConversationResource[];
   pendingConfirmations: AssistantPendingConfirmation[];
   appViews: Record<string, string>;
@@ -84,6 +86,7 @@ export interface AgentSidePanelProps {
   onSelectBlackboardRun?: (runId: string | null) => void;
   onConfirmSingle: (confirmation: AssistantPendingConfirmation, decision: 'confirm' | 'confirm_tool' | 'cancel') => Promise<void>;
   onConfirmAll: (decision: 'confirm' | 'cancel') => Promise<void>;
+  onToggleBatchAutoResume: (batchId: string, autoResume: boolean) => Promise<void>;
   onMentionResource: (resource: AssistantConversationResource) => void;
   onRemoveResource: (resource: AssistantConversationResource) => void;
   onBlackboardDeleted: (entryId: string) => void;
@@ -145,11 +148,12 @@ function statusIcon(status: string): string {
   }
 }
 
-type PanelSectionKey = 'roster' | 'resources' | 'blackboard' | 'approvals' | 'presets' | 'skills';
+type PanelSectionKey = 'roster' | 'generations' | 'resources' | 'blackboard' | 'approvals' | 'presets' | 'skills';
 
 const PANEL_SECTIONS_STORAGE_KEY = 'assistant-agent-panel-sections';
 const DEFAULT_OPEN_SECTIONS: Record<PanelSectionKey, boolean> = {
   roster: true,
+  generations: true,
   resources: true,
   blackboard: true,
   approvals: false,
@@ -226,6 +230,7 @@ export function AgentSidePanel({
   liveAgentActivity,
   swarmRuns,
   blackboardEntries,
+  jobBatches,
   resources,
   pendingConfirmations,
   appViews,
@@ -237,6 +242,7 @@ export function AgentSidePanel({
   onSelectBlackboardRun,
   onConfirmSingle,
   onConfirmAll,
+  onToggleBatchAutoResume,
   onMentionResource,
   onRemoveResource,
   onBlackboardDeleted,
@@ -654,6 +660,90 @@ export function AgentSidePanel({
             )}
           </CollapsibleSection>
         )}
+
+        {/* ─── Generation Batches (live progress tracker for batches started in this chat) ─── */}
+        {jobBatches.length > 0 && (() => {
+          const runningCount = jobBatches.filter((b) => b.status === 'running').length;
+          return (
+            <CollapsibleSection
+              title={t('v2.assistant.agentPanel.generations', 'Generations')}
+              count={runningCount > 0 ? `${runningCount}/${jobBatches.length}` : jobBatches.length}
+              open={openSections.generations}
+              onToggle={() => toggleSection('generations')}
+            >
+              <div className="v2-ap__gen-list">
+                {jobBatches.map((batch) => {
+                  const done = Math.min(batch.totalCount, batch.completed + batch.failed);
+                  const completedPct = batch.totalCount > 0 ? Math.min(100, (batch.completed / batch.totalCount) * 100) : 0;
+                  const failedPct = batch.totalCount > 0 ? Math.min(100 - completedPct, (batch.failed / batch.totalCount) * 100) : 0;
+                  const processingPct = batch.totalCount > 0 ? Math.min(100 - completedPct - failedPct, (batch.processing / batch.totalCount) * 100) : 0;
+                  const isRunning = batch.status === 'running';
+                  const leadIcon = isRunning
+                    ? 'progress_activity'
+                    : batch.status === 'failed'
+                      ? 'error'
+                      : batch.status === 'partial'
+                        ? 'warning'
+                        : 'check_circle';
+                  return (
+                    <div key={batch.batchId} className="v2-ap__gen-item" data-status={batch.status}>
+                      <div className="v2-ap__gen-head">
+                        <span className="v2-ap__lead" data-status={batch.status}>
+                          <Icon name={leadIcon} size={15} className={isRunning ? 'v2-ap__spin' : undefined} />
+                        </span>
+                        <Link
+                          to={`/project/${batch.projectId}`}
+                          onClick={onNavigate}
+                          className="v2-ap__row-link v2-ellipsis"
+                          title={batch.resumeHint || batch.projectName}
+                        >
+                          {batch.projectName}
+                        </Link>
+                        <span className="v2-ap__row-sub tabular-nums">
+                          {done}/{batch.totalCount}
+                        </span>
+                      </div>
+                      <div className="v2-ap__gen-bar" role="progressbar" aria-valuenow={done} aria-valuemin={0} aria-valuemax={batch.totalCount}>
+                        <span className="v2-ap__gen-bar-completed" style={{ width: `${completedPct}%` }} />
+                        <span className="v2-ap__gen-bar-failed" style={{ width: `${failedPct}%` }} />
+                        <span className="v2-ap__gen-bar-processing" style={{ width: `${processingPct}%` }} />
+                      </div>
+                      <div className="v2-ap__gen-meta">
+                        <div className="v2-ap__gen-tags">
+                          {batch.failed > 0 && (
+                            <span className="v2-ap__gen-failed">
+                              {t('v2.assistant.agentPanel.batchFailedCount', { count: batch.failed })}
+                            </span>
+                          )}
+                          {batch.notifiedAt ? (
+                            <span className="v2-ap__gen-tag" data-tone="done">
+                              {t('v2.assistant.agentPanel.autoResumed', 'Chat resumed')}
+                            </span>
+                          ) : batch.autoResume && isRunning ? (
+                            <span className="v2-ap__gen-tag" data-tone="active">
+                              {t('v2.assistant.agentPanel.autoResumeOn', 'Auto-resume on')}
+                            </span>
+                          ) : null}
+                        </div>
+                        {isRunning && !batch.notifiedAt && (
+                          <button
+                            type="button"
+                            className="v2-ap__text-action m3-focus-ring"
+                            onClick={() => void onToggleBatchAutoResume(batch.batchId, !batch.autoResume)}
+                          >
+                            {batch.autoResume
+                              ? t('v2.assistant.agentPanel.cancelAutoResume', 'Cancel auto-resume')
+                              : t('v2.assistant.agentPanel.enableAutoResume', 'Auto-resume when done')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CollapsibleSection>
+          );
+        })()}
 
         {/* ─── Resources (Outputs touched in this conversation) ─── */}
         {resources.length > 0 && (

@@ -56,6 +56,8 @@ import { DetachedPoller } from './server/queue/detached-poller';
 import { ComfyUIRunner } from './server/queue/comfyui-runner';
 import { ProjectLiveHub } from './server/live/project-live-hub';
 import { ProjectCompletionNotifier } from './server/live/project-completion-notifier';
+import { BatchCompletionWatcher } from './server/live/batch-completion-watcher';
+import { AssistantTurnHub, TurnAlreadyRunningError } from './server/assistant/assistant-turn-hub';
 import { UserLiveHub } from './server/live/user-live-hub';
 import { liveOriginMiddleware } from './server/live/live-origin';
 import { PushService } from './server/services/push/push-service';
@@ -119,12 +121,14 @@ async function startServer() {
   const pushService = new PushService(prisma);
   // Forwards every event to the open project views and the user's change
   // feed, and pushes a notification when a project's queue drains.
-  const projectEvents = new ProjectCompletionNotifier({
+  const projectCompletionNotifier = new ProjectCompletionNotifier({
     notifyProjectChanged(event) {
       projectLiveHub.notifyProjectChanged(event);
       liveEvents.notifyProjectChanged(event);
     },
   }, prisma, pushService);
+  const batchWatcher = new BatchCompletionWatcher(projectCompletionNotifier, prisma, liveEvents);
+  const projectEvents = batchWatcher;
 
   const storage = new S3Storage({
     endpoint: process.env.S3_ENDPOINT,
@@ -337,7 +341,64 @@ async function startServer() {
   const assistantRunner = new AssistantRunner(assistantRepo, providerRepository, toolDeps);
   const swarmOrchestrator = new SwarmOrchestrator(assistantRepo, assistantRunner);
   assistantRunner.setSwarmToolProvider(swarmOrchestrator);
-  app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository, swarmOrchestrator));
+  const assistantTurnHub = new AssistantTurnHub();
+
+  batchWatcher.setCompletionHandler(async ({ userId, conversationId, resumeMessage }) => {
+    // If a turn is currently running in this conversation, wait for it to finish
+    // before launching the auto-resume turn so we don't drop the completion event.
+    if (assistantTurnHub.isActive(conversationId)) {
+      await assistantTurnHub.waitForIdle(conversationId);
+    }
+    const conversation = await assistantRepo.getConversation(userId, conversationId);
+    if (!conversation) return;
+    try {
+      assistantTurnHub.start({
+        userId,
+        conversationId,
+        kind: 'message',
+        execute: async (emit, signal) => {
+          try {
+            const result = await assistantRunner.sendUserMessage({
+              userId,
+              conversationId,
+              content: resumeMessage,
+              onStatusEvent: emit,
+              abortSignal: signal,
+            });
+            liveEvents.publishChange(userId, {
+              resource: 'assistant',
+              action: 'updated',
+              id: conversationId,
+              conversationId,
+            });
+            if (result.kind === 'final') return { type: 'result', kind: 'final', message: result.finalMessage, statusEvents: [] };
+            if (result.kind === 'stopped') return { type: 'result', kind: 'stopped', message: result.stoppedMessage, statusEvents: [] };
+            if (result.kind === 'awaiting_confirmation') return { type: 'result', kind: 'awaiting_confirmation', message: result.assistantMessage, confirmation: result.confirmation, statusEvents: [] };
+            if (result.kind === 'awaiting_input') return { type: 'result', kind: 'awaiting_input', message: result.assistantMessage, toolCallId: result.toolCallId, questions: result.questions, statusEvents: [] };
+            return { type: 'result', kind: 'error', error: result.error, message: result.partialMessage ?? null, statusEvents: [] };
+          } catch (e: any) {
+            console.error('[BatchCompletionWatcher] Auto-resume turn failed', e);
+            return { type: 'error', error: e?.message || 'Failed to resume conversation after batch completion' };
+          }
+        },
+      });
+      liveEvents.publishChange(userId, {
+        resource: 'assistant',
+        action: 'updated',
+        id: conversationId,
+        conversationId,
+      });
+    } catch (e) {
+      if (!(e instanceof TurnAlreadyRunningError)) {
+        console.error('[BatchCompletionWatcher] Failed to start auto-resume turn', e);
+      }
+    }
+  });
+  void batchWatcher.reconcilePendingBatches().catch((err) => {
+    console.error('[BatchCompletionWatcher] Startup reconciliation failed:', err);
+  });
+
+  app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository, swarmOrchestrator, assistantTurnHub, prisma, liveEvents));
 
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {

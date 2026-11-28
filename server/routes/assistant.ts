@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import type { Context } from 'hono';
 import { stream } from 'hono/streaming';
+import type { PrismaClient } from '@prisma/client';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { AssistantRepository } from '../db/assistant-repository';
 import { AssistantRunner, AssistantStatusEvent, TurnResult } from '../assistant/assistant-runner';
@@ -11,6 +12,8 @@ import { ASSISTANT_SUPPORTED_PROVIDER_TYPES } from '../assistant/chat-provider-f
 import { AssistantTurnHub, TurnAlreadyRunningError, TurnKind } from '../assistant/assistant-turn-hub';
 import { transcribeAudioWithGemini } from '../assistant/providers/google';
 import { askUserAnswersSchema } from '../assistant/ask-user-tool';
+import type { LiveEventPublisher } from '../live/user-live-hub';
+import { listConversationJobBatches, updateJobBatchAutoResume } from '../services/job-batches';
 
 type Variables = { user: JwtPayload };
 
@@ -59,6 +62,9 @@ export function createAssistantRouter(
   runner: AssistantRunner,
   providerRepo: ProviderRepository,
   swarmOrchestrator?: SwarmOrchestrator,
+  sharedTurnHub?: AssistantTurnHub,
+  prisma?: PrismaClient,
+  liveEvents?: LiveEventPublisher,
 ) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -67,7 +73,7 @@ export function createAssistantRouter(
    * dropped connection never abandons an agentic loop mid-flight. Requests
    * only subscribe to the frames a turn produces.
    */
-  const turnHub = new AssistantTurnHub();
+  const turnHub = sharedTurnHub ?? new AssistantTurnHub();
 
   /** Parse `?since=` — the last frame sequence number a client already has. */
   function parseSince(raw: string | undefined): number {
@@ -232,13 +238,14 @@ export function createAssistantRouter(
       const conversationId = c.req.param('id');
       const conversation = await repo.getConversation(user.userId, conversationId);
       if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
-      const [messages, resources, pendingConfirmation, pendingConfirmations, swarmRuns, blackboardEntries] = await Promise.all([
+      const [messages, resources, pendingConfirmation, pendingConfirmations, swarmRuns, blackboardEntries, jobBatches] = await Promise.all([
         repo.listMessages(conversationId),
         repo.listConversationResources(conversationId),
         repo.findActivePendingConfirmation(conversationId),
         repo.listActivePendingConfirmations(conversationId),
         repo.listSwarmRuns(conversationId),
         repo.listBlackboardEntries(conversationId),
+        prisma ? listConversationJobBatches(prisma, user.userId, conversationId) : Promise.resolve([]),
       ]);
       // `activeTurn` and `pendingConfirmation` are what a reloaded tab needs to
       // pick a conversation back up: one says a loop is still running and where
@@ -251,11 +258,52 @@ export function createAssistantRouter(
         pendingConfirmations,
         swarmRuns,
         blackboardEntries,
+        jobBatches,
         activeTurn: turnHub.getActive(conversationId),
       });
     } catch (e) {
       console.error('[GET /api/assistant/conversations/:id]', e);
       return c.json({ error: 'Failed to get conversation' }, 500);
+    }
+  });
+
+  // ─── List generation batches bound to a conversation ───
+  router.get('/api/assistant/conversations/:id/batches', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      const batches = prisma ? await listConversationJobBatches(prisma, user.userId, conversationId) : [];
+      return c.json({ batches });
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/batches]', e);
+      return c.json({ error: 'Failed to list generation batches' }, 500);
+    }
+  });
+
+  // ─── Update a generation batch (e.g. toggle autoResume) ───
+  router.patch('/api/assistant/batches/:batchId', authMiddleware, async (c) => {
+    try {
+      if (!prisma) return c.json({ error: 'Unavailable' }, 503);
+      const user = c.get('user') as JwtPayload;
+      const batchId = c.req.param('batchId');
+      const body = await c.req.json();
+      if (typeof body?.autoResume !== 'boolean') {
+        return c.json({ error: 'autoResume boolean is required' }, 400);
+      }
+      const updated = await updateJobBatchAutoResume(prisma, user.userId, batchId, body.autoResume);
+      if (!updated) return c.json({ error: 'Batch not found' }, 404);
+      liveEvents?.publishChange(user.userId, {
+        resource: 'generation_batch',
+        action: 'updated',
+        id: updated.id,
+        ...(updated.conversationId ? { conversationId: updated.conversationId } : {}),
+      });
+      return c.json({ batch: updated });
+    } catch (e) {
+      console.error('[PATCH /api/assistant/batches/:batchId]', e);
+      return c.json({ error: 'Failed to update generation batch' }, 500);
     }
   });
 

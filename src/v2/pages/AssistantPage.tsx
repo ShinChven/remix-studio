@@ -15,6 +15,7 @@ import {
   deleteAssistantConversationResource,
   editAssistantMessage,
   fetchAssistantConversation,
+  fetchAssistantConversationBatches,
   fetchAssistantConversationResources,
   fetchAssistantConversations,
   fetchAssistantProviders,
@@ -26,10 +27,12 @@ import {
   sendAssistantMessage,
   streamAssistantTurn,
   summarizeAssistantConversationTitle,
+  updateAssistantBatchAutoResume,
   updateAssistantConversation,
   type AssistantActiveTurn,
   type AssistantConversation,
   type AssistantConversationResource,
+  type AssistantJobBatch,
   type AssistantMessage,
   type AssistantQuestion,
   type AssistantPendingConfirmation,
@@ -44,6 +47,7 @@ import {
 } from '../../api';
 import { filterEnabledAssistantProviders, getCachedAssistantSettings, loadAssistantSettings, normalizeAssistantProviderSelection, rememberAssistantModel, saveAssistantSettings } from '../../lib/assistant-provider-settings';
 import { consumePwaShareHandoff } from '../../lib/pwa-share';
+import { useLiveRefresh } from '../../hooks/useLiveRefresh';
 import {
   Badge,
   Button,
@@ -388,6 +392,7 @@ export function AssistantPage() {
   const activeConversationId = routeId || null;
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [resources, setResources] = useState<AssistantConversationResource[]>([]);
+  const [jobBatches, setJobBatches] = useState<AssistantJobBatch[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<AssistantPendingConfirmation | null>(null);
   const [pendingConfirmations, setPendingConfirmations] = useState<AssistantPendingConfirmation[]>([]);
   const [swarmRuns, setSwarmRuns] = useState<AssistantSwarmRun[]>([]);
@@ -523,6 +528,7 @@ export function AssistantPage() {
         if (activeConversationIdRef.current !== conversationId) return;
         setMessages(data.messages);
         setResources(data.resources);
+        setJobBatches(data.jobBatches);
         setSwarmRuns(data.swarmRuns);
         setBlackboardEntries(data.blackboardEntries);
         setPendingConfirmations(data.pendingConfirmations);
@@ -679,6 +685,7 @@ export function AssistantPage() {
     if (activeConversationIdRef.current !== conversationId) return data;
     setMessages(data.messages);
     setResources(data.resources);
+    setJobBatches(data.jobBatches);
     setSwarmRuns(data.swarmRuns);
     setBlackboardEntries(data.blackboardEntries);
     setPendingConfirmations(data.pendingConfirmations);
@@ -867,6 +874,7 @@ export function AssistantPage() {
 
       setMessages(data.messages);
       setResources(data.resources);
+      setJobBatches(data.jobBatches);
       setSwarmRuns(data.swarmRuns);
       setBlackboardEntries(data.blackboardEntries);
       setPendingConfirmations(data.pendingConfirmations);
@@ -1048,6 +1056,7 @@ export function AssistantPage() {
       if (streamingConversationRef.current || isSendingRef.current) return;
       setMessages(data.messages);
       setResources(data.resources);
+      setJobBatches(data.jobBatches);
       setSwarmRuns(data.swarmRuns);
       setBlackboardEntries(data.blackboardEntries);
       setPendingConfirmation(data.pendingConfirmation);
@@ -1074,6 +1083,34 @@ export function AssistantPage() {
     };
   }, [activeConversationId, resyncConversation]);
 
+  // Live updates for generation batches started in this conversation.
+  useLiveRefresh(
+    (event) =>
+      event.resource === 'generation_batch'
+      && (!event.conversationId || event.conversationId === activeConversationId),
+    async () => {
+      if (!activeConversationId) return;
+      const data = await fetchAssistantConversationBatches(activeConversationId);
+      if (activeConversationIdRef.current === activeConversationId) {
+        setJobBatches(data.batches);
+      }
+    },
+    { enabled: Boolean(activeConversationId), minIntervalMs: 800 },
+  );
+
+  // When a batch completes and wakes this conversation up server-side,
+  // reattach to the newly started turn immediately.
+  useLiveRefresh(
+    (event) =>
+      event.resource === 'assistant'
+      && (!event.conversationId || event.conversationId === activeConversationId),
+    async () => {
+      if (!activeConversationId) return;
+      await resyncConversation(activeConversationId);
+    },
+    { enabled: Boolean(activeConversationId), minIntervalMs: 500 },
+  );
+
   useEffect(() => {
     if (activeConversationId) {
       localStorage.setItem('assistant_last_conversation', activeConversationId);
@@ -1088,6 +1125,7 @@ export function AssistantPage() {
       justCreatedIdRef.current = null;
       setMessages([]);
       setResources([]);
+      setJobBatches([]);
       setSwarmRuns([]);
       setBlackboardEntries([]);
       setPendingConfirmation(null);
@@ -1413,6 +1451,7 @@ export function AssistantPage() {
       if (activeConversationIdRef.current === activeConversationId) {
         setMessages(data.messages);
         setResources(data.resources);
+        setJobBatches(data.jobBatches);
         setSwarmRuns(data.swarmRuns);
         setBlackboardEntries(data.blackboardEntries);
         setPendingConfirmation(data.pendingConfirmation);
@@ -1435,6 +1474,7 @@ export function AssistantPage() {
       if (activeConversationIdRef.current === activeConversationId) {
         setMessages(data.messages);
         setResources(data.resources);
+        setJobBatches(data.jobBatches);
         setSwarmRuns(data.swarmRuns);
         setBlackboardEntries(data.blackboardEntries);
         setPendingConfirmation(data.pendingConfirmation);
@@ -1469,6 +1509,17 @@ export function AssistantPage() {
   }, []);
 
   /** Drop a resource into the composer as a bound context, same as typing `@`. */
+  const handleToggleBatchAutoResume = async (batchId: string, autoResume: boolean) => {
+    setJobBatches((prev) => prev.map((b) => (b.batchId === batchId ? { ...b, autoResume } : b)));
+    try {
+      const { batch } = await updateAssistantBatchAutoResume(batchId, autoResume);
+      setJobBatches((prev) => prev.map((b) => (b.batchId === batchId ? { ...b, autoResume: batch.autoResume } : b)));
+    } catch (e) {
+      setJobBatches((prev) => prev.map((b) => (b.batchId === batchId ? { ...b, autoResume: !autoResume } : b)));
+      toast.error((e as Error)?.message || 'Failed to update generation batch');
+    }
+  };
+
   const handleMentionResource = (resource: AssistantConversationResource) => {
     const contextType = resource.entityType as BoundContext['type'];
     composerHandleRef.current?.addBoundContext({
@@ -1501,6 +1552,7 @@ export function AssistantPage() {
         navigate('/assistant');
         setMessages([]);
         setResources([]);
+      setJobBatches([]);
         setPendingConfirmation(null);
       }
       toast.success('Conversation deleted');
@@ -1715,6 +1767,26 @@ export function AssistantPage() {
   };
 
   /** Messages in order, with each run of tool calls between two replies folded into one group. */
+function parseBatchCompletedNotice(content: string): {
+  projectName: string;
+  completed: number;
+  failed: number;
+  total: number;
+} | null {
+  if (!content.startsWith('[Generation Batch Completed]')) return null;
+  const projectMatch = content.match(/for project "([^"]+)"/);
+  const summaryMatch = content.match(/Summary:\s*(\d+)\s*completed,\s*(\d+)\s*failed\s*\(out of\s*(\d+)\s*started\)/);
+  if (!projectMatch || !summaryMatch) {
+    return { projectName: '', completed: 0, failed: 0, total: 0 };
+  }
+  return {
+    projectName: projectMatch[1],
+    completed: Number(summaryMatch[1]),
+    failed: Number(summaryMatch[2]),
+    total: Number(summaryMatch[3]),
+  };
+}
+
   const renderThread = (visible: AssistantMessage[]) => {
     const out: ReactNode[] = [];
     let group: { call: AssistantToolCallData; message: AssistantMessage }[] = [];
@@ -1726,6 +1798,27 @@ export function AssistantPage() {
     for (const msg of visible) {
       if (msg.role === 'user') {
         flush();
+        const batchNotice = parseBatchCompletedNotice(msg.content);
+        if (batchNotice) {
+          out.push(
+            <div key={msg.id} className="v2-chat-system-event" role="status">
+              <span className="v2-chat-system-event__pill">
+                <Icon name="auto_awesome" size={14} />
+                <span>
+                  {batchNotice.projectName
+                    ? t('v2.assistant.batchCompletedEvent', {
+                        project: batchNotice.projectName,
+                        completed: batchNotice.completed,
+                        total: batchNotice.total,
+                        defaultValue: 'Generation finished · {{project}} ({{completed}}/{{total}})',
+                      })
+                    : t('v2.assistant.batchCompletedEventFallback', 'Generation batch finished — resuming chat')}
+                </span>
+              </span>
+            </div>,
+          );
+          continue;
+        }
         out.push(<div key={msg.id}>{renderUserMessage(msg)}</div>);
         continue;
       }
@@ -2154,6 +2247,7 @@ export function AssistantPage() {
           liveAgentActivity={liveAgentActivity}
           swarmRuns={swarmRuns}
           blackboardEntries={blackboardEntries}
+          jobBatches={jobBatches}
           resources={resources}
           pendingConfirmations={pendingConfirmations}
           appViews={appViews}
@@ -2165,6 +2259,7 @@ export function AssistantPage() {
           onSelectBlackboardRun={setInspectedBlackboardRunId}
           onConfirmSingle={handleConfirmSingle}
           onConfirmAll={handleConfirmAll}
+          onToggleBatchAutoResume={handleToggleBatchAutoResume}
           onMentionResource={handleMentionResource}
           onRemoveResource={handleRemoveResource}
           onBlackboardDeleted={(entryId) => setBlackboardEntries((prev) => prev.filter((e) => e.id !== entryId))}
