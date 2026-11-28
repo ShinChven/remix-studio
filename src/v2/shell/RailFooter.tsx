@@ -115,36 +115,12 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
 
       {/* Expanded rail */}
       <div className="v2-rail-footer" data-variant="expanded">
-        <div className="flex items-center justify-between gap-2">
-          <ButtonGroup
-            variant="connected"
-            selection="single"
-            size="xs"
-            aria-label={t('v2.theme.mode')}
-            value={mode}
-          >
-            {MODES.map((m) => (
-              <IconButton
-                key={m.value}
-                value={m.value}
-                icon={m.icon}
-                label={t(m.key)}
-                variant="tonal"
-                onClick={(e) => changeMode(m.value, e)}
-              />
-            ))}
-          </ButtonGroup>
-          <div className="flex items-center gap-1">
-            <IconButton icon="palette" label={t('v2.theme.open')} tooltip variant="tonal" size="xs" onClick={onOpenTheme} />
-          </div>
-        </div>
-
         <Link to="/account?tab=storage" className="v2-storage-card m3-focus-ring">
-          <div className="flex items-center justify-between gap-2">
-            <Text as="span" variant="label-medium" className="text-on-surface-variant">
+          <div className="v2-storage-card__header">
+            <Text as="span" variant="label-small" className="text-on-surface-variant">
               {t('sidebar.storage')}
             </Text>
-            <Text as="span" variant="label-medium" emphasized title={storageText}>
+            <Text as="span" variant="label-small" emphasized className="v2-storage-card__value" title={storageText}>
               {storageText}
             </Text>
           </div>
@@ -155,56 +131,90 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
           />
         </Link>
 
+        <div className="v2-rail-appearance">
+          <ButtonGroup
+            variant="connected"
+            selection="single"
+            size="xs"
+            fullWidth
+            className="v2-mode-switch"
+            aria-label={t('v2.theme.mode')}
+            value={mode}
+          >
+            {MODES.map((m) => (
+              <IconButton
+                key={m.value}
+                value={m.value}
+                icon={m.icon}
+                label={t(m.key)}
+                tooltip
+                variant="standard"
+                shapeMorph={false}
+                onClick={(e) => changeMode(m.value, e)}
+              />
+            ))}
+          </ButtonGroup>
+          <IconButton
+            icon="palette"
+            label={t('v2.theme.open')}
+            tooltip
+            variant="standard"
+            size="xs"
+            shapeMorph={false}
+            className="v2-theme-trigger"
+            onClick={onOpenTheme}
+          />
+        </div>
+
         <MenuButton
           placement="top-start"
           trigger={(props) => (
             <button type="button" {...props} className="v2-account-row m3-focus-ring" data-active={accountActive ? '' : undefined}>
-              <Avatar name={user?.email || ''} size={36} shape="cookie-9" />
+              <Avatar name={user?.email || ''} size={32} shape="cookie-9" />
               <span className="flex min-w-0 flex-1 flex-col text-start">
-                <Text as="span" variant="label-large" emphasized className="truncate">
+                <Text as="span" variant="label-medium" emphasized className="truncate">
                   {user?.email}
                 </Text>
                 <Text as="span" variant="body-small" className="truncate capitalize text-on-surface-variant">
                   {user?.role}
                 </Text>
               </span>
-              <Icon name="unfold_more" className="text-on-surface-variant" />
+              <Icon name="unfold_more" size={18} className="text-on-surface-variant" />
             </button>
           )}
         >
           {accountMenu}
         </MenuButton>
 
-        {isAdmin && updateUrl && (
-          <div className="flex items-center gap-1">
-            <IconButton
-              icon="upgrade"
-              label={t('v2.navigation.updateAvailable', 'Update Available')}
-              tooltip
-              variant="tonal"
-              size="xs"
+        <div className="v2-version">
+          <span className="v2-version__meta">
+            <span title={`${t('mainLayout.version')} ${APP_VERSION}`}>v{APP_VERSION}</span>
+            {GIT_COMMIT && (
+              <>
+                <span aria-hidden="true">·</span>
+                <a
+                  href={`https://github.com/shinchven/remix-studio/commit/${GIT_COMMIT}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`${t('mainLayout.commit')} ${GIT_COMMIT}`}
+                >
+                  {GIT_COMMIT}
+                </a>
+              </>
+            )}
+          </span>
+          {isAdmin && updateUrl && (
+            <a
               href={updateUrl}
               target="_blank"
               rel="noopener noreferrer"
-              badge={<Badge />}
-            />
-          </div>
-        )}
-
-        <div className="v2-version">
-          <span title={`${t('mainLayout.version')} ${APP_VERSION}`}>v{APP_VERSION}</span>
-          {GIT_COMMIT && (
-            <>
-              <span aria-hidden="true">·</span>
-              <a
-                href={`https://github.com/shinchven/remix-studio/commit/${GIT_COMMIT}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`${t('mainLayout.commit')} ${GIT_COMMIT}`}
-              >
-                {GIT_COMMIT}
-              </a>
-            </>
+              className="v2-version__update m3-focus-ring"
+              title={t('v2.navigation.updateAvailable', 'Update Available')}
+              aria-label={t('v2.navigation.updateAvailable', 'Update Available')}
+            >
+              <Icon name="upgrade" size={14} />
+              <span>{t('v2.navigation.updateAvailable', 'Update Available')}</span>
+            </a>
           )}
         </div>
       </div>
