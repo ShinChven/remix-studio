@@ -1422,7 +1422,7 @@ export class AssistantRunner {
         releaseLock = await options.entityLockAcquire(call.name, call.arguments);
       }
       const result = await withTimeout(
-        tool.handler(userId, call.arguments),
+        tool.handler(userId, call.arguments, { conversationId }),
         options?.timeoutMs ?? ASSISTANT_LIMITS.TOOL_TIMEOUT_MS,
         `Tool '${call.name}' timed out`,
       );

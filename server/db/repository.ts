@@ -42,7 +42,7 @@ export interface IRepository {
   countPendingProjectJobs(userId: string, projectId: string): Promise<number>;
   countProjectJobsByStatus(userId: string, projectId: string): Promise<Record<Job['status'], number>>;
   createProjectJobs(userId: string, projectId: string, jobs: Job[]): Promise<number>;
-  startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number>;
+  startProjectJobs(userId: string, projectId: string, jobIds: string[], batchId?: string): Promise<number>;
   getJob(userId: string, projectId: string, jobId: string): Promise<Job | null>;
   updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>): Promise<void>;
   getProjectCompletedJobs(

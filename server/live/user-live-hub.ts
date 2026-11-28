@@ -13,7 +13,7 @@ import type { ProjectEventPublisher, ProjectLiveEvent, ProjectLiveEventReason } 
 
 const LIVE_PATH = '/api/live';
 
-export type LiveResource = 'project' | 'library' | 'campaign' | 'post';
+export type LiveResource = 'project' | 'library' | 'campaign' | 'post' | 'assistant' | 'generation_batch';
 export type LiveResourceAction = 'created' | 'updated' | 'deleted';
 
 export interface LiveResourceEvent {
@@ -24,6 +24,8 @@ export interface LiveResourceEvent {
   id?: string;
   /** For posts: the campaign they belong to, when known. */
   campaignId?: string;
+  /** For generation batches or assistant updates: the owning conversation, when known. */
+  conversationId?: string;
   /** Live client id of the browser tab whose request caused the change. */
   origin?: string;
   at: number;

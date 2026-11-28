@@ -35,6 +35,7 @@ import {
 } from '../services/staged-uploads';
 import { createCampaignMediaService, StorageLimitError } from '../services/campaign-media';
 import { composeDraftJobs } from '../services/draft-jobs';
+import { createJobBatch, getJobBatchSnapshot } from '../services/job-batches';
 import {
   CIVITAI_DEFAULT_VIDEO_ENGINE,
   CIVITAI_SCHEDULERS,
@@ -202,7 +203,12 @@ export interface AssistantToolDefinition<Shape extends z.ZodRawShape = z.ZodRawS
   /** Only offered to external MCP clients. The in-app assistant cannot send
    *  file bytes, so tools built around uploading them are left out there. */
   mcpOnly?: boolean;
-  handler: (userId: string, input: any) => Promise<ToolResult>;
+  handler: (userId: string, input: any, context?: ToolExecutionContext) => Promise<ToolResult>;
+}
+
+export interface ToolExecutionContext {
+  /** Set when invoked inside an in-app assistant conversation. */
+  conversationId?: string;
 }
 
 export interface ToolDependencies {
@@ -3721,18 +3727,27 @@ Returns the project's "url" — share it so the user can review the drafts befor
     title: 'Start Jobs',
     description: `Move a project's draft jobs into the generation queue and start running them. Drafts are taken oldest first.
 
-Omit "count" to start every draft, or pass a number to start only that many — useful for trying a handful before committing a large batch. This spends provider credits, so confirm the count with the user first. Use get_project_job_counts to see what is staged and how the queue is draining.
+Omit "count" to start every draft, or pass a number to start only that many — useful for trying a handful before committing a large batch. This spends provider credits, so confirm the count with the user first.
 
-Returns the project's "url" — share it so the user can watch generation run.`,
+Returns a "batchId" that tracks this wave of jobs. Pass "autoResume: true" (with an optional "resumeHint") when you want this conversation to be woken up automatically with the generated results as soon as the batch finishes — do NOT poll in a loop. Use get_generation_batch with "batchId" to inspect progress or results on demand.`,
     inputSchema: {
       projectId: z.string().describe('The project whose drafts should start'),
       count: z.number().int().min(1).optional()
         .describe('How many drafts to start, oldest first. Omit to start every draft.'),
+      autoResume: z.boolean().optional()
+        .describe('When true in an assistant conversation, automatically resume this chat once every job in this batch completes or fails.'),
+      resumeHint: z.string().max(500).optional()
+        .describe('Optional short note reminding yourself what to do once this batch finishes (used when autoResume is true).'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     category: 'mutate',
-    handler: async (userId, input) => {
-      const { projectId, count } = input as { projectId: string; count?: number };
+    handler: async (userId, input, context) => {
+      const { projectId, count, autoResume, resumeHint } = input as {
+        projectId: string;
+        count?: number;
+        autoResume?: boolean;
+        resumeHint?: string;
+      };
 
       const project = await repository.getProject(userId, projectId);
       if (!project) {
@@ -3750,7 +3765,10 @@ Returns the project's "url" — share it so the user can watch generation run.`,
         const response = {
           projectId,
           name: project.name,
+          projectName: project.name,
+          projectType: project.type ?? 'image',
           url: appUrls.project(projectId),
+          projectUrl: appUrls.project(projectId),
           started: 0,
           counts,
           message: 'No draft jobs to start. Stage some with draft_jobs first.',
@@ -3768,22 +3786,97 @@ Returns the project's "url" — share it so the user can watch generation run.`,
       if (storageError) return storageError;
 
       const jobIds = targets.map((job) => job.id);
-      const started = await repository.startProjectJobs(userId, projectId, jobIds);
+      const batch = await createJobBatch(prisma, {
+        userId,
+        projectId,
+        totalCount: jobIds.length,
+        conversationId: context?.conversationId ?? null,
+        autoResume: Boolean(autoResume),
+        resumeHint: resumeHint ?? null,
+      });
+
+      const started = await repository.startProjectJobs(userId, projectId, jobIds, batch.id);
       projectEvents?.notifyProjectChanged({ userId, projectId, reason: 'jobs.changed' });
+      liveEvents?.publishChange(userId, {
+        resource: 'generation_batch',
+        action: 'created',
+        id: batch.id,
+        ...(batch.conversationId ? { conversationId: batch.conversationId } : {}),
+      });
 
       await queueManager.enqueueProjectJobs(userId, projectId, jobIds);
 
-      const counts = await readProjectCounts(userId, projectId);
+      const [counts, snapshot] = await Promise.all([
+        readProjectCounts(userId, projectId),
+        getJobBatchSnapshot(prisma, userId, batch.id, { projectUrl: (id) => appUrls.project(id) }),
+      ]);
+
       const response = {
-        projectId,
+        ...(snapshot ?? {
+          batchId: batch.id,
+          projectId,
+          projectName: project.name,
+          projectType: project.type ?? 'image',
+          projectUrl: appUrls.project(projectId),
+          conversationId: batch.conversationId,
+          status: 'running' as const,
+          totalCount: started,
+          pending: started,
+          processing: 0,
+          queued: started,
+          completed: 0,
+          failed: 0,
+          autoResume: batch.autoResume,
+          resumeHint: batch.resumeHint,
+          notifiedAt: null,
+          createdAt: batch.createdAt.toISOString(),
+          updatedAt: batch.updatedAt.toISOString(),
+          jobs: [],
+          items: [],
+        }),
         name: project.name,
         url: appUrls.project(projectId),
         started,
         remainingDrafts: counts.drafts,
         counts,
-        message: `Queued ${started} job${started === 1 ? '' : 's'}. Generation runs in the background — poll get_project_job_counts to follow progress.`,
+        message: batch.autoResume
+          ? `Queued ${started} job${started === 1 ? '' : 's'} in batch ${batch.id}. This conversation will automatically resume when the batch finishes.`
+          : `Queued ${started} job${started === 1 ? '' : 's'} in batch ${batch.id}. Generation runs in the background — call get_generation_batch to check progress or results.`,
       };
 
+      return {
+        text: JSON.stringify(response, null, 2),
+        structuredContent: response,
+      };
+    },
+  });
+
+  // ─── get_generation_batch ───
+  tools.push({
+    name: 'get_generation_batch',
+    title: 'Get Generation Batch',
+    description: 'Inspect the live progress, per-job status, and generated album items for a generation batch returned by start_jobs.',
+    inputSchema: {
+      batchId: z.string().describe('The generation batch ID returned by start_jobs'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { batchId } = input as { batchId: string };
+      const snapshot = await getJobBatchSnapshot(prisma, userId, batchId, {
+        projectUrl: (id) => appUrls.project(id),
+      });
+      if (!snapshot) {
+        return {
+          text: JSON.stringify({ error: `Generation batch "${batchId}" not found.` }),
+          isError: true,
+        };
+      }
+      const response = {
+        ...snapshot,
+        name: snapshot.projectName,
+        url: snapshot.projectUrl,
+      };
       return {
         text: JSON.stringify(response, null, 2),
         structuredContent: response,

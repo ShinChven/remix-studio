@@ -70,8 +70,8 @@ export class PrismaRepository implements IRepository {
   createProjectJobs(userId: string, projectId: string, jobs: Job[]) {
     return this.projects.createProjectJobs(userId, projectId, jobs);
   }
-  startProjectJobs(userId: string, projectId: string, jobIds: string[]) {
-    return this.projects.startProjectJobs(userId, projectId, jobIds);
+  startProjectJobs(userId: string, projectId: string, jobIds: string[], batchId?: string) {
+    return this.projects.startProjectJobs(userId, projectId, jobIds, batchId);
   }
   getJob(userId: string, projectId: string, jobId: string) { return this.projects.getJob(userId, projectId, jobId); }
   updateJob(userId: string, projectId: string, jobId: string, updates: Partial<Job>) { return this.projects.updateJob(userId, projectId, jobId, updates); }

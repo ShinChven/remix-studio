@@ -9,7 +9,7 @@ import react from '@vitejs/plugin-react';
 import { build } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
-export const MCP_APP_VIEWS = ['media-grid', 'queue-monitor', 'post-preview', 'project-preview'];
+export const MCP_APP_VIEWS = ['media-grid', 'queue-monitor', 'post-preview', 'project-preview', 'generation-batch'];
 
 const root = path.resolve(import.meta.dirname, '../src/mcp-apps');
 const outDir = path.resolve(import.meta.dirname, '../dist/mcp-apps');

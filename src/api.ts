@@ -2141,6 +2141,31 @@ export async function createAssistantConversation(data: {
   return handleResponse<{ conversation: AssistantConversation }>(res, 'Failed to create conversation');
 }
 
+export interface AssistantJobBatch {
+  batchId: string;
+  projectId: string;
+  projectName: string;
+  projectType: string;
+  status: 'running' | 'completed' | 'partial' | 'failed';
+  totalCount: number;
+  pending: number;
+  processing: number;
+  queued: number;
+  completed: number;
+  failed: number;
+  autoResume: boolean;
+  resumeHint: string | null;
+  notifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  previewItems: {
+    id: string;
+    thumbnailUrl: string | null;
+    imageUrl: string | null;
+    format: string | null;
+  }[];
+}
+
 export async function fetchAssistantConversation(id: string): Promise<{
   conversation: AssistantConversation;
   messages: AssistantMessage[];
@@ -2153,6 +2178,8 @@ export async function fetchAssistantConversation(id: string): Promise<{
   swarmRuns: AssistantSwarmRun[];
   /** Shared blackboard entries across swarm runs in this conversation. */
   blackboardEntries: AssistantSwarmBlackboardEntry[];
+  /** Generation batches started inside this conversation (newest first). */
+  jobBatches: AssistantJobBatch[];
   /** Set when a turn is still running server-side and can be reattached to. */
   activeTurn: AssistantActiveTurn | null;
 }> {
@@ -2165,6 +2192,7 @@ export async function fetchAssistantConversation(id: string): Promise<{
     pendingConfirmations?: AssistantPendingConfirmation[];
     swarmRuns?: AssistantSwarmRun[];
     blackboardEntries?: AssistantSwarmBlackboardEntry[];
+    jobBatches?: AssistantJobBatch[];
     activeTurn?: AssistantActiveTurn | null;
   }>(res, 'Failed to get conversation');
   return {
@@ -2174,8 +2202,33 @@ export async function fetchAssistantConversation(id: string): Promise<{
     pendingConfirmations: data.pendingConfirmations ?? (data.pendingConfirmation ? [data.pendingConfirmation] : []),
     swarmRuns: data.swarmRuns ?? [],
     blackboardEntries: data.blackboardEntries ?? [],
+    jobBatches: data.jobBatches ?? [],
     activeTurn: data.activeTurn ?? null,
   };
+}
+
+export async function fetchAssistantConversationBatches(
+  conversationId: string,
+): Promise<{ batches: AssistantJobBatch[] }> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/batches`, {
+    headers: getHeaders(false),
+  });
+  return handleResponse<{ batches: AssistantJobBatch[] }>(res, 'Failed to load generation batches');
+}
+
+export async function updateAssistantBatchAutoResume(
+  batchId: string,
+  autoResume: boolean,
+): Promise<{ batch: { id: string; conversationId: string | null; autoResume: boolean } }> {
+  const res = await apiFetch(`/api/assistant/batches/${batchId}`, {
+    method: 'PATCH',
+    headers: getHeaders(true),
+    body: JSON.stringify({ autoResume }),
+  });
+  return handleResponse<{ batch: { id: string; conversationId: string | null; autoResume: boolean } }>(
+    res,
+    'Failed to update generation batch',
+  );
 }
 
 export async function fetchAssistantConversationResources(

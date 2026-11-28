@@ -178,6 +178,13 @@ export class AssistantTurnHub {
     return this.getActive(conversationId) !== null;
   }
 
+  /** Resolves once any currently running turn for this conversation finishes. */
+  async waitForIdle(conversationId: string): Promise<void> {
+    const record = this.turns.get(conversationId);
+    if (!record || record.finished) return;
+    await record.waitForFinish();
+  }
+
   /**
    * Start a turn detached from the caller's request. The returned record is
    * what routes stream from; the work continues whether or not anyone is

@@ -42,6 +42,15 @@ const en = {
   noWorkflow: 'No workflow steps yet.',
   loadProject: 'View full workflow',
   disabled: 'Disabled',
+  generationBatch: 'Generation batch',
+  status_running: 'Running',
+  status_partial: 'Partial',
+  autoResumeOn: 'Auto-resumes chat when done',
+  autoResumed: 'Chat resumed',
+  results: 'Results',
+  failures: 'Failures',
+  sendToAgent: 'Continue with results',
+  sentToAgent: 'Sent to assistant',
 };
 
 export type MessageKey = keyof typeof en;
@@ -91,6 +100,15 @@ const zhCN: Messages = {
   noWorkflow: '暂无工作流步骤。',
   loadProject: '查看完整工作流',
   disabled: '已禁用',
+  generationBatch: '生成批次',
+  status_running: '运行中',
+  status_partial: '部分完成',
+  autoResumeOn: '完成后自动继续对话',
+  autoResumed: '已自动继续对话',
+  results: '生成结果',
+  failures: '失败项',
+  sendToAgent: '将结果发给助手继续',
+  sentToAgent: '已发送给助手',
 };
 
 const zhTW: Messages = {
@@ -137,6 +155,15 @@ const zhTW: Messages = {
   noWorkflow: '尚無工作流步驟。',
   loadProject: '檢視完整工作流',
   disabled: '已停用',
+  generationBatch: '生成批次',
+  status_running: '執行中',
+  status_partial: '部分完成',
+  autoResumeOn: '完成後自動繼續對話',
+  autoResumed: '已自動繼續對話',
+  results: '生成結果',
+  failures: '失敗項目',
+  sendToAgent: '將結果傳給助手繼續',
+  sentToAgent: '已傳送給助手',
 };
 
 const ja: Messages = {
@@ -183,6 +210,15 @@ const ja: Messages = {
   noWorkflow: 'ワークフローステップはまだありません。',
   loadProject: '完全なワークフローを表示',
   disabled: '無効',
+  generationBatch: '生成バッチ',
+  status_running: '実行中',
+  status_partial: '一部完了',
+  autoResumeOn: '完了後に自動で再開',
+  autoResumed: 'チャットを再開しました',
+  results: '生成結果',
+  failures: '失敗',
+  sendToAgent: '結果をアシスタントに送る',
+  sentToAgent: '送信しました',
 };
 
 const ko: Messages = {
@@ -229,6 +265,15 @@ const ko: Messages = {
   noWorkflow: '아직 워크플로우 단계가 없습니다.',
   loadProject: '전체 워크플로우 보기',
   disabled: '비활성화됨',
+  generationBatch: '생성 배치',
+  status_running: '실행 중',
+  status_partial: '부분 완료',
+  autoResumeOn: '완료 시 대화 자동 재개',
+  autoResumed: '대화 재개됨',
+  results: '생성 결과',
+  failures: '실패 항목',
+  sendToAgent: '결과로 계속하기',
+  sentToAgent: '어시스턴트에 전송됨',
 };
 
 const fr: Messages = {
@@ -275,6 +320,15 @@ const fr: Messages = {
   noWorkflow: 'Aucune étape pour l’instant.',
   loadProject: 'Voir le flux complet',
   disabled: 'Désactivé',
+  generationBatch: 'Lot de génération',
+  status_running: 'En cours',
+  status_partial: 'Partiel',
+  autoResumeOn: 'Reprend le chat une fois terminé',
+  autoResumed: 'Chat repris',
+  results: 'Résultats',
+  failures: 'Échecs',
+  sendToAgent: 'Continuer avec les résultats',
+  sentToAgent: 'Envoyé à l’assistant',
 };
 
 function pickMessages(locale: string): Messages {

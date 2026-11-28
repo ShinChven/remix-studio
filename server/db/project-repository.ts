@@ -440,7 +440,7 @@ export class ProjectRepository {
     return results.reduce((sum, result) => sum + result.count, 0);
   }
 
-  async startProjectJobs(userId: string, projectId: string, jobIds: string[]): Promise<number> {
+  async startProjectJobs(userId: string, projectId: string, jobIds: string[], batchId?: string): Promise<number> {
     const ids = Array.from(new Set(jobIds.map((id) => id.trim()).filter(Boolean)));
     if (ids.length === 0) return 0;
 
@@ -454,6 +454,7 @@ export class ProjectRepository {
       data: {
         status: 'pending',
         error: null,
+        ...(batchId !== undefined ? { batchId } : {}),
       },
     });
 
@@ -763,10 +764,20 @@ export class ProjectRepository {
   async addAlbumItem(userId: string, projectId: string, item: AlbumItem): Promise<void> {
     await this.assertOwnedProject(userId, projectId);
 
+    let batchId: string | null = (item as AlbumItem & { batchId?: string | null }).batchId ?? null;
+    if (!batchId && item.jobId) {
+      const parentJob = await this.prisma.job.findFirst({
+        where: { id: item.jobId, userId },
+        select: { batchId: true },
+      });
+      batchId = parentJob?.batchId ?? null;
+    }
+
     const data = {
       projectId,
       userId,
       jobId: item.jobId ?? null,
+      batchId,
       prompt: item.prompt ?? null,
       textContent: item.textContent ?? null,
       imageContexts: this.toNullableJsonArray(item.imageContexts),
