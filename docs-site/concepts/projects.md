@@ -191,6 +191,12 @@ The stamp button on an image album card opens **Quick Watermark** for that one r
 
 Image libraries have the same button on each card, and ComfyUI projects offer it for their image results.
 
+## Rescaling Album Images
+
+Rescale one image from its album card menu, or select multiple images and launch **Rescale** from the floating selection bar.
+
+The rescale dialog lets you adjust the prompt, choose an image model (defaulting to the project's model), and set the aspect ratio, size tier, background, and output format. Size options are normalized across model families—switching models carries your choice to the closest tier and defaults one tier above the source image—while **Match source** detects each image's original aspect ratio and format on the server before staging image-to-image draft jobs.
+
 ## Exports
 
 Export selected album items or the full collection as a named ZIP. For supported assets, choose raw or optimized versions. Image projects can open the watermark configuration screen before queueing the archive.

@@ -1,13 +1,14 @@
 # Architecture
 
-Remix Studio is a single product made of several cooperating subsystems. This page is a high-level map; each subsystem has its own page under [Concepts](/concepts/workflows).
+Remix Studio 2.0 is a single product made of cooperating subsystems. This page is a high-level map; each subsystem has its own page under [Concepts](/concepts/workflows).
 
 ## Stack at a Glance
 
 | Layer | Technology |
 | :--- | :--- |
-| Assistant orchestration | In-app assistant runner + shared MCP tool registry |
-| Frontend | React 19 + Vite + React Router (Material 3 Expressive interface) |
+| Multi-Agent Orchestration | Coordinator + parallel swarm workers (`SwarmOrchestrator`), shared blackboard, step tracker, `ask_user`, batch completion watcher, and shared MCP tool registry |
+| Interactive MCP Views | Self-contained sandboxed HTML views (`src/mcp-apps` → `dist/mcp-apps`) rendered via `ui://` resources in-app and in MCP clients |
+| Frontend | React 19 + Vite + React Router (rebuilt Material 3 Expressive UI at `/`) |
 | Server | Hono on Node.js |
 | Database | PostgreSQL via Prisma |
 | Storage | S3-compatible object storage (AWS S3, MinIO, Cloudflare R2, GCS, Alibaba OSS) |
@@ -20,21 +21,21 @@ Remix Studio is a single product made of several cooperating subsystems. This pa
 ## How the Pieces Fit Together
 
 ```
-            User
-              │
-   ┌──────────┴───────────┐
-   ▼                      ▼
-Built-in Assistant   External Agent / Third-Party AI
-   │                      │  OAuth 2.0 + PKCE / PAT
-   │                      ▼
-   │                 MCP Protocol (/mcp)
-   └──────────┬───────────┘
-              ▼
-        Shared Tool Layer
+                  User
+                    │
+   ┌────────────────┴─────────────────┐
+   ▼                                  ▼
+Multi-Agent Assistant         External Agent / MCP Client
+   │  (Swarms · Step Tracker          │  OAuth 2.0 + PKCE / PAT
+   │   ask_user · Inline MCP Apps)    ▼
+   │                            MCP Protocol (/mcp + ui:// Apps)
+   └────────────────┬─────────────────┘
+                    ▼
+          Shared Tool Layer & MCP Apps
    ┌──────────┼──────────────────────────┐
    ▼          ▼            ▼              ▼
 Libraries  Projects &   Albums /     Direct Inputs
-           Workflow     Models /     (inline values)
+& Skills   Workflow     Batches /    (inline values)
            Settings     Storage
               │
               ▼
@@ -43,7 +44,7 @@ Libraries  Projects &   Albums /     Direct Inputs
               ▼
    Permutation / Shuffle Engine
               ▼
-       Background Queue
+       Background Queue & Job Batches
               ▼
        Provider Execution
               │
@@ -52,7 +53,7 @@ Libraries  Projects &   Albums /     Direct Inputs
   Text      Image  Audio / Video ComfyUI / Civitai
    └──────────┼──────────┴──────────────┘
               ▼
-       Album (results)
+       Album (results) ──► Batch Completion Auto-Resume
               │
    ┌──────────┼──────────┬──────────────┐
    ▼          ▼          ▼              ▼
@@ -61,27 +62,28 @@ Exports   Campaign  TV / WebDAV  Live updates &
               │
               ▼
       Scheduling Timeline
+              │
               ▼
         Social Channels
 ```
 
-The same **shared tool layer** backs both the in-app assistant and the MCP server, so chat orchestration and external automation stay aligned.
+The same **shared tool layer** and **MCP Apps** views back both the built-in Multi-Agent Assistant and the `/mcp` server, so in-app orchestration and external automation stay aligned.
 
 ## Subsystem Reference
 
 | Subsystem | What it does | Page |
 | :--- | :--- | :--- |
 | Libraries | Reusable text/image/video/audio inputs | [Libraries](/concepts/libraries) |
-| Projects & Albums | Compose workflows; hold generated media; run ComfyUI and Civitai projects | [Projects](/concepts/projects) |
+| Projects & Albums | Compose workflows; hold generated media; rescale images; run ComfyUI and Civitai projects | [Projects](/concepts/projects) |
 | Workflow engine | Expand inputs into permutations or shuffle samples | [Workflows](/concepts/workflows) |
-| Assistant | Plan and operate workflows in chat | [Assistant](/concepts/assistant) |
+| Multi-Agent Assistant | Single-agent turns, `/agents` swarms, step tracking, and inline MCP Apps | [Multi-Agent Assistant](/concepts/assistant) |
 | Providers | AI backends with encrypted credentials | [Providers](/concepts/providers) |
-| Queue | Recoverable, provider-grouped job execution; the ComfyUI runner and detached pollers | [Queue](/concepts/queue) |
+| Queue | Recoverable, provider-grouped job execution; tracked batches; ComfyUI runner and detached pollers | [Queue](/concepts/queue) |
 | Exports & Delivery | ZIP archives and external delivery | [Exports](/concepts/exports) |
 | Storage | S3-compatible buckets and usage tracking | [Storage](/concepts/storage) |
 | Campaigns | Social posts, scheduling, and channels | [Campaigns](/concepts/campaigns) |
 | Selling | Publish export packages to Gumroad | [Selling Exports](/concepts/selling-exports) |
-| MCP | Account-scoped automation over HTTP | [MCP](/integrations/mcp) |
+| MCP & MCP Apps | Account-scoped automation and `ui://` views over HTTP | [MCP & MCP Apps](/integrations/mcp) |
 | Media sharing | Read-only album access for TVs, file managers and media apps | [TV, WebDAV & DLNA](/integrations/tv-and-devices) |
 | Live updates | Pages refetch what another tab, the assistant or an MCP client changed | [Live Updates](/concepts/projects#live-updates) |
 
@@ -89,18 +91,22 @@ The same **shared tool layer** backs both the in-app assistant and the MCP serve
 
 ```text
 remix-studio/
-├── agent/       # Design notes for AI agents and developers
+├── agent/             # Design notes for AI agents and developers
 ├── chrome-extension/  # Browser importer extension
-├── docker/      # Compose templates, env examples, backup/restore scripts
-├── docs/        # Operational guides (also published here)
-├── docs-site/   # This documentation site (VitePress)
-├── prisma/      # Prisma schema and migrations
-├── public/      # Static assets
-├── scripts/     # TV-mode build and LG webOS packaging
-├── server/      # API, auth, storage, queue, generators, MCP, assistant, live feeds, media sharing
-├── src/         # React application (Material 3 Expressive UI under src/v2 and src/m3, and TV mode under src/tv)
-├── webos/       # LG webOS app wrapper for TV mode
-├── server.ts    # Server entry point
+├── docker/            # Compose templates, env examples, backup/restore scripts
+├── docs/              # Operational guides (also published here)
+├── docs-site/         # This documentation site (VitePress)
+├── prisma/            # Prisma schema and migrations
+├── public/            # Static assets
+├── scripts/           # MCP Apps build, TV-mode build, LG webOS packaging, checks
+├── server/            # API, auth, storage, queue, generators, MCP + MCP Apps, multi-agent assistant, live feeds
+├── src/
+│   ├── m3/            # Material 3 Expressive component kit & dynamic color system
+│   ├── v2/            # Rebuilt Material 3 Expressive studio application served at /
+│   ├── mcp-apps/      # Sandboxed interactive MCP App views (ui://remix-studio/*)
+│   └── tv/            # Standalone TV mode interface
+├── webos/             # LG webOS app wrapper for TV mode
+├── server.ts          # Server entry point
 ├── docker-compose.yml       # Local services, and the app behind the `app` profile
 └── docker-compose.dlna.yml  # Host-network override for DLNA
 ```

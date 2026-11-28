@@ -2,6 +2,37 @@
 
 All notable changes to Remix Studio are documented here by version number.
 
+## [2.0.0] - 2026-11-28
+
+### Breaking Changes
+
+- **Total UI Rebuild — Material 3 Expressive Only**: The classic interface (`src/classic.tsx`, classic pages, contexts, and styles) is removed, and the Material 3 Expressive interface is now served directly at `/`. Bookmarks, shared links, and login `next` parameters under `/v2/...` automatically redirect to the matching root path, the stored `ui-version` preference is cleared, and classic-only dependencies (`clsx`, `cmdk`, `sonner`, `tailwind-merge`) are removed.
+- **Refreshed Text Model Floor**: Bundled text profiles older than Gemini 3.5, GPT-6, and Claude 5—along with Gemini 2.5 TTS profiles (replaced by Gemini 3.8 TTS)—are removed from bundled providers and the APIMart catalog. Generation projects pinned to removed profiles automatically fall back to current defaults (`gemini-3.8-flash`, `gpt-6.1-terra`, `claude-sonnet-5.5`), while assistant conversations prompt you to pick a current model. Image models and `GPT-4o Mini TTS` are unchanged.
+
+### Added
+
+- **Multi-Agent Assistant & Swarm Orchestration**: The built-in assistant evolves from a single chat assistant into a multi-agent workspace supporting `/agents` (and `/swarm`) team orchestration (`20261128120000_add_assistant_swarm`). A coordinator delegates to parallel specialist workers over a shared blackboard with per-worker tool scopes (`read`, `propose`) and built-in team presets (**Prompt Batch Shards**, **Campaign Copy & QA**, **Workspace Audit Team**). Includes a flat **Agent Side Panel** with Dialog inspectors, an interactive **Multi-Agent Architecture Graph** with clickable node details, and a multi-step task tracker (`update_steps`).
+- **Interactive MCP Apps Views (In-App & External Clients)**: Five self-contained sandboxed HTML views (`media-grid`, `queue-monitor`, `post-preview`, `project-preview`, `generation-batch`) built from `src/mcp-apps/` into `dist/mcp-apps/` are served as `ui://remix-studio/*.html` resources under the `io.modelcontextprotocol/ui` extension. Compliant external MCP clients and the in-app Multi-Agent Assistant render these views inline under tool calls with live theme/locale synchronization and freshly signed presigned media URLs in `_meta`.
+- **Generation Batch Tracking & Event-Driven Auto-Resume**: Starting jobs creates a tracked `JobBatch` (`20261128160000_add_job_batch`), exposed via `get_generation_batch` and the live `generation-batch` MCP App monitor. `BatchCompletionWatcher` monitors batch completion and automatically resumes the assistant turn when all jobs finish.
+- **Web Search Grounding & Anthropic Extended Thinking**: Added Web Search grounding across Google AI, OpenAI, and Anthropic assistant providers, along with Anthropic extended thinking surfaced in quiet collapsible thought pills.
+- **Interactive Multiple-Choice Questions (`ask_user`)**: The assistant can pause a turn (`awaiting_input`) to present single-choice, multi-choice, and free-text questions directly inside the composer via `POST /api/assistant/conversations/:id/answer`.
+- **Dedicated Assistant Skills Table & Shared Tools**: Composer skills moved out of the `"Assistant Skills"` text library into a per-user `AssistantSkill` table (`20261128130000_add_assistant_skill`) with `/api/assistant/skills` endpoints and shared assistant/MCP tools (`list_skills`, `create_skill`, `update_skill`, `delete_skill`).
+- **Album Image Rescaling**: Rescale single or multi-selected album images from the item menu or selection bar. Stage image-to-image draft jobs with an editable prompt, model-normalized size tiers (starting one tier above the source), and `"Match source"` aspect ratio and format detection.
+- **Account-Level Assistant Preferences & Segmented Context Usage Dialog**: Assistant provider and model defaults are persisted on the user account (`20261127120000_add_assistant_setting`). The context usage ring opens a standalone dialog breaking down context consumption by category (system prompt, tool definitions, messages, tool results, images) and per-tool definition size.
+- **Settings Search in Command Palette (`@`)**: Typing `@` in the `Cmd/Ctrl+K` command palette searches settings pages and tabs directly (appearance, account, storage, security, 2FA, devices, providers, assistant settings, MCP, and admin users/invites).
+
+### Improved
+
+- **KV Prompt Caching**: Enabled KV prompt caching across assistant providers to reduce latency and token costs on multi-step agent runs.
+- **Redesigned Assistant Thread & Floating Composer**: Restyled the assistant conversation with tonal user bubbles, full-width assistant prose, folded expandable tool-call rows, quiet inline thought pills, and a floating composer.
+- **Queue Monitor List Panes & Wider Chat History**: Restyled the Queue Monitor into project/provider list panes with five neutral stat tiles and a compact **Idle providers** pane, and removed the width cap on Chat History.
+- **Material 3 Expressive Polish**: Refined input and button spring animations, card hover physics, project viewer keyboard shortcuts, aligned expanded navigation rail footer (removing duplicate Appearance entry), and pinned library picker search.
+
+### Fixed
+
+- **New Chat First Message Race**: Preserved a new conversation's optimistic first user message until its initial turn settles.
+- **Docker MCP Apps Build**: Included `scripts/build-mcp-apps.mjs` in the Docker build context so containerized builds always bundle the five MCP App views.
+
 ## [1.27.1] - 2026-11-22
 
 ### Improved

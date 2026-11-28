@@ -5,18 +5,18 @@ const out = process.argv[2] ?? new URL('../assets', import.meta.url).pathname;
 
 const themes = {
   light: {
-    bg: '#f8fafc', bgStroke: '#e2e8f0', card: '#ffffff', cardStroke: '#e2e8f0',
-    text: '#0f172a', muted: '#64748b', label: '#94a3b8', arrow: '#94a3b8',
-    chip: '#f1f5f9', chipText: '#334155', iconBg: '#f1f5f9',
-    accent: '#2563eb', accentSoft: '#eff6ff', accentStroke: '#93c5fd', accentText: '#1d4ed8',
-    accentChip: '#dbeafe', lane: '#ffffff', green: '#059669', amber: '#d97706',
+    bg: '#fcfbff', bgStroke: '#e1deec', card: '#ffffff', cardStroke: '#c7c4d6',
+    text: '#1b1b24', muted: '#474656', label: '#6e6c7e', arrow: '#8b889c',
+    chip: '#eeecf6', chipText: '#312e47', iconBg: '#eeecf6',
+    accent: '#4f46e5', accentSoft: '#f3f2ff', accentStroke: '#a5b4fc', accentText: '#3730a3',
+    accentChip: '#e2dfff', lane: '#ffffff', green: '#059669', amber: '#d97706',
   },
   dark: {
-    bg: '#0d1424', bgStroke: '#1e293b', card: '#111b2e', cardStroke: '#23314b',
-    text: '#e2e8f0', muted: '#94a3b8', label: '#64748b', arrow: '#475569',
-    chip: '#1a263d', chipText: '#cbd5e1', iconBg: '#1a263d',
-    accent: '#3b82f6', accentSoft: '#0f1f3f', accentStroke: '#1e4fb8', accentText: '#93c5fd',
-    accentChip: '#16305f', lane: '#111b2e', green: '#34d399', amber: '#fbbf24',
+    bg: '#111118', bgStroke: '#272736', card: '#181822', cardStroke: '#38374a',
+    text: '#e6e4f0', muted: '#b8b5c9', label: '#8c89a0', arrow: '#65637a',
+    chip: '#272736', chipText: '#d9d7e8', iconBg: '#272736',
+    accent: '#6366f1', accentSoft: '#1b1b30', accentStroke: '#4338ca', accentText: '#c4c0ff',
+    accentChip: '#2e2a68', lane: '#181822', green: '#34d399', amber: '#fbbf24',
   },
 };
 
@@ -33,18 +33,18 @@ const icons = {
   shield: '<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
 };
 
-const FONT = `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+const FONT = `'Roboto Flex', Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif`;
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const chipW = (s, fs = 12) => Math.round(s.length * fs * 0.6 + 22);
+const chipW = (s, fs = 12) => Math.round(s.length * fs * 0.58 + 22);
 
 function build(t) {
   const p = [];
   const text = (x, y, s, { size = 14, weight = 400, fill = t.text, anchor = 'start', ls = 0 } = {}) =>
     p.push(`<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}"${ls ? ` letter-spacing="${ls}"` : ''}>${esc(s)}</text>`);
-  const rect = (x, y, w, h, fill, stroke, rx = 16, sw = 1) =>
+  const rect = (x, y, w, h, fill, stroke, rx = 18, sw = 1) =>
     p.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`);
   const icon = (name, x, y, { bg = t.iconBg, color = t.text } = {}) => {
-    rect(x, y, 38, 38, bg, 'none', 11, 0);
+    rect(x, y, 38, 38, bg, 'none', 12, 0);
     p.push(`<g transform="translate(${x + 9} ${y + 9}) scale(0.833)" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name]}</g>`);
   };
   const chips = (x, y, list, { fill = t.chip, color = t.chipText } = {}) => {
@@ -59,44 +59,44 @@ function build(t) {
   };
   const label = (x, y, s) => text(x, y, s, { size: 11.5, weight: 700, fill: t.label, ls: 1.6 });
   const arrow = (x1, y1, x2, y2, accent = false) =>
-    p.push(`<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${accent ? t.accent : t.arrow}" stroke-width="${accent ? 2 : 1.6}" fill="none" marker-end="url(#${accent ? 'ha' : 'hn'})"${accent ? '' : ' stroke-dasharray="0"'}/>`);
+    p.push(`<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${accent ? t.accent : t.arrow}" stroke-width="${accent ? 2 : 1.6}" fill="none" marker-end="url(#${accent ? 'ha' : 'hn'})"/>`);
   const card = (x, y, w, h, ic, title, sub, { accent = false } = {}) => {
-    rect(x, y, w, h, accent ? t.accentSoft : t.card, accent ? t.accentStroke : t.cardStroke, 16, accent ? 1.5 : 1);
+    rect(x, y, w, h, accent ? t.accentSoft : t.card, accent ? t.accentStroke : t.cardStroke, 20, accent ? 1.5 : 1);
     icon(ic, x + 22, y + 22, accent ? { bg: t.accent, color: '#ffffff' } : {});
     text(x + 74, y + 39, title, { size: 18, weight: 700, fill: accent ? t.accentText : t.text });
     text(x + 74, y + 59, sub, { size: 13, fill: t.muted });
   };
 
   const W = 1200, H = 930;
-  p.push(`<rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" rx="24" fill="${t.bg}" stroke="${t.bgStroke}"/>`);
+  p.push(`<rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" rx="28" fill="${t.bg}" stroke="${t.bgStroke}"/>`);
 
   // Row 1 — control surfaces
-  label(40, 56, 'CONTROL SURFACES');
-  text(1160, 56, 'Humans and agents drive the same workspace', { size: 12.5, fill: t.label, anchor: 'end' });
-  card(40, 72, 340, 152, 'person', 'Project Studio', 'Hands-on control for humans');
+  label(40, 56, 'CONTROL SURFACES · v2.0');
+  text(1160, 56, 'Humans, multi-agent teams, and MCP clients drive one workspace', { size: 12.5, fill: t.label, anchor: 'end' });
+  card(40, 72, 340, 152, 'person', 'Material 3 Studio', 'Rebuilt expressive UI · Cmd+K');
   chips(62, 174, ['Libraries', 'Workflows', 'Campaigns']);
-  card(410, 72, 340, 152, 'chat', 'Built-in Assistant', 'Tool-using chat · any provider');
-  chips(432, 174, ['Images', 'Voice', 'Skills', 'Context']);
-  card(780, 72, 380, 152, 'plug', 'MCP Clients', 'Claude · Codex · any agent', { accent: true });
-  chips(802, 174, ['Streamable HTTP', 'OAuth 2.0 + PKCE', 'PAT'], { fill: t.accentChip, color: t.accentText });
+  card(410, 72, 350, 152, 'chat', 'Multi-Agent Assistant', 'Swarms · MCP Apps · any provider', { accent: true });
+  chips(432, 174, ['Swarms', 'MCP Apps', 'Web Search', 'Skills'], { fill: t.accentChip, color: t.accentText });
+  card(790, 72, 370, 152, 'plug', 'MCP Clients', 'Claude · Codex · any agent', { accent: true });
+  chips(812, 174, ['Streamable HTTP', 'MCP Apps', 'OAuth 2.0'], { fill: t.accentChip, color: t.accentText });
 
-  // Row 2 — shared tool layer
-  arrow(580, 224, 580, 296, true);
-  arrow(970, 224, 970, 296, true);
-  label(410, 278, 'ONE SHARED TOOL LAYER');
-  rect(410, 296, 750, 154, t.accentSoft, t.accentStroke, 18, 1.5);
+  // Row 2 — shared tool layer + MCP Apps
+  arrow(585, 224, 585, 296, true);
+  arrow(975, 224, 975, 296, true);
+  label(410, 278, 'SHARED TOOL LAYER & MCP APPS (ui://)');
+  rect(410, 296, 750, 154, t.accentSoft, t.accentStroke, 20, 1.5);
   icon('layers', 432, 318, { bg: t.accent, color: '#ffffff' });
-  text(484, 335, 'Account-scoped tools', { size: 18, weight: 700, fill: t.accentText });
-  text(484, 355, 'Same tools and permissions in-app or over MCP', { size: 13, fill: t.muted });
+  text(484, 335, 'Account-scoped tools & interactive views', { size: 18, weight: 700, fill: t.accentText });
+  text(484, 355, 'Same tools, approvals, and sandboxed MCP App views in-app or over /mcp', { size: 13, fill: t.muted });
   const lanes = [
-    { c: t.green, b: 'Read', s: 'runs directly', ic: null },
-    { c: t.amber, b: 'Write', s: 'preview, then confirm', ic: null },
-    { c: t.accent, b: 'Ownership', s: 'on every call', ic: null },
+    { c: t.green, b: 'Read + Views', s: '5 MCP Apps' },
+    { c: t.amber, b: 'Write', s: 'preview & confirm' },
+    { c: t.accent, b: 'Ownership', s: 'on every call' },
   ];
   const lw = (750 - 44 - 24) / 3;
   lanes.forEach((l, i) => {
     const x = 432 + i * (lw + 12);
-    rect(x, 378, lw, 50, t.lane, t.accentStroke, 12, 1);
+    rect(x, 378, lw, 50, t.lane, t.accentStroke, 14, 1);
     p.push(`<circle cx="${x + 20}" cy="403" r="5" fill="${l.c}"/>`);
     p.push(`<text x="${x + 34}" y="408" font-size="13.5" fill="${t.muted}"><tspan font-weight="700" fill="${t.text}">${esc(l.b)}</tspan>  ${esc(l.s)}</text>`);
   });
@@ -109,11 +109,11 @@ function build(t) {
 
   // Row 3 — workspace
   label(40, 498, 'LIVE WORKSPACE');
-  rect(40, 508, 1120, 104, t.card, t.cardStroke, 16);
+  rect(40, 508, 1120, 104, t.card, t.cardStroke, 20);
   icon('db', 62, 541);
   text(114, 558, 'Durable workspace state', { size: 18, weight: 700 });
-  text(114, 578, 'Every surface reads and writes the same data', { size: 13, fill: t.muted });
-  const wsChips = ['Libraries', 'Projects', 'Albums', 'Files', 'Campaigns', 'Posts'];
+  text(114, 578, 'Every surface reads and writes the same live data', { size: 13, fill: t.muted });
+  const wsChips = ['Libraries', 'Projects', 'Albums', 'Job Batches', 'Campaigns', 'Posts'];
   const wsW = wsChips.reduce((a, c) => a + chipW(c) + 8, -8);
   chips(1160 - 24 - wsW, 547, wsChips);
 
@@ -122,14 +122,14 @@ function build(t) {
   label(40, 666, 'EXECUTION');
   card(40, 676, 340, 96, 'shuffle', 'Combine / Shuffle', '3 × 4 × 2 → 24 reviewable drafts');
   arrow(380, 724, 408, 724);
-  card(410, 676, 340, 96, 'list', 'Recoverable Queues', 'Per-provider concurrency · retries');
+  card(410, 676, 340, 96, 'list', 'Recoverable Queues', 'Batches · concurrency · auto-resume');
   arrow(750, 724, 778, 724);
   card(780, 676, 380, 96, 'spark', 'Providers', 'Cloud models · ComfyUI · Civitai');
 
   // Row 5 — distribution
   arrow(970, 772, 970, 836);
   label(40, 826, 'DISTRIBUTION');
-  rect(40, 836, 1120, 60, t.card, t.cardStroke, 16);
+  rect(40, 836, 1120, 60, t.card, t.cardStroke, 20);
   icon('send', 62, 847);
   text(114, 871, 'Results go out', { size: 16, weight: 700 });
   const outChips = ['Albums', 'ZIP exports', 'Cloud drives', 'Storefronts', 'X', 'Threads', 'WebDAV', 'DLNA'];
@@ -137,7 +137,7 @@ function build(t) {
   chips(1160 - 24 - outW, 853, outChips);
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="${FONT}" role="img" aria-labelledby="title">
-<title id="title">Remix Studio architecture: Project Studio, the built-in assistant and MCP clients share one account-scoped tool layer over a live workspace</title>
+<title id="title">Remix Studio 2.0 architecture: Material 3 Studio, the Multi-Agent Assistant, and MCP clients share one account-scoped tool layer and interactive MCP Apps views over a live workspace</title>
 <defs>
 <marker id="hn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="${t.arrow}"/></marker>
 <marker id="ha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="${t.accent}"/></marker>

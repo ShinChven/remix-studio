@@ -11,7 +11,7 @@ In Docker deployments, the application container runs `prisma migrate deploy` au
 ## Pinning Versions
 
 - For default-branch tracking, use the `latest` image tag.
-- For stable production deployments, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:1.26.0`, or to `:1.26` to take patch releases automatically.
+- For stable production deployments, pin `REMIX_STUDIO_IMAGE` to a release tag such as `ghcr.io/shinchven/remix-studio:2.0.0`, or to `:2.0` to take patch releases automatically.
 
 See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 
@@ -22,6 +22,20 @@ See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 - Database migrations are forward operations. Restore the pre-upgrade database and matching object-storage snapshot if a rollback requires an older schema.
 
 ## Version Notes
+
+### 2.0.0
+
+Four migrations apply on startup:
+
+- `20261127120000_add_assistant_setting` — stores account-level default assistant provider/model preferences.
+- `20261128120000_add_assistant_swarm` — adds multi-agent swarm runs, worker states, and blackboard entries.
+- `20261128130000_add_assistant_skill` — creates the `AssistantSkill` table and migrates existing `"Assistant Skills"` text library items into it (keeping their IDs and timestamps and leaving the original libraries untouched as ordinary text libraries).
+- `20261128160000_add_job_batch` — adds tracked `JobBatch` records for `start_jobs` and automatic assistant resume.
+
+Notes for upgrading from 1.x:
+
+- **Single Material 3 Expressive interface**: The classic UI is removed and the Material 3 Expressive UI now serves at `/`. Any saved `/v2/...` bookmarks or login `next` URLs redirect automatically to the matching root path.
+- **Text model floor**: Bundled text profiles older than Gemini 3.5, GPT-6, and Claude 5 (plus Gemini 2.5 TTS) are removed. Existing generation projects pinned to removed profiles automatically fall back to current defaults (`gemini-3.8-flash`, `gpt-6.1-terra`, `claude-sonnet-5.5`), while assistant chats prompt you to pick a current model.
 
 ### 1.26.0
 

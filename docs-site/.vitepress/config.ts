@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'Remix Studio',
   description:
-    'Self-hosted AI assistant workspace for orchestration, batch content generation, and social campaign planning.',
+    'Self-hosted Material 3 Expressive AI workspace with a Multi-Agent Assistant, interactive MCP Apps, batch content generation, and social campaign planning.',
   lang: 'en-US',
   // Served from a sub-path on GitHub Pages (e.g. /remix-studio/).
   // CI sets DOCS_BASE; local builds and root-domain hosts default to '/'.
@@ -15,15 +15,24 @@ export default defineConfig({
   srcExclude: ['README.md'],
 
   head: [
-    ['meta', { name: 'theme-color', content: '#0f766e' }],
+    ['meta', { name: 'theme-color', content: '#4f46e5' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400..700&family=Roboto+Mono:wght@400;500&display=swap',
+      },
+    ],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'Remix Studio' }],
+    ['meta', { property: 'og:title', content: 'Remix Studio 2.0' }],
     [
       'meta',
       {
         property: 'og:description',
         content:
-          'A self-hosted AI workspace for batch content generation and social campaigns.',
+          'A self-hosted Material 3 Expressive AI workspace with a Multi-Agent Assistant, interactive MCP Apps, batch content generation, and social campaigns.',
       },
     ],
   ],
@@ -48,7 +57,7 @@ export default defineConfig({
         link: '/operations/backup-and-restore',
         activeMatch: '/operations/',
       },
-      { text: "What's New", link: '/whats-new' },
+      { text: "v2.0 · What's New", link: '/whats-new' },
       {
         text: 'Links',
         items: [
@@ -107,7 +116,7 @@ export default defineConfig({
             { text: 'Workflows & Combinations', link: '/concepts/workflows' },
             { text: 'Libraries & Prompts', link: '/concepts/libraries' },
             { text: 'Projects & Albums', link: '/concepts/projects' },
-            { text: 'The Assistant', link: '/concepts/assistant' },
+            { text: 'Multi-Agent Assistant', link: '/concepts/assistant' },
             { text: 'Campaigns', link: '/concepts/campaigns' },
           ],
         },
@@ -140,7 +149,7 @@ export default defineConfig({
           text: 'Integrations',
           collapsed: false,
           items: [
-            { text: 'MCP Support', link: '/integrations/mcp' },
+            { text: 'MCP & MCP Apps', link: '/integrations/mcp' },
             {
               text: 'Calling MCP Tools over HTTP',
               link: '/integrations/mcp-http-client',

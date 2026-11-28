@@ -8,6 +8,40 @@ Please open a ticket on [GitHub Issues](https://github.com/ShinChven/remix-studi
 
 ---
 
+## 2.0.0 — Rebuilt Material 3 Expressive UI, Multi-Agent Assistant, and MCP Apps
+
+*A major release: Remix Studio completes its total UI rebuild onto Material 3 Expressive at `/`, evolves the chat assistant into a Multi-Agent Assistant with `/agents` swarms and inline MCP Apps, tracks live generation batches with auto-resume, and refreshes the text model catalog.*
+
+**Breaking Changes**
+
+- **Total UI rebuild (Material 3 Expressive only)** — The classic interface is retired and the Material 3 Expressive interface is now the sole UI served at `/`. Saved `/v2/...` bookmarks and login redirects forward automatically to the root path.
+- **Refreshed text model floor** — Bundled text models older than Gemini 3.5, GPT-6, and Claude 5 (along with Gemini 2.5 TTS, replaced by Gemini 3.8 TTS) are removed from bundled providers and APIMart. Existing generation projects fall back automatically to current defaults (`Gemini 3.8 Flash`, `GPT-6.1 Terra`, `Claude Sonnet 5.5`), while assistant chats prompt you to choose a current model. See [Model Profiles](/concepts/models).
+
+**Added**
+
+- **Multi-Agent Assistant (`/agents` & `/swarm`)** — Run single-agent conversations or spin up multi-agent swarms with a coordinator, parallel specialist workers, a shared blackboard, and scoped worker permissions (`read` or `propose`). Start faster with built-in team presets (**Prompt Batch Shards**, **Campaign Copy & QA**, **Workspace Audit Team**), follow progress in the flat **Agent Side Panel** and interactive **Multi-Agent Architecture Graph**, and watch live plans in the multi-step task tracker. See [Multi-Agent Assistant](/concepts/assistant).
+- **Interactive MCP Apps inside chat and MCP clients** — Five sandboxed `ui://` views (`media-grid`, `queue-monitor`, `post-preview`, `project-preview`, and `generation-batch`) render rich interactive interfaces directly under tool results in both the in-app assistant and compatible external MCP clients. See [MCP & MCP Apps](/integrations/mcp).
+- **Generation batch tracking & auto-resume** — Starting jobs creates a tracked batch (`get_generation_batch`) with live progress inside the `generation-batch` MCP App. When a batch finishes, the server automatically resumes the assistant turn so your agent can inspect, tag, or export results without manual prompting.
+- **Web Search grounding & Anthropic thinking** — Enable Web Search grounding on Google AI, OpenAI, and Anthropic assistant turns, and inspect Anthropic extended thinking inside quiet collapsible thought pills.
+- **Interactive questions (`ask_user`)** — The assistant can pause a turn and present single-choice, multi-choice, or free-text prompts right inside the composer.
+- **Dedicated Assistant Skills** — Composer skills now live in their own account-scoped table under **Assistant Settings → Skills** (with `list_skills`, `create_skill`, `update_skill`, and `delete_skill` tools) rather than sharing a regular text library.
+- **Album image rescaling** — Rescale one or more album images from an item's menu or the selection bar using an editable prompt, model-normalized size tiers, and **Match source** aspect ratio and format detection. See [Rescaling album images](/concepts/projects#rescaling-album-images).
+- **Account-level assistant defaults & context breakdown** — Preferred assistant provider and model now save on your account, and clicking the usage ring opens a segmented breakdown of context consumption by category and tool.
+- **Settings search in `Cmd/Ctrl+K` (`@`)** — Type `@` in the command palette to jump straight to settings pages and tabs.
+
+**Improved**
+
+- **Redesigned assistant thread & KV caching** — Conversations now use tonal user bubbles, full-width assistant replies, folded tool-call rows, a floating composer, and KV prompt caching across providers.
+- **List-pane Queue Monitor & wider Chat History** — Queue Monitor groups projects and providers into clean list panes with neutral stat tiles and an **Idle providers** summary; Chat History now spans full width.
+- **Material 3 Expressive polish** — Tuned input and button springs, hover physics, project viewer keyboard shortcuts, aligned expanded rail footer, and a pinned search field in the library picker.
+
+**Fixed**
+
+- **Optimistic first message on new chats** — Creating a new conversation keeps the first user message visible smoothly while the initial turn settles.
+- **Docker MCP Apps bundle** — Docker builds include `scripts/build-mcp-apps.mjs` so all five interactive MCP App views are bundled out of the box.
+
+---
+
 ## 1.27.1 — Safer sign-in limits and recycle bin fixes
 
 *Sign-in rate limits can no longer be sidestepped, the classic recycle bin shows library items and every content type, and a few rough edges in the new interface are smoothed out.*

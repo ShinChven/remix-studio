@@ -1,8 +1,8 @@
-# MCP Support
+# MCP & MCP Apps
 
-Remix Studio exposes a streamable HTTP **Model Context Protocol (MCP)** endpoint at `/mcp`. It lets an external client work with the same user-scoped libraries, projects, models, storage summaries, campaigns, and posts used by the web interface.
+Remix Studio exposes a streamable HTTP **Model Context Protocol (MCP)** endpoint at `/mcp`. It lets an external client work with the same user-scoped libraries, projects, models, generation batches, storage summaries, campaigns, and posts used by the web interface.
 
-The [in-app assistant](/concepts/assistant) is built on the same tool registry, but authentication and write confirmation differ.
+The built-in [Multi-Agent Assistant](/concepts/assistant) runs on the same tool registry and renders the same interactive **MCP Apps** views, while differing in authentication and write confirmation.
 
 ## Capabilities
 
@@ -22,7 +22,7 @@ Available MCP capabilities include:
 - **Upload** image, video and audio files with `create_upload`, then add them to a library (`add_files_to_library`), pin them in a project workflow (`uploadId` on `update_project` / `create_project_with_workflow` items), or post them to a campaign (`create_posts_from_files`, `add_media_to_post`). See [file uploads](#file-uploads).
 - **Export** a project album as a .zip with `export_project_album`, or a whole project as a portable bundle with `export_project`.
 - **Create and update** workflow-backed projects, including [Civitai projects](#civitai-projects).
-- **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
+- **Stage and run generation**: `draft_jobs` builds draft jobs from a project's workflow, `start_jobs` queues all of them or a chosen number and creates a tracked generation batch, `get_generation_batch` checks live batch progress and outputs, and `get_project_job_counts` reports drafts, queue depth, completed runs, and album totals.
 - **Monitor the queue** across every project with `get_queue_status`, which returns the counts behind the [queue monitor](/concepts/queue) page — running, queued, failed, and provider slots — with `breakdown` reproducing either tab of that page (`providers` for each provider queue's slots, limit, and depth; `projects` for each project holding jobs), and never the job list itself.
 - **Clear failed jobs** with `clear_failed_jobs`, the same action as the queue monitor's clear buttons — scoped to one project (`projectId`), one provider queue (`providerId`), or the whole account when neither is given.
 
@@ -112,15 +112,17 @@ The origin comes from `APP_URL` when it is configured; otherwise the server fall
 
 ### Interactive views (MCP Apps)
 
-Clients that support the [MCP Apps](https://modelcontextprotocol.io/extensions/apps) extension render some tool results as interactive views inline in the conversation instead of raw JSON:
+Clients that support the [MCP Apps](https://modelcontextprotocol.io/extensions/apps) extension (`io.modelcontextprotocol/ui`) — as well as Remix Studio's built-in [Multi-Agent Assistant](/concepts/assistant#interactive-mcp-apps-in-chat) — render tool results as interactive views inline in the conversation instead of raw JSON:
 
-| Tool | View |
-|------|------|
-| `get_album_items`, `get_library_items` | Thumbnail grid with tag filters, paging, and a full-size viewer for images, video, and audio. Text libraries show as cards. |
-| `get_queue_status` | Queue totals, slot usage, and per-project or per-provider rows. Refreshes itself while jobs are running or queued. |
-| `get_post` | The post's text, media, schedule, and per-account publishing status. |
+| Tool | View | What it renders |
+|------|------|-----------------|
+| `get_album_items`, `get_library_items`, `create_prompt`, `batch_create_prompts` | `media-grid` | Thumbnail grid with tag filters, paging, text cards, and a full-size viewer for images, video, and audio. |
+| `get_project`, `create_project_with_workflow`, `update_project`, `draft_jobs`, `get_project_job_counts` | `project-preview` | Project overview with configuration, workflow steps, and draft/queue/album counts. |
+| `start_jobs`, `get_generation_batch` | `generation-batch` | Live progress tracker and generated outputs for a batch of jobs started together. |
+| `get_queue_status` | `queue-monitor` | Queue totals, slot usage, and per-project or per-provider rows. Refreshes itself while jobs are running or queued. |
+| `get_post` | `post-preview` | The post's text, media, schedule, and per-account publishing status. |
 
-Each tool names its view in `_meta.ui.resourceUri` (a `ui://remix-studio/…` resource). Views follow the client's theme and language, and their links open through the client. Paging, filters, and refresh call the same read-only tools again through the client.
+Each tool names its view in `_meta.ui.resourceUri` (a `ui://remix-studio/…` resource). Views follow the host's Material 3 theme and locale, and their links open through the host bridge. Paging, filters, and refresh call the same read-only tools again through the host.
 
 Media in a view loads from presigned storage URLs. The server signs them into the result's `_meta`, which clients pass to the view but keep out of the model's context, and adds the storage origin to the view's content security policy. The browser displaying the view must be able to reach that origin, the same as when the app shows media, so set `S3_PUBLIC_ENDPOINT` when the internal endpoint is not public.
 
@@ -172,7 +174,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | Libraries | `list_libraries`, `get_library_items`, `get_library_item`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_library_items` |
 | Assistant skills | `list_skills` | `create_skill`, `update_skill`, `delete_skill` |
 | Projects | `get_project`, `list_albums`, `get_album_items`, `get_album_item`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `rename_album_items`, `export_project`, `export_project_album` |
-| Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
+| Jobs | `get_project_job_counts`, `get_generation_batch`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
 | Files | `get_file_urls`, `get_upload` | `create_upload`, `add_files_to_library`, `create_posts_from_files` |
 | Campaigns | `list_social_accounts`, `list_campaigns` | `create_campaign`, `update_campaign` |
 | Posts | `list_posts`, `get_post`, `get_post_text` | `create_post`, `update_post`, `update_post_text`, `add_media_to_post`, `schedule_post` |

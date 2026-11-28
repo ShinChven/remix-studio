@@ -1,125 +1,125 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="930" viewBox="0 0 1200 930" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-labelledby="title">
-<title id="title">Remix Studio architecture: Project Studio, the built-in assistant and MCP clients share one account-scoped tool layer over a live workspace</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="930" viewBox="0 0 1200 930" font-family="'Roboto Flex', Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="title">
+<title id="title">Remix Studio 2.0 architecture: Material 3 Studio, the Multi-Agent Assistant, and MCP clients share one account-scoped tool layer and interactive MCP Apps views over a live workspace</title>
 <defs>
-<marker id="hn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#475569"/></marker>
-<marker id="ha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#3b82f6"/></marker>
+<marker id="hn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#65637a"/></marker>
+<marker id="ha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1 1 L9 5 L1 9 z" fill="#6366f1"/></marker>
 </defs>
-<rect x="0.5" y="0.5" width="1199" height="929" rx="24" fill="#0d1424" stroke="#1e293b"/>
-<text x="40" y="56" font-size="11.5" font-weight="700" fill="#64748b" text-anchor="start" letter-spacing="1.6">CONTROL SURFACES</text>
-<text x="1160" y="56" font-size="12.5" font-weight="400" fill="#64748b" text-anchor="end">Humans and agents drive the same workspace</text>
-<rect x="40" y="72" width="340" height="152" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="62" y="94" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(71 103) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></g>
-<text x="114" y="111" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="start">Project Studio</text>
-<text x="114" y="131" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Hands-on control for humans</text>
-<rect x="62" y="174" width="87" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="105.5" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Libraries</text>
-<rect x="157" y="174" width="87" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="200.5" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Workflows</text>
-<rect x="252" y="174" width="87" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="295.5" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Campaigns</text>
-<rect x="410" y="72" width="340" height="152" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="432" y="94" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(441 103) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/></g>
-<text x="484" y="111" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="start">Built-in Assistant</text>
-<text x="484" y="131" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Tool-using chat · any provider</text>
-<rect x="432" y="174" width="65" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="464.5" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Images</text>
-<rect x="505" y="174" width="58" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="534" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Voice</text>
-<rect x="571" y="174" width="65" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="603.5" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Skills</text>
-<rect x="644" y="174" width="72" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="680" y="191.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Context</text>
-<rect x="780" y="72" width="380" height="152" rx="16" fill="#0f1f3f" stroke="#1e4fb8" stroke-width="1.5"/>
-<rect x="802" y="94" width="38" height="38" rx="11" fill="#3b82f6" stroke="none" stroke-width="0"/>
-<g transform="translate(811 103) scale(0.833)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M5.5 7h13v4a6.5 6.5 0 0 1-13 0z M12 17.5V22"/></g>
-<text x="854" y="111" font-size="18" font-weight="700" fill="#93c5fd" text-anchor="start">MCP Clients</text>
-<text x="854" y="131" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Claude · Codex · any agent</text>
-<rect x="802" y="174" width="130" height="26" rx="13" fill="#16305f" stroke="none" stroke-width="0"/>
-<text x="867" y="191.5" font-size="12" font-weight="500" fill="#93c5fd" text-anchor="middle">Streamable HTTP</text>
-<rect x="940" y="174" width="137" height="26" rx="13" fill="#16305f" stroke="none" stroke-width="0"/>
-<text x="1008.5" y="191.5" font-size="12" font-weight="500" fill="#93c5fd" text-anchor="middle">OAuth 2.0 + PKCE</text>
-<rect x="1085" y="174" width="44" height="26" rx="13" fill="#16305f" stroke="none" stroke-width="0"/>
-<text x="1107" y="191.5" font-size="12" font-weight="500" fill="#93c5fd" text-anchor="middle">PAT</text>
-<path d="M580 224 L580 296" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ha)"/>
-<path d="M970 224 L970 296" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ha)"/>
-<text x="410" y="278" font-size="11.5" font-weight="700" fill="#64748b" text-anchor="start" letter-spacing="1.6">ONE SHARED TOOL LAYER</text>
-<rect x="410" y="296" width="750" height="154" rx="18" fill="#0f1f3f" stroke="#1e4fb8" stroke-width="1.5"/>
-<rect x="432" y="318" width="38" height="38" rx="11" fill="#3b82f6" stroke="none" stroke-width="0"/>
+<rect x="0.5" y="0.5" width="1199" height="929" rx="28" fill="#111118" stroke="#272736"/>
+<text x="40" y="56" font-size="11.5" font-weight="700" fill="#8c89a0" text-anchor="start" letter-spacing="1.6">CONTROL SURFACES · v2.0</text>
+<text x="1160" y="56" font-size="12.5" font-weight="400" fill="#8c89a0" text-anchor="end">Humans, multi-agent teams, and MCP clients drive one workspace</text>
+<rect x="40" y="72" width="340" height="152" rx="20" fill="#181822" stroke="#38374a" stroke-width="1"/>
+<rect x="62" y="94" width="38" height="38" rx="12" fill="#272736" stroke="none" stroke-width="0"/>
+<g transform="translate(71 103) scale(0.833)" fill="none" stroke="#e6e4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></g>
+<text x="114" y="111" font-size="18" font-weight="700" fill="#e6e4f0" text-anchor="start">Material 3 Studio</text>
+<text x="114" y="131" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Rebuilt expressive UI · Cmd+K</text>
+<rect x="62" y="174" width="85" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="104.5" y="191.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Libraries</text>
+<rect x="155" y="174" width="85" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="197.5" y="191.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Workflows</text>
+<rect x="248" y="174" width="85" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="290.5" y="191.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Campaigns</text>
+<rect x="410" y="72" width="350" height="152" rx="20" fill="#1b1b30" stroke="#4338ca" stroke-width="1.5"/>
+<rect x="432" y="94" width="38" height="38" rx="12" fill="#6366f1" stroke="none" stroke-width="0"/>
+<g transform="translate(441 103) scale(0.833)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.5-5.2A8.5 8.5 0 1 1 21 12z"/></g>
+<text x="484" y="111" font-size="18" font-weight="700" fill="#c4c0ff" text-anchor="start">Multi-Agent Assistant</text>
+<text x="484" y="131" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Swarms · MCP Apps · any provider</text>
+<rect x="432" y="174" width="64" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="464" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">Swarms</text>
+<rect x="504" y="174" width="78" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="543" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">MCP Apps</text>
+<rect x="590" y="174" width="92" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="636" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">Web Search</text>
+<rect x="690" y="174" width="64" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="722" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">Skills</text>
+<rect x="790" y="72" width="370" height="152" rx="20" fill="#1b1b30" stroke="#4338ca" stroke-width="1.5"/>
+<rect x="812" y="94" width="38" height="38" rx="12" fill="#6366f1" stroke="none" stroke-width="0"/>
+<g transform="translate(821 103) scale(0.833)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v5M15 2v5M5.5 7h13v4a6.5 6.5 0 0 1-13 0z M12 17.5V22"/></g>
+<text x="864" y="111" font-size="18" font-weight="700" fill="#c4c0ff" text-anchor="start">MCP Clients</text>
+<text x="864" y="131" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Claude · Codex · any agent</text>
+<rect x="812" y="174" width="126" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="875" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">Streamable HTTP</text>
+<rect x="946" y="174" width="78" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="985" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">MCP Apps</text>
+<rect x="1032" y="174" width="85" height="26" rx="13" fill="#2e2a68" stroke="none" stroke-width="0"/>
+<text x="1074.5" y="191.5" font-size="12" font-weight="500" fill="#c4c0ff" text-anchor="middle">OAuth 2.0</text>
+<path d="M585 224 L585 296" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#ha)"/>
+<path d="M975 224 L975 296" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#ha)"/>
+<text x="410" y="278" font-size="11.5" font-weight="700" fill="#8c89a0" text-anchor="start" letter-spacing="1.6">SHARED TOOL LAYER &amp; MCP APPS (ui://)</text>
+<rect x="410" y="296" width="750" height="154" rx="20" fill="#1b1b30" stroke="#4338ca" stroke-width="1.5"/>
+<rect x="432" y="318" width="38" height="38" rx="12" fill="#6366f1" stroke="none" stroke-width="0"/>
 <g transform="translate(441 327) scale(0.833)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></g>
-<text x="484" y="335" font-size="18" font-weight="700" fill="#93c5fd" text-anchor="start">Account-scoped tools</text>
-<text x="484" y="355" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Same tools and permissions in-app or over MCP</text>
-<rect x="432" y="378" width="227.33333333333334" height="50" rx="12" fill="#111b2e" stroke="#1e4fb8" stroke-width="1"/>
+<text x="484" y="335" font-size="18" font-weight="700" fill="#c4c0ff" text-anchor="start">Account-scoped tools &amp; interactive views</text>
+<text x="484" y="355" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Same tools, approvals, and sandboxed MCP App views in-app or over /mcp</text>
+<rect x="432" y="378" width="227.33333333333334" height="50" rx="14" fill="#181822" stroke="#4338ca" stroke-width="1"/>
 <circle cx="452" cy="403" r="5" fill="#34d399"/>
-<text x="466" y="408" font-size="13.5" fill="#94a3b8"><tspan font-weight="700" fill="#e2e8f0">Read</tspan>  runs directly</text>
-<rect x="671.3333333333334" y="378" width="227.33333333333334" height="50" rx="12" fill="#111b2e" stroke="#1e4fb8" stroke-width="1"/>
+<text x="466" y="408" font-size="13.5" fill="#b8b5c9"><tspan font-weight="700" fill="#e6e4f0">Read + Views</tspan>  5 MCP Apps</text>
+<rect x="671.3333333333334" y="378" width="227.33333333333334" height="50" rx="14" fill="#181822" stroke="#4338ca" stroke-width="1"/>
 <circle cx="691.3333333333334" cy="403" r="5" fill="#fbbf24"/>
-<text x="705.3333333333334" y="408" font-size="13.5" fill="#94a3b8"><tspan font-weight="700" fill="#e2e8f0">Write</tspan>  preview, then confirm</text>
-<rect x="910.6666666666667" y="378" width="227.33333333333334" height="50" rx="12" fill="#111b2e" stroke="#1e4fb8" stroke-width="1"/>
-<circle cx="930.6666666666667" cy="403" r="5" fill="#3b82f6"/>
-<text x="944.6666666666667" y="408" font-size="13.5" fill="#94a3b8"><tspan font-weight="700" fill="#e2e8f0">Ownership</tspan>  on every call</text>
-<path d="M210 224 L210 508" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#hn)" stroke-dasharray="0"/>
-<rect x="146" y="352" width="128" height="24" rx="12" fill="#0d1424"/>
-<text x="210" y="368" font-size="12" font-weight="500" fill="#64748b" text-anchor="middle">direct UI</text>
-<path d="M785 450 L785 508" stroke="#3b82f6" stroke-width="2" fill="none" marker-end="url(#ha)"/>
-<text x="40" y="498" font-size="11.5" font-weight="700" fill="#64748b" text-anchor="start" letter-spacing="1.6">LIVE WORKSPACE</text>
-<rect x="40" y="508" width="1120" height="104" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="62" y="541" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(71 550) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></g>
-<text x="114" y="558" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="start">Durable workspace state</text>
-<text x="114" y="578" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Every surface reads and writes the same data</text>
-<rect x="661" y="547" width="87" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="704.5" y="564.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Libraries</text>
-<rect x="756" y="547" width="80" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="796" y="564.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Projects</text>
-<rect x="844" y="547" width="65" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="876.5" y="564.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Albums</text>
-<rect x="917" y="547" width="58" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="946" y="564.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Files</text>
-<rect x="983" y="547" width="87" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="1026.5" y="564.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Campaigns</text>
-<rect x="1078" y="547" width="58" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="1107" y="564.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Posts</text>
-<path d="M210 612 L210 676" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#hn)" stroke-dasharray="0"/>
-<text x="40" y="666" font-size="11.5" font-weight="700" fill="#64748b" text-anchor="start" letter-spacing="1.6">EXECUTION</text>
-<rect x="40" y="676" width="340" height="96" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="62" y="698" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(71 707) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></g>
-<text x="114" y="715" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="start">Combine / Shuffle</text>
-<text x="114" y="735" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">3 × 4 × 2 → 24 reviewable drafts</text>
-<path d="M380 724 L408 724" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#hn)" stroke-dasharray="0"/>
-<rect x="410" y="676" width="340" height="96" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="432" y="698" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(441 707) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></g>
-<text x="484" y="715" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="start">Recoverable Queues</text>
-<text x="484" y="735" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Per-provider concurrency · retries</text>
-<path d="M750 724 L778 724" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#hn)" stroke-dasharray="0"/>
-<rect x="780" y="676" width="380" height="96" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="802" y="698" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(811 707) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5L4.5 10.5 10 8.5z"/><path d="M19 17v4M17 19h4"/></g>
-<text x="854" y="715" font-size="18" font-weight="700" fill="#e2e8f0" text-anchor="start">Providers</text>
-<text x="854" y="735" font-size="13" font-weight="400" fill="#94a3b8" text-anchor="start">Cloud models · ComfyUI · Civitai</text>
-<path d="M970 772 L970 836" stroke="#475569" stroke-width="1.6" fill="none" marker-end="url(#hn)" stroke-dasharray="0"/>
-<text x="40" y="826" font-size="11.5" font-weight="700" fill="#64748b" text-anchor="start" letter-spacing="1.6">DISTRIBUTION</text>
-<rect x="40" y="836" width="1120" height="60" rx="16" fill="#111b2e" stroke="#23314b" stroke-width="1"/>
-<rect x="62" y="847" width="38" height="38" rx="11" fill="#1a263d" stroke="none" stroke-width="0"/>
-<g transform="translate(71 856) scale(0.833)" fill="none" stroke="#e2e8f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></g>
-<text x="114" y="871" font-size="16" font-weight="700" fill="#e2e8f0" text-anchor="start">Results go out</text>
-<rect x="488" y="853" width="65" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="520.5" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Albums</text>
-<rect x="561" y="853" width="101" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="611.5" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">ZIP exports</text>
-<rect x="670" y="853" width="108" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="724" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Cloud drives</text>
-<rect x="786" y="853" width="101" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="836.5" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Storefronts</text>
-<rect x="895" y="853" width="29" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="909.5" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">X</text>
-<rect x="932" y="853" width="72" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="968" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">Threads</text>
-<rect x="1012" y="853" width="65" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="1044.5" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">WebDAV</text>
-<rect x="1085" y="853" width="51" height="26" rx="13" fill="#1a263d" stroke="none" stroke-width="0"/>
-<text x="1110.5" y="870.5" font-size="12" font-weight="500" fill="#cbd5e1" text-anchor="middle">DLNA</text>
+<text x="705.3333333333334" y="408" font-size="13.5" fill="#b8b5c9"><tspan font-weight="700" fill="#e6e4f0">Write</tspan>  preview &amp; confirm</text>
+<rect x="910.6666666666667" y="378" width="227.33333333333334" height="50" rx="14" fill="#181822" stroke="#4338ca" stroke-width="1"/>
+<circle cx="930.6666666666667" cy="403" r="5" fill="#6366f1"/>
+<text x="944.6666666666667" y="408" font-size="13.5" fill="#b8b5c9"><tspan font-weight="700" fill="#e6e4f0">Ownership</tspan>  on every call</text>
+<path d="M210 224 L210 508" stroke="#65637a" stroke-width="1.6" fill="none" marker-end="url(#hn)"/>
+<rect x="146" y="352" width="128" height="24" rx="12" fill="#111118"/>
+<text x="210" y="368" font-size="12" font-weight="500" fill="#8c89a0" text-anchor="middle">direct UI</text>
+<path d="M785 450 L785 508" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#ha)"/>
+<text x="40" y="498" font-size="11.5" font-weight="700" fill="#8c89a0" text-anchor="start" letter-spacing="1.6">LIVE WORKSPACE</text>
+<rect x="40" y="508" width="1120" height="104" rx="20" fill="#181822" stroke="#38374a" stroke-width="1"/>
+<rect x="62" y="541" width="38" height="38" rx="12" fill="#272736" stroke="none" stroke-width="0"/>
+<g transform="translate(71 550) scale(0.833)" fill="none" stroke="#e6e4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></g>
+<text x="114" y="558" font-size="18" font-weight="700" fill="#e6e4f0" text-anchor="start">Durable workspace state</text>
+<text x="114" y="578" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Every surface reads and writes the same live data</text>
+<rect x="628" y="547" width="85" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="670.5" y="564.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Libraries</text>
+<rect x="721" y="547" width="78" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="760" y="564.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Projects</text>
+<rect x="807" y="547" width="64" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="839" y="564.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Albums</text>
+<rect x="879" y="547" width="99" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="928.5" y="564.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Job Batches</text>
+<rect x="986" y="547" width="85" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="1028.5" y="564.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Campaigns</text>
+<rect x="1079" y="547" width="57" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="1107.5" y="564.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Posts</text>
+<path d="M210 612 L210 676" stroke="#65637a" stroke-width="1.6" fill="none" marker-end="url(#hn)"/>
+<text x="40" y="666" font-size="11.5" font-weight="700" fill="#8c89a0" text-anchor="start" letter-spacing="1.6">EXECUTION</text>
+<rect x="40" y="676" width="340" height="96" rx="20" fill="#181822" stroke="#38374a" stroke-width="1"/>
+<rect x="62" y="698" width="38" height="38" rx="12" fill="#272736" stroke="none" stroke-width="0"/>
+<g transform="translate(71 707) scale(0.833)" fill="none" stroke="#e6e4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></g>
+<text x="114" y="715" font-size="18" font-weight="700" fill="#e6e4f0" text-anchor="start">Combine / Shuffle</text>
+<text x="114" y="735" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">3 × 4 × 2 → 24 reviewable drafts</text>
+<path d="M380 724 L408 724" stroke="#65637a" stroke-width="1.6" fill="none" marker-end="url(#hn)"/>
+<rect x="410" y="676" width="340" height="96" rx="20" fill="#181822" stroke="#38374a" stroke-width="1"/>
+<rect x="432" y="698" width="38" height="38" rx="12" fill="#272736" stroke="none" stroke-width="0"/>
+<g transform="translate(441 707) scale(0.833)" fill="none" stroke="#e6e4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></g>
+<text x="484" y="715" font-size="18" font-weight="700" fill="#e6e4f0" text-anchor="start">Recoverable Queues</text>
+<text x="484" y="735" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Batches · concurrency · auto-resume</text>
+<path d="M750 724 L778 724" stroke="#65637a" stroke-width="1.6" fill="none" marker-end="url(#hn)"/>
+<rect x="780" y="676" width="380" height="96" rx="20" fill="#181822" stroke="#38374a" stroke-width="1"/>
+<rect x="802" y="698" width="38" height="38" rx="12" fill="#272736" stroke="none" stroke-width="0"/>
+<g transform="translate(811 707) scale(0.833)" fill="none" stroke="#e6e4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 5.5L19.5 10.5 14 12.5 12 18l-2-5.5L4.5 10.5 10 8.5z"/><path d="M19 17v4M17 19h4"/></g>
+<text x="854" y="715" font-size="18" font-weight="700" fill="#e6e4f0" text-anchor="start">Providers</text>
+<text x="854" y="735" font-size="13" font-weight="400" fill="#b8b5c9" text-anchor="start">Cloud models · ComfyUI · Civitai</text>
+<path d="M970 772 L970 836" stroke="#65637a" stroke-width="1.6" fill="none" marker-end="url(#hn)"/>
+<text x="40" y="826" font-size="11.5" font-weight="700" fill="#8c89a0" text-anchor="start" letter-spacing="1.6">DISTRIBUTION</text>
+<rect x="40" y="836" width="1120" height="60" rx="20" fill="#181822" stroke="#38374a" stroke-width="1"/>
+<rect x="62" y="847" width="38" height="38" rx="12" fill="#272736" stroke="none" stroke-width="0"/>
+<g transform="translate(71 856) scale(0.833)" fill="none" stroke="#e6e4f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></g>
+<text x="114" y="871" font-size="16" font-weight="700" fill="#e6e4f0" text-anchor="start">Results go out</text>
+<rect x="498" y="853" width="64" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="530" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Albums</text>
+<rect x="570" y="853" width="99" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="619.5" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">ZIP exports</text>
+<rect x="677" y="853" width="106" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="730" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Cloud drives</text>
+<rect x="791" y="853" width="99" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="840.5" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Storefronts</text>
+<rect x="898" y="853" width="29" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="912.5" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">X</text>
+<rect x="935" y="853" width="71" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="970.5" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">Threads</text>
+<rect x="1014" y="853" width="64" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="1046" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">WebDAV</text>
+<rect x="1086" y="853" width="50" height="26" rx="13" fill="#272736" stroke="none" stroke-width="0"/>
+<text x="1111" y="870.5" font-size="12" font-weight="500" fill="#d9d7e8" text-anchor="middle">DLNA</text>
 </svg>

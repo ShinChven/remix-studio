@@ -2,7 +2,7 @@
 
 **Libraries** are reusable, typed collections of text or media. A workflow can point at a library instead of embedding a particular item, allowing one project step to expand into every matching item in that collection.
 
-Libraries belong to the signed-in user and can be reused across projects, campaign posts, the in-app assistant, and MCP automation.
+Libraries belong to the signed-in user and can be reused across projects, campaign posts, the [Multi-Agent Assistant](/concepts/assistant), and MCP automation.
 
 ## Library Types
 
@@ -17,7 +17,7 @@ The library type matters when a workflow is expanded: text items are joined into
 
 ## Browsing and Organizing
 
-The library list supports search, filtering by type (**All**, **Text**, **Image**, **Video**, **Audio**), pagination, and pinning (plus a cards/list layout switch in the Material 3 interface). Up to the UI's pin limit can be kept at the top for quick access.
+The library list supports search, filtering by type (**All**, **Text**, **Image**, **Video**, **Audio**), pagination, a cards/list layout switch, and pinning. Up to the UI's pin limit can be kept at the top for quick access.
 
 Inside a library you can:
 
@@ -106,7 +106,7 @@ Removing a reference changes the affected project's workflow. Deleting the libra
 
 The shared tool layer can list and search libraries, browse their items or read one item by ID (`get_library_item`, which takes the reference **Copy ID for AI** copies), create and update libraries, create prompts individually or in batches, and update item metadata one item or many at a time. Items of any library type can be moved to the recycle bin with `delete_library_items`, up to 100 at a time. External MCP clients can also upload media files into a library.
 
-See [The Assistant](/concepts/assistant) for the in-app approval flow and [MCP Support](/integrations/mcp) for external clients.
+See [Multi-Agent Assistant](/concepts/assistant) for the in-app approval flow and [MCP & MCP Apps](/integrations/mcp) for external clients.
 
 Open library pages and the libraries list refresh on their own when the assistant, an MCP client or another tab adds, edits or removes items, so there is no need to reload the page to see an agent's work.
 

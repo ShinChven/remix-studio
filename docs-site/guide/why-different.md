@@ -2,11 +2,11 @@
 
 Most AI generation tools optimize a single prompt box. Remix Studio separates reusable source material, draft composition, provider execution, durable results, and distribution. That separation is what makes large, repeatable content systems manageable.
 
-## Assistant-First Orchestration
+## Multi-Agent & MCP App Orchestration
 
-The built-in [assistant](/concepts/assistant) reads current libraries, project workflows, album summaries, model availability, storage, campaigns, and posts through the same account-scoped tools exposed over MCP. It can prepare changes, but write/destructive operations stop for review.
+The built-in [Multi-Agent Assistant](/concepts/assistant) reads current libraries, project workflows, album summaries, model availability, storage, campaigns, and posts through the same account-scoped tools exposed over [MCP](/integrations/mcp)—and renders rich interactive [MCP Apps](/integrations/mcp#interactive-views-mcp-apps) inline under tool results. Single-agent turns and `/agents` swarms can inspect, plan with a live step tracker, launch tracked generation batches with event-driven auto-resume, and prepare mutations behind explicit review.
 
-This makes the assistant an alternative control surface over real workspace objects, not a separate chat that merely suggests text for you to copy. What it changes shows up on the pages you have open without a reload, and so does what an external MCP client changes.
+This makes the assistant an active multi-agent control surface over real workspace objects, not a disconnected chat box. What an agent or external MCP client changes appears immediately in open studio pages without reloading.
 
 ## Combination Engine
 

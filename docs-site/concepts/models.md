@@ -89,9 +89,9 @@ Vertex AI Veo uses a Google Cloud project endpoint and OAuth credentials. See [V
 | **APIMart** | `Suno V6`, `Suno V6 Wild`, `Suno V6 Mini`, `Flow Music`, `Flow Music Lyria 3.5` | Music Generation |
 | **APIMart** | `GPT-4o Mini TTS` | Text-to-Speech |
 
-## 6. Chat Assistant Models
+## 6. Multi-Agent Assistant Models
 
-The in-app [Assistant](/concepts/assistant) can use text profiles belonging to provider records of these types:
+The built-in [Multi-Agent Assistant](/concepts/assistant) can use text profiles belonging to provider records of these types:
 
 - **Google AI**
 - **Anthropic (Claude)**

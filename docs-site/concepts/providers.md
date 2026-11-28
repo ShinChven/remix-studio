@@ -53,9 +53,11 @@ See [Model Profiles](/concepts/models) for the bundled matrix.
 
 ## Assistant Compatibility
 
-Generation support and assistant-chat support are separate. The in-app assistant currently accepts provider records of type Google AI, OpenAI, Claude, Alibaba Cloud, Kimi, and MiniMax. Other provider families can still appear in project model selectors when their generators are implemented.
+Generation support and assistant-chat support are separate. The [Multi-Agent Assistant](/concepts/assistant) currently accepts provider records of type **Google AI**, **OpenAI**, **Claude**, **Alibaba Cloud**, **Kimi**, **MiniMax**, and **APIMart**. Other provider families can still appear in project model selectors when their generators are implemented.
 
-See [The Assistant](/concepts/assistant).
+Beginning in Remix Studio 2.0, bundled text profiles start at **Gemini 3.5**, **GPT-6**, and **Claude 5** (with **Gemini 3.8 TTS** replacing Gemini 2.5 TTS). Existing generation projects pinned to removed older profiles automatically fall back to the provider's current default text model, while assistant conversations prompt you to pick a current model.
+
+See [Multi-Agent Assistant](/concepts/assistant) and [Model Profiles](/concepts/models).
 
 ## API URL Overrides and Proxies
 

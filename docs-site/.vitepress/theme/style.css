@@ -1,0 +1,288 @@
+/**
+ * Remix Studio 2.0.0 — Material 3 Expressive Docs Theme
+ * Derived from the app's DEFAULT_SEED (#4F46E5 Indigo) tonal system,
+ * Roboto Flex typography, expressive corners, and spring motion.
+ */
+
+:root {
+  /* Typography matching src/m3/styles/tokens.css */
+  --vp-font-family-base:
+    'Roboto Flex', Roboto, 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --vp-font-family-mono:
+    'Roboto Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  /* M3 Expressive Light Tonal Surfaces (seed #4F46E5) */
+  --m3-surface: #fcfbff;
+  --m3-surface-low: #f5f3fa;
+  --m3-surface-container: #eeecf6;
+  --m3-surface-high: #e8e5f2;
+  --m3-surface-highest: #e1deec;
+  --m3-on-surface: #1b1b24;
+  --m3-on-surface-variant: #474656;
+  --m3-outline-variant: #c7c4d6;
+  --m3-primary: #4f46e5;
+  --m3-on-primary: #ffffff;
+  --m3-primary-container: #e2dfff;
+  --m3-on-primary-container: #130067;
+  --m3-tertiary: #7c3aed;
+  --m3-spring-spatial: cubic-bezier(0.38, 1.21, 0.22, 1);
+
+  /* VitePress Brand & Text Tokens */
+  --vp-c-brand-1: #4f46e5;
+  --vp-c-brand-2: #4338ca;
+  --vp-c-brand-3: #3730a3;
+  --vp-c-brand-soft: rgba(79, 70, 229, 0.12);
+
+  --vp-c-bg: var(--m3-surface);
+  --vp-c-bg-alt: var(--m3-surface-low);
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: var(--m3-surface-low);
+
+  --vp-c-text-1: var(--m3-on-surface);
+  --vp-c-text-2: var(--m3-on-surface-variant);
+  --vp-c-text-3: #6e6c7e;
+
+  --vp-c-border: var(--m3-outline-variant);
+  --vp-c-divider: rgba(199, 196, 214, 0.65);
+  --vp-c-gutter: rgba(199, 196, 214, 0.45);
+
+  /* Hero Display Typography & Ambient Image Glow */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #a855f7 100%);
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(79, 70, 229, 0.24) 0%,
+    rgba(124, 58, 237, 0.12) 48%,
+    transparent 74%
+  );
+  --vp-home-hero-image-filter: blur(44px);
+
+  /* Buttons */
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--m3-on-primary);
+  --vp-button-brand-bg: var(--m3-primary);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--m3-on-primary);
+  --vp-button-brand-hover-bg: #4338ca;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--m3-on-primary);
+  --vp-button-brand-active-bg: #3730a3;
+
+  --vp-button-alt-border: var(--m3-outline-variant);
+  --vp-button-alt-text: var(--m3-on-primary-container);
+  --vp-button-alt-bg: var(--m3-surface-container);
+  --vp-button-alt-hover-border: var(--m3-primary);
+  --vp-button-alt-hover-text: var(--m3-on-primary-container);
+  --vp-button-alt-hover-bg: var(--m3-primary-container);
+
+  /* Callouts & Code */
+  --vp-c-tip-1: var(--m3-primary);
+  --vp-c-tip-soft: rgba(79, 70, 229, 0.08);
+  --vp-code-block-bg: var(--m3-surface-low);
+  --vp-code-tab-bg: var(--m3-surface-container);
+}
+
+.dark {
+  /* M3 Expressive Dark Tonal Surfaces (seed #4F46E5) */
+  --m3-surface: #111118;
+  --m3-surface-low: #181822;
+  --m3-surface-container: #1f1f2c;
+  --m3-surface-high: #272736;
+  --m3-surface-highest: #303042;
+  --m3-on-surface: #e6e4f0;
+  --m3-on-surface-variant: #b8b5c9;
+  --m3-outline-variant: #444354;
+  --m3-primary: #c4c0ff;
+  --m3-on-primary: #221688;
+  --m3-primary-container: #3730a3;
+  --m3-on-primary-container: #e2dfff;
+
+  --vp-c-brand-1: #c4c0ff;
+  --vp-c-brand-2: #a5b4fc;
+  --vp-c-brand-3: #818cf8;
+  --vp-c-brand-soft: rgba(196, 192, 255, 0.14);
+
+  --vp-c-bg: var(--m3-surface);
+  --vp-c-bg-alt: var(--m3-surface-low);
+  --vp-c-bg-elv: var(--m3-surface-container);
+  --vp-c-bg-soft: var(--m3-surface-low);
+
+  --vp-c-text-1: var(--m3-on-surface);
+  --vp-c-text-2: var(--m3-on-surface-variant);
+  --vp-c-text-3: #8c89a0;
+
+  --vp-c-border: var(--m3-outline-variant);
+  --vp-c-divider: rgba(68, 67, 84, 0.7);
+  --vp-c-gutter: rgba(68, 67, 84, 0.45);
+
+  --vp-home-hero-name-background: linear-gradient(135deg, #c4c0ff 0%, #d8b4fe 55%, #f0abfc 100%);
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle at 50% 50%,
+    rgba(129, 140, 248, 0.28) 0%,
+    rgba(192, 132, 252, 0.14) 48%,
+    transparent 74%
+  );
+
+  --vp-button-brand-text: #1c1275;
+  --vp-button-brand-bg: #c4c0ff;
+  --vp-button-brand-hover-text: #1c1275;
+  --vp-button-brand-hover-bg: #d5d2ff;
+  --vp-button-brand-active-bg: #a5b4fc;
+
+  --vp-button-alt-border: var(--m3-outline-variant);
+  --vp-button-alt-text: var(--m3-on-primary-container);
+  --vp-button-alt-bg: var(--m3-surface-container);
+  --vp-button-alt-hover-border: var(--m3-primary);
+  --vp-button-alt-hover-text: var(--m3-on-primary-container);
+  --vp-button-alt-hover-bg: var(--m3-primary-container);
+
+  --vp-c-tip-soft: rgba(196, 192, 255, 0.1);
+  --vp-code-block-bg: var(--m3-surface-low);
+  --vp-code-tab-bg: var(--m3-surface-container);
+}
+
+/* Expressive pill buttons with M3 spring curves */
+.VPButton {
+  border-radius: 9999px !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    transform 320ms var(--m3-spring-spatial),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 220ms ease !important;
+}
+
+.VPButton:hover {
+  transform: translateY(-1px);
+}
+
+.VPButton:active {
+  transform: scale(0.98);
+}
+
+/* Hero screenshot frame */
+.VPHero .image-src {
+  border-radius: 24px;
+  border: 1px solid var(--vp-c-border);
+  box-shadow:
+    0 12px 32px -8px rgba(79, 70, 229, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dark .VPHero .image-src {
+  box-shadow:
+    0 16px 40px -10px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(196, 192, 255, 0.14);
+}
+
+.VPHero .name,
+.VPHero .text {
+  letter-spacing: -0.02em;
+}
+
+/* Expressive M3 Feature Cards */
+.VPFeature {
+  border-radius: 24px !important;
+  background-color: var(--m3-surface-low) !important;
+  border: 1px solid var(--vp-c-divider) !important;
+  transition:
+    transform 360ms var(--m3-spring-spatial),
+    border-color 200ms ease,
+    background-color 200ms ease,
+    box-shadow 260ms ease !important;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+  border-color: var(--vp-c-brand-1) !important;
+  background-color: var(--m3-surface-container) !important;
+  box-shadow: 0 8px 24px -8px rgba(79, 70, 229, 0.14);
+}
+
+.dark .VPFeature:hover {
+  box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.48);
+}
+
+.VPFeature .icon {
+  border-radius: 16px !important;
+  background-color: var(--m3-primary-container) !important;
+}
+
+/* Tonal Pill Sidebar Active Items */
+.VPSidebarItem.is-active > .item > .link {
+  background-color: var(--vp-c-brand-soft);
+  border-radius: 9999px;
+  padding-left: 14px;
+  padding-right: 14px;
+  font-weight: 600;
+}
+
+.VPSidebarItem.level-1 .link {
+  border-radius: 9999px;
+  padding-left: 14px;
+  padding-right: 14px;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.VPSidebarItem.level-1:not(.is-active) > .item > .link:hover {
+  background-color: var(--m3-surface-container);
+}
+
+/* Search Pill Button */
+.DocSearch-Button {
+  border-radius: 9999px !important;
+  background-color: var(--m3-surface-container) !important;
+  border: 1px solid transparent !important;
+  transition: border-color 180ms ease, background-color 180ms ease !important;
+}
+
+.DocSearch-Button:hover {
+  border-color: var(--vp-c-brand-1) !important;
+}
+
+/* Doc Containers, Tables & Code Blocks */
+.vp-doc .custom-block {
+  border-radius: 16px;
+}
+
+.vp-doc div[class*='language-'] {
+  border-radius: 16px;
+  border: 1px solid var(--vp-c-divider);
+}
+
+.vp-doc table {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.vp-doc th {
+  background-color: var(--m3-surface-container);
+  font-weight: 600;
+}
+
+.vp-doc :not(pre) > code {
+  border-radius: 6px;
+}
+
+/* Subtle glass header matching M3 app bar */
+.VPNavBar.has-sidebar .content-body,
+.VPNavBar:not(.home) {
+  backdrop-filter: saturate(140%) blur(12px);
+}
+
+/* Light/dark screenshot toggle matching VitePress .dark class */
+.dark .light-only {
+  display: none;
+}
+
+html:not(.dark) .dark-only {
+  display: none;
+}
+
+.vp-doc .light-only img,
+.vp-doc .dark-only img {
+  border-radius: 20px;
+  border: 1px solid var(--vp-c-border);
+}

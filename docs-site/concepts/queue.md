@@ -88,16 +88,16 @@ Clearing a failed job removes the job record; it does not delete an album item t
 
 ## Queue Monitor
 
-Open **Projects → Queue Monitor** to see:
+Open **Projects → Queue Monitor** to view project and provider list panes, summary stat tiles, and an **Idle providers** summary:
 
 - Total pending, processing, and failed jobs.
 - Active slots versus configured concurrency.
-- Project-grouped and provider-grouped views.
+- Project-grouped and provider-grouped list panes.
 - Waiting, queued, running, and detached counts.
 - Provider/model and output metadata for individual jobs.
 - Scoped controls for clearing failures.
 
-The monitor polls for current server state. Project pages additionally receive live WebSocket events. MCP clients and the assistant read the same counts with `get_queue_status` and clear failures with `clear_failed_jobs`.
+The monitor polls for current server state while project pages receive live WebSocket events. MCP clients and the [Multi-Agent Assistant](/concepts/assistant) read the same counts with `get_queue_status` (rendering the `queue-monitor` MCP App view) and clear failures with `clear_failed_jobs`. Starting jobs via `start_jobs` also creates a tracked generation batch (`get_generation_batch`) that displays live progress in the `generation-batch` MCP App and automatically resumes the assistant when all jobs finish.
 
 ## Finish Notifications
 
