@@ -680,6 +680,7 @@ model AssistantConversation {
   messages             AssistantMessage[]
   pendingConfirmations AssistantPendingConfirmation[]
   resources            AssistantConversationResource[]
+  swarmRuns            AssistantSwarmRun[]
 
   @@index([userId])
   @@index([userId, updatedAt])
@@ -719,6 +720,8 @@ model AssistantConversationResource {
 model AssistantMessage {
   id             String   @id @default(uuid())
   conversationId String
+  // Null on Coordinator transcript messages; set when isolated to a swarm worker.
+  swarmAgentId   String?
   // 'system' | 'user' | 'assistant' | 'tool'
   role           String
   content        String   @default("") @db.Text
@@ -741,14 +744,18 @@ model AssistantMessage {
   createdAt      DateTime @default(now())
 
   conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  swarmAgent   AssistantSwarmAgent?  @relation(fields: [swarmAgentId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([conversationId, createdAt])
+  @@index([swarmAgentId, createdAt])
 }
 
 model AssistantPendingConfirmation {
   id             String   @id @default(uuid())
   conversationId String
+  // Null when proposed by the Coordinator; set when proposed by a write-capable swarm worker.
+  swarmAgentId   String?
   // The assistant message that proposed this call.
   messageId      String
   // Matches one entry in AssistantMessage.toolCalls.
@@ -763,9 +770,74 @@ model AssistantPendingConfirmation {
   createdAt      DateTime @default(now())
 
   conversation AssistantConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  swarmAgent   AssistantSwarmAgent?  @relation(fields: [swarmAgentId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([conversationId, status])
+  @@index([swarmAgentId, status])
+}
+
+/// One multi-agent swarm run spawned inside an assistant conversation.
+model AssistantSwarmRun {
+  id             String    @id @default(uuid())
+  conversationId String
+  goal           String    @db.Text
+  /// 'running' | 'awaiting_confirmation' | 'completed' | 'stopped' | 'failed'
+  status         String    @default("running")
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  conversation      AssistantConversation           @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  agents            AssistantSwarmAgent[]
+  blackboardEntries AssistantSwarmBlackboardEntry[]
+
+  @@index([conversationId, createdAt])
+}
+
+/// An isolated worker agent belonging to a swarm run.
+model AssistantSwarmAgent {
+  id            String   @id @default(uuid())
+  swarmRunId    String
+  name          String
+  role          String
+  brief         String   @db.Text
+  providerId    String?
+  modelConfigId String?
+  /// 'read' | 'propose' | 'write'
+  toolScope     String   @default("read")
+  /// 'queued' | 'running' | 'waiting' | 'awaiting_confirmation' | 'completed' | 'failed' | 'stopped'
+  status        String   @default("queued")
+  summary       String?  @db.Text
+  inputTokens   Int      @default(0)
+  outputTokens  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  swarmRun             AssistantSwarmRun              @relation(fields: [swarmRunId], references: [id], onDelete: Cascade)
+  messages             AssistantMessage[]
+  pendingConfirmations AssistantPendingConfirmation[]
+
+  @@index([swarmRunId, createdAt])
+}
+
+/// Shared blackboard / draft entry written by a swarm worker or Coordinator.
+model AssistantSwarmBlackboardEntry {
+  id             String   @id @default(uuid())
+  swarmRunId     String
+  conversationId String
+  key            String
+  title          String?
+  content        String   @db.Text
+  dataJson       Json?
+  authorAgentId  String?
+  authorName     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  swarmRun AssistantSwarmRun @relation(fields: [swarmRunId], references: [id], onDelete: Cascade)
+
+  @@unique([swarmRunId, key])
+  @@index([conversationId, updatedAt])
 }
 
 model SocialAccount {
@@ -883,15 +955,22 @@ model PostWatermarkSetting {
 // auto-tagging off rather than deleting the setting.
 /// Per-user chat assistant preferences, so they follow the account across browsers.
 model AssistantSetting {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
+  id                    String   @id @default(uuid())
+  userId                String   @unique
   /// Providers enabled for chat. Empty means every chat-capable provider.
-  enabledProviderIds String[] @default([])
+  enabledProviderIds    String[] @default([])
   /// Last provider and model picked in the composer.
-  lastProviderId     String?
-  lastModelId        String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  lastProviderId        String?
+  lastModelId           String?
+  /// Whether multi-agent Swarm Mode is enabled by default for this user.
+  swarmEnabled          Boolean  @default(false)
+  /// Optional default provider/model override for spawned swarm workers.
+  swarmWorkerProviderId String?
+  swarmWorkerModelId    String?
+  /// Reusable swarm presets (templates of roles, briefs, model pairings).
+  swarmPresetsJson      Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

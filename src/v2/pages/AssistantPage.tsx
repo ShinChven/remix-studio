@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -6,6 +6,7 @@ import {
   AssistantTurnDisconnectedError,
   cancelAssistantTurn,
   confirmAssistantTool,
+  confirmAssistantToolsBatch,
   createAssistantConversation,
   deleteAssistantConversation,
   deleteAssistantConversationResource,
@@ -14,6 +15,7 @@ import {
   fetchAssistantConversationResources,
   fetchAssistantConversations,
   fetchAssistantProviders,
+  fetchAssistantSwarmState,
   fetchAssistantTools,
   fetchLibrary,
   fetchProject,
@@ -28,12 +30,16 @@ import {
   type AssistantMessage,
   type AssistantPendingConfirmation,
   type AssistantStatusEvent,
+  type AssistantSwarmBlackboardEntry,
+  type AssistantSwarmPreset,
+  type AssistantSwarmRun,
   type AssistantToolCallData,
   type AssistantTurnResult,
 } from '../../api';
-import { filterEnabledAssistantProviders, getCachedAssistantSettings, loadAssistantSettings, normalizeAssistantProviderSelection, rememberAssistantModel } from '../../lib/assistant-provider-settings';
+import { filterEnabledAssistantProviders, getCachedAssistantSettings, loadAssistantSettings, normalizeAssistantProviderSelection, rememberAssistantModel, saveAssistantSettings } from '../../lib/assistant-provider-settings';
 import { consumePwaShareHandoff } from '../../lib/pwa-share';
 import {
+  Badge,
   Button,
   ChatMessage,
   ChatThoughtAccordion,
@@ -48,12 +54,14 @@ import {
 } from '../../m3';
 import type { Library, Project, Provider } from '../../types';
 import { getTextModelsForProvider } from '../../types';
+import { AgentSidePanel, type LiveAgentActivity, type LiveStepEntry } from '../components/assistant/AgentSidePanel';
 import { ApprovedToolsDialog } from '../components/assistant/ApprovedToolsDialog';
+import { ChatHistoryDialog } from '../components/assistant/ChatHistoryDialog';
 import { McpAppFrame } from '../components/assistant/McpAppFrame';
 import { Composer, type AttachedImage, type BoundContext, type ComposerHandle } from '../components/assistant/Composer';
 import { AssistantHero } from '../components/assistant/Hero';
 import type { ConversationUsage } from '../components/assistant/ContextUsage';
-import { ResourcePanel } from '../components/assistant/ResourcePanel';
+import { SwarmRunCard } from '../components/assistant/SwarmRunCard';
 import { Lightbox } from '../components/Lightbox';
 import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
 import { ProjectPreviewDialog } from '../components/project/ProjectPreviewDialog';
@@ -63,6 +71,7 @@ import { Markdown } from '../ui/Markdown';
 import { LoadingState } from '../ui/Page';
 import { useToast } from '../ui/useToast';
 import { useCopy } from '../lib/useCopy';
+import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
 
 type AssistantNavigationState = {
   initialMessage?: string;
@@ -327,6 +336,7 @@ export function AssistantPage() {
   const copyToClipboard = useCopy();
   // Wide enough to keep the conversation list docked beside the chat.
   const docked = useMediaQuery('(min-width: 1200px)', true);
+  const topBarSlot = useContext(TopBarSlotContext);
   const { id: routeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -337,6 +347,19 @@ export function AssistantPage() {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [resources, setResources] = useState<AssistantConversationResource[]>([]);
   const [pendingConfirmation, setPendingConfirmation] = useState<AssistantPendingConfirmation | null>(null);
+  const [pendingConfirmations, setPendingConfirmations] = useState<AssistantPendingConfirmation[]>([]);
+  const [swarmRuns, setSwarmRuns] = useState<AssistantSwarmRun[]>([]);
+  const [blackboardEntries, setBlackboardEntries] = useState<AssistantSwarmBlackboardEntry[]>([]);
+  const [liveSteps, setLiveSteps] = useState<LiveStepEntry[]>([]);
+  const [liveAgentActivity, setLiveAgentActivity] = useState<Record<string, LiveAgentActivity>>({});
+  const [inspectedAgentId, setInspectedAgentId] = useState<string | null>(null);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+
+  const [swarmMode, setSwarmMode] = useState<boolean>(() => getCachedAssistantSettings()?.swarmEnabled ?? false);
+  const [workerProviderId, setWorkerProviderId] = useState<string | null>(() => getCachedAssistantSettings()?.swarmWorkerProviderId ?? null);
+  const [workerModelId, setWorkerModelId] = useState<string | null>(() => getCachedAssistantSettings()?.swarmWorkerModelId ?? null);
+  const [swarmPresets, setSwarmPresets] = useState<AssistantSwarmPreset[]>(() => getCachedAssistantSettings()?.swarmPresets ?? []);
+
   const [providers, setProviders] = useState<Provider[]>([]);
   const [selectedProviderId, setSelectedProviderId] = useState<string>(() => getCachedAssistantSettings()?.lastProviderId || '');
   const [selectedModelId, setSelectedModelId] = useState<string>(() => getCachedAssistantSettings()?.lastModelId || '');
@@ -391,8 +414,6 @@ export function AssistantPage() {
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [approvedToolsModalOpen, setApprovedToolsModalOpen] = useState(false);
-  const [editingTitle, setEditingTitle] = useState<string | null>(null);
-  const [editingTitleValue, setEditingTitleValue] = useState('');
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessageContent, setEditingMessageContent] = useState('');
 
@@ -418,6 +439,25 @@ export function AssistantPage() {
   isSendingRef.current = isSending;
 
   const transcriptRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const swarmRefreshRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleSwarmRefresh = useCallback(() => {
+    const conversationId = streamingConversationRef.current ?? activeConversationIdRef.current;
+    if (!conversationId || swarmRefreshRef.current) return;
+    swarmRefreshRef.current = setTimeout(async () => {
+      swarmRefreshRef.current = null;
+      if (activeConversationIdRef.current !== conversationId) return;
+      try {
+        const data = await fetchAssistantSwarmState(conversationId);
+        if (activeConversationIdRef.current !== conversationId) return;
+        setSwarmRuns(data.swarmRuns);
+        setBlackboardEntries(data.blackboardEntries);
+        setPendingConfirmations(data.pendingConfirmations);
+      } catch {
+        // non-critical live refresh
+      }
+    }, 350);
+  }, []);
 
   /**
    * Pull the transcript rows a running turn has already written — the assistant
@@ -437,6 +477,9 @@ export function AssistantPage() {
         if (activeConversationIdRef.current !== conversationId) return;
         setMessages(data.messages);
         setResources(data.resources);
+        setSwarmRuns(data.swarmRuns);
+        setBlackboardEntries(data.blackboardEntries);
+        setPendingConfirmations(data.pendingConfirmations);
       } catch {
         // Mid-turn nicety — the settle at the end of the turn is the real one.
       }
@@ -445,27 +488,86 @@ export function AssistantPage() {
 
   useEffect(() => () => {
     if (transcriptRefreshRef.current) clearTimeout(transcriptRefreshRef.current);
+    if (swarmRefreshRef.current) clearTimeout(swarmRefreshRef.current);
   }, []);
 
   /** Progress line updates, shared by every path that reads a turn stream. */
   const handleTurnStatusEvent = useCallback((event: AssistantStatusEvent, seq: number) => {
     turnSeqRef.current = seq;
     setIsReconnecting(false);
+    const agentId = typeof event.agentId === 'string' ? event.agentId : null;
+
+    if (
+      event.type === 'swarm_started' ||
+      event.type === 'agent_spawned' ||
+      event.type === 'agent_status_changed' ||
+      event.type === 'agent_completed' ||
+      event.type === 'swarm_completed'
+    ) {
+      scheduleSwarmRefresh();
+      if (agentId && event.type === 'agent_status_changed' && typeof event.status === 'string') {
+        setLiveAgentActivity((prev) => ({
+          ...prev,
+          [agentId]: { ...(prev[agentId] ?? {}), status: event.status as string },
+        }));
+      }
+      if (agentId && event.type === 'agent_completed') {
+        setLiveAgentActivity((prev) => {
+          const next = { ...prev };
+          delete next[agentId];
+          return next;
+        });
+      }
+      return;
+    }
+
+    if (agentId) {
+      // Worker-scoped event: update that worker's live activity preview.
+      if (event.type === 'provider_thinking' && typeof event.title === 'string') {
+        setLiveAgentActivity((prev) => ({
+          ...prev,
+          [agentId]: { ...(prev[agentId] ?? {}), thinking: event.title as string, tool: undefined },
+        }));
+      } else if (event.type === 'tool_call_started') {
+        const label = formatToolTitle((event as any).call?.name);
+        setLiveAgentActivity((prev) => ({
+          ...prev,
+          [agentId]: { ...(prev[agentId] ?? {}), tool: label },
+        }));
+      } else if (event.type === 'tool_call_finished' || event.type === 'confirmation_required') {
+        scheduleSwarmRefresh();
+      }
+      return;
+    }
+
     // Another tab (or this one, before a reload) may have pressed Stop.
     if (event.type === 'stop_requested') setIsStopping(true);
     if (event.type === 'provider_thinking' && typeof event.title === 'string') {
       setCurrentThinkingTitle(event.title);
       setCurrentToolTitle('');
     }
-    if (
-      event.type === 'tool_call_started' ||
-      event.type === 'tool_call_finished' ||
-      event.type === 'confirmation_required'
-    ) {
+    if (event.type === 'tool_call_started') {
+      const call = (event as any).call;
+      const label = formatToolTitle(call?.name);
+      setCurrentToolTitle(label);
+      setLiveSteps((prev) => [
+        ...prev.slice(-24),
+        { id: String(call?.id || `${Date.now()}-${seq}`), label, status: 'running', timestamp: Date.now() },
+      ]);
+    }
+    if (event.type === 'tool_call_finished') {
+      const call = (event as any).call;
+      const isErr = Boolean((event as any).isError);
+      setCurrentToolTitle(formatToolTitle(call?.name));
+      setLiveSteps((prev) =>
+        prev.map((step) => (step.id === String(call?.id) ? { ...step, status: isErr ? 'error' : 'done' } : step)),
+      );
+      scheduleTranscriptRefresh();
+    }
+    if (event.type === 'confirmation_required') {
       setCurrentToolTitle(formatToolTitle((event as any).call?.name));
     }
-    if (event.type === 'tool_call_finished') scheduleTranscriptRefresh();
-  }, [scheduleTranscriptRefresh]);
+  }, [scheduleSwarmRefresh, scheduleTranscriptRefresh]);
 
   /**
    * Read one turn to its verdict, reconnecting to the server-side loop whenever
@@ -524,6 +626,10 @@ export function AssistantPage() {
     if (activeConversationIdRef.current !== conversationId) return data;
     setMessages(data.messages);
     setResources(data.resources);
+    setSwarmRuns(data.swarmRuns);
+    setBlackboardEntries(data.blackboardEntries);
+    setPendingConfirmations(data.pendingConfirmations);
+    setLiveAgentActivity({});
     if (result && result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
       setPendingConfirmation(result.confirmation);
     } else {
@@ -551,16 +657,31 @@ export function AssistantPage() {
     await settleAfterTurn(conversationId, null).catch(() => {});
   }, [settleAfterTurn, t]);
 
-  // ─── Load providers ───
+  // ─── Load providers & swarm settings ───
   useEffect(() => {
     Promise.all([fetchAssistantProviders(), loadAssistantSettings()])
       .then(([data, settings]) => {
         // An open conversation sets its own model; otherwise start from the account's last pick.
         setSelectedProviderId((current) => current || settings.lastProviderId || '');
         setSelectedModelId((current) => current || settings.lastModelId || '');
+        setSwarmMode(settings.swarmEnabled);
+        setWorkerProviderId(settings.swarmWorkerProviderId);
+        setWorkerModelId(settings.swarmWorkerModelId);
+        setSwarmPresets(settings.swarmPresets);
         setProviders(filterEnabledAssistantProviders(data.providers, settings.enabledProviderIds));
       })
       .catch(() => {});
+  }, []);
+
+  const handleToggleSwarmMode = useCallback((enabled: boolean) => {
+    setSwarmMode(enabled);
+    void saveAssistantSettings({ swarmEnabled: enabled }).catch(() => {});
+  }, []);
+
+  const handleChangeWorkerModel = useCallback((providerId: string | null, modelId: string | null) => {
+    setWorkerProviderId(providerId);
+    setWorkerModelId(modelId);
+    void saveAssistantSettings({ swarmWorkerProviderId: providerId, swarmWorkerModelId: modelId }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -692,6 +813,11 @@ export function AssistantPage() {
 
       setMessages(data.messages);
       setResources(data.resources);
+      setSwarmRuns(data.swarmRuns);
+      setBlackboardEntries(data.blackboardEntries);
+      setPendingConfirmations(data.pendingConfirmations);
+      setInspectedAgentId(null);
+      setLiveSteps([]);
       if (conversation.providerId) setSelectedProviderId(conversation.providerId);
       if (conversation.modelConfigId) setSelectedModelId(conversation.modelConfigId);
       // A confirmation the conversation is still waiting on lives in the
@@ -865,7 +991,10 @@ export function AssistantPage() {
       if (streamingConversationRef.current || isSendingRef.current) return;
       setMessages(data.messages);
       setResources(data.resources);
+      setSwarmRuns(data.swarmRuns);
+      setBlackboardEntries(data.blackboardEntries);
       setPendingConfirmation(data.pendingConfirmation);
+      setPendingConfirmations(data.pendingConfirmations);
       if (data.activeTurn) void attachToActiveTurn(conversationId, data.activeTurn);
     } catch {
       // Offline or a hiccup — keep what is on screen and try again on the next wake.
@@ -902,7 +1031,12 @@ export function AssistantPage() {
       justCreatedIdRef.current = null;
       setMessages([]);
       setResources([]);
+      setSwarmRuns([]);
+      setBlackboardEntries([]);
       setPendingConfirmation(null);
+      setPendingConfirmations([]);
+      setInspectedAgentId(null);
+      setLiveSteps([]);
     }
   }, [activeConversationId, loadConversation]);
 
@@ -942,8 +1076,18 @@ export function AssistantPage() {
 
   // ─── Send message ───
   const handleSend = async (text: string, contexts: BoundContext[], images: AttachedImage[], overrideProviderId?: string, overrideModelId?: string) => {
-    const trimmedText = text.trim();
-    if (!trimmedText && contexts.length === 0 && images.length === 0 || isSending) return;
+    const rawTrimmed = text.trim();
+    const swarmCommandMatch = rawTrimmed.match(/^\/swarm(?:\s+([\s\S]*))?$/i);
+    const triggeredByCommand = Boolean(swarmCommandMatch);
+    const trimmedText = swarmCommandMatch ? (swarmCommandMatch[1] ?? '').trim() : rawTrimmed;
+    if (triggeredByCommand && !trimmedText && contexts.length === 0 && images.length === 0) {
+      handleToggleSwarmMode(true);
+      toast.success(t('v2.assistant.swarm.commandEnabled', 'Swarm Mode enabled — enter your task or prefix any message with /swarm.'));
+      return;
+    }
+    if ((!trimmedText && contexts.length === 0 && images.length === 0) || isSending) return;
+
+    const useSwarmForTurn = swarmMode || triggeredByCommand;
 
     let finalContent = trimmedText;
     // Embed images as [IMAGE_ATTACHMENTS] block at the start
@@ -1012,10 +1156,17 @@ export function AssistantPage() {
     setMessages((prev) => [...prev, optimisticUserMsg]);
 
     turnSeqRef.current = 0;
+    setLiveSteps([]);
 
     try {
       const outcome = await consumeTurn(currentConversationId, (signal) =>
-        sendAssistantMessage(currentConversationId!, finalContent, handleTurnStatusEvent, signal));
+        sendAssistantMessage(
+          currentConversationId!,
+          finalContent,
+          handleTurnStatusEvent,
+          signal,
+          { swarmMode: useSwarmForTurn, workerProviderId, workerModelId },
+        ));
       if (outcome.status === 'abandoned') return;
       // Reload full message list for consistency
       await settleAfterTurn(currentConversationId, outcome.result);
@@ -1097,6 +1248,7 @@ export function AssistantPage() {
           decision,
           handleTurnStatusEvent,
           signal,
+          { swarmMode, workerProviderId, workerModelId },
         ));
       if (outcome.status === 'abandoned') return;
       await settleAfterTurn(activeConversationId, outcome.result);
@@ -1125,6 +1277,68 @@ export function AssistantPage() {
       if (activeConversationId) refreshResources(activeConversationId);
     } finally {
       releaseTurnIndicator();
+    }
+  };
+
+  // ─── Phase 2: Per-worker & batched confirmations from Agent Side Panel ───
+  const handleConfirmSingle = async (
+    confirmation: AssistantPendingConfirmation,
+    decision: 'confirm' | 'confirm_tool' | 'cancel',
+  ) => {
+    if (!activeConversationId) return;
+    if (!confirmation.swarmAgentId) {
+      setPendingConfirmation(confirmation);
+      await handleConfirmation(decision);
+      return;
+    }
+    try {
+      await confirmAssistantToolsBatch(activeConversationId, [confirmation.id], decision);
+      const data = await fetchAssistantConversation(activeConversationId);
+      if (activeConversationIdRef.current === activeConversationId) {
+        setMessages(data.messages);
+        setResources(data.resources);
+        setSwarmRuns(data.swarmRuns);
+        setBlackboardEntries(data.blackboardEntries);
+        setPendingConfirmation(data.pendingConfirmation);
+        setPendingConfirmations(data.pendingConfirmations);
+      }
+    } catch (e) {
+      toast.error((e as Error)?.message || 'Failed to process confirmation');
+    }
+  };
+
+  const handleConfirmAll = async (decision: 'confirm' | 'cancel') => {
+    if (!activeConversationId || pendingConfirmations.length === 0) return;
+    try {
+      await confirmAssistantToolsBatch(
+        activeConversationId,
+        pendingConfirmations.map((c) => c.id),
+        decision,
+      );
+      const data = await fetchAssistantConversation(activeConversationId);
+      if (activeConversationIdRef.current === activeConversationId) {
+        setMessages(data.messages);
+        setResources(data.resources);
+        setSwarmRuns(data.swarmRuns);
+        setBlackboardEntries(data.blackboardEntries);
+        setPendingConfirmation(data.pendingConfirmation);
+        setPendingConfirmations(data.pendingConfirmations);
+      }
+    } catch (e) {
+      toast.error((e as Error)?.message || 'Failed to process confirmations');
+    }
+  };
+
+  const handleInsertComposerText = (text: string) => {
+    if (composerHandleRef.current) {
+      composerHandleRef.current.insertText(text);
+    } else {
+      setComposerDraft((current) => ({
+        inputText: current.inputText ? `${current.inputText}\n\n${text}` : text,
+        boundContexts: current.boundContexts,
+        attachedImages: current.attachedImages,
+        key: current.key + 1,
+      }));
     }
   };
 
@@ -1180,21 +1394,6 @@ export function AssistantPage() {
     setDeleteTarget(null);
   };
 
-  // ─── Rename conversation ───
-  const handleRenameSubmit = async (id: string) => {
-    const title = editingTitleValue.trim();
-    if (!title) return;
-    try {
-      await updateAssistantConversation(id, { title });
-      setConversations((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, title } : c)),
-      );
-    } catch {
-      toast.error('Failed to rename');
-    }
-    setEditingTitle(null);
-  };
-
   // ─── Edit message ───
   const handleEditSubmit = async (messageId: string) => {
     const text = editingMessageContent.trim();
@@ -1220,7 +1419,14 @@ export function AssistantPage() {
 
     try {
       const outcome = await consumeTurn(activeConversationId, (signal) =>
-        editAssistantMessage(activeConversationId, messageId, text, handleTurnStatusEvent, signal));
+        editAssistantMessage(
+          activeConversationId,
+          messageId,
+          text,
+          handleTurnStatusEvent,
+          signal,
+          { swarmMode, workerProviderId, workerModelId },
+        ));
       if (outcome.status === 'abandoned') return;
       await settleAfterTurn(activeConversationId, outcome.result);
 
@@ -1252,6 +1458,26 @@ export function AssistantPage() {
     return byId;
   }, [messages]);
 
+  const swarmRunById = useMemo(() => {
+    const map = new Map<string, AssistantSwarmRun>();
+    for (const run of swarmRuns) map.set(run.id, run);
+    return map;
+  }, [swarmRuns]);
+
+  const extractSwarmRunId = (message: AssistantMessage): string | null => {
+    if (message.toolResultJson && typeof message.toolResultJson === 'object') {
+      const id = (message.toolResultJson as Record<string, unknown>).swarmRunId;
+      if (typeof id === 'string') return id;
+    }
+    try {
+      const parsed = JSON.parse(unwrapToolResult(message.content));
+      if (parsed && typeof parsed.swarmRunId === 'string') return parsed.swarmRunId;
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
   /**
    * The tools one stretch of the turn ran, folded into a single row that opens
    * onto each call's arguments and result. Calls with an MCP App view show it
@@ -1265,6 +1491,19 @@ export function AssistantPage() {
     const views = activeConversationId
       ? calls.filter(({ call, message }) => appViews[call.name] && message.status !== 'error')
       : [];
+    const inlineRuns: AssistantSwarmRun[] = [];
+    const seenRunIds = new Set<string>();
+    for (const { call, message } of calls) {
+      if (call.name !== 'spawn_workers' || message.status === 'error') continue;
+      const runId = extractSwarmRunId(message);
+      if (runId && !seenRunIds.has(runId)) {
+        const run = swarmRunById.get(runId);
+        if (run) {
+          seenRunIds.add(runId);
+          inlineRuns.push(run);
+        }
+      }
+    }
     return (
       <div key={key} className="v2-chat-steps">
         <details className="v2-chat-steps__group" data-error={errors > 0 ? '' : undefined}>
@@ -1302,6 +1541,9 @@ export function AssistantPage() {
             })}
           </div>
         </details>
+        {inlineRuns.map((run) => (
+          <SwarmRunCard key={run.id} run={run} onSelectAgent={handleOpenWorkerInspector} />
+        ))}
         {views.map(({ call }) => (
           <McpAppFrame
             key={call.id}
@@ -1559,109 +1801,68 @@ export function AssistantPage() {
     return true;
   });
 
-  const conversationsPanel = (
-    <div className="v2-chat-side">
-      <div className="v2-chat-side__list" role="list">
-        {conversations.length === 0 ? (
-          <Text variant="body-small" className="v2-chat-side__empty">{t('assistant.noConversations')}</Text>
-        ) : (
-          conversations.map((conv) => {
-            const active = conv.id === activeConversationId;
-            return (
-              <div
-                key={conv.id}
-                role="listitem"
-                className="v2-chat-conv"
-                data-active={active ? '' : undefined}
-                onClick={() => {
-                  if (!active) navigate(`/assistant/${conv.id}`);
-                  if (!docked) setRightPanelOpen(false);
-                }}
-              >
-                <Icon name="chat_bubble" size={18} />
-                {editingTitle === conv.id ? (
-                  <input
-                    autoFocus
-                    className="v2-chat-conv__input"
-                    value={editingTitleValue}
-                    onChange={(e) => setEditingTitleValue(e.target.value)}
-                    onBlur={() => handleRenameSubmit(conv.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleRenameSubmit(conv.id);
-                      if (e.key === 'Escape') setEditingTitle(null);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <span
-                    className="v2-chat-conv__title"
-                    title={conv.title}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      setEditingTitle(conv.id);
-                      setEditingTitleValue(conv.title);
-                    }}
-                  >
-                    {conv.title}
-                  </span>
-                )}
-                <span className="v2-chat-conv__actions" onClick={(e) => e.stopPropagation()}>
-                  <IconButton
-                    size="xs"
-                    icon="edit"
-                    label={t('assistant.renameConversation', { defaultValue: 'Rename' })}
-                    onClick={() => {
-                      setEditingTitle(conv.id);
-                      setEditingTitleValue(conv.title);
-                    }}
-                  />
-                  <IconButton size="xs" icon="delete" label={t('assistant.deleteConversation')} onClick={() => setDeleteTarget(conv.id)} />
-                </span>
-              </div>
-            );
-          })
-        )}
-      </div>
-      {activeConversationId && resources.length > 0 && (
-        <ResourcePanel
-          resources={resources}
-          onMention={handleMentionResource}
-          onRemove={handleRemoveResource}
-          onNavigate={() => {
-            if (!docked) setRightPanelOpen(false);
-          }}
+  const activeWorkersCount = swarmRuns[0]
+    ? swarmRuns[0].agents.filter((a) => a.status === 'running' || a.status === 'queued').length
+    : 0;
+  const agentPanelBadgeCount = activeWorkersCount + pendingConfirmations.length;
+
+  const handleOpenWorkerInspector = (agentId: string) => {
+    setInspectedAgentId(agentId);
+  };
+
+  const headerActionButtons = (
+    <>
+      <IconButton
+        icon="add_comment"
+        label={t('assistant.newChat', 'New chat')}
+        tooltip
+        onClick={handleNewConversationClick}
+      />
+      <IconButton
+        icon="history"
+        label={t('v2.assistant.searchHistory', { defaultValue: 'Search chat history' })}
+        tooltip
+        onClick={() => setHistoryDialogOpen(true)}
+      />
+      <IconButton icon="tune" label={t('v2.assistant.chatSettings', { defaultValue: 'Chat settings' })} tooltip href={settingsPath} />
+      <Badge
+        value={agentPanelBadgeCount}
+        invisible={agentPanelBadgeCount === 0}
+        label={t('v2.assistant.agentPanel.activeBadge', { defaultValue: '{{count}} active', count: agentPanelBadgeCount })}
+      >
+        <IconButton
+          icon={rightPanelOpen ? 'right_panel_close' : 'right_panel_open'}
+          label={rightPanelOpen
+            ? t('v2.assistant.agentPanel.collapse', { defaultValue: 'Collapse agent panel' })
+            : t('v2.assistant.agentPanel.expand', { defaultValue: 'Expand agent panel' })}
+          tooltip
+          selected={rightPanelOpen}
+          onClick={() => setRightPanelOpen(!rightPanelOpen)}
         />
-      )}
-    </div>
+      </Badge>
+    </>
   );
 
   return (
     <div className="v2-chat" data-docked={docked && rightPanelOpen ? '' : undefined}>
       <div className="v2-chat__main">
-        <header className="v2-chat__header">
-          <Text variant="title-large" className="v2-chat__title v2-ellipsis">{assistantTitle}</Text>
-          <div className="v2-chat__header-actions">
-            {activeConversationId && (
-              <IconButton icon="verified_user" label={t('assistant.approvedTools.title', 'Tool approvals')} tooltip onClick={() => setApprovedToolsModalOpen(true)} />
-            )}
-            <IconButton icon="tune" label={t('v2.assistant.chatSettings', { defaultValue: 'Chat settings' })} tooltip href={settingsPath} />
-            <IconButton
-              icon={rightPanelOpen ? 'right_panel_close' : 'right_panel_open'}
-              label={rightPanelOpen
-                ? t('v2.assistant.collapseConversations', { defaultValue: 'Collapse conversations' })
-                : t('v2.assistant.expandConversations', { defaultValue: 'Expand conversations' })}
-              tooltip
-              selected={rightPanelOpen}
-              onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            />
-          </div>
-        </header>
+        {topBarSlot ? (
+          <TopBarActions>{headerActionButtons}</TopBarActions>
+        ) : (
+          <header className="v2-chat__header">
+            <Text variant="title-large" className="v2-chat__title v2-ellipsis">{assistantTitle}</Text>
+            <div className="v2-chat__header-actions">{headerActionButtons}</div>
+          </header>
+        )}
 
         {activeConversationId ? (
           <>
             <div className="v2-chat__scroll">
               <div className="v2-chat__thread">
                 {renderThread(visibleMessages)}
+                {swarmRuns[0]?.status === 'running' && (
+                  <SwarmRunCard run={swarmRuns[0]} onSelectAgent={handleOpenWorkerInspector} />
+                )}
                 {isSending && (
                   <div className="m3-chat-message-row v2-chat-working" data-role="assistant" aria-live="polite">
                     <LoadingIndicator size={36} className="v2-chat-working__indicator" aria-label={t('assistant.loading', 'Thinking...')} />
@@ -1691,6 +1892,8 @@ export function AssistantPage() {
                 providers={providers}
                 isSending={isSending}
                 isStopping={isStopping}
+                swarmMode={swarmMode}
+                onToggleSwarmMode={handleToggleSwarmMode}
                 onSend={handleSend}
                 onStop={handleStop}
               />
@@ -1711,6 +1914,8 @@ export function AssistantPage() {
               usage={conversationUsage}
               providers={providers}
               isSending={isSending}
+              swarmMode={swarmMode}
+              onToggleSwarmMode={handleToggleSwarmMode}
               onSend={handleSend}
               placeholder={t('assistant.typePlaceholder', 'Type a message...')}
             />
@@ -1723,27 +1928,59 @@ export function AssistantPage() {
         onClose={() => setRightPanelOpen(false)}
         modal={!docked}
         hideClose={docked}
-        width={docked ? 300 : undefined}
-        headline={t('assistant.conversations')}
-        headerActions={
-          <>
-            <Button variant="tonal" size="sm" icon="add" className="v2-chat__new" onClick={handleNewConversationClick}>
-              {t('assistant.newChat')}
-            </Button>
-            <IconButton
-              icon="manage_search"
-              size="sm"
-              className="v2-chat__history"
-              label={t('v2.assistant.searchHistory', { defaultValue: 'Search chat history' })}
-              tooltip
-              onClick={() => navigate('/assistant/history')}
-            />
-          </>
-        }
+        width={docked ? 304 : undefined}
+        headline={docked ? undefined : t('v2.assistant.agentPanel.title', 'Agent panel')}
+        aria-label={t('v2.assistant.agentPanel.title', 'Agent panel')}
         className="v2-chat__sheet"
       >
-        {conversationsPanel}
+        <AgentSidePanel
+          conversationId={activeConversationId}
+          providers={providers}
+          selectedProviderId={selectedProviderId}
+          selectedModelId={selectedModelId}
+          contextUsageTokens={contextUsageTokens}
+          swarmMode={swarmMode}
+          onToggleSwarmMode={handleToggleSwarmMode}
+          workerProviderId={workerProviderId}
+          workerModelId={workerModelId}
+          onChangeWorkerModel={handleChangeWorkerModel}
+          swarmPresets={swarmPresets}
+          isSending={isSending}
+          currentThinkingTitle={currentThinkingTitle}
+          currentToolTitle={currentToolTitle}
+          liveSteps={liveSteps}
+          liveAgentActivity={liveAgentActivity}
+          swarmRuns={swarmRuns}
+          blackboardEntries={blackboardEntries}
+          resources={resources}
+          pendingConfirmations={pendingConfirmations}
+          appViews={appViews}
+          inspectedAgentId={inspectedAgentId}
+          onSelectAgent={setInspectedAgentId}
+          onConfirmSingle={handleConfirmSingle}
+          onConfirmAll={handleConfirmAll}
+          onMentionResource={handleMentionResource}
+          onRemoveResource={handleRemoveResource}
+          onBlackboardDeleted={(entryId) => setBlackboardEntries((prev) => prev.filter((e) => e.id !== entryId))}
+          onInsertComposerText={handleInsertComposerText}
+          onOpenApprovedToolsDialog={() => setApprovedToolsModalOpen(true)}
+          onNavigate={() => {
+            if (!docked) setRightPanelOpen(false);
+          }}
+          settingsPath={settingsPath}
+        />
       </SideSheet>
+
+      <ChatHistoryDialog
+        open={historyDialogOpen}
+        activeConversationId={activeConversationId}
+        onClose={() => setHistoryDialogOpen(false)}
+        onNewChat={handleNewConversationClick}
+        onRequestDelete={(id) => setDeleteTarget(id)}
+        onConversationRenamed={(id, title) => {
+          setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
+        }}
+      />
 
       <ProjectPreviewDialog project={previewProject} libraries={[]} onClose={() => setPreviewProject(null)} />
 

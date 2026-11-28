@@ -35,6 +35,13 @@ const en = {
   status_posted: 'Posted',
   status_processing: 'Processing',
   status_ready: 'Ready',
+  workflow: 'Workflow',
+  drafts: 'Drafts',
+  completed: 'Completed',
+  album: 'Album',
+  noWorkflow: 'No workflow steps yet.',
+  loadProject: 'View full workflow',
+  disabled: 'Disabled',
 };
 
 export type MessageKey = keyof typeof en;
@@ -77,6 +84,13 @@ const zhCN: Messages = {
   status_posted: '已发布',
   status_processing: '处理中',
   status_ready: '就绪',
+  workflow: '工作流',
+  drafts: '草稿',
+  completed: '已完成',
+  album: '相册',
+  noWorkflow: '暂无工作流步骤。',
+  loadProject: '查看完整工作流',
+  disabled: '已禁用',
 };
 
 const zhTW: Messages = {
@@ -116,6 +130,13 @@ const zhTW: Messages = {
   status_posted: '已發布',
   status_processing: '處理中',
   status_ready: '就緒',
+  workflow: '工作流',
+  drafts: '草稿',
+  completed: '已完成',
+  album: '相簿',
+  noWorkflow: '尚無工作流步驟。',
+  loadProject: '檢視完整工作流',
+  disabled: '已停用',
 };
 
 const ja: Messages = {
@@ -155,6 +176,13 @@ const ja: Messages = {
   status_posted: '投稿済み',
   status_processing: '処理中',
   status_ready: '準備完了',
+  workflow: 'ワークフロー',
+  drafts: '下書き',
+  completed: '完了',
+  album: 'アルバム',
+  noWorkflow: 'ワークフローステップはまだありません。',
+  loadProject: '完全なワークフローを表示',
+  disabled: '無効',
 };
 
 const ko: Messages = {
@@ -194,6 +222,13 @@ const ko: Messages = {
   status_posted: '게시됨',
   status_processing: '처리 중',
   status_ready: '준비됨',
+  workflow: '워크플로우',
+  drafts: '초안',
+  completed: '완료',
+  album: '앨범',
+  noWorkflow: '아직 워크플로우 단계가 없습니다.',
+  loadProject: '전체 워크플로우 보기',
+  disabled: '비활성화됨',
 };
 
 const fr: Messages = {
@@ -233,6 +268,13 @@ const fr: Messages = {
   status_posted: 'Publié',
   status_processing: 'Traitement',
   status_ready: 'Prêt',
+  workflow: 'Flux de travail',
+  drafts: 'Brouillons',
+  completed: 'Terminés',
+  album: 'Album',
+  noWorkflow: 'Aucune étape pour l’instant.',
+  loadProject: 'Voir le flux complet',
+  disabled: 'Désactivé',
 };
 
 function pickMessages(locale: string): Messages {

@@ -41,6 +41,7 @@ import { cleanupExpiredProviderUploads } from './server/services/provider-upload
 import { createAssistantRouter } from './server/routes/assistant';
 import { AssistantRepository } from './server/db/assistant-repository';
 import { AssistantRunner } from './server/assistant/assistant-runner';
+import { SwarmOrchestrator } from './server/assistant/swarm-orchestrator';
 import { QueueManager } from './server/queue/queue-manager';
 import { ExportManager } from './server/queue/export-manager';
 import { DeliveryManager } from './server/queue/delivery-manager';
@@ -334,7 +335,9 @@ async function startServer() {
   // === Assistant chat runtime ===
   const assistantRepo = new AssistantRepository(prisma);
   const assistantRunner = new AssistantRunner(assistantRepo, providerRepository, toolDeps);
-  app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository));
+  const swarmOrchestrator = new SwarmOrchestrator(assistantRepo, assistantRunner);
+  assistantRunner.setSwarmToolProvider(swarmOrchestrator);
+  app.route('/', createAssistantRouter(assistantRepo, assistantRunner, providerRepository, swarmOrchestrator));
 
   // Shared legacy path (can be refactored eventually)
   app.get('/api/data', authMiddleware, async (c) => {
