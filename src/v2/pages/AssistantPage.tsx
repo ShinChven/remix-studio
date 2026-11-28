@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -71,6 +71,7 @@ import { Markdown } from '../ui/Markdown';
 import { LoadingState } from '../ui/Page';
 import { useToast } from '../ui/useToast';
 import { useCopy } from '../lib/useCopy';
+import { TopBarActions, TopBarSlotContext } from '../shell/TopBarActions';
 
 type AssistantNavigationState = {
   initialMessage?: string;
@@ -335,6 +336,7 @@ export function AssistantPage() {
   const copyToClipboard = useCopy();
   // Wide enough to keep the conversation list docked beside the chat.
   const docked = useMediaQuery('(min-width: 1200px)', true);
+  const topBarSlot = useContext(TopBarSlotContext);
   const { id: routeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1086,9 +1088,6 @@ export function AssistantPage() {
     if ((!trimmedText && contexts.length === 0 && images.length === 0) || isSending) return;
 
     const useSwarmForTurn = swarmMode || triggeredByCommand;
-    if (triggeredByCommand && !swarmMode) {
-      handleToggleSwarmMode(true);
-    }
 
     let finalContent = trimmedText;
     // Embed images as [IMAGE_ATTACHMENTS] block at the start
@@ -1330,8 +1329,7 @@ export function AssistantPage() {
     }
   };
 
-  const handleInsertComposerText = (text: string, enableSwarm?: boolean) => {
-    if (enableSwarm && !swarmMode) handleToggleSwarmMode(true);
+  const handleInsertComposerText = (text: string) => {
     if (composerHandleRef.current) {
       composerHandleRef.current.insertText(text);
     } else {
@@ -1460,6 +1458,26 @@ export function AssistantPage() {
     return byId;
   }, [messages]);
 
+  const swarmRunById = useMemo(() => {
+    const map = new Map<string, AssistantSwarmRun>();
+    for (const run of swarmRuns) map.set(run.id, run);
+    return map;
+  }, [swarmRuns]);
+
+  const extractSwarmRunId = (message: AssistantMessage): string | null => {
+    if (message.toolResultJson && typeof message.toolResultJson === 'object') {
+      const id = (message.toolResultJson as Record<string, unknown>).swarmRunId;
+      if (typeof id === 'string') return id;
+    }
+    try {
+      const parsed = JSON.parse(unwrapToolResult(message.content));
+      if (parsed && typeof parsed.swarmRunId === 'string') return parsed.swarmRunId;
+    } catch {
+      // ignore
+    }
+    return null;
+  };
+
   /**
    * The tools one stretch of the turn ran, folded into a single row that opens
    * onto each call's arguments and result. Calls with an MCP App view show it
@@ -1473,6 +1491,19 @@ export function AssistantPage() {
     const views = activeConversationId
       ? calls.filter(({ call, message }) => appViews[call.name] && message.status !== 'error')
       : [];
+    const inlineRuns: AssistantSwarmRun[] = [];
+    const seenRunIds = new Set<string>();
+    for (const { call, message } of calls) {
+      if (call.name !== 'spawn_workers' || message.status === 'error') continue;
+      const runId = extractSwarmRunId(message);
+      if (runId && !seenRunIds.has(runId)) {
+        const run = swarmRunById.get(runId);
+        if (run) {
+          seenRunIds.add(runId);
+          inlineRuns.push(run);
+        }
+      }
+    }
     return (
       <div key={key} className="v2-chat-steps">
         <details className="v2-chat-steps__group" data-error={errors > 0 ? '' : undefined}>
@@ -1510,6 +1541,9 @@ export function AssistantPage() {
             })}
           </div>
         </details>
+        {inlineRuns.map((run) => (
+          <SwarmRunCard key={run.id} run={run} onSelectAgent={handleOpenWorkerInspector} />
+        ))}
         {views.map(({ call }) => (
           <McpAppFrame
             key={call.id}
@@ -1774,49 +1808,59 @@ export function AssistantPage() {
 
   const handleOpenWorkerInspector = (agentId: string) => {
     setInspectedAgentId(agentId);
-    setRightPanelOpen(true);
   };
+
+  const headerActionButtons = (
+    <>
+      <IconButton
+        icon="add_comment"
+        label={t('assistant.newChat', 'New chat')}
+        tooltip
+        onClick={handleNewConversationClick}
+      />
+      <IconButton
+        icon="history"
+        label={t('v2.assistant.searchHistory', { defaultValue: 'Search chat history' })}
+        tooltip
+        onClick={() => setHistoryDialogOpen(true)}
+      />
+      <IconButton icon="tune" label={t('v2.assistant.chatSettings', { defaultValue: 'Chat settings' })} tooltip href={settingsPath} />
+      <Badge
+        value={agentPanelBadgeCount}
+        invisible={agentPanelBadgeCount === 0}
+        label={t('v2.assistant.agentPanel.activeBadge', { defaultValue: '{{count}} active', count: agentPanelBadgeCount })}
+      >
+        <IconButton
+          icon={rightPanelOpen ? 'right_panel_close' : 'right_panel_open'}
+          label={rightPanelOpen
+            ? t('v2.assistant.agentPanel.collapse', { defaultValue: 'Collapse agent panel' })
+            : t('v2.assistant.agentPanel.expand', { defaultValue: 'Expand agent panel' })}
+          tooltip
+          selected={rightPanelOpen}
+          onClick={() => setRightPanelOpen(!rightPanelOpen)}
+        />
+      </Badge>
+    </>
+  );
 
   return (
     <div className="v2-chat" data-docked={docked && rightPanelOpen ? '' : undefined}>
       <div className="v2-chat__main">
-        <header className="v2-chat__header">
-          <Text variant="title-large" className="v2-chat__title v2-ellipsis">{assistantTitle}</Text>
-          <div className="v2-chat__header-actions">
-            <Button variant="tonal" size="sm" icon="add" onClick={handleNewConversationClick}>
-              {t('assistant.newChat', 'New')}
-            </Button>
-            <IconButton
-              icon="manage_search"
-              label={t('v2.assistant.searchHistory', { defaultValue: 'Search chat history' })}
-              tooltip
-              onClick={() => setHistoryDialogOpen(true)}
-            />
-            <IconButton icon="tune" label={t('v2.assistant.chatSettings', { defaultValue: 'Chat settings' })} tooltip href={settingsPath} />
-            <Badge
-              value={agentPanelBadgeCount}
-              invisible={agentPanelBadgeCount === 0}
-              label={t('v2.assistant.agentPanel.activeBadge', { defaultValue: '{{count}} active', count: agentPanelBadgeCount })}
-            >
-              <IconButton
-                icon={rightPanelOpen ? 'right_panel_close' : 'right_panel_open'}
-                label={rightPanelOpen
-                  ? t('v2.assistant.agentPanel.collapse', { defaultValue: 'Collapse agent panel' })
-                  : t('v2.assistant.agentPanel.expand', { defaultValue: 'Expand agent panel' })}
-                tooltip
-                selected={rightPanelOpen}
-                onClick={() => setRightPanelOpen(!rightPanelOpen)}
-              />
-            </Badge>
-          </div>
-        </header>
+        {topBarSlot ? (
+          <TopBarActions>{headerActionButtons}</TopBarActions>
+        ) : (
+          <header className="v2-chat__header">
+            <Text variant="title-large" className="v2-chat__title v2-ellipsis">{assistantTitle}</Text>
+            <div className="v2-chat__header-actions">{headerActionButtons}</div>
+          </header>
+        )}
 
         {activeConversationId ? (
           <>
             <div className="v2-chat__scroll">
               <div className="v2-chat__thread">
                 {renderThread(visibleMessages)}
-                {swarmRuns.length > 0 && (
+                {swarmRuns[0]?.status === 'running' && (
                   <SwarmRunCard run={swarmRuns[0]} onSelectAgent={handleOpenWorkerInspector} />
                 )}
                 {isSending && (
@@ -1884,8 +1928,9 @@ export function AssistantPage() {
         onClose={() => setRightPanelOpen(false)}
         modal={!docked}
         hideClose={docked}
-        width={docked ? 352 : undefined}
-        headline={t('v2.assistant.agentPanel.title', 'Agent panel')}
+        width={docked ? 304 : undefined}
+        headline={docked ? undefined : t('v2.assistant.agentPanel.title', 'Agent panel')}
+        aria-label={t('v2.assistant.agentPanel.title', 'Agent panel')}
         className="v2-chat__sheet"
       >
         <AgentSidePanel

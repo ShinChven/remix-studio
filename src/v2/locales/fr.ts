@@ -1139,6 +1139,15 @@ const messages: V2Messages = {
       noAutoApproved: 'Toutes les actions d’écriture demandent confirmation.',
       quickSkills: 'Compétences rapides',
       openFullSettings: 'Ouvrir tous les paramètres',
+      session: 'Session',
+      showMore: 'Afficher plus',
+      showLess: 'Afficher moins',
+    },
+    addMenu: {
+      label: 'Ajouter au message',
+      resource: 'Mentionner une ressource',
+      skill: 'Insérer une compétence',
+      swarm: 'Lancer en mode Essaim',
     },
     swarm: {
       shortLabel: 'Essaim',

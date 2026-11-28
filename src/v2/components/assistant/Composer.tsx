@@ -551,6 +551,38 @@ export function Composer({
     closePickers();
   };
 
+  const openTriggerFromMenu = (trigger: '@' | '/') => {
+    const el = textareaRef.current;
+    const cursor = el?.selectionStart ?? inputText.length;
+    const before = inputText.slice(0, cursor);
+    const after = inputText.slice(cursor);
+    const needsSpace = before.length > 0 && !/\s$/.test(before);
+    const inserted = `${needsSpace ? ' ' : ''}${trigger}`;
+    const next = `${before}${inserted}${after}`;
+    setInputText(next);
+    setDismissedSkillTriggerStart(null);
+    if (trigger === '@') {
+      setMentionSearch('');
+      setSkillSearch(null);
+    } else {
+      setSkillSearch('');
+      setMentionSearch(null);
+    }
+    focusAt(before.length + inserted.length);
+  };
+
+  const insertSwarmCommand = () => {
+    setDismissedSkillTriggerStart(0);
+    closePickers();
+    if (/^\/swarm(?:\s|$)/i.test(inputText.trimStart())) {
+      focusAt(inputText.length);
+      return;
+    }
+    const next = `/swarm ${inputText}`;
+    setInputText(next);
+    focusAt(next.length);
+  };
+
   const selectSkill = (option: SkillOption | undefined) => {
     if (!option) return;
     const cursor = textareaRef.current?.selectionStart ?? inputText.length;
@@ -752,6 +784,17 @@ export function Composer({
         />
 
         <div className="ms-auto flex items-center gap-1">
+          {onToggleSwarmMode && (
+            <IconButton
+              icon="hub"
+              label={t('v2.assistant.swarm.toggleHint', 'Enable multi-agent Swarm Mode')}
+              tooltip
+              size="xs"
+              selected={swarmMode}
+              disabled={isSending}
+              onClick={() => onToggleSwarmMode(!swarmMode)}
+            />
+          )}
           {micProvider &&
             (isRecording || isTranscribing ? (
               <button type="button" className="v2-record-chip m3-focus-ring" onClick={toggleRecording} disabled={isSending || isTranscribing} data-transcribing={isTranscribing ? '' : undefined}>
@@ -771,16 +814,6 @@ export function Composer({
             ) : (
               <IconButton icon="mic" label={t('assistant.micStart')} tooltip size="xs" onClick={toggleRecording} disabled={isSending} />
             ))}
-          <IconButton
-            icon="add_photo_alternate"
-            label={t('assistant.attachImage')}
-            tooltip
-            size="xs"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isSending || attachedImages.length >= MAX_IMAGES}
-            selected={attachedImages.length > 0 ? true : undefined}
-            badge={attachedImages.length > 0 ? <span className="v2-count-badge">{attachedImages.length}</span> : undefined}
-          />
         </div>
       </div>
 
@@ -805,6 +838,51 @@ export function Composer({
       )}
 
       <div className="v2-composer__input">
+        <MenuButton
+          placement="top-start"
+          aria-label={t('v2.assistant.addMenu.label', 'Add to message')}
+          trigger={(props) => (
+            <IconButton
+              {...props}
+              icon="add"
+              label={t('v2.assistant.addMenu.label', 'Add to message')}
+              tooltip
+              size="sm"
+              disabled={isSending}
+              badge={attachedImages.length > 0 ? <span className="v2-count-badge">{attachedImages.length}</span> : undefined}
+            />
+          )}
+        >
+          <MenuItem
+            icon="add_photo_alternate"
+            disabled={attachedImages.length >= MAX_IMAGES}
+            onSelect={() => fileInputRef.current?.click()}
+          >
+            {t('assistant.attachImage', 'Attach image')}
+          </MenuItem>
+          <MenuItem
+            icon="alternate_email"
+            trailingText="@"
+            onSelect={() => openTriggerFromMenu('@')}
+          >
+            {t('v2.assistant.addMenu.resource', 'Mention resource')}
+          </MenuItem>
+          <MenuItem
+            icon="bolt"
+            trailingText="/"
+            onSelect={() => openTriggerFromMenu('/')}
+          >
+            {t('v2.assistant.addMenu.skill', 'Insert skill')}
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            icon="hub"
+            trailingText="/swarm"
+            onSelect={insertSwarmCommand}
+          >
+            {t('v2.assistant.addMenu.swarm', 'Run in Swarm Mode')}
+          </MenuItem>
+        </MenuButton>
         <textarea
           ref={textareaRef}
           value={inputText}

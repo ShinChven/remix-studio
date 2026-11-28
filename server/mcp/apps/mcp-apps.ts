@@ -49,6 +49,12 @@ const VIEWS = {
     title: 'Remix Studio post preview',
     description: 'Previews a campaign post: its text, media, schedule and publishing status.',
   },
+  project: {
+    file: 'project-preview',
+    uri: 'ui://remix-studio/project-preview.html',
+    title: 'Remix Studio project overview',
+    description: 'Previews a project configuration, workflow steps, and draft/queue/album counts.',
+  },
 } satisfies Record<string, McpAppView>;
 
 type StructuredResult = Record<string, any>;
@@ -72,6 +78,12 @@ const APP_TOOLS: Record<string, McpAppTool> = {
         ? (result.items ?? []).map((item: any) => item.thumbnailUrl)
         : (result.items ?? []).flatMap((item: any) => [item.thumbnailUrl, item.storageKey]),
   },
+  batch_create_prompts: {
+    view: VIEWS.media,
+  },
+  create_prompt: {
+    view: VIEWS.media,
+  },
   get_queue_status: {
     view: VIEWS.queue,
   },
@@ -79,6 +91,24 @@ const APP_TOOLS: Record<string, McpAppTool> = {
     view: VIEWS.post,
     mediaKeys: (result) =>
       (result.media ?? []).flatMap((media: any) => [media.thumbnailUrl, media.processedUrl, media.sourceUrl]),
+  },
+  get_project: {
+    view: VIEWS.project,
+  },
+  create_project_with_workflow: {
+    view: VIEWS.project,
+  },
+  update_project: {
+    view: VIEWS.project,
+  },
+  draft_jobs: {
+    view: VIEWS.project,
+  },
+  start_jobs: {
+    view: VIEWS.project,
+  },
+  get_project_job_counts: {
+    view: VIEWS.project,
   },
 };
 

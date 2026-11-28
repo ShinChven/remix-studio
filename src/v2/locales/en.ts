@@ -1138,6 +1138,15 @@ const en = {
       noAutoApproved: 'All write actions ask for confirmation first.',
       quickSkills: 'Quick skills',
       openFullSettings: 'Open full settings',
+      session: 'Session',
+      showMore: 'Show more',
+      showLess: 'Show less',
+    },
+    addMenu: {
+      label: 'Add to message',
+      resource: 'Mention resource',
+      skill: 'Insert skill',
+      swarm: 'Run in Swarm Mode',
     },
     swarm: {
       shortLabel: 'Swarm',

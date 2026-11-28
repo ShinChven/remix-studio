@@ -1139,6 +1139,15 @@ const messages: V2Messages = {
       noAutoApproved: '所有寫入操作執行前均需確認。',
       quickSkills: '快捷技能',
       openFullSettings: '開啟完整設定',
+      session: '工作階段',
+      showMore: '顯示更多',
+      showLess: '收合',
+    },
+    addMenu: {
+      label: '加入訊息',
+      resource: '提及資源',
+      skill: '插入技能',
+      swarm: '單次蜂群模式執行',
     },
     swarm: {
       shortLabel: '蜂群',

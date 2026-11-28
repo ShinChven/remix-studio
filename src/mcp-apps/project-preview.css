@@ -1,0 +1,125 @@
+.pj-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pj-desc {
+  margin: 0;
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-sm);
+  white-space: pre-wrap;
+}
+
+.pj-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.pj-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--rs-radius-md);
+  background: var(--rs-surface);
+}
+
+.pj-stat-value {
+  font-size: 1.15rem;
+  font-weight: var(--font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.pj-stat-label {
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-xs, 0.75rem);
+}
+
+.pj-stat[data-tone="info"] .pj-stat-value { color: var(--rs-info, var(--rs-accent)); }
+.pj-stat[data-tone="success"] .pj-stat-value { color: var(--rs-success); }
+.pj-stat[data-tone="danger"] .pj-stat-value { color: var(--rs-danger); }
+
+.pj-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pj-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pj-section-title {
+  margin: 0;
+  color: var(--rs-text-muted);
+  font-size: var(--rs-text-sm);
+  font-weight: var(--font-weight-medium, 500);
+}
+
+.pj-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--rs-radius-lg);
+  overflow: hidden;
+}
+
+.pj-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--rs-surface);
+}
+
+.pj-step[data-disabled] {
+  opacity: 0.55;
+}
+
+.pj-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--rs-border-soft);
+  color: var(--rs-text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  flex: 0 0 20px;
+  margin-top: 1px;
+}
+
+.pj-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pj-step-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.pj-step-text {
+  margin: 0;
+  color: var(--rs-text);
+  font-size: var(--rs-text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

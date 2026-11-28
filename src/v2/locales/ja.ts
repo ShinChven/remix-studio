@@ -1139,6 +1139,15 @@ const messages: V2Messages = {
       noAutoApproved: 'すべての書き込み操作は実行前に確認を求めます。',
       quickSkills: 'クイックスキル',
       openFullSettings: 'すべての設定を開く',
+      session: 'セッション',
+      showMore: 'さらに表示',
+      showLess: '折りたたむ',
+    },
+    addMenu: {
+      label: 'メッセージに追加',
+      resource: 'リソースをメンション',
+      skill: 'スキルを挿入',
+      swarm: 'スウォームモードで実行',
     },
     swarm: {
       shortLabel: 'スウォーム',

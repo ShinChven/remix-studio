@@ -1139,6 +1139,15 @@ const messages: V2Messages = {
       noAutoApproved: '모든 쓰기 작업은 실행 전 확인을 요청합니다.',
       quickSkills: '빠른 스킬',
       openFullSettings: '전체 설정 열기',
+      session: '세션',
+      showMore: '더 보기',
+      showLess: '접기',
+    },
+    addMenu: {
+      label: '메시지에 추가',
+      resource: '리소스 멘션',
+      skill: '스킬 삽입',
+      swarm: '스웜 모드로 실행',
     },
     swarm: {
       shortLabel: '스웜',

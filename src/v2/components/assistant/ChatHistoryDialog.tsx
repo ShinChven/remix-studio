@@ -133,7 +133,9 @@ export function ChatHistoryDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      icon="history"
+      fullScreen="compact"
+      showCloseButton
+      describeContent={false}
       headline={t('v2.assistant.searchHistory', 'Search chat history')}
       maxWidth={560}
       actions={

@@ -318,7 +318,62 @@ export class AssistantRunner {
     const message = await this.repo.findToolMessageByCallId(conversationId, toolCallId);
     if (!message?.toolName || !getMcpAppResourceUri(message.toolName)) return null;
     const text = unwrapStoredToolResult(message.content);
-    const structured = asStructured(message.toolResultJson) ?? parseStructured(text);
+    let structured = asStructured(message.toolResultJson) ?? parseStructured(text);
+    // Normalize older or write-tool prompt creation payloads into the LibraryResult
+    // shape expected by the `media-grid` MCP App view.
+    if (
+      (message.toolName === 'batch_create_prompts' || message.toolName === 'create_prompt')
+      && (!structured || !Array.isArray(structured.items))
+    ) {
+      const raw = structured ?? {};
+      const args = asStructured(message.toolArgsJson) ?? {};
+      const libraryId = String(raw.libraryId ?? raw.library_id ?? args.library_id ?? '');
+      const libraryName = String(raw.libraryName ?? raw.name ?? 'Library');
+      const libraryUrl = typeof raw.libraryUrl === 'string' ? raw.libraryUrl : undefined;
+      if (message.toolName === 'batch_create_prompts') {
+        const createdList = Array.isArray(raw.created) ? raw.created : [];
+        const argItems = Array.isArray(args.items) ? args.items : [];
+        const count = Math.max(createdList.length, argItems.length);
+        const items = Array.from({ length: count }, (_, idx) => {
+          const c = asStructured(createdList[idx]) ?? {};
+          const a = asStructured(argItems[idx]) ?? {};
+          return {
+            id: String(c.id ?? `item-${idx}`),
+            title: (c.title ?? a.title ?? null) as string | null,
+            text: typeof a.content === 'string' ? a.content : '',
+            tags: Array.isArray(a.tags) ? a.tags : [],
+          };
+        });
+        structured = {
+          libraryId,
+          libraryUrl,
+          libraryName,
+          libraryType: 'text',
+          items,
+          total: typeof raw.libraryTotal === 'number' ? raw.libraryTotal : items.length,
+          page: 1,
+          pages: 1,
+        };
+      } else {
+        structured = {
+          libraryId,
+          libraryUrl,
+          libraryName,
+          libraryType: 'text',
+          items: [
+            {
+              id: String(raw.id ?? 'item-0'),
+              title: (raw.title ?? args.title ?? null) as string | null,
+              text: typeof args.content === 'string' ? args.content : '',
+              tags: Array.isArray(args.tags) ? args.tags : [],
+            },
+          ],
+          total: 1,
+          page: 1,
+          pages: 1,
+        };
+      }
+    }
     return {
       toolName: message.toolName,
       arguments: message.toolArgsJson ?? {},
