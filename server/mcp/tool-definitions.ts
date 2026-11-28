@@ -1098,16 +1098,32 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       // libraryTotal lets the model compare progress against the requested
       // count and decide whether another batch is still owed.
       const libraryTotal = (library.itemCount ?? 0) + libraryItems.length;
+      const libraryUrl = appUrls.library(library_id);
       return {
         text: JSON.stringify({
           library_id,
-          libraryUrl: appUrls.library(library_id),
+          libraryUrl,
           name: library.name,
           created: libraryItems.map((item) => ({ id: item.id, title: item.title })),
           count: libraryItems.length,
           libraryTotal,
           message: `${libraryItems.length} prompts created successfully. Library now holds ${libraryTotal} prompts — if the user asked for more than that, continue with another batch.`,
         }),
+        structuredContent: {
+          libraryId: library_id,
+          libraryUrl,
+          libraryName: library.name,
+          libraryType: 'text',
+          items: libraryItems.map((item) => ({
+            id: item.id,
+            title: item.title ?? null,
+            text: item.content,
+            tags: item.tags ?? [],
+          })),
+          total: libraryTotal,
+          page: 1,
+          pages: 1,
+        },
       };
     },
   });

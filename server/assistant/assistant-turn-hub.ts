@@ -26,11 +26,12 @@ import type { AssistantStatusEvent } from './assistant-runner';
 const RETAIN_FINISHED_MS = 5 * 60_000;
 
 /**
- * Cap on buffered status frames per turn. A long agentic loop can emit
- * thousands; keeping the newest few hundred is enough to describe what the
- * turn is doing now, which is all the progress line shows.
+ * Cap on buffered status frames per turn. A long agentic loop or multi-agent
+ * swarm can emit many events; keeping 800 frames (and coalescing consecutive
+ * thinking updates per agent) lets reconnecting clients reconstruct the live
+ * swarm roster and progress state.
  */
-const MAX_BUFFERED_FRAMES = 400;
+const MAX_BUFFERED_FRAMES = 800;
 
 export type TurnKind = 'message' | 'edit' | 'confirm';
 
@@ -98,6 +99,20 @@ class TurnRecord {
   emitStatus(event: AssistantStatusEvent): void {
     this.lastEvent = event;
     const frame: TurnFrame = { seq: ++this.seq, type: 'status', event };
+    // Coalesce consecutive thinking frames for the same agent so high-frequency
+    // worker thoughts don't evict swarm lifecycle frames from the ring buffer.
+    if (event.type === 'provider_thinking' && this.frames.length > 0) {
+      const prev = this.frames[this.frames.length - 1];
+      if (
+        prev.type === 'status'
+        && prev.event.type === 'provider_thinking'
+        && (prev.event.agentId ?? null) === (event.agentId ?? null)
+      ) {
+        this.frames[this.frames.length - 1] = frame;
+        this.fanOut(frame);
+        return;
+      }
+    }
     this.frames.push(frame);
     if (this.frames.length > MAX_BUFFERED_FRAMES) this.frames.shift();
     this.fanOut(frame);

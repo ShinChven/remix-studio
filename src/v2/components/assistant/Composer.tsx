@@ -44,6 +44,7 @@ export type BoundContext = {
 
 export interface ComposerHandle {
   addBoundContext: (context: BoundContext) => void;
+  insertText: (text: string) => void;
   focus: () => void;
 }
 
@@ -60,7 +61,7 @@ export type AttachedImage = {
   base64: string;
 };
 
-type SkillOption = { id: string; title: string; content: string; tags: string[] };
+type SkillOption = { id: string; title: string; content: string; tags: string[]; isCommand?: boolean };
 
 export interface ComposerProps {
   initialInputText?: string;
@@ -78,6 +79,8 @@ export interface ComposerProps {
   providers: Provider[];
   isSending: boolean;
   isStopping?: boolean;
+  swarmMode?: boolean;
+  onToggleSwarmMode?: (enabled: boolean) => void;
   onSend: (text: string, boundContexts: BoundContext[], attachedImages: AttachedImage[]) => void;
   onStop?: () => void;
   placeholder?: string;
@@ -105,6 +108,9 @@ function getSkillTriggerMatch(textBeforeCursor: string) {
   const match = textBeforeCursor.match(/(^|\s)\/([^\n/]*)$/);
   if (!match) return null;
   const query = match[2] || '';
+  // Once a slash command like `/swarm ` is followed by whitespace, the user is
+  // typing the command's arguments rather than searching the slash menu.
+  if (/^swarm\s/i.test(query)) return null;
   return { query, start: textBeforeCursor.length - query.length - 1 };
 }
 
@@ -163,6 +169,8 @@ export function Composer({
   providers,
   isSending,
   isStopping = false,
+  swarmMode = false,
+  onToggleSwarmMode,
   onSend,
   onStop,
   placeholder,
@@ -197,8 +205,19 @@ export function Composer({
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const activePicker = skillSearch !== null ? 'skill' : mentionSearch !== null ? 'resource' : null;
-  const activeOptions = activePicker === 'skill' ? skillOptions : mentionOptions;
-  const isSearchingActivePicker = activePicker === 'skill' ? isSearchingSkills : isSearchingMentions;
+  const builtInCommands: SkillOption[] =
+    skillSearch !== null && 'swarm'.startsWith(skillSearch.trim().toLowerCase())
+      ? [{
+          id: '__cmd_swarm__',
+          title: '/swarm',
+          content: '/swarm ',
+          tags: [],
+          isCommand: true,
+        }]
+      : [];
+  const mergedSkillOptions = activePicker === 'skill' ? [...builtInCommands, ...skillOptions] : skillOptions;
+  const activeOptions = activePicker === 'skill' ? mergedSkillOptions : mentionOptions;
+  const isSearchingActivePicker = activePicker === 'skill' ? isSearchingSkills && mergedSkillOptions.length === 0 : isSearchingMentions;
 
   const selectedProvider = providers.find((p) => p.id === selectedProviderId);
   const selectedModel = selectedProvider ? getTextModelsForProvider(selectedProvider.type).find((m) => m.id === selectedModelId) : null;
@@ -288,7 +307,7 @@ export function Composer({
 
   useEffect(() => {
     if (dismissedSkillTriggerStart === null) return;
-    if (inputText[dismissedSkillTriggerStart] === '`') return;
+    if (inputText[dismissedSkillTriggerStart] === '/') return;
     setDismissedSkillTriggerStart(null);
   }, [dismissedSkillTriggerStart, inputText]);
 
@@ -498,6 +517,13 @@ export function Composer({
         setBoundContexts((current) => (current.some((c) => c.id === context.id && c.type === context.type) ? current : [...current, context]));
         textareaRef.current?.focus();
       },
+      insertText: (text) => {
+        setInputText((current) => {
+          const next = current.trim() ? `${current}\n\n${text}` : text;
+          focusAt(next.length);
+          return next;
+        });
+      },
       focus: () => textareaRef.current?.focus(),
     }),
     [],
@@ -525,6 +551,38 @@ export function Composer({
     closePickers();
   };
 
+  const openTriggerFromMenu = (trigger: '@' | '/') => {
+    const el = textareaRef.current;
+    const cursor = el?.selectionStart ?? inputText.length;
+    const before = inputText.slice(0, cursor);
+    const after = inputText.slice(cursor);
+    const needsSpace = before.length > 0 && !/\s$/.test(before);
+    const inserted = `${needsSpace ? ' ' : ''}${trigger}`;
+    const next = `${before}${inserted}${after}`;
+    setInputText(next);
+    setDismissedSkillTriggerStart(null);
+    if (trigger === '@') {
+      setMentionSearch('');
+      setSkillSearch(null);
+    } else {
+      setSkillSearch('');
+      setMentionSearch(null);
+    }
+    focusAt(before.length + inserted.length);
+  };
+
+  const insertSwarmCommand = () => {
+    setDismissedSkillTriggerStart(0);
+    closePickers();
+    if (/^\/swarm(?:\s|$)/i.test(inputText.trimStart())) {
+      focusAt(inputText.length);
+      return;
+    }
+    const next = `/swarm ${inputText}`;
+    setInputText(next);
+    focusAt(next.length);
+  };
+
   const selectSkill = (option: SkillOption | undefined) => {
     if (!option) return;
     const cursor = textareaRef.current?.selectionStart ?? inputText.length;
@@ -534,6 +592,9 @@ export function Composer({
     if (!match) return;
     const prefix = before.slice(0, before.length - match[0].length);
     setInputText(`${prefix}${option.content}${after}`);
+    if (option.isCommand) {
+      setDismissedSkillTriggerStart(prefix.length);
+    }
     closePickers();
     focusAt(prefix.length + option.content.length);
   };
@@ -579,7 +640,7 @@ export function Composer({
       }
       if (event.key === 'Enter') {
         event.preventDefault();
-        if (activePicker === 'skill') selectSkill(skillOptions[selectedIndex]);
+        if (activePicker === 'skill') selectSkill(mergedSkillOptions[selectedIndex]);
         else selectResource(mentionOptions[selectedIndex]);
         return;
       }
@@ -632,16 +693,18 @@ export function Composer({
 
   const pickerOptions =
     activePicker === 'skill'
-      ? skillOptions.map((o) => ({
+      ? mergedSkillOptions.map((o) => ({
           key: o.id,
-          icon: 'bolt',
+          icon: o.isCommand ? 'hub' : 'bolt',
           label: (
             <span className="flex items-center gap-2">
               <span className="truncate">{o.title || t('v2.assistant.untitledSkill')}</span>
               {o.tags[0] && <span className="v2-tag">{o.tags[0]}</span>}
             </span>
           ),
-          supportingText: summarizeSkillContent(o.content),
+          supportingText: o.isCommand
+            ? t('v2.assistant.swarm.commandHint', 'Run this task in multi-agent Swarm Mode')
+            : summarizeSkillContent(o.content),
         }))
       : mentionOptions.map((o) => ({
           key: `${o.type}:${o.id}`,
@@ -721,6 +784,17 @@ export function Composer({
         />
 
         <div className="ms-auto flex items-center gap-1">
+          {onToggleSwarmMode && (
+            <IconButton
+              icon="hub"
+              label={t('v2.assistant.swarm.toggleHint', 'Enable multi-agent Swarm Mode')}
+              tooltip
+              size="xs"
+              selected={swarmMode}
+              disabled={isSending}
+              onClick={() => onToggleSwarmMode(!swarmMode)}
+            />
+          )}
           {micProvider &&
             (isRecording || isTranscribing ? (
               <button type="button" className="v2-record-chip m3-focus-ring" onClick={toggleRecording} disabled={isSending || isTranscribing} data-transcribing={isTranscribing ? '' : undefined}>
@@ -740,16 +814,6 @@ export function Composer({
             ) : (
               <IconButton icon="mic" label={t('assistant.micStart')} tooltip size="xs" onClick={toggleRecording} disabled={isSending} />
             ))}
-          <IconButton
-            icon="add_photo_alternate"
-            label={t('assistant.attachImage')}
-            tooltip
-            size="xs"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isSending || attachedImages.length >= MAX_IMAGES}
-            selected={attachedImages.length > 0 ? true : undefined}
-            badge={attachedImages.length > 0 ? <span className="v2-count-badge">{attachedImages.length}</span> : undefined}
-          />
         </div>
       </div>
 
@@ -774,6 +838,51 @@ export function Composer({
       )}
 
       <div className="v2-composer__input">
+        <MenuButton
+          placement="top-start"
+          aria-label={t('v2.assistant.addMenu.label', 'Add to message')}
+          trigger={(props) => (
+            <IconButton
+              {...props}
+              icon="add"
+              label={t('v2.assistant.addMenu.label', 'Add to message')}
+              tooltip
+              size="sm"
+              disabled={isSending}
+              badge={attachedImages.length > 0 ? <span className="v2-count-badge">{attachedImages.length}</span> : undefined}
+            />
+          )}
+        >
+          <MenuItem
+            icon="add_photo_alternate"
+            disabled={attachedImages.length >= MAX_IMAGES}
+            onSelect={() => fileInputRef.current?.click()}
+          >
+            {t('assistant.attachImage', 'Attach image')}
+          </MenuItem>
+          <MenuItem
+            icon="alternate_email"
+            trailingText="@"
+            onSelect={() => openTriggerFromMenu('@')}
+          >
+            {t('v2.assistant.addMenu.resource', 'Mention resource')}
+          </MenuItem>
+          <MenuItem
+            icon="bolt"
+            trailingText="/"
+            onSelect={() => openTriggerFromMenu('/')}
+          >
+            {t('v2.assistant.addMenu.skill', 'Insert skill')}
+          </MenuItem>
+          <MenuDivider />
+          <MenuItem
+            icon="hub"
+            trailingText="/swarm"
+            onSelect={insertSwarmCommand}
+          >
+            {t('v2.assistant.addMenu.swarm', 'Run in Swarm Mode')}
+          </MenuItem>
+        </MenuButton>
         <textarea
           ref={textareaRef}
           value={inputText}
@@ -819,7 +928,7 @@ export function Composer({
         options={pickerOptions}
         activeIndex={selectedIndex}
         onActiveIndexChange={setSelectedIndex}
-        onSelect={(index) => (activePicker === 'skill' ? selectSkill(skillOptions[index]) : selectResource(mentionOptions[index]))}
+        onSelect={(index) => (activePicker === 'skill' ? selectSkill(mergedSkillOptions[index]) : selectResource(mentionOptions[index]))}
         loading={isSearchingActivePicker}
         heading={
           isSearchingActivePicker

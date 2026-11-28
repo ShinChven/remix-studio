@@ -5,6 +5,7 @@ import { stream } from 'hono/streaming';
 import { authMiddleware, JwtPayload } from '../auth/auth';
 import { AssistantRepository } from '../db/assistant-repository';
 import { AssistantRunner, AssistantStatusEvent, TurnResult } from '../assistant/assistant-runner';
+import { SwarmOrchestrator } from '../assistant/swarm-orchestrator';
 import { ProviderRepository } from '../db/provider-repository';
 import { ASSISTANT_SUPPORTED_PROVIDER_TYPES } from '../assistant/chat-provider-factory';
 import { AssistantTurnHub, TurnAlreadyRunningError, TurnKind } from '../assistant/assistant-turn-hub';
@@ -47,6 +48,7 @@ export function createAssistantRouter(
   repo: AssistantRepository,
   runner: AssistantRunner,
   providerRepo: ProviderRepository,
+  swarmOrchestrator?: SwarmOrchestrator,
 ) {
   const router = new Hono<{ Variables: Variables }>();
 
@@ -220,10 +222,13 @@ export function createAssistantRouter(
       const conversationId = c.req.param('id');
       const conversation = await repo.getConversation(user.userId, conversationId);
       if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
-      const [messages, resources, pendingConfirmation] = await Promise.all([
+      const [messages, resources, pendingConfirmation, pendingConfirmations, swarmRuns, blackboardEntries] = await Promise.all([
         repo.listMessages(conversationId),
         repo.listConversationResources(conversationId),
         repo.findActivePendingConfirmation(conversationId),
+        repo.listActivePendingConfirmations(conversationId),
+        repo.listSwarmRuns(conversationId),
+        repo.listBlackboardEntries(conversationId),
       ]);
       // `activeTurn` and `pendingConfirmation` are what a reloaded tab needs to
       // pick a conversation back up: one says a loop is still running and where
@@ -233,6 +238,9 @@ export function createAssistantRouter(
         messages,
         resources,
         pendingConfirmation,
+        pendingConfirmations,
+        swarmRuns,
+        blackboardEntries,
         activeTurn: turnHub.getActive(conversationId),
       });
     } catch (e) {
@@ -305,6 +313,9 @@ export function createAssistantRouter(
     const body = await c.req.json();
     const content = typeof body?.content === 'string' ? body.content.trim() : '';
     if (!content) return c.json({ error: 'Message content is required' }, 400);
+    const swarmMode = body?.swarmMode === true;
+    const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
+    const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
 
     return await startTurn(c, {
       userId: user.userId,
@@ -316,6 +327,9 @@ export function createAssistantRouter(
         userId: user.userId,
         conversationId,
         content,
+        swarmMode,
+        workerProviderId,
+        workerModelId,
         abortSignal,
         onStatusEvent,
       }),
@@ -330,6 +344,9 @@ export function createAssistantRouter(
     const body = await c.req.json();
     const content = typeof body?.content === 'string' ? body.content.trim() : '';
     if (!content) return c.json({ error: 'Message content is required' }, 400);
+    const swarmMode = body?.swarmMode === true;
+    const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
+    const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
 
     return await startTurn(c, {
       userId: user.userId,
@@ -343,6 +360,9 @@ export function createAssistantRouter(
           userId: user.userId,
           conversationId,
           content,
+          swarmMode,
+          workerProviderId,
+          workerModelId,
           abortSignal,
           onStatusEvent,
         });
@@ -356,6 +376,9 @@ export function createAssistantRouter(
     const conversationId = c.req.param('id');
     const body = await c.req.json();
     const confirmationId = typeof body?.confirmationId === 'string' ? body.confirmationId : '';
+    const swarmMode = body?.swarmMode === true;
+    const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
+    const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
     const decision = body?.decision === 'cancel'
       ? 'cancel' as const
       : body?.decision === 'confirm_tool'
@@ -376,10 +399,123 @@ export function createAssistantRouter(
         conversationId,
         confirmationId,
         decision,
+        swarmMode,
+        workerProviderId,
+        workerModelId,
         abortSignal,
         onStatusEvent,
       }),
     });
+  });
+
+  // ─── Batch confirm / cancel (Phase 2: worker & coordinator grouped approvals) ───
+  router.post('/api/assistant/conversations/:id/confirm-batch', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      if (!swarmOrchestrator) return c.json({ error: 'Swarm orchestrator unavailable' }, 503);
+
+      const body = await c.req.json().catch(() => null);
+      const confirmationIds = Array.isArray(body?.confirmationIds)
+        ? body.confirmationIds.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+        : [];
+      if (confirmationIds.length === 0) {
+        return c.json({ error: 'confirmationIds must be a non-empty array' }, 400);
+      }
+      const decision = body?.decision === 'cancel'
+        ? 'cancel' as const
+        : body?.decision === 'confirm_tool'
+          ? 'confirm_tool' as const
+          : 'confirm' as const;
+
+      const result = await swarmOrchestrator.resolveConfirmations({
+        userId: user.userId,
+        conversationId,
+        confirmationIds,
+        decision,
+      });
+      return c.json(result);
+    } catch (e: any) {
+      console.error('[POST /api/assistant/conversations/:id/confirm-batch]', e);
+      return c.json({ error: e?.message || 'Failed to resolve confirmations' }, 500);
+    }
+  });
+
+  // ─── Swarm runs, worker transcripts, stop worker & blackboard ───
+  router.get('/api/assistant/conversations/:id/swarm', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      const [swarmRuns, blackboardEntries, pendingConfirmations] = await Promise.all([
+        repo.listSwarmRuns(conversationId),
+        repo.listBlackboardEntries(conversationId),
+        repo.listActivePendingConfirmations(conversationId),
+      ]);
+      return c.json({ swarmRuns, blackboardEntries, pendingConfirmations });
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/swarm]', e);
+      return c.json({ error: 'Failed to load swarm state' }, 500);
+    }
+  });
+
+  router.get('/api/assistant/conversations/:id/swarm/agents/:agentId/messages', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const agentId = c.req.param('agentId');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      const agent = await repo.getSwarmAgent(agentId);
+      if (!agent || agent.conversationId !== conversationId) {
+        return c.json({ error: 'Swarm worker not found' }, 404);
+      }
+      const [messages, allPending] = await Promise.all([
+        repo.listMessages(conversationId, { swarmAgentId: agentId }),
+        repo.listActivePendingConfirmations(conversationId),
+      ]);
+      return c.json({
+        agent,
+        messages,
+        pendingConfirmations: allPending.filter((p) => p.swarmAgentId === agentId),
+      });
+    } catch (e) {
+      console.error('[GET /api/assistant/conversations/:id/swarm/agents/:agentId/messages]', e);
+      return c.json({ error: 'Failed to load worker transcript' }, 500);
+    }
+  });
+
+  router.post('/api/assistant/conversations/:id/swarm/agents/:agentId/stop', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const agentId = c.req.param('agentId');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      const stopping = swarmOrchestrator?.stopWorkerById(conversationId, agentId) ?? false;
+      return c.json({ stopping });
+    } catch (e) {
+      console.error('[POST /api/assistant/conversations/:id/swarm/agents/:agentId/stop]', e);
+      return c.json({ error: 'Failed to stop worker' }, 500);
+    }
+  });
+
+  router.delete('/api/assistant/conversations/:id/blackboard/:entryId', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const conversationId = c.req.param('id');
+      const conversation = await repo.getConversation(user.userId, conversationId);
+      if (!conversation) return c.json({ error: 'Conversation not found' }, 404);
+      await repo.deleteBlackboardEntry(conversationId, c.req.param('entryId'));
+      return c.json({ success: true });
+    } catch (e: any) {
+      if (e?.message === 'Blackboard entry not found') return c.json({ error: 'Blackboard entry not found' }, 404);
+      console.error('[DELETE /api/assistant/conversations/:id/blackboard/:entryId]', e);
+      return c.json({ error: 'Failed to remove blackboard entry' }, 500);
+    }
   });
 
   // ─── Reattach to an in-flight turn ───
@@ -464,11 +600,30 @@ export function createAssistantRouter(
     }
   });
 
-  // ─── Chat preferences (enabled providers, last picked model) ───
+  // ─── Chat preferences (enabled providers, last picked model, swarm config) ───
+  const swarmPresetWorkerSchema = z.object({
+    name: z.string().min(1).max(48),
+    role: z.string().min(1).max(80),
+    brief: z.string().min(1).max(4000),
+    toolScope: z.enum(['read', 'propose', 'write']),
+    providerId: z.string().max(200).nullable().optional(),
+    modelConfigId: z.string().max(200).nullable().optional(),
+  });
+  const swarmPresetSchema = z.object({
+    id: z.string().min(1).max(100),
+    name: z.string().min(1).max(120),
+    description: z.string().max(500).default(''),
+    goalTemplate: z.string().max(2000).default(''),
+    workers: z.array(swarmPresetWorkerSchema).min(1).max(12),
+  });
   const settingsPatchSchema = z.object({
     enabledProviderIds: z.array(z.string().min(1).max(200)).max(200).optional(),
     lastProviderId: z.string().max(200).nullable().optional(),
     lastModelId: z.string().max(200).nullable().optional(),
+    swarmEnabled: z.boolean().optional(),
+    swarmWorkerProviderId: z.string().max(200).nullable().optional(),
+    swarmWorkerModelId: z.string().max(200).nullable().optional(),
+    swarmPresets: z.array(swarmPresetSchema).max(50).optional(),
   }).strict();
 
   router.get('/api/assistant/settings', authMiddleware, async (c) => {
@@ -490,6 +645,8 @@ export function createAssistantRouter(
         ...parsed.data,
         lastProviderId: parsed.data.lastProviderId === '' ? null : parsed.data.lastProviderId,
         lastModelId: parsed.data.lastModelId === '' ? null : parsed.data.lastModelId,
+        swarmWorkerProviderId: parsed.data.swarmWorkerProviderId === '' ? null : parsed.data.swarmWorkerProviderId,
+        swarmWorkerModelId: parsed.data.swarmWorkerModelId === '' ? null : parsed.data.swarmWorkerModelId,
       };
       return c.json(await repo.updateSettings(user.userId, patch));
     } catch (e) {
