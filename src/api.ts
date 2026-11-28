@@ -756,6 +756,47 @@ export async function generateProjectDrafts(
   return { created: data.created ?? 0 };
 }
 
+export interface RescaleSourceInfo {
+  id: string;
+  width?: number;
+  height?: number;
+  format?: 'png' | 'jpeg' | 'webp';
+}
+
+/** Pixel size and format of album images, read from their files. */
+export async function inspectAlbumRescale(projectId: string, itemIds: string[], signal?: AbortSignal): Promise<RescaleSourceInfo[]> {
+  const res = await apiFetch(`/api/projects/${encodeURIComponent(projectId)}/album/rescale/inspect`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ itemIds }),
+    signal,
+  });
+  return (await handleResponse<{ items: RescaleSourceInfo[] }>(res, 'Failed to read the images')).items;
+}
+
+export interface AlbumRescaleRequest {
+  itemIds: string[];
+  prompt: string;
+  providerId: string;
+  modelConfigId: string;
+  /** A ratio the model offers, or `source` to match each image. */
+  aspectRatio: string;
+  quality?: string;
+  /** `png`, `jpeg`, `webp`, or `source` to keep each image's own. */
+  format: string;
+  background?: string;
+}
+
+/** Stage one image-to-image draft per album item. */
+export async function createAlbumRescaleDrafts(projectId: string, request: AlbumRescaleRequest): Promise<{ created: number }> {
+  const res = await apiFetch(`/api/projects/${encodeURIComponent(projectId)}/album/rescale`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  return handleResponse<{ created: number }>(res, 'Failed to add rescale drafts');
+}
+
 export async function deleteProjectJobs(id: string, jobIds: string[]): Promise<{ deleted: number }> {
   const res = await apiFetch(`/api/projects/${id}/jobs/delete-batch`, {
     method: 'POST',
