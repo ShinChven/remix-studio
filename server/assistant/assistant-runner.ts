@@ -42,6 +42,11 @@ import {
   type AskUserAnswer,
   type AskUserQuestion,
 } from './ask-user-tool';
+import {
+  UPDATE_STEPS_TOOL_NAME,
+  createUpdateStepsTool,
+  type AssistantStepItem,
+} from './update-steps-tool';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 /**
@@ -110,6 +115,7 @@ export type AssistantStatusEvent =
   | ({ type: 'tool_call_finished'; call: ToolCall; isError: boolean } & SwarmEventContext)
   | ({ type: 'confirmation_required'; call: ToolCall; confirmationId: string } & SwarmEventContext)
   | ({ type: 'input_required'; call: ToolCall } & SwarmEventContext)
+  | ({ type: 'steps_updated'; steps: AssistantStepItem[] } & SwarmEventContext)
   | ({ type: 'circuit_open'; reason: string } & SwarmEventContext)
   | ({ type: 'stop_requested' } & SwarmEventContext)
   | { type: 'swarm_started'; swarmRunId: string; goal: string }
@@ -300,6 +306,7 @@ export class AssistantRunner {
     this.tools = [
       ...createAssistantToolDefinitions(toolDeps).filter((tool) => !tool.mcpOnly),
       createAskUserTool(),
+      createUpdateStepsTool(),
     ];
     this.toolsByName = new Map(this.tools.map((t) => [t.name, t]));
   }
@@ -979,9 +986,12 @@ export class AssistantRunner {
 
     // Resolve the active tool set for this loop (Coordinator or scoped Worker).
     let activeTools: AssistantToolDefinition[] = this.tools;
-    // A swarm worker runs with nobody watching it, so it has nobody to ask.
+    // A swarm worker runs with nobody watching it, so it has nobody to ask
+    // and reports its progress through the swarm panel instead of the main checklist.
     if (swarmAgentId) {
-      activeTools = activeTools.filter((t) => t.name !== ASK_USER_TOOL_NAME);
+      activeTools = activeTools.filter(
+        (t) => t.name !== ASK_USER_TOOL_NAME && t.name !== UPDATE_STEPS_TOOL_NAME,
+      );
     }
     if (toolScope === 'read' || toolScope === 'propose') {
       activeTools = activeTools.filter((t) => t.category === 'read');
@@ -1301,6 +1311,13 @@ export class AssistantRunner {
           },
         );
         console.log(`[Assistant] Tool executed: ${call.name} in ${Date.now() - startMs}ms conversation=${conversationId} agent=${swarmAgentId ?? 'coordinator'}`);
+        if (tool.name === UPDATE_STEPS_TOOL_NAME && !isError && !swarmAgentId) {
+          emit(onStatusEvent, {
+            type: 'steps_updated',
+            steps: (parsed.value as { steps: AssistantStepItem[] }).steps,
+            ...eventCtx,
+          });
+        }
         emit(onStatusEvent, { type: 'tool_call_finished', call, isError, ...eventCtx });
         processedCalls.push(call);
       }

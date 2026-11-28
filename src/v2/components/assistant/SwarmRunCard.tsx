@@ -33,6 +33,8 @@ export interface SwarmRunCardProps {
   liveAgentActivity?: Record<string, LiveAgentActivity>;
   blackboardEntries?: AssistantSwarmBlackboardEntry[];
   onSelectAgent: (agentId: string) => void;
+  onSelectCoordinator?: (run: AssistantSwarmRun) => void;
+  onSelectBlackboard?: (run: AssistantSwarmRun, entries: AssistantSwarmBlackboardEntry[]) => void;
 }
 
 /**
@@ -46,6 +48,8 @@ export function SwarmRunCard({
   liveAgentActivity,
   blackboardEntries,
   onSelectAgent,
+  onSelectCoordinator,
+  onSelectBlackboard,
 }: SwarmRunCardProps) {
   const { t } = useTranslation();
   const [graphToggled, setGraphToggled] = useState<boolean | null>(null);
@@ -100,6 +104,8 @@ export function SwarmRunCard({
           liveAgentActivity={liveAgentActivity}
           blackboardEntries={blackboardEntries}
           onSelectAgent={onSelectAgent}
+          onSelectCoordinator={onSelectCoordinator}
+          onSelectBlackboard={onSelectBlackboard}
           compact
         />
       )}

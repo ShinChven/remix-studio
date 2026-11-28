@@ -14,6 +14,8 @@ export interface AgentGraphProps {
   liveAgentActivity?: Record<string, LiveAgentActivity>;
   blackboardEntries?: AssistantSwarmBlackboardEntry[];
   onSelectAgent: (agentId: string) => void;
+  onSelectCoordinator?: (run: AssistantSwarmRun) => void;
+  onSelectBlackboard?: (run: AssistantSwarmRun, entries: AssistantSwarmBlackboardEntry[]) => void;
   /** Compact layout for inline chat cards; full layout for the dialog. */
   compact?: boolean;
 }
@@ -53,6 +55,8 @@ export function AgentGraph({
   liveAgentActivity = {},
   blackboardEntries = [],
   onSelectAgent,
+  onSelectCoordinator,
+  onSelectBlackboard,
   compact = false,
 }: AgentGraphProps) {
   const { t } = useTranslation();
@@ -76,7 +80,7 @@ export function AgentGraph({
   const coordH = compact ? 58 : 66;
   const agentW = compact ? 210 : 256;
   const agentH = compact ? 54 : 62;
-  const boardW = compact ? 156 : 184;
+  const boardW = compact ? 196 : 220;
   const boardH = compact ? 58 : 66;
   const gapX = compact ? 52 : 68;
   const gapY = compact ? 10 : 12;
@@ -157,28 +161,55 @@ export function AgentGraph({
           </svg>
 
           {/* Coordinator Node */}
-          <div
-            className="v2-agent-node v2-agent-node--coordinator"
-            data-status={run.status}
-            style={{ left: coordX, top: coordY, width: coordW, height: coordH }}
-            title={run.goal}
-          >
-            <div className="v2-agent-node__head">
-              <span className="v2-agent-node__icon" data-status={run.status}>
-                {run.status === 'running' ? (
-                  <LoadingIndicator size={15} aria-hidden />
-                ) : (
-                  <Icon name="hub" size={16} />
-                )}
-              </span>
-              <span className="v2-agent-node__name v2-ellipsis">
-                {t('v2.assistant.swarm.coordinator', 'Coordinator')}
-              </span>
+          {onSelectCoordinator ? (
+            <button
+              type="button"
+              className="v2-agent-node v2-agent-node--coordinator v2-agent-node--interactive m3-focus-ring"
+              data-status={run.status}
+              style={{ left: coordX, top: coordY, width: coordW, height: coordH }}
+              onClick={() => onSelectCoordinator(run)}
+              title={run.goal}
+            >
+              <div className="v2-agent-node__head">
+                <span className="v2-agent-node__icon" data-status={run.status}>
+                  {run.status === 'running' ? (
+                    <LoadingIndicator size={15} aria-hidden />
+                  ) : (
+                    <Icon name="hub" size={16} />
+                  )}
+                </span>
+                <span className="v2-agent-node__name v2-ellipsis">
+                  {t('v2.assistant.swarm.coordinator', 'Coordinator')}
+                </span>
+              </div>
+              <div className="v2-agent-node__sub v2-ellipsis">
+                {coordinatorModelLabel || run.goal}
+              </div>
+            </button>
+          ) : (
+            <div
+              className="v2-agent-node v2-agent-node--coordinator"
+              data-status={run.status}
+              style={{ left: coordX, top: coordY, width: coordW, height: coordH }}
+              title={run.goal}
+            >
+              <div className="v2-agent-node__head">
+                <span className="v2-agent-node__icon" data-status={run.status}>
+                  {run.status === 'running' ? (
+                    <LoadingIndicator size={15} aria-hidden />
+                  ) : (
+                    <Icon name="hub" size={16} />
+                  )}
+                </span>
+                <span className="v2-agent-node__name v2-ellipsis">
+                  {t('v2.assistant.swarm.coordinator', 'Coordinator')}
+                </span>
+              </div>
+              <div className="v2-agent-node__sub v2-ellipsis">
+                {coordinatorModelLabel || run.goal}
+              </div>
             </div>
-            <div className="v2-agent-node__sub v2-ellipsis">
-              {coordinatorModelLabel || run.goal}
-            </div>
-          </div>
+          )}
 
           {/* Agent Nodes */}
           {agentPositions.map(({ agent, x, y }) => {
@@ -223,26 +254,51 @@ export function AgentGraph({
 
           {/* Shared Blackboard Node */}
           {hasBlackboard && (
-            <div
-              className="v2-agent-node v2-agent-node--board"
-              style={{ left: boardX, top: boardY, width: boardW, height: boardH }}
-              title={runBlackboard.map((e) => e.title || e.key).join(', ')}
-            >
-              <div className="v2-agent-node__head">
-                <span className="v2-agent-node__icon">
-                  <Icon name="description" size={16} />
-                </span>
-                <span className="v2-agent-node__name v2-ellipsis">
-                  {t('v2.assistant.swarm.blackboardTitle', 'Shared blackboard & drafts')}
-                </span>
+            onSelectBlackboard ? (
+              <button
+                type="button"
+                className="v2-agent-node v2-agent-node--board v2-agent-node--interactive m3-focus-ring"
+                style={{ left: boardX, top: boardY, width: boardW, height: boardH }}
+                onClick={() => onSelectBlackboard(run, runBlackboard)}
+                title={runBlackboard.map((e) => e.title || e.key).join(', ')}
+              >
+                <div className="v2-agent-node__head">
+                  <span className="v2-agent-node__icon">
+                    <Icon name="description" size={16} />
+                  </span>
+                  <span className="v2-agent-node__name v2-ellipsis">
+                    {t('v2.assistant.swarm.blackboardShort', 'Shared blackboard')}
+                  </span>
+                </div>
+                <div className="v2-agent-node__sub v2-ellipsis">
+                  {t('v2.assistant.swarm.blackboardCount', {
+                    defaultValue: '{{count}} shared draft(s)',
+                    count: runBlackboard.length,
+                  })}
+                </div>
+              </button>
+            ) : (
+              <div
+                className="v2-agent-node v2-agent-node--board"
+                style={{ left: boardX, top: boardY, width: boardW, height: boardH }}
+                title={runBlackboard.map((e) => e.title || e.key).join(', ')}
+              >
+                <div className="v2-agent-node__head">
+                  <span className="v2-agent-node__icon">
+                    <Icon name="description" size={16} />
+                  </span>
+                  <span className="v2-agent-node__name v2-ellipsis">
+                    {t('v2.assistant.swarm.blackboardShort', 'Shared blackboard')}
+                  </span>
+                </div>
+                <div className="v2-agent-node__sub v2-ellipsis">
+                  {t('v2.assistant.swarm.blackboardCount', {
+                    defaultValue: '{{count}} shared draft(s)',
+                    count: runBlackboard.length,
+                  })}
+                </div>
               </div>
-              <div className="v2-agent-node__sub v2-ellipsis">
-                {t('v2.assistant.swarm.blackboardCount', {
-                  defaultValue: '{{count}} shared draft(s)',
-                  count: runBlackboard.length,
-                })}
-              </div>
-            </div>
+            )
           )}
         </div>
       </div>

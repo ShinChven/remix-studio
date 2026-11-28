@@ -7,6 +7,7 @@ import {
   cancelAssistantTurn,
   answerAssistantQuestions,
   ASSISTANT_ASK_USER_TOOL,
+  ASSISTANT_UPDATE_STEPS_TOOL,
   confirmAssistantTool,
   confirmAssistantToolsBatch,
   createAssistantConversation,
@@ -33,6 +34,8 @@ import {
   type AssistantQuestion,
   type AssistantPendingConfirmation,
   type AssistantStatusEvent,
+  type AssistantStepItem,
+  type AssistantStepStatus,
   type AssistantSwarmBlackboardEntry,
   type AssistantSwarmPreset,
   type AssistantSwarmRun,
@@ -65,6 +68,7 @@ import { Composer, type AttachedImage, type BoundContext, type ComposerHandle } 
 import { AssistantHero } from '../components/assistant/Hero';
 import type { ConversationUsage } from '../components/assistant/ContextUsage';
 import { SwarmRunCard } from '../components/assistant/SwarmRunCard';
+import { StepTracker } from '../components/assistant/StepTracker';
 import { QuestionPanel, QuestionSummary, type QuestionReply } from '../components/assistant/QuestionPanel';
 import { Lightbox } from '../components/Lightbox';
 import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
@@ -161,6 +165,26 @@ function questionsFromArgs(args: unknown): AssistantQuestion[] {
   if (!Array.isArray(list)) return [];
   return list.filter((q): q is AssistantQuestion =>
     Boolean(q) && typeof q.question === 'string' && Array.isArray(q.options));
+}
+
+const VALID_STEP_STATUSES = new Set<AssistantStepStatus>(['pending', 'in_progress', 'done', 'skipped', 'failed']);
+
+function stepsFromRaw(raw: unknown): AssistantStepItem[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry): AssistantStepItem[] => {
+    if (!entry || typeof entry !== 'object') return [];
+    const title = typeof (entry as { title?: unknown }).title === 'string'
+      ? (entry as { title: string }).title.trim()
+      : '';
+    const status = (entry as { status?: unknown }).status as AssistantStepStatus;
+    if (!title || !VALID_STEP_STATUSES.has(status)) return [];
+    return [{ title, status }];
+  });
+}
+
+function stepsFromArgs(args: unknown): AssistantStepItem[] {
+  const list = args && typeof args === 'object' ? (args as { steps?: unknown }).steps : null;
+  return stepsFromRaw(list);
 }
 
 function unwrapToolResult(content: string | null | undefined) {
@@ -369,8 +393,11 @@ export function AssistantPage() {
   const [swarmRuns, setSwarmRuns] = useState<AssistantSwarmRun[]>([]);
   const [blackboardEntries, setBlackboardEntries] = useState<AssistantSwarmBlackboardEntry[]>([]);
   const [liveSteps, setLiveSteps] = useState<LiveStepEntry[]>([]);
+  const [liveTrackerSteps, setLiveTrackerSteps] = useState<AssistantStepItem[] | null>(null);
   const [liveAgentActivity, setLiveAgentActivity] = useState<Record<string, LiveAgentActivity>>({});
   const [inspectedAgentId, setInspectedAgentId] = useState<string | null>(null);
+  const [inspectedCoordinatorRunId, setInspectedCoordinatorRunId] = useState<string | null>(null);
+  const [inspectedBlackboardRunId, setInspectedBlackboardRunId] = useState<string | null>(null);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   const [swarmMode, setSwarmMode] = useState<boolean>(() => getCachedAssistantSettings()?.swarmEnabled ?? false);
@@ -561,12 +588,18 @@ export function AssistantPage() {
 
     // Another tab (or this one, before a reload) may have pressed Stop.
     if (event.type === 'stop_requested') setIsStopping(true);
+    if (event.type === 'steps_updated') {
+      const steps = stepsFromRaw(event.steps);
+      if (steps.length > 0) setLiveTrackerSteps(steps);
+      return;
+    }
     if (event.type === 'provider_thinking' && typeof event.title === 'string') {
       setCurrentThinkingTitle(event.title);
       setCurrentToolTitle('');
     }
     if (event.type === 'tool_call_started') {
       const call = (event as any).call;
+      if (call?.name === ASSISTANT_UPDATE_STEPS_TOOL) return;
       const label = formatToolTitle(call?.name);
       setCurrentToolTitle(label);
       setLiveSteps((prev) => [
@@ -576,6 +609,7 @@ export function AssistantPage() {
     }
     if (event.type === 'tool_call_finished') {
       const call = (event as any).call;
+      if (call?.name === ASSISTANT_UPDATE_STEPS_TOOL) return;
       const isErr = Boolean((event as any).isError);
       setCurrentToolTitle(formatToolTitle(call?.name));
       setLiveSteps((prev) =>
@@ -649,6 +683,7 @@ export function AssistantPage() {
     setBlackboardEntries(data.blackboardEntries);
     setPendingConfirmations(data.pendingConfirmations);
     setLiveAgentActivity({});
+    setLiveTrackerSteps(null);
     if (result && result.kind === 'awaiting_confirmation' && 'confirmation' in result) {
       setPendingConfirmation(result.confirmation);
     } else {
@@ -836,7 +871,10 @@ export function AssistantPage() {
       setBlackboardEntries(data.blackboardEntries);
       setPendingConfirmations(data.pendingConfirmations);
       setInspectedAgentId(null);
+      setInspectedCoordinatorRunId(null);
+      setInspectedBlackboardRunId(null);
       setLiveSteps([]);
+      setLiveTrackerSteps(null);
       if (conversation.providerId) setSelectedProviderId(conversation.providerId);
       if (conversation.modelConfigId) setSelectedModelId(conversation.modelConfigId);
       // A confirmation the conversation is still waiting on lives in the
@@ -1055,14 +1093,17 @@ export function AssistantPage() {
       setPendingConfirmation(null);
       setPendingConfirmations([]);
       setInspectedAgentId(null);
+      setInspectedCoordinatorRunId(null);
+      setInspectedBlackboardRunId(null);
       setLiveSteps([]);
+      setLiveTrackerSteps(null);
     }
   }, [activeConversationId, loadConversation]);
 
   // ─── Auto-scroll ───
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isSending]);
+  }, [messages, isSending, liveTrackerSteps]);
 
   // ─── Available text models for the selected provider ───
   const selectedProvider = providers.find((p) => p.id === selectedProviderId);
@@ -1148,6 +1189,7 @@ export function AssistantPage() {
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
     setPendingConfirmation(null);
+    setLiveTrackerSteps(null);
 
     let currentConversationId = activeConversationId;
 
@@ -1478,6 +1520,7 @@ export function AssistantPage() {
     setCurrentThinkingTitle('');
     setCurrentToolTitle('');
     setPendingConfirmation(null);
+    setLiveTrackerSteps(null);
 
     const msgIndex = messages.findIndex(m => m.id === messageId);
     if (msgIndex !== -1) {
@@ -1545,6 +1588,24 @@ export function AssistantPage() {
     }
     return null;
   }, [messages, toolMessagesByCallId]);
+
+  /** Latest persisted `update_steps` list in the current (last) turn segment. */
+  const activeTurnPersistedSteps = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role === 'user') return null;
+      if (message.role !== 'assistant') continue;
+      const calls = message.toolCalls ?? [];
+      for (let j = calls.length - 1; j >= 0; j--) {
+        if (calls[j].name !== ASSISTANT_UPDATE_STEPS_TOOL) continue;
+        const steps = stepsFromArgs(calls[j].arguments);
+        if (steps.length > 0) return steps;
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const activeTrackerSteps = liveTrackerSteps ?? activeTurnPersistedSteps;
 
   const swarmRunById = useMemo(() => {
     const map = new Map<string, AssistantSwarmRun>();
@@ -1637,6 +1698,8 @@ export function AssistantPage() {
             liveAgentActivity={liveAgentActivity}
             blackboardEntries={blackboardEntries}
             onSelectAgent={handleOpenWorkerInspector}
+            onSelectCoordinator={(r) => setInspectedCoordinatorRunId(r.id)}
+            onSelectBlackboard={(r) => setInspectedBlackboardRunId(r.id)}
           />
         ))}
         {views.map(({ call }) => (
@@ -1672,6 +1735,9 @@ export function AssistantPage() {
         out.push(<div key={msg.id}>{renderAssistantMessage(msg)}</div>);
       }
       for (const call of msg.toolCalls ?? []) {
+        // Step tracker is shown only while the current turn is running or waiting on user action,
+        // and dismissed automatically once the turn completes.
+        if (call.name === ASSISTANT_UPDATE_STEPS_TOOL) continue;
         const message = toolMessagesByCallId.get(call.id);
         if (call.name === ASSISTANT_ASK_USER_TOOL) {
           // Open questions wait in the composer; answered ones read as a Q&A.
@@ -1975,7 +2041,14 @@ export function AssistantPage() {
                     liveAgentActivity={liveAgentActivity}
                     blackboardEntries={blackboardEntries}
                     onSelectAgent={handleOpenWorkerInspector}
+                    onSelectCoordinator={(r) => setInspectedCoordinatorRunId(r.id)}
+                    onSelectBlackboard={(r) => setInspectedBlackboardRunId(r.id)}
                   />
+                )}
+                {(isSending || Boolean(pendingConfirmation) || Boolean(pendingQuestion))
+                  && activeTrackerSteps
+                  && activeTrackerSteps.length > 0 && (
+                    <StepTracker steps={activeTrackerSteps} active />
                 )}
                 {isSending && (
                   <div className="m3-chat-message-row v2-chat-working" data-role="assistant" aria-live="polite">
@@ -2086,6 +2159,10 @@ export function AssistantPage() {
           appViews={appViews}
           inspectedAgentId={inspectedAgentId}
           onSelectAgent={setInspectedAgentId}
+          inspectedCoordinatorRunId={inspectedCoordinatorRunId}
+          onSelectCoordinatorRun={setInspectedCoordinatorRunId}
+          inspectedBlackboardRunId={inspectedBlackboardRunId}
+          onSelectBlackboardRun={setInspectedBlackboardRunId}
           onConfirmSingle={handleConfirmSingle}
           onConfirmAll={handleConfirmAll}
           onMentionResource={handleMentionResource}

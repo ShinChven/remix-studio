@@ -2087,6 +2087,16 @@ export interface AssistantQuestionAnswer {
 
 export const ASSISTANT_ASK_USER_TOOL = 'ask_user';
 
+export const ASSISTANT_UPDATE_STEPS_TOOL = 'update_steps';
+
+export type AssistantStepStatus = 'pending' | 'in_progress' | 'done' | 'skipped' | 'failed';
+
+/** One step in the assistant's live multi-step task tracker. */
+export interface AssistantStepItem {
+  title: string;
+  status: AssistantStepStatus;
+}
+
 export type AssistantTurnResult =
   | { kind: 'final'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] }
   | { kind: 'awaiting_confirmation'; message: AssistantMessage; confirmation: AssistantPendingConfirmation; statusEvents: AssistantStatusEvent[] }
