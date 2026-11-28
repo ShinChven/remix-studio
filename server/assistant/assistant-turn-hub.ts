@@ -33,7 +33,7 @@ const RETAIN_FINISHED_MS = 5 * 60_000;
  */
 const MAX_BUFFERED_FRAMES = 800;
 
-export type TurnKind = 'message' | 'edit' | 'confirm';
+export type TurnKind = 'message' | 'edit' | 'confirm' | 'answer';
 
 /** One NDJSON line. `seq` orders frames so a reconnect can resume mid-turn. */
 export type TurnFrame = { seq: number } & (

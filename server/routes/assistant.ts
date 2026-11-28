@@ -10,6 +10,7 @@ import { ProviderRepository } from '../db/provider-repository';
 import { ASSISTANT_SUPPORTED_PROVIDER_TYPES } from '../assistant/chat-provider-factory';
 import { AssistantTurnHub, TurnAlreadyRunningError, TurnKind } from '../assistant/assistant-turn-hub';
 import { transcribeAudioWithGemini } from '../assistant/providers/google';
+import { askUserAnswersSchema } from '../assistant/ask-user-tool';
 
 type Variables = { user: JwtPayload };
 
@@ -33,6 +34,15 @@ function turnResultToJson(result: TurnResult, statusEvents: AssistantStatusEvent
       kind: 'awaiting_confirmation' as const,
       message: result.assistantMessage,
       confirmation: result.confirmation,
+      statusEvents,
+    };
+  }
+  if (result.kind === 'awaiting_input') {
+    return {
+      kind: 'awaiting_input' as const,
+      message: result.assistantMessage,
+      toolCallId: result.toolCallId,
+      questions: result.questions,
       statusEvents,
     };
   }
@@ -399,6 +409,41 @@ export function createAssistantRouter(
         conversationId,
         confirmationId,
         decision,
+        swarmMode,
+        workerProviderId,
+        workerModelId,
+        abortSignal,
+        onStatusEvent,
+      }),
+    });
+  });
+
+  // ─── Answer the assistant's questions (ask_user) and resume ───
+  router.post('/api/assistant/conversations/:id/answer', authMiddleware, async (c) => {
+    const user = c.get('user') as JwtPayload;
+    const conversationId = c.req.param('id');
+    const body = await c.req.json().catch(() => null);
+    const toolCallId = typeof body?.toolCallId === 'string' ? body.toolCallId : '';
+    if (!toolCallId) return c.json({ error: 'toolCallId is required' }, 400);
+    const skipped = body?.skipped === true;
+    const parsedAnswers = askUserAnswersSchema.safeParse(skipped ? [] : body?.answers);
+    if (!parsedAnswers.success) return c.json({ error: 'answers are invalid' }, 400);
+    const swarmMode = body?.swarmMode === true;
+    const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
+    const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
+
+    return await startTurn(c, {
+      userId: user.userId,
+      conversationId,
+      kind: 'answer',
+      logLabel: '[POST /api/assistant/conversations/:id/answer]',
+      fallbackError: 'Failed to send your answers',
+      run: (onStatusEvent, abortSignal) => runner.resumeAfterAnswer({
+        userId: user.userId,
+        conversationId,
+        toolCallId,
+        answers: parsedAnswers.data,
+        skipped,
         swarmMode,
         workerProviderId,
         workerModelId,

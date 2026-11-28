@@ -2029,9 +2029,26 @@ export interface AssistantStatusEvent {
   [key: string]: unknown;
 }
 
+/** One question the assistant asked through its `ask_user` tool. */
+export interface AssistantQuestion {
+  question: string;
+  header?: string;
+  options: { label: string; description?: string }[];
+  multiSelect?: boolean;
+}
+
+/** The user's answer to one `AssistantQuestion`. */
+export interface AssistantQuestionAnswer {
+  selected: string[];
+  other?: string;
+}
+
+export const ASSISTANT_ASK_USER_TOOL = 'ask_user';
+
 export type AssistantTurnResult =
   | { kind: 'final'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] }
   | { kind: 'awaiting_confirmation'; message: AssistantMessage; confirmation: AssistantPendingConfirmation; statusEvents: AssistantStatusEvent[] }
+  | { kind: 'awaiting_input'; message: AssistantMessage; toolCallId: string; questions: AssistantQuestion[]; statusEvents: AssistantStatusEvent[] }
   | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] }
   | { kind: 'stopped'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] };
 
@@ -2205,6 +2222,24 @@ export async function confirmAssistantTool(
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify({ confirmationId, decision, ...(swarmOptions ?? {}) }),
+    signal,
+  });
+  return handleAssistantTurnStream(res, onStatusEvent);
+}
+
+/** Send the answers to the assistant's open questions (or skip them) and resume its turn. */
+export async function answerAssistantQuestions(
+  conversationId: string,
+  toolCallId: string,
+  reply: { answers: AssistantQuestionAnswer[] } | { skipped: true },
+  onStatusEvent?: AssistantTurnStatusHandler,
+  signal?: AbortSignal,
+  swarmOptions?: AssistantTurnSwarmOptions,
+): Promise<AssistantTurnResult | null> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/answer`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ toolCallId, ...reply, ...(swarmOptions ?? {}) }),
     signal,
   });
   return handleAssistantTurnStream(res, onStatusEvent);
