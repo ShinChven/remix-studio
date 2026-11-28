@@ -1998,6 +1998,7 @@ export interface AssistantSwarmPreset {
 
 export interface AssistantTurnSwarmOptions {
   swarmMode?: boolean;
+  webSearch?: boolean;
   workerProviderId?: string | null;
   workerModelId?: string | null;
 }

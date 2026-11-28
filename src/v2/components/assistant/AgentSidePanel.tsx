@@ -39,6 +39,7 @@ import { Markdown } from '../../ui/Markdown';
 import { useToast } from '../../ui/useToast';
 import { ProviderLogo } from '../ProviderLogo';
 import { BOUND_CONTEXT_ICONS } from './Composer';
+import { AgentGraph } from './AgentGraph';
 import { McpAppFrame } from './McpAppFrame';
 
 export interface LiveAgentActivity {
@@ -272,6 +273,7 @@ export function AgentSidePanel({
   const [previewBoardEntry, setPreviewBoardEntry] = useState<AssistantSwarmBlackboardEntry | null>(null);
   const [previewPreset, setPreviewPreset] = useState<AssistantSwarmPreset | null>(null);
   const [deleteBoardTarget, setDeleteBoardTarget] = useState<AssistantSwarmBlackboardEntry | null>(null);
+  const [graphDialogOpen, setGraphDialogOpen] = useState(false);
 
   const workerProvider = providers.find((p) => p.id === workerProviderId);
   const workerModel = workerProvider
@@ -444,10 +446,21 @@ export function AgentSidePanel({
         {(latestSwarmRun || isSending || liveSteps.length > 0) && (
           <CollapsibleSection
             title={latestSwarmRun
-              ? t('v2.assistant.swarm.roster', 'Swarm roster')
+              ? t('v2.assistant.swarm.roster', 'Active agents')
               : t('v2.assistant.agentPanel.activity', 'Activity')}
             count={latestSwarmRun ? latestSwarmRun.agents.length : (liveSteps.length || undefined)}
-            trailing={latestSwarmRun ? <span className="v2-ap__row-sub">{latestSwarmRun.status}</span> : undefined}
+            trailing={latestSwarmRun ? (
+              <span className="flex items-center gap-1">
+                <span className="v2-ap__row-sub">{latestSwarmRun.status}</span>
+                <IconButton
+                  size="xs"
+                  icon="account_tree"
+                  label={t('v2.assistant.swarm.viewGraph', 'Architecture graph')}
+                  tooltip
+                  onClick={() => setGraphDialogOpen(true)}
+                />
+              </span>
+            ) : undefined}
             open={openSections.roster}
             onToggle={() => toggleSection('roster')}
           >
@@ -742,13 +755,20 @@ export function AgentSidePanel({
       </div>
 
       <Dialog
-        open={!!inspectedAgentId}
-        onClose={() => onSelectAgent(null)}
+        open={!!inspectedAgentId || (graphDialogOpen && !!latestSwarmRun)}
+        onClose={() => {
+          setGraphDialogOpen(false);
+          onSelectAgent(null);
+        }}
         fullScreen="compact"
         showCloseButton
         describeContent={false}
-        maxWidth={760}
-        headline={activeInspectedAgent?.name || 'Worker'}
+        maxWidth={860}
+        headline={
+          inspectedAgentId
+            ? (activeInspectedAgent?.name || 'Agent')
+            : t('v2.assistant.swarm.graphTitle', 'Agent architecture')
+        }
         confirmAction={
           inspectedAgentId && inspectedIsRunning ? (
             <Button variant="text" size="sm" onClick={() => void handleStopWorker(inspectedAgentId)}>
@@ -759,6 +779,19 @@ export function AgentSidePanel({
         actions={
           inspectedAgentId ? (
             <>
+              {latestSwarmRun && (
+                <Button
+                  variant="text"
+                  size="sm"
+                  icon="arrow_back"
+                  onClick={() => {
+                    setGraphDialogOpen(true);
+                    onSelectAgent(null);
+                  }}
+                >
+                  {t('v2.assistant.swarm.viewGraph', 'Architecture graph')}
+                </Button>
+              )}
               {inspectedIsRunning && (
                 <Button variant="tonal" size="sm" icon="stop_circle" onClick={() => void handleStopWorker(inspectedAgentId)}>
                   {t('v2.assistant.swarm.stopWorker', 'Stop worker')}
@@ -771,6 +804,7 @@ export function AgentSidePanel({
           ) : undefined
         }
       >
+        {inspectedAgentId ? (
         <div className="flex flex-col gap-3">
           {activeInspectedAgent && (
             <>
@@ -898,6 +932,28 @@ export function AgentSidePanel({
             </div>
           )}
         </div>
+        ) : latestSwarmRun ? (
+          <div className="flex flex-col gap-3">
+            {latestSwarmRun.goal && (
+              <Text variant="body-small" className="text-on-surface-variant">
+                {latestSwarmRun.goal}
+              </Text>
+            )}
+            <AgentGraph
+              run={latestSwarmRun}
+              coordinatorModelLabel={
+                selectedProviderId && selectedModelId
+                  ? getTextModelsForProvider(
+                      providers.find((p) => p.id === selectedProviderId)?.type ?? 'GoogleAI',
+                    ).find((m) => m.id === selectedModelId)?.name
+                  : undefined
+              }
+              liveAgentActivity={liveAgentActivity}
+              blackboardEntries={blackboardEntries}
+              onSelectAgent={(agentId) => onSelectAgent(agentId)}
+            />
+          </div>
+        ) : null}
       </Dialog>
 
       <Dialog
@@ -968,7 +1024,16 @@ export function AgentSidePanel({
               {previewBoardEntry.authorName} · {previewBoardEntry.key}
             </Text>
             <Markdown className="v2-chat-markdown">{previewBoardEntry.content}</Markdown>
-            {previewBoardEntry.dataJson != null && <JsonView data={previewBoardEntry.dataJson} />}
+            {previewBoardEntry.dataJson != null && (
+              <details className="v2-ap__disclosure v2-ap__json-disclosure">
+                <summary className="v2-ap__json-summary m3-focus-ring">
+                  <Icon name="data_object" size={16} />
+                  <span>{t('v2.assistant.swarm.structuredData', 'Structured data (JSON)')}</span>
+                  <Icon name="chevron_right" size={18} className="v2-ap__json-chevron" />
+                </summary>
+                <JsonView data={previewBoardEntry.dataJson} className="v2-json--unbounded" />
+              </details>
+            )}
           </div>
         )}
       </Dialog>

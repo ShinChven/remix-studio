@@ -314,6 +314,7 @@ export function createAssistantRouter(
     const content = typeof body?.content === 'string' ? body.content.trim() : '';
     if (!content) return c.json({ error: 'Message content is required' }, 400);
     const swarmMode = body?.swarmMode === true;
+    const webSearch = body?.webSearch === true;
     const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
     const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
 
@@ -328,6 +329,7 @@ export function createAssistantRouter(
         conversationId,
         content,
         swarmMode,
+        webSearch,
         workerProviderId,
         workerModelId,
         abortSignal,
@@ -345,6 +347,7 @@ export function createAssistantRouter(
     const content = typeof body?.content === 'string' ? body.content.trim() : '';
     if (!content) return c.json({ error: 'Message content is required' }, 400);
     const swarmMode = body?.swarmMode === true;
+    const webSearch = body?.webSearch === true;
     const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
     const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
 
@@ -361,6 +364,7 @@ export function createAssistantRouter(
           conversationId,
           content,
           swarmMode,
+          webSearch,
           workerProviderId,
           workerModelId,
           abortSignal,
@@ -377,6 +381,7 @@ export function createAssistantRouter(
     const body = await c.req.json();
     const confirmationId = typeof body?.confirmationId === 'string' ? body.confirmationId : '';
     const swarmMode = body?.swarmMode === true;
+    const webSearch = body?.webSearch === true;
     const workerProviderId = typeof body?.workerProviderId === 'string' ? body.workerProviderId : null;
     const workerModelId = typeof body?.workerModelId === 'string' ? body.workerModelId : null;
     const decision = body?.decision === 'cancel'
@@ -400,6 +405,7 @@ export function createAssistantRouter(
         confirmationId,
         decision,
         swarmMode,
+        webSearch,
         workerProviderId,
         workerModelId,
         abortSignal,

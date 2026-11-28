@@ -85,5 +85,5 @@ export function formatSwarmPresetPrompt(preset: AssistantSwarmPreset): string {
   const workerLines = preset.workers
     .map((w) => `- **${w.name}** (${w.role}, scope: \`${w.toolScope}\`): ${w.brief}`)
     .join('\n');
-  return `/swarm Use the "${preset.name}" team.\n\nGoal: ${preset.goalTemplate || preset.description}\n\nSuggested workers:\n${workerLines}\n\nDetails: `;
+  return `/agents Use the "${preset.name}" team.\n\nGoal: ${preset.goalTemplate || preset.description}\n\nSuggested agents:\n${workerLines}\n\nDetails: `;
 }

@@ -59,9 +59,14 @@ export class GoogleAIChatProvider implements ChatProvider {
     const { systemInstruction, contents, toolCallNameById } = mapMessages(req.messages);
 
     // Filter out unsupported keywords
-    const tools = req.tools.length > 0
-      ? [{ functionDeclarations: req.tools.map(mapTool) }]
-      : undefined;
+    const toolEntries: any[] = [];
+    if (req.tools.length > 0) {
+      toolEntries.push({ functionDeclarations: req.tools.map(mapTool) });
+    }
+    if (req.webSearch) {
+      toolEntries.push({ googleSearch: {} });
+    }
+    const tools = toolEntries.length > 0 ? toolEntries : undefined;
 
     const realModelId = resolveRealGeminiModelId(req.modelId);
 
@@ -72,6 +77,9 @@ export class GoogleAIChatProvider implements ChatProvider {
       ...(typeof req.maxTokens === 'number' ? { maxOutputTokens: req.maxTokens } : {}),
       ...(systemInstruction ? { systemInstruction } : {}),
       ...(tools ? { tools } : {}),
+      ...(req.webSearch && req.tools.length > 0
+        ? { toolConfig: { includeServerSideToolInvocations: true } }
+        : {}),
       // Closes the request when the user stops the turn.
       ...(req.abortSignal ? { abortSignal: req.abortSignal } : {}),
     };
@@ -152,6 +160,13 @@ export class GoogleAIChatProvider implements ChatProvider {
       }
     }
 
+    if (toolCalls.length === 0) {
+      const citations = extractGeminiGroundingSources((candidate as any).groundingMetadata);
+      if (citations.length > 0) {
+        text = appendSourcesFooter(text, citations);
+      }
+    }
+
     void toolCallNameById;
 
     const cachedInputTokens = typeof res.usageMetadata?.cachedContentTokenCount === 'number'
@@ -186,10 +201,15 @@ export class GoogleAIChatProvider implements ChatProvider {
     let thoughtText = '';
     const toolCallsByKey = new Map<string, ToolCall>();
     let lastChunk: any = null;
+    let lastGroundingMetadata: any = null;
     let lastThoughtTitle = '';
 
     for await (const chunk of stream) {
       lastChunk = chunk;
+      const chunkGrounding = (chunk.candidates?.[0] as any)?.groundingMetadata;
+      if (chunkGrounding?.groundingChunks?.length) {
+        lastGroundingMetadata = chunkGrounding;
+      }
       const parts = chunk.candidates?.[0]?.content?.parts ?? [];
       for (const part of parts) {
         if (part.text) {
@@ -240,6 +260,10 @@ export class GoogleAIChatProvider implements ChatProvider {
         throw new Error(`Google AI blocked prompt: ${lastChunk.promptFeedback.blockReason}`);
       }
       throw new Error('Google AI chat: no candidates returned');
+    }
+
+    if (lastGroundingMetadata && !(candidate as any).groundingMetadata?.groundingChunks?.length) {
+      (candidate as any).groundingMetadata = lastGroundingMetadata;
     }
 
     candidate.content = {
@@ -491,4 +515,27 @@ function mapStopReason(reason: string | null | undefined, hasToolCalls: boolean)
     default:
       return 'error';
   }
+}
+
+function extractGeminiGroundingSources(groundingMetadata: any): Array<{ title: string; url: string }> {
+  const chunks = Array.isArray(groundingMetadata?.groundingChunks) ? groundingMetadata.groundingChunks : [];
+  const out: Array<{ title: string; url: string }> = [];
+  const seen = new Set<string>();
+  for (const chunk of chunks) {
+    const uri = chunk?.web?.uri;
+    if (typeof uri !== 'string' || !uri || seen.has(uri)) continue;
+    seen.add(uri);
+    const title = typeof chunk?.web?.title === 'string' && chunk.web.title.trim() ? chunk.web.title.trim() : uri;
+    out.push({ title, url: uri });
+  }
+  return out;
+}
+
+function appendSourcesFooter(text: string, sources: Array<{ title: string; url: string }>): string {
+  if (sources.length === 0) return text;
+  const links = sources
+    .slice(0, 8)
+    .map((s) => `[${s.title.replace(/[\[\]]/g, '')}](${s.url})`)
+    .join(' · ');
+  return `${text.trimEnd()}\n\n---\n**Sources:** ${links}`;
 }

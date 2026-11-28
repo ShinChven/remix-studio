@@ -153,6 +153,7 @@ export interface ScopedLoopOptions {
   entityLockAcquire?: (toolName: string, args: unknown) => Promise<() => void>;
   maxIterations?: number;
   maxToolCalls?: number;
+  webSearch?: boolean;
   onTokenUsage?: (inputTokens: number, outputTokens: number) => void;
 }
 
@@ -172,6 +173,7 @@ export interface SendUserMessageInput {
   conversationId: string;
   content: string;
   swarmMode?: boolean;
+  webSearch?: boolean;
   workerProviderId?: string | null;
   workerModelId?: string | null;
   abortSignal?: AbortSignal;
@@ -184,6 +186,7 @@ export interface ResumeInput {
   confirmationId: string;
   decision: 'confirm' | 'confirm_tool' | 'confirm_session' | 'cancel';
   swarmMode?: boolean;
+  webSearch?: boolean;
   workerProviderId?: string | null;
   workerModelId?: string | null;
   abortSignal?: AbortSignal;
@@ -448,6 +451,7 @@ export class AssistantRunner {
         conversationId: conversation.id,
         providerId: conversation.providerId,
         modelId: conversation.modelConfigId,
+        webSearch: input.webSearch,
         abortSignal: input.abortSignal,
         onStatusEvent: input.onStatusEvent,
         ...swarmExtras,
@@ -532,6 +536,7 @@ export class AssistantRunner {
           conversationId: conversation.id,
           providerId: conversation.providerId,
           modelId: conversation.modelConfigId,
+          webSearch: input.webSearch,
           abortSignal: input.abortSignal,
           onStatusEvent: input.onStatusEvent,
           ...swarmExtras,
@@ -598,6 +603,7 @@ export class AssistantRunner {
         conversationId: conversation.id,
         providerId: conversation.providerId,
         modelId: conversation.modelConfigId,
+        webSearch: input.webSearch,
         abortSignal: input.abortSignal,
         onStatusEvent: input.onStatusEvent,
         ...swarmExtras,
@@ -822,6 +828,7 @@ export class AssistantRunner {
       entityLockAcquire,
       maxIterations = ASSISTANT_LIMITS.MAX_ITERATIONS,
       maxToolCalls = ASSISTANT_LIMITS.MAX_TOOL_CALLS,
+      webSearch = false,
       onTokenUsage,
     } = input;
 
@@ -902,6 +909,7 @@ export class AssistantRunner {
           maxTokens: ASSISTANT_LIMITS.MAX_OUTPUT_TOKENS,
           abortSignal,
           cacheKey: swarmAgentId ? `${conversationId}:${swarmAgentId}` : conversationId,
+          webSearch,
           onThought: (update) => {
             emit(onStatusEvent, {
               type: 'provider_thinking',

@@ -61,7 +61,15 @@ export type AttachedImage = {
   base64: string;
 };
 
-type SkillOption = { id: string; title: string; content: string; tags: string[]; isCommand?: boolean };
+type SkillOption = {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  isCommand?: boolean;
+  commandIcon?: string;
+  commandHint?: string;
+};
 
 export interface ComposerProps {
   initialInputText?: string;
@@ -81,6 +89,8 @@ export interface ComposerProps {
   isStopping?: boolean;
   swarmMode?: boolean;
   onToggleSwarmMode?: (enabled: boolean) => void;
+  webSearchMode?: boolean;
+  onToggleWebSearchMode?: (enabled: boolean) => void;
   onSend: (text: string, boundContexts: BoundContext[], attachedImages: AttachedImage[]) => void;
   onStop?: () => void;
   placeholder?: string;
@@ -108,9 +118,9 @@ function getSkillTriggerMatch(textBeforeCursor: string) {
   const match = textBeforeCursor.match(/(^|\s)\/([^\n/]*)$/);
   if (!match) return null;
   const query = match[2] || '';
-  // Once a slash command like `/swarm ` is followed by whitespace, the user is
-  // typing the command's arguments rather than searching the slash menu.
-  if (/^swarm\s/i.test(query)) return null;
+  // Once a slash command like `/agents ` or `/search ` is followed by whitespace,
+  // the user is typing the command's arguments rather than searching the slash menu.
+  if (/^(?:agents|swarm|search)\s/i.test(query)) return null;
   return { query, start: textBeforeCursor.length - query.length - 1 };
 }
 
@@ -171,6 +181,8 @@ export function Composer({
   isStopping = false,
   swarmMode = false,
   onToggleSwarmMode,
+  webSearchMode = false,
+  onToggleWebSearchMode,
   onSend,
   onStop,
   placeholder,
@@ -205,16 +217,33 @@ export function Composer({
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const activePicker = skillSearch !== null ? 'skill' : mentionSearch !== null ? 'resource' : null;
-  const builtInCommands: SkillOption[] =
-    skillSearch !== null && 'swarm'.startsWith(skillSearch.trim().toLowerCase())
-      ? [{
-          id: '__cmd_swarm__',
-          title: '/swarm',
-          content: '/swarm ',
-          tags: [],
-          isCommand: true,
-        }]
-      : [];
+  const skillQueryLower = skillSearch !== null ? skillSearch.trim().toLowerCase() : null;
+  const builtInCommands: SkillOption[] = skillQueryLower !== null
+    ? [
+        ...('agents'.startsWith(skillQueryLower)
+          ? [{
+              id: '__cmd_agents__',
+              title: '/agents',
+              content: '/agents ',
+              tags: [],
+              isCommand: true,
+              commandIcon: 'hub',
+              commandHint: t('v2.assistant.swarm.commandHint', 'Run this task with Multi-agents'),
+            }]
+          : []),
+        ...('search'.startsWith(skillQueryLower)
+          ? [{
+              id: '__cmd_search__',
+              title: '/search',
+              content: '/search ',
+              tags: [],
+              isCommand: true,
+              commandIcon: 'public',
+              commandHint: t('v2.assistant.webSearch.commandHint', 'Ground this reply with live Web Search'),
+            }]
+          : []),
+      ]
+    : [];
   const mergedSkillOptions = activePicker === 'skill' ? [...builtInCommands, ...skillOptions] : skillOptions;
   const activeOptions = activePicker === 'skill' ? mergedSkillOptions : mentionOptions;
   const isSearchingActivePicker = activePicker === 'skill' ? isSearchingSkills && mergedSkillOptions.length === 0 : isSearchingMentions;
@@ -571,14 +600,26 @@ export function Composer({
     focusAt(before.length + inserted.length);
   };
 
-  const insertSwarmCommand = () => {
+  const insertAgentsCommand = () => {
     setDismissedSkillTriggerStart(0);
     closePickers();
-    if (/^\/swarm(?:\s|$)/i.test(inputText.trimStart())) {
+    if (/^\/agents(?:\s|$)/i.test(inputText.trimStart())) {
       focusAt(inputText.length);
       return;
     }
-    const next = `/swarm ${inputText}`;
+    const next = `/agents ${inputText}`;
+    setInputText(next);
+    focusAt(next.length);
+  };
+
+  const insertSearchCommand = () => {
+    setDismissedSkillTriggerStart(0);
+    closePickers();
+    if (/^\/search(?:\s|$)/i.test(inputText.trimStart())) {
+      focusAt(inputText.length);
+      return;
+    }
+    const next = `/search ${inputText}`;
     setInputText(next);
     focusAt(next.length);
   };
@@ -695,7 +736,7 @@ export function Composer({
     activePicker === 'skill'
       ? mergedSkillOptions.map((o) => ({
           key: o.id,
-          icon: o.isCommand ? 'hub' : 'bolt',
+          icon: o.isCommand ? (o.commandIcon ?? 'hub') : 'bolt',
           label: (
             <span className="flex items-center gap-2">
               <span className="truncate">{o.title || t('v2.assistant.untitledSkill')}</span>
@@ -703,7 +744,7 @@ export function Composer({
             </span>
           ),
           supportingText: o.isCommand
-            ? t('v2.assistant.swarm.commandHint', 'Run this task in multi-agent Swarm Mode')
+            ? (o.commandHint ?? t('v2.assistant.swarm.commandHint', 'Run this task in multi-agent Swarm Mode'))
             : summarizeSkillContent(o.content),
         }))
       : mentionOptions.map((o) => ({
@@ -784,10 +825,21 @@ export function Composer({
         />
 
         <div className="ms-auto flex items-center gap-1">
+          {onToggleWebSearchMode && (
+            <IconButton
+              icon="public"
+              label={t('v2.assistant.webSearch.toggleHint', 'Enable Web Search grounding')}
+              tooltip
+              size="xs"
+              selected={webSearchMode}
+              disabled={isSending}
+              onClick={() => onToggleWebSearchMode(!webSearchMode)}
+            />
+          )}
           {onToggleSwarmMode && (
             <IconButton
               icon="hub"
-              label={t('v2.assistant.swarm.toggleHint', 'Enable multi-agent Swarm Mode')}
+              label={t('v2.assistant.swarm.toggleHint', 'Enable Multi-agents')}
               tooltip
               size="xs"
               selected={swarmMode}
@@ -876,11 +928,18 @@ export function Composer({
           </MenuItem>
           <MenuDivider />
           <MenuItem
-            icon="hub"
-            trailingText="/swarm"
-            onSelect={insertSwarmCommand}
+            icon="public"
+            trailingText="/search"
+            onSelect={insertSearchCommand}
           >
-            {t('v2.assistant.addMenu.swarm', 'Run in Swarm Mode')}
+            {t('v2.assistant.addMenu.search', 'Search the web')}
+          </MenuItem>
+          <MenuItem
+            icon="hub"
+            trailingText="/agents"
+            onSelect={insertAgentsCommand}
+          >
+            {t('v2.assistant.addMenu.swarm', 'Run with Multi-agents')}
           </MenuItem>
         </MenuButton>
         <textarea

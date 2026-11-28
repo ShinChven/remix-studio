@@ -356,6 +356,7 @@ export function AssistantPage() {
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   const [swarmMode, setSwarmMode] = useState<boolean>(() => getCachedAssistantSettings()?.swarmEnabled ?? false);
+  const [webSearchMode, setWebSearchMode] = useState<boolean>(false);
   const [workerProviderId, setWorkerProviderId] = useState<string | null>(() => getCachedAssistantSettings()?.swarmWorkerProviderId ?? null);
   const [workerModelId, setWorkerModelId] = useState<string | null>(() => getCachedAssistantSettings()?.swarmWorkerModelId ?? null);
   const [swarmPresets, setSwarmPresets] = useState<AssistantSwarmPreset[]>(() => getCachedAssistantSettings()?.swarmPresets ?? []);
@@ -1076,18 +1077,33 @@ export function AssistantPage() {
 
   // ─── Send message ───
   const handleSend = async (text: string, contexts: BoundContext[], images: AttachedImage[], overrideProviderId?: string, overrideModelId?: string) => {
-    const rawTrimmed = text.trim();
-    const swarmCommandMatch = rawTrimmed.match(/^\/swarm(?:\s+([\s\S]*))?$/i);
-    const triggeredByCommand = Boolean(swarmCommandMatch);
-    const trimmedText = swarmCommandMatch ? (swarmCommandMatch[1] ?? '').trim() : rawTrimmed;
-    if (triggeredByCommand && !trimmedText && contexts.length === 0 && images.length === 0) {
-      handleToggleSwarmMode(true);
-      toast.success(t('v2.assistant.swarm.commandEnabled', 'Swarm Mode enabled — enter your task or prefix any message with /swarm.'));
+    let remainingText = text.trim();
+    let triggeredSwarmByCommand = false;
+    let triggeredSearchByCommand = false;
+    while (true) {
+      const match = remainingText.match(/^\/(agents|swarm|search)(?:\s+([\s\S]*))?$/i);
+      if (!match) break;
+      const cmd = match[1].toLowerCase();
+      if (cmd === 'agents' || cmd === 'swarm') triggeredSwarmByCommand = true;
+      else if (cmd === 'search') triggeredSearchByCommand = true;
+      remainingText = (match[2] ?? '').trim();
+    }
+    const trimmedText = remainingText;
+    if ((triggeredSwarmByCommand || triggeredSearchByCommand) && !trimmedText && contexts.length === 0 && images.length === 0) {
+      if (triggeredSwarmByCommand) {
+        handleToggleSwarmMode(true);
+        toast.success(t('v2.assistant.swarm.commandEnabled', 'Multi-agents enabled — enter your task or prefix any message with /agents.'));
+      }
+      if (triggeredSearchByCommand) {
+        setWebSearchMode(true);
+        toast.success(t('v2.assistant.webSearch.commandEnabled', 'Web Search enabled — ask a question or prefix any message with /search.'));
+      }
       return;
     }
     if ((!trimmedText && contexts.length === 0 && images.length === 0) || isSending) return;
 
-    const useSwarmForTurn = swarmMode || triggeredByCommand;
+    const useSwarmForTurn = swarmMode || triggeredSwarmByCommand;
+    const useWebSearchForTurn = webSearchMode || triggeredSearchByCommand;
 
     let finalContent = trimmedText;
     // Embed images as [IMAGE_ATTACHMENTS] block at the start
@@ -1165,7 +1181,7 @@ export function AssistantPage() {
           finalContent,
           handleTurnStatusEvent,
           signal,
-          { swarmMode: useSwarmForTurn, workerProviderId, workerModelId },
+          { swarmMode: useSwarmForTurn, webSearch: useWebSearchForTurn, workerProviderId, workerModelId },
         ));
       if (outcome.status === 'abandoned') return;
       // Reload full message list for consistency
@@ -1248,7 +1264,7 @@ export function AssistantPage() {
           decision,
           handleTurnStatusEvent,
           signal,
-          { swarmMode, workerProviderId, workerModelId },
+          { swarmMode, webSearch: webSearchMode, workerProviderId, workerModelId },
         ));
       if (outcome.status === 'abandoned') return;
       await settleAfterTurn(activeConversationId, outcome.result);
@@ -1425,7 +1441,7 @@ export function AssistantPage() {
           text,
           handleTurnStatusEvent,
           signal,
-          { swarmMode, workerProviderId, workerModelId },
+          { swarmMode, webSearch: webSearchMode, workerProviderId, workerModelId },
         ));
       if (outcome.status === 'abandoned') return;
       await settleAfterTurn(activeConversationId, outcome.result);
@@ -1542,7 +1558,14 @@ export function AssistantPage() {
           </div>
         </details>
         {inlineRuns.map((run) => (
-          <SwarmRunCard key={run.id} run={run} onSelectAgent={handleOpenWorkerInspector} />
+          <SwarmRunCard
+            key={run.id}
+            run={run}
+            coordinatorModelLabel={availableModels.find((m) => m.id === selectedModelId)?.name}
+            liveAgentActivity={liveAgentActivity}
+            blackboardEntries={blackboardEntries}
+            onSelectAgent={handleOpenWorkerInspector}
+          />
         ))}
         {views.map(({ call }) => (
           <McpAppFrame
@@ -1861,7 +1884,13 @@ export function AssistantPage() {
               <div className="v2-chat__thread">
                 {renderThread(visibleMessages)}
                 {swarmRuns[0]?.status === 'running' && (
-                  <SwarmRunCard run={swarmRuns[0]} onSelectAgent={handleOpenWorkerInspector} />
+                  <SwarmRunCard
+                    run={swarmRuns[0]}
+                    coordinatorModelLabel={availableModels.find((m) => m.id === selectedModelId)?.name}
+                    liveAgentActivity={liveAgentActivity}
+                    blackboardEntries={blackboardEntries}
+                    onSelectAgent={handleOpenWorkerInspector}
+                  />
                 )}
                 {isSending && (
                   <div className="m3-chat-message-row v2-chat-working" data-role="assistant" aria-live="polite">
@@ -1894,6 +1923,8 @@ export function AssistantPage() {
                 isStopping={isStopping}
                 swarmMode={swarmMode}
                 onToggleSwarmMode={handleToggleSwarmMode}
+                webSearchMode={webSearchMode}
+                onToggleWebSearchMode={setWebSearchMode}
                 onSend={handleSend}
                 onStop={handleStop}
               />
@@ -1916,6 +1947,8 @@ export function AssistantPage() {
               isSending={isSending}
               swarmMode={swarmMode}
               onToggleSwarmMode={handleToggleSwarmMode}
+              webSearchMode={webSearchMode}
+              onToggleWebSearchMode={setWebSearchMode}
               onSend={handleSend}
               placeholder={t('assistant.typePlaceholder', 'Type a message...')}
             />

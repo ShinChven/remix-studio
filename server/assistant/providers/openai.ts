@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import OpenAI from 'openai';
 import {
   ChatProvider,
@@ -24,6 +25,12 @@ function outputTokenParam(modelId: string, maxTokens: number): Record<string, nu
   const id = modelId.toLowerCase();
   const usesCompletionTokens = /^(gpt-[56]|o[1-9])/.test(id);
   return usesCompletionTokens ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens };
+}
+
+/** OpenAI enforces a 64-character limit on `prompt_cache_key`. */
+function normalizePromptCacheKey(key: string): string {
+  if (key.length <= 64) return key;
+  return crypto.createHash('sha256').update(key).digest('hex');
 }
 
 export class OpenAIChatProvider implements ChatProvider {
@@ -58,6 +65,10 @@ export class OpenAIChatProvider implements ChatProvider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
+    if (this.supportsPromptCacheKey() && (req.webSearch || /^gpt-6/i.test(req.modelId))) {
+      return this.chatWithResponses(req);
+    }
+
     const messages = mapMessages(req.messages);
     const tools = req.tools.length > 0 ? req.tools.map(mapTool) : undefined;
 
@@ -70,7 +81,7 @@ export class OpenAIChatProvider implements ChatProvider {
     };
 
     const cacheBody = req.cacheKey && this.supportsPromptCacheKey()
-      ? { prompt_cache_key: req.cacheKey }
+      ? { prompt_cache_key: normalizePromptCacheKey(req.cacheKey) }
       : {};
 
     const response = await this.client.chat.completions.create(
@@ -110,6 +121,121 @@ export class OpenAIChatProvider implements ChatProvider {
       usage: rawUsage ? {
         inputTokens: rawUsage.prompt_tokens,
         outputTokens: rawUsage.completion_tokens,
+        ...(cachedInputTokens !== undefined ? { cachedInputTokens } : {}),
+      } : undefined,
+    };
+  }
+
+  /**
+   * Uses OpenAI's Responses API for native Web Search and for GPT-6+ models
+   * (which reject function tools with default reasoning_effort on `/v1/chat/completions`).
+   */
+  private async chatWithResponses(req: ChatRequest): Promise<ChatResponse> {
+    const systemParts: string[] = [];
+    const input: any[] = [];
+    for (const m of req.messages) {
+      if (m.role === 'system') {
+        if (m.content) systemParts.push(m.content);
+      } else if (m.role === 'user') {
+        if (m.images && m.images.length > 0) {
+          const content: any[] = m.images.map((url) => ({ type: 'input_image', image_url: url }));
+          if (m.content) content.push({ type: 'input_text', text: m.content });
+          input.push({ role: 'user', content });
+        } else {
+          input.push({ role: 'user', content: m.content });
+        }
+      } else if (m.role === 'assistant') {
+        if (m.content) input.push({ role: 'assistant', content: m.content });
+        if (m.toolCalls && m.toolCalls.length > 0) {
+          for (const tc of m.toolCalls) {
+            input.push({
+              type: 'function_call',
+              call_id: tc.id,
+              name: tc.name,
+              arguments: JSON.stringify(tc.arguments ?? {}),
+            });
+          }
+        }
+      } else if (m.role === 'tool') {
+        input.push({
+          type: 'function_call_output',
+          call_id: m.toolCallId,
+          output: m.content,
+        });
+      }
+    }
+
+    const tools: any[] = [
+      ...(req.webSearch ? [{ type: 'web_search', search_context_size: 'medium' }] : []),
+      ...req.tools.map((tool) => ({
+        type: 'function',
+        name: tool.name,
+        description: tool.description,
+        parameters: toolParametersJsonSchema(tool) as any,
+      })),
+    ];
+
+    const response: any = await (this.client as any).responses.create(
+      {
+        model: req.modelId,
+        ...(systemParts.length > 0 ? { instructions: systemParts.join('\n\n') } : {}),
+        input,
+        ...(tools.length > 0 ? { tools } : {}),
+        ...(typeof req.maxTokens === 'number' ? { max_output_tokens: req.maxTokens } : {}),
+        ...(req.cacheKey ? { prompt_cache_key: normalizePromptCacheKey(req.cacheKey) } : {}),
+      },
+      { signal: req.abortSignal },
+    );
+
+    const toolCalls: ToolCall[] = [];
+    let text = '';
+    const sources: Array<{ title: string; url: string }> = [];
+    const seenUrls = new Set<string>();
+
+    for (const item of response.output ?? []) {
+      if (item.type === 'function_call') {
+        toolCalls.push({
+          id: item.call_id || item.id,
+          name: item.name,
+          arguments: safeParseJsonArgs(item.arguments),
+        });
+      } else if (item.type === 'message' && Array.isArray(item.content)) {
+        for (const part of item.content) {
+          if (part.type === 'output_text' && typeof part.text === 'string') {
+            text += part.text;
+            if (Array.isArray(part.annotations)) {
+              for (const ann of part.annotations) {
+                if (ann?.type === 'url_citation' && typeof ann.url === 'string' && !seenUrls.has(ann.url)) {
+                  seenUrls.add(ann.url);
+                  sources.push({ title: String(ann.title || ann.url), url: ann.url });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!text && typeof response.output_text === 'string') {
+      text = response.output_text;
+    }
+    if (toolCalls.length === 0 && sources.length > 0) {
+      const links = sources.slice(0, 8).map((s) => `[${s.title.replace(/[\[\]]/g, '')}](${s.url})`).join(' · ');
+      text = `${text.trimEnd()}\n\n---\n**Sources:** ${links}`;
+    }
+
+    const usage = response.usage;
+    const cachedInputTokens = typeof usage?.input_tokens_details?.cached_tokens === 'number'
+      ? usage.input_tokens_details.cached_tokens
+      : undefined;
+
+    return {
+      text,
+      toolCalls,
+      stopReason: toolCalls.length > 0 ? 'tool_use' : response.status === 'incomplete' ? 'max_tokens' : 'end_turn',
+      usage: usage ? {
+        inputTokens: usage.input_tokens,
+        outputTokens: usage.output_tokens,
         ...(cachedInputTokens !== undefined ? { cachedInputTokens } : {}),
       } : undefined,
     };
