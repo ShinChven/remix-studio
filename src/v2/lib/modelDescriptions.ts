@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 /**
  * Short explanations of the bundled models, keyed by model config `id`, from
- * the `modelDescriptions` locale block. The ids carry dots (`gpt-5.4`), which
+ * the `modelDescriptions` locale block. The ids carry dots (`gpt-6.1-sol`), which
  * i18next would read as nesting, so the block is read whole and indexed.
  */
 export function useModelDescriptions(): Record<string, string> {

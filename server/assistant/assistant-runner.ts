@@ -898,13 +898,13 @@ export class AssistantRunner {
     let modelId: string;
     switch (providerType) {
       case 'GoogleAI':
-        modelId = 'gemini-3.1-flash-lite';
+        modelId = 'gemini-3.5-flash-lite';
         break;
       case 'Claude':
         modelId = 'claude-haiku-5-5';
         break;
       case 'OpenAI':
-        modelId = 'gpt-5.4-nano';
+        modelId = 'gpt-6-luna';
         break;
       default:
         return null;

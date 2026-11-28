@@ -178,14 +178,13 @@ function alwaysThinksModel(modelId: string): boolean {
   return (
     id.startsWith('claude-fable-5') ||
     id.startsWith('claude-opus-5') ||
-    id.startsWith('claude-opus-4-8') ||
     id.startsWith('claude-sonnet-5') ||
     id.startsWith('claude-haiku-5')
   );
 }
 
 function supportsAdaptiveThinking(modelId: string): boolean {
-  return /^claude-(?:fable-5|opus-(?:5|4-[6-9])|sonnet-(?:5|4-[6-9])|haiku-5)/i.test(modelId);
+  return /^claude-(?:fable-5|opus-5|sonnet-5|haiku-5)/i.test(modelId);
 }
 
 function supportsSamplingTemperature(modelId: string): boolean {

@@ -20,7 +20,6 @@ export class ClaudeTextGenerator extends TextGenerator {
       const supportsTemperature = !(
         model.startsWith('claude-fable-5') ||
         model.startsWith('claude-opus-5') ||
-        model.startsWith('claude-opus-4-8') ||
         model.startsWith('claude-sonnet-5') ||
         model.startsWith('claude-haiku-5')
       );

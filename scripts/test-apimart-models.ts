@@ -76,7 +76,7 @@ test('every bundled text model uses APIMart chat and its declared sampling contr
 test('text images, assistant tools, and custom endpoint are supported', async () => {
   await withFetch(chatResponse, async (calls) => {
     const generator = buildTextGenerator('APIMart', 'key', 'https://proxy.example/api/v1/images/generations');
-    assert.equal((await generator.generate({ modelId: 'gpt-4o', prompt: 'describe', refImagesBase64: ['aGk='] })).ok, true);
+    assert.equal((await generator.generate({ modelId: 'gpt-6.1-sol', prompt: 'describe', refImagesBase64: ['aGk='] })).ok, true);
     assert.equal(calls[0].url, 'https://proxy.example/api/v1/chat/completions');
     assert.equal(calls[0].body.messages[0].content[0].image_url.url, 'data:image/png;base64,aGk=');
     assert.equal((await generator.generate({ modelId: 'deepseek-v4-pro', prompt: 'describe', refImagesBase64: ['aGk='] })).ok, false);
