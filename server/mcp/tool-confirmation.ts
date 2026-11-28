@@ -92,6 +92,14 @@ export function summarizeToolEffect(
       );
       return `Update ${updates.length} item${updates.length === 1 ? '' : 's'} in library ${getLabel(objectArgs.library_id, 'library')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
     }
+    case 'create_skill':
+      return `Create assistant skill "${String(objectArgs.title ?? '')}".`;
+    case 'update_skill': {
+      const fields = ['title', 'content'].filter((key) => Object.prototype.hasOwnProperty.call(objectArgs, key));
+      return `Update assistant skill ${getLabel(objectArgs.skill_id, 'skill')}${fields.length ? ` (${fields.join(', ')})` : ''}.`;
+    }
+    case 'delete_skill':
+      return `Permanently delete assistant skill ${getLabel(objectArgs.skill_id, 'skill')}.`;
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(objectArgs.workflowItems) ? objectArgs.workflowItems.length : 0;
       return `Create a ${String(objectArgs.type ?? 'new')} project named "${String(objectArgs.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;

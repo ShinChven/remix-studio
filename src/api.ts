@@ -2355,6 +2355,48 @@ export async function updateAssistantSettings(patch: Partial<AssistantSettings>)
   return handleResponse<AssistantSettings>(res, 'Failed to save assistant settings');
 }
 
+/** A preset prompt inserted from the assistant composer. */
+export interface AssistantSkill {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function fetchAssistantSkills(page = 1, limit = 25, q?: string): Promise<PaginatedResult<AssistantSkill>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (q) params.set('q', q);
+  const res = await apiFetch(`/api/assistant/skills?${params}`, { headers: getHeaders(false) });
+  return handleResponse<PaginatedResult<AssistantSkill>>(res, 'Failed to load assistant skills');
+}
+
+export async function createAssistantSkill(skill: { id?: string; title: string; content: string }): Promise<AssistantSkill> {
+  const res = await apiFetch('/api/assistant/skills', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(skill),
+  });
+  return handleResponse<AssistantSkill>(res, 'Failed to create assistant skill');
+}
+
+export async function updateAssistantSkill(id: string, patch: { title?: string; content?: string }): Promise<AssistantSkill> {
+  const res = await apiFetch(`/api/assistant/skills/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(patch),
+  });
+  return handleResponse<AssistantSkill>(res, 'Failed to update assistant skill');
+}
+
+export async function deleteAssistantSkill(id: string): Promise<void> {
+  const res = await apiFetch(`/api/assistant/skills/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  await handleResponse<{ success: boolean }>(res, 'Failed to delete assistant skill');
+}
+
 export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetadata[] }> {
   const res = await apiFetch('/api/assistant/tools', { headers: getHeaders(false) });
   return handleResponse<{ tools: AssistantToolMetadata[] }>(res, 'Failed to list assistant tools');

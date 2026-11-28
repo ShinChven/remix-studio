@@ -23,6 +23,7 @@ import {
   trimPrefix,
 } from '../services/album-rename';
 import { createAppUrlBuilder, type AppUrlBuilder } from './app-urls';
+import { AssistantRepository } from '../db/assistant-repository';
 import {
   copyStagedFiles,
   createStagedUpload,
@@ -668,6 +669,7 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
   const stagedUploadDeps = { prisma, storage, exportStorage, repository, userRepository };
   const campaignMedia = createCampaignMediaService(stagedUploadDeps);
   const appUrls = createAppUrlBuilder(deps.appBaseUrl);
+  const assistantRepository = new AssistantRepository(prisma);
 
   const tools: AssistantToolDefinition[] = [];
 
@@ -1246,6 +1248,103 @@ export function createAssistantToolDefinitions(deps: ToolDependencies): Assistan
       } catch (err: any) {
         return { text: JSON.stringify({ error: err.message ?? 'Delete failed.' }), isError: true };
       }
+    },
+  });
+
+  // ─── Assistant skills: preset prompts the user inserts from the chat composer ───
+  const SKILL_TITLE_SCHEMA = z.string().trim().min(1).max(200);
+  const SKILL_CONTENT_SCHEMA = z.string().trim().min(1).max(100_000);
+
+  tools.push({
+    name: 'list_skills',
+    title: 'List Assistant Skills',
+    description: 'List the user\'s assistant skills, newest first: preset prompts they insert into the chat composer by typing a backtick (`). Skills are kept apart from libraries. Use q to search titles and content. Returns each skill\'s id, title and full content.',
+    inputSchema: {
+      q: z.string().optional().describe('Optional text to match in skill titles or content (case-insensitive)'),
+      page: z.number().int().min(1).optional().describe('Page number (default 1)'),
+      limit: z.number().int().min(1).max(100).optional().describe('Skills per page (default 25, max 100)'),
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'read',
+    handler: async (userId, input) => {
+      const { q, page, limit } = input as { q?: string; page?: number; limit?: number };
+      const result = await assistantRepository.listSkills(userId, page ?? 1, limit ?? 25, q);
+      return {
+        text: JSON.stringify({
+          skills: result.items.map(({ id, title, content }) => ({ skill_id: id, title, content })),
+          total: result.total,
+          page: result.page,
+          pages: result.pages,
+          url: appUrls.assistantSkills(),
+        }),
+      };
+    },
+  });
+
+  tools.push({
+    name: 'create_skill',
+    title: 'Create Assistant Skill',
+    description: 'Create an assistant skill: a titled preset prompt the user can insert into the chat composer by typing a backtick (`). Write the content as the instruction the user wants to reuse. This does not touch any library; use create_prompt for library prompts.',
+    inputSchema: {
+      title: SKILL_TITLE_SCHEMA.describe('Short name shown in the composer picker (max 200 characters)'),
+      content: SKILL_CONTENT_SCHEMA.describe('The prompt text inserted into the chat draft'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { title, content } = input as { title: string; content: string };
+      const skill = await assistantRepository.createSkill(userId, { title: title.trim(), content: content.trim() });
+      return {
+        text: JSON.stringify({ skill_id: skill.id, title: skill.title, url: appUrls.assistantSkills(), message: 'Skill created successfully.' }),
+      };
+    },
+  });
+
+  tools.push({
+    name: 'update_skill',
+    title: 'Update Assistant Skill',
+    description: 'Change the title and/or content of one assistant skill. Find its skill_id with list_skills. Fields left out keep their value.',
+    inputSchema: {
+      skill_id: z.string().describe('The skill ID, from list_skills'),
+      title: SKILL_TITLE_SCHEMA.optional().describe('New title'),
+      content: SKILL_CONTENT_SCHEMA.optional().describe('New prompt text; replaces the old text entirely'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    category: 'mutate',
+    handler: async (userId, input) => {
+      const { skill_id, title, content } = input as { skill_id: string; title?: string; content?: string };
+      if (title === undefined && content === undefined) {
+        return { text: JSON.stringify({ error: 'Give a title or content to change.' }), isError: true };
+      }
+      const skill = await assistantRepository.updateSkill(userId, skill_id, {
+        ...(title !== undefined ? { title: title.trim() } : {}),
+        ...(content !== undefined ? { content: content.trim() } : {}),
+      });
+      if (!skill) {
+        return { text: JSON.stringify({ error: `Skill "${skill_id}" not found.` }), isError: true };
+      }
+      return {
+        text: JSON.stringify({ skill_id: skill.id, title: skill.title, url: appUrls.assistantSkills(), message: 'Skill updated successfully.' }),
+      };
+    },
+  });
+
+  tools.push({
+    name: 'delete_skill',
+    title: 'Delete Assistant Skill',
+    description: 'Permanently delete one assistant skill. It does not go to the Recycle Bin and cannot be restored. Only use this when the user clearly asks for that skill to be removed; find its skill_id with list_skills.',
+    inputSchema: {
+      skill_id: z.string().describe('The skill ID, from list_skills'),
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    category: 'destructive',
+    handler: async (userId, input) => {
+      const { skill_id } = input as { skill_id: string };
+      const deleted = await assistantRepository.deleteSkill(userId, skill_id);
+      if (!deleted) {
+        return { text: JSON.stringify({ error: `Skill "${skill_id}" not found.` }), isError: true };
+      }
+      return { text: JSON.stringify({ skill_id, message: 'Skill deleted.' }) };
     },
   });
 

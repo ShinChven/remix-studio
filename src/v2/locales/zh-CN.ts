@@ -1096,7 +1096,6 @@ const messages: V2Messages = {
     enableProviderAction: '启用聊天',
     presetPromptsTitle: '输入框技能',
     presetPromptsDescription: '在聊天框中输入 / 即可打开此列表，并将预设提示词插入当前草稿。',
-    openSkillsLibrary: '打开关联的文本素材库',
     newSkill: '新建技能',
     emptySkillsTitle: '还没有预设提示词',
     emptySkillsDescription: '在此创建技能，然后在输入框中输入 / 将其插入聊天草稿。',

@@ -1096,7 +1096,6 @@ const messages: V2Messages = {
     enableProviderAction: '채팅에서 활성화',
     presetPromptsTitle: '입력창 스킬',
     presetPromptsDescription: '채팅 입력창에 /를 입력하면 이 목록에서 사전 설정 프롬프트를 현재 초안에 삽입할 수 있습니다.',
-    openSkillsLibrary: '연결된 텍스트 라이브러리 열기',
     newSkill: '새 스킬',
     emptySkillsTitle: '사전 설정 프롬프트가 없습니다',
     emptySkillsDescription: '여기서 스킬을 만든 후 입력창에 /를 입력해 채팅 초안에 삽입하세요.',

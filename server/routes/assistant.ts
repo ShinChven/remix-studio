@@ -655,6 +655,67 @@ export function createAssistantRouter(
     }
   });
 
+  // ─── Skills: preset prompts inserted from the composer ───
+  const skillFieldsSchema = {
+    title: z.string().trim().min(1).max(200),
+    content: z.string().trim().min(1).max(100_000),
+  };
+  const skillCreateSchema = z.object({ id: z.string().uuid().optional(), ...skillFieldsSchema }).strict();
+  const skillPatchSchema = z.object({
+    title: skillFieldsSchema.title.optional(),
+    content: skillFieldsSchema.content.optional(),
+  }).strict();
+
+  router.get('/api/assistant/skills', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const page = Number.parseInt(c.req.query('page') || '1', 10) || 1;
+      const limit = Number.parseInt(c.req.query('limit') || '25', 10) || 25;
+      return c.json(await repo.listSkills(user.userId, page, limit, c.req.query('q') || undefined));
+    } catch (e) {
+      console.error('[GET /api/assistant/skills]', e);
+      return c.json({ error: 'Failed to load assistant skills' }, 500);
+    }
+  });
+
+  router.post('/api/assistant/skills', authMiddleware, async (c) => {
+    const parsed = skillCreateSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'A title and prompt content are required' }, 400);
+    try {
+      const user = c.get('user') as JwtPayload;
+      return c.json(await repo.createSkill(user.userId, parsed.data), 201);
+    } catch (e) {
+      console.error('[POST /api/assistant/skills]', e);
+      return c.json({ error: 'Failed to create assistant skill' }, 500);
+    }
+  });
+
+  router.patch('/api/assistant/skills/:id', authMiddleware, async (c) => {
+    const parsed = skillPatchSchema.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ error: 'Invalid assistant skill' }, 400);
+    try {
+      const user = c.get('user') as JwtPayload;
+      const skill = await repo.updateSkill(user.userId, c.req.param('id'), parsed.data);
+      if (!skill) return c.json({ error: 'Skill not found' }, 404);
+      return c.json(skill);
+    } catch (e) {
+      console.error('[PATCH /api/assistant/skills/:id]', e);
+      return c.json({ error: 'Failed to update assistant skill' }, 500);
+    }
+  });
+
+  router.delete('/api/assistant/skills/:id', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const deleted = await repo.deleteSkill(user.userId, c.req.param('id'));
+      if (!deleted) return c.json({ error: 'Skill not found' }, 404);
+      return c.json({ success: true });
+    } catch (e) {
+      console.error('[DELETE /api/assistant/skills/:id]', e);
+      return c.json({ error: 'Failed to delete assistant skill' }, 500);
+    }
+  });
+
   // ─── List assistant tools ───
   router.get('/api/assistant/tools', authMiddleware, async (c) => {
     try {

@@ -1096,7 +1096,6 @@ const messages: V2Messages = {
     enableProviderAction: 'Activer pour le chat',
     presetPromptsTitle: 'Compétences du composeur',
     presetPromptsDescription: 'Tapez / dans le chat pour ouvrir cette liste et insérer un prompt prédéfini dans le brouillon.',
-    openSkillsLibrary: 'Ouvrir la bibliothèque de textes associée',
     newSkill: 'Nouvelle compétence',
     emptySkillsTitle: 'Aucun prompt prédéfini',
     emptySkillsDescription: 'Créez une compétence ici, puis tapez / dans le composeur pour l’insérer dans le brouillon.',

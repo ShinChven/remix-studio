@@ -5,7 +5,7 @@ import {
   deleteAssistantBlackboardEntry,
   fetchAssistantConversationApprovedTools,
   fetchAssistantSwarmAgentTranscript,
-  fetchLibraryItems,
+  fetchAssistantSkills,
   stopAssistantSwarmAgent,
   updateAssistantConversationApprovedTools,
   type AssistantConversationResource,
@@ -16,7 +16,6 @@ import {
   type AssistantSwarmPreset,
   type AssistantSwarmRun,
 } from '../../../api';
-import { resolveAssistantSkillsLibraryId } from '../../../lib/assistant-skills';
 import { DEFAULT_SWARM_PRESETS, formatSwarmPresetPrompt } from '../../../lib/assistant-swarm-presets';
 import {
   Button,
@@ -322,13 +321,12 @@ export function AgentSidePanel({
 
   useEffect(() => {
     let cancelled = false;
-    resolveAssistantSkillsLibraryId()
-      .then((libId) => (libId ? fetchLibraryItems(libId, 1, 12) : null))
+    fetchAssistantSkills(1, 12)
       .then((res) => {
-        if (cancelled || !res) return;
+        if (cancelled) return;
         setSkills(res.items.map((item) => ({
           id: item.id,
-          title: item.title?.trim() || item.content.slice(0, 40),
+          title: item.title.trim() || item.content.slice(0, 40),
           content: item.content,
         })));
       })

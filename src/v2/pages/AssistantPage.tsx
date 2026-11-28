@@ -285,6 +285,12 @@ function summarizePendingConfirmation(
       const count = Array.isArray(args.item_ids) ? new Set(args.item_ids).size : 0;
       return `Move ${count} item${count === 1 ? '' : 's'} from library "${String(args.library_id ?? '')}" to the Recycle Bin.`;
     }
+    case 'create_skill':
+      return `Create assistant skill "${String(args.title ?? '')}".`;
+    case 'update_skill':
+      return `Update assistant skill "${String(args.skill_id ?? '')}".`;
+    case 'delete_skill':
+      return `Permanently delete assistant skill "${String(args.skill_id ?? '')}".`;
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : 0;
       return `Create a ${String(args.type ?? 'new')} project named "${String(args.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;

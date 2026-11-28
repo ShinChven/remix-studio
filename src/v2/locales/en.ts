@@ -1095,7 +1095,6 @@ const en = {
     enableProviderAction: 'Enable for chat',
     presetPromptsTitle: 'Composer skills',
     presetPromptsDescription: 'Type / in the chat box to open this list and insert a preset prompt into the current draft.',
-    openSkillsLibrary: 'Open underlying text library',
     newSkill: 'New skill',
     emptySkillsTitle: 'No preset prompts yet',
     emptySkillsDescription: 'Create a skill here, then type / in the composer to insert it into the chat draft.',

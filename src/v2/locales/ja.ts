@@ -1096,7 +1096,6 @@ const messages: V2Messages = {
     enableProviderAction: 'チャット用に有効化',
     presetPromptsTitle: '入力欄のスキル',
     presetPromptsDescription: 'チャット入力欄で / を入力すると、この一覧からプリセットプロンプトを下書きに挿入できます。',
-    openSkillsLibrary: '関連するテキストライブラリを開く',
     newSkill: 'スキルを作成',
     emptySkillsTitle: 'プリセットプロンプトがありません',
     emptySkillsDescription: 'ここでスキルを作成し、入力欄で / を入力して下書きに挿入できます。',

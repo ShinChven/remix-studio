@@ -12,6 +12,7 @@ Available MCP capabilities include:
 - **Search** library items across libraries, or browse a single library with pagination and tag filters.
 - **Update** a single text prompt's content, title, or tags with `update_prompt`.
 - **Delete** one or more items from a library of any type with `delete_library_items` (up to 100 per call). Deleted items go to the Recycle Bin, where they can be restored; their files are removed when the bin is emptied.
+- **Manage assistant skills**, the preset prompts inserted from the chat composer: `list_skills` reads or searches them, `create_skill` and `update_skill` write them, and `delete_skill` removes one permanently. Skills are kept apart from libraries.
 - **Inspect** storage usage, albums, libraries, library items, and usable model/provider pairings.
 - **Browse** the items inside a project album with `get_album_items`, including each item's filename, prompt, tags, `sourceItems` (`{ libraryId, itemId }` pairs of the library items it was drafted from), format, aspect ratio, size, and storage keys, plus a `tagCounts` roll-up of every tag in the album. Filter with `tags` and `tag_match`.
 - **Read one item by ID** with `get_album_item` (its full prompt, `sourceItems` and, for a text project, the full generated text, with the project's name and link) or `get_library_item` (the full text, or the storage key of a media item, with the library's name, type and link). Both take the IDs from a reference the user copied with **Copy ID for AI** — see [item references](#item-references).
@@ -169,6 +170,7 @@ The exact schemas are returned by MCP tool discovery. At the current source vers
 | :--- | :--- | :--- |
 | Account | `get_current_account` | — |
 | Libraries | `list_libraries`, `get_library_items`, `get_library_item`, `search_library_items` | `create_library`, `update_library`, `create_prompt`, `batch_create_prompts`, `update_prompt`, `update_library_item`, `batch_update_library_items`, `delete_library_items` |
+| Assistant skills | `list_skills` | `create_skill`, `update_skill`, `delete_skill` |
 | Projects | `get_project`, `list_albums`, `get_album_items`, `get_album_item`, `list_available_models`, `get_storage_usage` | `create_project_with_workflow`, `update_project`, `tag_album_items`, `rename_album_items`, `export_project`, `export_project_album` |
 | Jobs | `get_project_job_counts`, `get_queue_status` | `draft_jobs`, `start_jobs`, `clear_failed_jobs` |
 | Files | `get_file_urls`, `get_upload` | `create_upload`, `add_files_to_library`, `create_posts_from_files` |
