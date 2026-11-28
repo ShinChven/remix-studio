@@ -9,6 +9,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
   type KeyboardEvent,
+  type ReactNode,
   type Ref,
 } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -84,6 +85,8 @@ export interface ComposerProps {
   onStop?: () => void;
   placeholder?: string;
   composerRef?: Ref<ComposerHandle>;
+  /** Shown inside the box above the toolbar, e.g. the assistant's open questions. */
+  header?: ReactNode;
 }
 
 const MAX_IMAGES = 5;
@@ -174,6 +177,7 @@ export function Composer({
   onStop,
   placeholder,
   composerRef,
+  header,
 }: ComposerProps) {
   const { t } = useTranslation();
   const toast = useToast();
@@ -717,6 +721,8 @@ export function Composer({
           <Text variant="label-large">{t('assistant.dropImagesHere')}</Text>
         </div>
       )}
+
+      {header && <div className="v2-composer__header">{header}</div>}
 
       <div className="v2-composer__toolbar">
         <MenuButton

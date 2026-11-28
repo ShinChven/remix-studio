@@ -185,6 +185,10 @@ function summarizeWorkerResult(result: TurnResult): { status: AssistantSwarmAgen
   if (result.kind === 'stopped') {
     return { status: 'stopped', summary: 'Stopped at user request.' };
   }
+  if (result.kind === 'awaiting_input') {
+    // Workers are never offered `ask_user`; treat a stray pause as a failure.
+    return { status: 'failed', summary: 'Worker tried to ask the user a question.' };
+  }
   return { status: 'failed', summary: result.error || 'Worker failed.' };
 }
 

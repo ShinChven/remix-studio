@@ -13,6 +13,8 @@ export type AssistantMessageStatus =
   | 'completed'
   | 'error'
   | 'awaiting_confirmation'
+  /** An assistant message whose `ask_user` call is waiting on the user's answers. */
+  | 'awaiting_input'
   | 'cancelled'
   | 'truncated';
 
