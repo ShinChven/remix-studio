@@ -21,7 +21,7 @@ export class OpenAITextGenerator extends TextGenerator {
   async generate(req: TextGenerateRequest): Promise<TextGenerateResult> {
     try {
       const { prompt, systemPrompt, modelId, temperature = 0.7, maxTokens = 2048, refImagesBase64 } = req;
-      const model = modelId || 'gpt-5.6';
+      const model = modelId || 'gpt-6.1-terra';
 
       const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
 

@@ -19,7 +19,7 @@ server/generators/                    -- One generator class per provider per ca
     +-- build-video-generator.ts      -- Factory: provider type -> video generator
     +-- build-audio-generator.ts      -- Factory: provider type -> audio generator
     +-- claude-text-generator.ts      -- Default model: claude-sonnet-5-5
-    +-- openai-text-generator.ts      -- Default model: gpt-5.6
+    +-- openai-text-generator.ts      -- Default model: gpt-6.1-terra
     +-- grok-text-generator.ts        -- Default model: grok-4.6
     +-- minimax-text-generator.ts     -- Default model: MiniMax-M3
     +-- google-ai-text-generator.ts   -- Default model: gemini-3.8-flash
@@ -55,7 +55,7 @@ This is the single source of truth. Each entry is a `ModelConfig`:
 
 ```ts
 {
-  id: string;           // Internal unique ID (e.g. 'openai-gpt-5.4-text')
+  id: string;           // Internal unique ID (e.g. 'openai-gpt-6.1-sol-text')
   name: string;         // Display name shown in UI
   generatorId: ProviderType; // Which generator to use
   modelId: string;      // Exact API model ID string sent to the provider
@@ -181,7 +181,7 @@ Every bundled model has a one- or two-sentence explanation, shown under the
 `ModelSelectorModal.tsx` (whose search matches it too). They live in
 `src/locales/<locale>/models.json` under `modelDescriptions`, keyed by the model
 entry's `id`, and `npm run i18n:check` fails when a locale is missing one that
-`en` has. Model ids contain dots (`openai-gpt-5.4-text`), which i18next reads as
+`en` has. Model ids contain dots (`openai-gpt-6.1-sol-text`), which i18next reads as
 key nesting, so `useModelDescriptions` in
 `src/components/ProjectViewer/modelDescriptions.ts` fetches the block whole with
 `returnObjects` and indexes it — never look one up as
@@ -217,8 +217,8 @@ The lister fetches all models, then filters to only those whose `id` matches a `
 ### APIMart catalog (verified November 5, 2026)
 
 The APIMart entries in `src/types.ts` include the text, video and audio
-subcatalogs from `src/lib/apimart-models.ts`. Together they expose 234 selectable
-configurations: 53 image, 121 text, 54 video and 6 audio. Existing image IDs are
+subcatalogs from `src/lib/apimart-models.ts`. Together they expose 189 selectable
+configurations: 56 image, 72 text, 55 video and 6 audio. Existing image IDs are
 preserved. Suno V6 / Wild / Mini and Flow Music Lyria 3.5 use `modelVariant` to
 send `version` while keeping their real API `model` value (`suno` / `flowmusic`).
 
@@ -241,7 +241,8 @@ Sources used for the inventory and request contracts:
 
 The snapshot contains three embedding models and two transcription models.
 They are explicitly excluded because Remix Studio has generation projects,
-not embedding or transcription tasks. Announcements without an available API
+not embedding or transcription tasks. Chat models older than the supported
+generations (see below) are excluded the same way, with a `Superseded` reason. Announcements without an available API
 (such as Kling 4.0 Flash) are also excluded. Compatibility aliases such as
 `Omni-Flash-Ext` and `grok-imagine-1.5-video-apimart` resolve to their documented
 canonical IDs rather than separate model cards. The model-list endpoint respects
@@ -338,6 +339,22 @@ when moving projects off retired upstream models:
 
 The inventory below records the earlier November catalog and request contracts.
 
+## Supported generations
+
+Text models start at Gemini 3.5, GPT-6 and Claude 5, on every provider
+including APIMart. Gemini TTS starts at 3.8; `gemini-3.1-flash-tts-preview`
+still resolves to 3.8 Flash-Lite TTS in the audio generator. Image models
+(nano banana, GPT Image) and APIMart's GPT-4o Mini TTS are versioned on their
+own and are not covered by this floor.
+
+A project saved with a removed profile loses its `modelConfigId` match and
+generates with the generator's fallback: `gemini-3.8-flash`, `gpt-6.1-terra`,
+`claude-sonnet-5-5`, or `gemini-3.8-flash-tts` for speech. An assistant
+conversation on a removed profile gets a configuration error and needs a new
+model picked. Assistant summaries use `gemini-3.5-flash-lite`, `gpt-6-luna` and
+`claude-haiku-5-5`, and `resolveRealGeminiModelId` maps older Gemini IDs onto
+3.5 Flash Lite, 3.5 Flash or 3.8 Flash by tier.
+
 ## Current Model Inventory (November 2026)
 
 ### Google AI / Vertex AI
@@ -354,16 +371,13 @@ The inventory below records the earlier November catalog and request contracts.
 | Gemini 3.6 Flash | `gemini-3.6-flash` | text | 65,536 |
 | Gemini 3.5 Flash | `gemini-3.5-flash` | text | 65,536 |
 | Gemini 3.5 Flash Lite | `gemini-3.5-flash-lite` | text | 65,536 |
-| Gemini 3.1 Pro | `gemini-3.1-pro-preview` | text | 65,536 |
-| Gemini 3.1 Flash Lite | `gemini-3.1-flash-lite` | text | 65,536 |
 | Gemma 4 | `gemma-4-31b-it` | text | 65,536 |
 | Veo 3.1 | `veo-3.1-generate-preview` | video | 720p/1080p/4k, 4-8s |
 | Veo 3.1 Lite | `veo-3.1-lite-generate-preview` | video | 720p/1080p, 4-8s |
 | Lyria 3 Clip | `lyria-3-clip-preview` | audio | Music generation |
 | Lyria 3 Pro | `lyria-3-pro-preview` | audio | Music generation |
-| Gemini 3.1 Flash TTS Preview | `gemini-3.1-flash-tts-preview` | audio | 32k context window |
-| Gemini 2.5 Flash Preview TTS | `gemini-2.5-flash-preview-tts` | audio | 32k context window |
-| Gemini 2.5 Pro Preview TTS | `gemini-2.5-pro-preview-tts` | audio | 32k context window |
+| Gemini 3.8 Flash TTS | `gemini-3.8-flash-tts` | audio | 32k context window |
+| Gemini 3.8 Flash-Lite TTS | `gemini-3.8-flash-lite-tts` | audio | 32k context window |
 
 Gemini 4 (`gemini-4-carbon`, `gemini-4-argon`, `gemini-4-hydrogen`) is listed
 on both Google AI and Vertex AI with the 3.8 Flash request shape. All three are
@@ -423,13 +437,6 @@ the 2.1 docs.
 | GPT-6.1 Terra | `gpt-6.1-terra` | text | 128,000 |
 | GPT-6 Sol | `gpt-6-sol` | text | 128,000 |
 | GPT-6 Luna | `gpt-6-luna` | text | 128,000 |
-| GPT-5.6 | `gpt-5.6` | text | 131,072 |
-| GPT-5.6 Terra | `gpt-5.6-terra` | text | 131,072 |
-| GPT-5.6 Luna | `gpt-5.6-luna` | text | 131,072 |
-| GPT-5.5 | `gpt-5.5` | text | 131,072 |
-| GPT-5.4 | `gpt-5.4` | text | 131,072 |
-| GPT-5.4 Mini | `gpt-5.4-mini` | text | 128,000 |
-| GPT-5.4 Nano | `gpt-5.4-nano` | text | 128,000 |
 
 GPT Image 2.5 ships as two model IDs rather than one — `gpt-image-2.5-flare` is
 the small, speed-tuned tier (quality comparable to GPT Image 2) and
@@ -482,7 +489,7 @@ The GPT-6 family (`gpt-6-astra`, `gpt-6.1-sol`, `gpt-6.1-terra`, `gpt-6-sol`,
 and the assistant's OpenAI adapter send `max_completion_tokens` instead of
 `max_tokens` for `gpt-5*`, `gpt-6*` and the o-series. The ~922K-token prompt
 limit comes from APIMart's catalog of the same IDs. The generator fallback
-stays `gpt-5.6`.
+is `gpt-6.1-terra`, the everyday mid tier.
 
 ### Grok (xAI)
 | Name | Model ID | Category | Max Output |
@@ -522,11 +529,7 @@ persist `modelConfigId` — renaming it would orphan saved selections.
 | Claude Fable 5.1 | `claude-fable-5-1` | text | 128,000 |
 | Claude Fable 5 | `claude-fable-5` | text | 128,000 |
 | Claude Opus 5 | `claude-opus-5` | text | 128,000 |
-| Claude Opus 4.8 | `claude-opus-4-8` | text | 128,000 |
 | Claude Sonnet 5 | `claude-sonnet-5` | text | 128,000 |
-| Claude Opus 4.7 | `claude-opus-4-7` | text | 128,000 |
-| Claude Sonnet 4.6 | `claude-sonnet-4-6` | text | 64,000 |
-| Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | text | 64,000 |
 
 Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5 all reject non-default sampling
 parameters, so they carry the single-value `[1.0]` temperature list and
@@ -795,7 +798,7 @@ whatever form of the URL was pasted back to the API root.
 
 When updating models, verify against official docs:
 
-- [ ] **Model ID**: exact string from provider docs (aliases like `gpt-5.4` vs dated `gpt-5.4-2026-03-05`)
+- [ ] **Model ID**: exact string from provider docs (aliases like `gpt-6.1-sol` vs a dated snapshot ID)
 - [ ] **Max output tokens**: check provider docs, set as highest `maxTokenOptions` value
 - [ ] **Temperature range**: Claude caps at 1.0, others at 2.0
 - [ ] **Default model in generator**: update fallback in the generator constructor

@@ -25,15 +25,13 @@ export function resolveRealGeminiModelId(modelId: string): string {
   if (modelId.includes('3.6-flash')) return 'gemini-3.6-flash';
   if (modelId.includes('3.5-flash-lite')) return 'gemini-3.5-flash-lite';
   if (modelId.includes('3.5-flash')) return 'gemini-3.5-flash';
-  if (modelId.includes('3.1-flash-lite')) return 'gemini-3.1-flash-lite';
-  if (modelId.includes('3.1-pro')) return 'gemini-3.1-pro-preview';
-  // `gemini-3-flash-preview` was shut down, so the aliases that used to resolve
-  // to it land on the current GA flash instead.
+  // Models before Gemini 3.5 are no longer supported, so their IDs land on a
+  // current model of the same tier instead.
+  if (modelId.includes('flash-lite')) return 'gemini-3.5-flash-lite';
+  if (modelId.includes('pro')) return 'gemini-3.8-flash';
   if (modelId.includes('3.1-flash')) return 'gemini-3.5-flash';
   if (modelId.includes('3-flash')) return 'gemini-3.5-flash';
-  // Fallbacks:
   if (modelId.includes('flash') && !modelId.includes('3.')) return 'gemini-3.5-flash';
-  if (modelId.includes('pro') && !modelId.includes('3.')) return 'gemini-3.1-pro-preview';
   return modelId;
 }
 
@@ -95,7 +93,6 @@ export class GoogleAIChatProvider implements ChatProvider {
         includeThoughts && (
           realModelId.includes('gemini-4') ||
           realModelId.includes('gemini-3') ||
-          realModelId.includes('gemini-2.5') ||
           realModelId.includes('thinking')
         )
       ) {
@@ -118,7 +115,6 @@ export class GoogleAIChatProvider implements ChatProvider {
         realModelId.includes('gemma-4') ||
         realModelId.includes('gemini-4') ||
         realModelId.includes('gemini-3') ||
-        realModelId.includes('gemini-2.5') ||
         realModelId.includes('thinking')
       );
 
@@ -297,7 +293,7 @@ export async function transcribeAudioWithGemini(
   apiUrl: string | undefined | null,
   audioBase64: string,
   mimeType: string,
-  modelId = 'gemini-3.1-flash-lite',
+  modelId = 'gemini-3.5-flash-lite',
 ): Promise<string> {
   const ai = new GoogleGenAI({
     apiKey,

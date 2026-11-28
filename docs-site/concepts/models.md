@@ -32,15 +32,17 @@ This matrix reflects the profiles shipped with the current release. Model availa
 
 | Provider | Supported Models |
 | :--- | :--- |
-| **Google AI** | `Gemini 4 Neon`, `Gemini 4 Carbon`, `Gemini 4 Argon`, `Gemini 4 Hydrogen`, `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite`, `Gemma 4` |
-| **Vertex AI** | `Gemini 4 Neon`, `Gemini 4 Carbon`, `Gemini 4 Argon`, `Gemini 4 Hydrogen`, `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemini 3.1 Pro`, `Gemini 3.1 Flash Lite` |
-| **OpenAI** | `GPT-6.2 Astra`, `GPT-6.2 Sol`, `GPT-6 Astra`, `GPT-6.1 Sol`, `GPT-6.1 Terra`, `GPT-6 Sol`, `GPT-6 Luna`, `GPT-5.6`, `GPT-5.6 Terra`, `GPT-5.6 Luna`, `GPT-5.5`, `GPT-5.4`, `GPT-5.4 Mini`, `GPT-5.4 Nano` |
+| **Google AI** | `Gemini 4 Neon`, `Gemini 4 Carbon`, `Gemini 4 Argon`, `Gemini 4 Hydrogen`, `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite`, `Gemma 4` |
+| **Vertex AI** | `Gemini 4 Neon`, `Gemini 4 Carbon`, `Gemini 4 Argon`, `Gemini 4 Hydrogen`, `Gemini 3.8 Flash`, `Gemini 3.7 Flash`, `Gemini 3.6 Flash`, `Gemini 3.5 Flash`, `Gemini 3.5 Flash Lite` |
+| **OpenAI** | `GPT-6.2 Astra`, `GPT-6.2 Sol`, `GPT-6 Astra`, `GPT-6.1 Sol`, `GPT-6.1 Terra`, `GPT-6 Sol`, `GPT-6 Luna` |
 | **Grok** | `Grok 4.7`, `Grok 4.6`, `Grok 4.5`, `Grok 4.20`, `Grok 4.3`, `Grok 4.1 Fast` |
-| **Claude** | `Claude Fable 5.2`, `Claude Opus 5.5`, `Claude Sonnet 5.5`, `Claude Haiku 5.5`, `Claude Fable 5.1`, `Claude Fable 5`, `Claude Opus 5`, `Claude Opus 4.8`, `Claude Sonnet 5`, `Claude Opus 4.7`, `Claude Sonnet 4.6`, `Claude Haiku 4.5` |
+| **Claude** | `Claude Fable 5.2`, `Claude Opus 5.5`, `Claude Sonnet 5.5`, `Claude Haiku 5.5`, `Claude Fable 5.1`, `Claude Fable 5`, `Claude Opus 5`, `Claude Sonnet 5` |
 | **Alibaba Cloud DashScope** | `Qwen4 Max`, `Qwen3.8 Flash`, `Qwen3.7 Plus`, `Qwen3.8 Max`, `Qwen3.6 Max`, `Qwen3.6 Plus`, `Qwen3.6 Flash`, `Qwen3.6 VL Max`, `Qwen3.6 VL Plus` |
 | **Kimi (Moonshot AI)** | `Kimi K3.1 Pro`, `Kimi K3.1 Pro Highspeed`, `Kimi K3` |
 | **MiniMax** | `MiniMax M3`, `MiniMax M2.7`, `MiniMax M2.7 Highspeed`, `MiniMax M2.5`, `MiniMax M2.5 Highspeed`, `MiniMax M2.1`, `MiniMax M2.1 Highspeed`, `MiniMax M2` |
-| **APIMart** | 126 chat models, including GPT-6.2, Claude Fable 5.2, Gemini 4 Neon, Qwen4 Max and DeepSeek. The provider profile shows models available to your key. |
+| **APIMart** | 72 chat models, including GPT-6.2, Claude Fable 5.2, Gemini 4 Neon, Qwen4 Max and DeepSeek. The provider profile shows models available to your key. |
+
+Text profiles start at Gemini 3.5, GPT-6 and Claude 5. A generation project saved with an older profile runs on the provider's default text model (Gemini 3.8 Flash, GPT-6.1 Terra or Claude Sonnet 5.5), and an assistant conversation on one asks you to pick a current model. Gemini 2.5 TTS profiles are gone too; projects on them use Gemini 3.8 Flash TTS.
 
 ## 3. Image Generation
 
@@ -79,9 +81,9 @@ Vertex AI Veo uses a Google Cloud project endpoint and OAuth credentials. See [V
 | Provider | Supported Models | Audio Type |
 | :--- | :--- | :--- |
 | **Google AI** | `Lyria 3.5`, `Lyria 3 Clip`, `Lyria 3 Pro` | Music Generation |
-| **Google AI** | `Gemini 3.8 Flash TTS`, `Gemini 3.8 Flash-Lite TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS` | Text-to-Speech |
+| **Google AI** | `Gemini 3.8 Flash TTS`, `Gemini 3.8 Flash-Lite TTS` | Text-to-Speech |
 | **Vertex AI** | `Lyria 3 Clip`, `Lyria 3 Pro` | Music Generation |
-| **Vertex AI** | `Gemini 3.8 Flash TTS`, `Gemini 3.8 Flash-Lite TTS`, `Gemini 2.5 Flash TTS`, `Gemini 2.5 Pro TTS` | Text-to-Speech |
+| **Vertex AI** | `Gemini 3.8 Flash TTS`, `Gemini 3.8 Flash-Lite TTS` | Text-to-Speech |
 | **MiniMax** | `MiniMax Music 3.0` | Music Generation |
 | **MiniMax** | `MiniMax Speech 2.8 HD`, `MiniMax Speech 2.8 Turbo` | Text-to-Speech |
 | **APIMart** | `Suno V6`, `Suno V6 Wild`, `Suno V6 Mini`, `Flow Music`, `Flow Music Lyria 3.5` | Music Generation |

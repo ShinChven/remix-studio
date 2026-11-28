@@ -288,15 +288,18 @@
     },
     {
       "id": "gpt-5.6-terra",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.6-luna",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.6-sol",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gemini-2.5-flash-image-preview",
@@ -344,7 +347,8 @@
     },
     {
       "id": "claude-opus-4-8",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "Omni-Flash-Ext",
@@ -376,23 +380,28 @@
     },
     {
       "id": "gpt-5.4-mini",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.1-codex-max",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.4-nano",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.4-pro",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.5",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "wan2.7-image-pro",
@@ -428,7 +437,8 @@
     },
     {
       "id": "claude-opus-4-7",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "viduq3",
@@ -536,7 +546,8 @@
     },
     {
       "id": "gpt-5.3-codex",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "viduq3-pro",
@@ -544,7 +555,8 @@
     },
     {
       "id": "gpt-5.4",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "deepseek-r1-0528",
@@ -552,23 +564,28 @@
     },
     {
       "id": "claude-sonnet-4-6-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-opus-4-6",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gemini-3.1-pro-preview",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-sonnet-4-6",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-opus-4-6-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "MiniMax-Hailuo-2.3",
@@ -604,7 +621,8 @@
     },
     {
       "id": "gpt-5.2-codex",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "seedance-1-5-pro",
@@ -616,15 +634,18 @@
     },
     {
       "id": "gemini-3-flash-preview-nothinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4.1-mini-2025-04-14",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.1",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4o-transcribe",
@@ -633,19 +654,23 @@
     },
     {
       "id": "gpt-5.1-2025-11-13",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.2-pro",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.1-codex-mini",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5-2025-08-07",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "deepseek-v3.2",
@@ -653,7 +678,8 @@
     },
     {
       "id": "claude-sonnet-4-5-20250929-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4o-mini-transcribe",
@@ -666,7 +692,8 @@
     },
     {
       "id": "claude-opus-4-5-20251101-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "qwen-turbo",
@@ -674,7 +701,8 @@
     },
     {
       "id": "gpt-5-pro-2025-10-06",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "flux-2-pro",
@@ -682,11 +710,13 @@
     },
     {
       "id": "gpt-5-mini-2025-08-07",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.2",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "wan2.6",
@@ -698,11 +728,13 @@
     },
     {
       "id": "gpt-5-nano-2025-08-07",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5-search-api",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "deepseek-r1-250528",
@@ -710,7 +742,8 @@
     },
     {
       "id": "gemini-3-pro-preview",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "deepseek-v3-0324",
@@ -718,11 +751,13 @@
     },
     {
       "id": "gemini-3-pro-preview-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5.1-codex",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "MiniMax-Hailuo-02",
@@ -730,7 +765,8 @@
     },
     {
       "id": "gpt-5-search-api-2025-10-14",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "seedance-1-0-pro-quality",
@@ -750,11 +786,13 @@
     },
     {
       "id": "claude-3-7-sonnet-20250219-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-haiku-4-5-20251001-thinking",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "flux-kontext-max",
@@ -762,15 +800,18 @@
     },
     {
       "id": "gemini-3-flash-preview",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-opus-4-5-20251101",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4.1-2025-04-14",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "veo3.1-fast",
@@ -805,55 +846,68 @@
     },
     {
       "id": "gpt-5-pro",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5-nano",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5-mini",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5-codex",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-5",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4o-mini",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4o-2024-11-20",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4o",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4.1-nano",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4.1-mini",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "gpt-4.1",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-sonnet-4-5-20250929",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "claude-haiku-4-5-20251001",
-      "category": "chat"
+      "category": "chat",
+      "excluded": "Superseded: Remix Studio supports Gemini 3.5+, GPT-6+ and Claude 5+"
     },
     {
       "id": "deepseek-r1",
