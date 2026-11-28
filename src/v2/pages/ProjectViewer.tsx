@@ -1,5 +1,5 @@
 import { uiLocale } from '../lib/format';
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -68,6 +68,7 @@ import { Lightbox } from '../components/Lightbox';
 import { MediaPicker, type UniversalPickedItem } from '../components/MediaPicker';
 import { ProjectFormDialog } from '../components/ProjectFormDialog';
 import { AlbumTab } from '../components/project/AlbumTab';
+import type { RescaleDefaults } from '../components/project/RescaleDialog';
 import { CompletedTab, DraftsTab, QueueTab } from '../components/project/JobTabs';
 import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
 import { LibrarySelectionDialog } from '../components/project/LibrarySelectionDialog';
@@ -1175,6 +1176,13 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
   // ComfyUI and Civitai projects render their results as the image or video
   // project they produce: ComfyUI's output format picks which, and a Civitai
   // project's media type.
+  // Rescale stages image-to-image drafts on an image model, so it needs a plain image project.
+  const rescaleDefaults = useMemo<RescaleDefaults | undefined>(
+    () => ((localProject.type || 'image') === 'image'
+      ? { providers, providerId: localProject.providerId, modelConfigId: localProject.modelConfigId, quality: localProject.quality, background: localProject.background }
+      : undefined),
+    [localProject.type, localProject.providerId, localProject.modelConfigId, localProject.quality, localProject.background, providers],
+  );
   const mediaProjectType = isComfyProject || isCivitaiProject ? projectMediaType(localProject) : (localProject.type || 'image');
   // Civitai images keep their checkpoint's AIR as the model id; its name comes
   // from the workflow's checkpoints, the results and the jobs that ran with it,
@@ -2633,6 +2641,8 @@ function ProjectViewer({ project, onUpdate: onUpdateProp, onDelete }: Props) {
               onTagMatchChange={handleAlbumTagMatchChange}
               onUpdateAlbumItemTags={updateAlbumItemTags}
               onBatchUpdateAlbumTags={batchUpdateAlbumItemTags}
+              rescale={rescaleDefaults}
+              onShowDrafts={() => void showNewDrafts()}
             />
           )}
         </div>

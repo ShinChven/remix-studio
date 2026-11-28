@@ -2,6 +2,7 @@ import { APIMartVideoGenerator } from './apimart-video-generator';
 import type { ProviderType } from '../../src/types';
 import { VideoGenerator } from './video-generator';
 import { GoogleAIVideoGenerator } from './google-ai-video-generator';
+import { VertexAIVideoGenerator } from './vertex-ai-video-generator';
 import { GrokVideoGenerator } from './grok-video-generator';
 import { BytePlusVideoGenerator } from './byteplus-video-generator';
 import { KlingAIVideoGenerator } from './kling-ai-video-generator';
@@ -28,7 +29,7 @@ export function buildVideoGenerator(
     case 'GoogleAI':
       return new GoogleAIVideoGenerator(apiKey, safeApiUrl);
     case 'VertexAI':
-      throw new Error(`Provider type 'VertexAI' does not support video generation`);
+      return new VertexAIVideoGenerator(apiKey, safeApiUrl);
     case 'OpenAI':
       throw new Error(`Provider type 'OpenAI' does not support video generation`);
     case 'Grok':

@@ -5,6 +5,8 @@ import {
   AssistantTurnBusyError,
   AssistantTurnDisconnectedError,
   cancelAssistantTurn,
+  answerAssistantQuestions,
+  ASSISTANT_ASK_USER_TOOL,
   confirmAssistantTool,
   confirmAssistantToolsBatch,
   createAssistantConversation,
@@ -28,6 +30,7 @@ import {
   type AssistantConversation,
   type AssistantConversationResource,
   type AssistantMessage,
+  type AssistantQuestion,
   type AssistantPendingConfirmation,
   type AssistantStatusEvent,
   type AssistantSwarmBlackboardEntry,
@@ -62,6 +65,7 @@ import { Composer, type AttachedImage, type BoundContext, type ComposerHandle } 
 import { AssistantHero } from '../components/assistant/Hero';
 import type { ConversationUsage } from '../components/assistant/ContextUsage';
 import { SwarmRunCard } from '../components/assistant/SwarmRunCard';
+import { QuestionPanel, QuestionSummary, type QuestionReply } from '../components/assistant/QuestionPanel';
 import { Lightbox } from '../components/Lightbox';
 import { LibraryPreviewDialog } from '../components/project/LibraryPreviewDialog';
 import { ProjectPreviewDialog } from '../components/project/ProjectPreviewDialog';
@@ -149,6 +153,14 @@ function formatToolTitle(toolName: string | null | undefined) {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+/** The questions an `ask_user` call carries, dropping any malformed entry. */
+function questionsFromArgs(args: unknown): AssistantQuestion[] {
+  const list = (args && typeof args === 'object' ? (args as { questions?: unknown }).questions : null);
+  if (!Array.isArray(list)) return [];
+  return list.filter((q): q is AssistantQuestion =>
+    Boolean(q) && typeof q.question === 'string' && Array.isArray(q.options));
 }
 
 function unwrapToolResult(content: string | null | undefined) {
@@ -285,6 +297,12 @@ function summarizePendingConfirmation(
       const count = Array.isArray(args.item_ids) ? new Set(args.item_ids).size : 0;
       return `Move ${count} item${count === 1 ? '' : 's'} from library "${String(args.library_id ?? '')}" to the Recycle Bin.`;
     }
+    case 'create_skill':
+      return `Create assistant skill "${String(args.title ?? '')}".`;
+    case 'update_skill':
+      return `Update assistant skill "${String(args.skill_id ?? '')}".`;
+    case 'delete_skill':
+      return `Permanently delete assistant skill "${String(args.skill_id ?? '')}".`;
     case 'create_project_with_workflow': {
       const workflowCount = Array.isArray(args.workflowItems) ? args.workflowItems.length : 0;
       return `Create a ${String(args.type ?? 'new')} project named "${String(args.name ?? '')}" with ${workflowCount} workflow item${workflowCount === 1 ? '' : 's'}.`;
@@ -1296,6 +1314,46 @@ export function AssistantPage() {
     }
   };
 
+  // ─── Answering the assistant's questions (ask_user) ───
+  const handleAnswerQuestions = async (toolCallId: string, reply: QuestionReply) => {
+    if (!activeConversationId || isSending) return;
+    const conversationId = activeConversationId;
+    setIsSending(true);
+    setCurrentThinkingTitle('');
+    setCurrentToolTitle('');
+    turnSeqRef.current = 0;
+    setLiveSteps([]);
+
+    try {
+      const outcome = await consumeTurn(conversationId, (signal) =>
+        answerAssistantQuestions(
+          conversationId,
+          toolCallId,
+          reply,
+          handleTurnStatusEvent,
+          signal,
+          { swarmMode, workerProviderId, workerModelId },
+        ));
+      if (outcome.status === 'abandoned') return;
+      await settleAfterTurn(conversationId, outcome.result);
+      loadConversations();
+    } catch (e) {
+      if (e instanceof AssistantTurnDisconnectedError) {
+        await handleLostTurn(conversationId);
+        return;
+      }
+      if (e instanceof AssistantTurnBusyError) {
+        toast.error(t('assistant.turnBusy', 'The assistant is still working in this chat — nothing was sent.'));
+        void attachToActiveTurn(conversationId, e.activeTurn);
+        return;
+      }
+      toast.error((e as Error)?.message || t('v2.assistant.question.failed', 'Could not send your answers.'));
+      await settleAfterTurn(conversationId, null).catch(() => {});
+    } finally {
+      releaseTurnIndicator();
+    }
+  };
+
   // ─── Phase 2: Per-worker & batched confirmations from Agent Side Panel ───
   const handleConfirmSingle = async (
     confirmation: AssistantPendingConfirmation,
@@ -1474,6 +1532,20 @@ export function AssistantPage() {
     return byId;
   }, [messages]);
 
+  /** The `ask_user` call the latest turn stopped on, while it waits for answers. */
+  const pendingQuestion = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const message = messages[i];
+      if (message.role === 'user') return null;
+      if (message.role !== 'assistant' || message.status !== 'awaiting_input') continue;
+      const call = (message.toolCalls ?? []).find((c) => c.name === ASSISTANT_ASK_USER_TOOL);
+      if (!call || toolMessagesByCallId.has(call.id)) return null;
+      const questions = questionsFromArgs(call.arguments);
+      return questions.length > 0 ? { toolCallId: call.id, questions } : null;
+    }
+    return null;
+  }, [messages, toolMessagesByCallId]);
+
   const swarmRunById = useMemo(() => {
     const map = new Map<string, AssistantSwarmRun>();
     for (const run of swarmRuns) map.set(run.id, run);
@@ -1601,6 +1673,19 @@ export function AssistantPage() {
       }
       for (const call of msg.toolCalls ?? []) {
         const message = toolMessagesByCallId.get(call.id);
+        if (call.name === ASSISTANT_ASK_USER_TOOL) {
+          // Open questions wait in the composer; answered ones read as a Q&A.
+          if (!message) continue;
+          flush();
+          out.push(
+            <QuestionSummary
+              key={`question-${call.id}`}
+              questions={questionsFromArgs(call.arguments)}
+              result={message.toolResultJson ?? unwrapToolResult(message.content)}
+            />,
+          );
+          continue;
+        }
         if (message) group.push({ call, message });
       }
     }
@@ -1927,6 +2012,17 @@ export function AssistantPage() {
                 onToggleWebSearchMode={setWebSearchMode}
                 onSend={handleSend}
                 onStop={handleStop}
+                placeholder={pendingQuestion && !isSending
+                  ? t('v2.assistant.question.replyPlaceholder', 'Or reply in your own words…')
+                  : undefined}
+                header={pendingQuestion && !isSending ? (
+                  <QuestionPanel
+                    key={pendingQuestion.toolCallId}
+                    questions={pendingQuestion.questions}
+                    disabled={isSending}
+                    onSubmit={(reply) => handleAnswerQuestions(pendingQuestion.toolCallId, reply)}
+                  />
+                ) : undefined}
               />
             </div>
           </>

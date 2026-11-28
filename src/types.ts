@@ -273,9 +273,16 @@ export const APIMART_TTS_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'sh
 export type AudioGenerationKind = 'tts' | 'music';
 export type AudioMusicMode = 'with-lyrics' | 'instrumental';
 
+export const MINIMAX_TTS_VOICES = [
+  'English_expressive_narrator',
+  'English_radiant_girl',
+  'English_magnetic_voiced_man',
+  'Chinese (Mandarin)_Reliable_Executive',
+] as const;
+
 export interface AudioSpeakerConfig {
   name: string;
-  voice: GeminiTtsVoiceName | typeof APIMART_TTS_VOICES[number];
+  voice: GeminiTtsVoiceName | typeof APIMART_TTS_VOICES[number] | typeof MINIMAX_TTS_VOICES[number];
 }
 
 export interface AudioTtsProjectConfig {
@@ -311,8 +318,8 @@ export const DEFAULT_AUDIO_PROJECT_CONFIG: AudioProjectConfig = DEFAULT_AUDIO_TT
 
 export function createDefaultAudioProjectConfig(kind: AudioGenerationKind = 'tts'): AudioProjectConfig {
   return kind === 'music'
-    ? DEFAULT_AUDIO_MUSIC_PROJECT_CONFIG
-    : DEFAULT_AUDIO_TTS_PROJECT_CONFIG;
+    ? { ...DEFAULT_AUDIO_MUSIC_PROJECT_CONFIG }
+    : { ...DEFAULT_AUDIO_TTS_PROJECT_CONFIG, speakers: [{ ...DEFAULT_AUDIO_TTS_PROJECT_CONFIG.speakers[0] }] };
 }
 
 export function getAudioGenerationKindFromConfig(config: AudioProjectConfig): AudioGenerationKind {
@@ -320,7 +327,7 @@ export function getAudioGenerationKindFromConfig(config: AudioProjectConfig): Au
 }
 
 export function parseAudioProjectConfig(value?: string, model?: Pick<ModelConfig, 'options'>): AudioProjectConfig {
-  const voices = model?.options.voices || [...GEMINI_TTS_VOICES, ...APIMART_TTS_VOICES];
+  const voices = model?.options.voices || [...GEMINI_TTS_VOICES, ...APIMART_TTS_VOICES, ...MINIMAX_TTS_VOICES];
   const primaryVoice = voices.includes('Kore') ? 'Kore' : voices[0] || 'Kore';
   const secondaryVoice = voices.includes('Puck') ? 'Puck' : voices[1] || primaryVoice;
   const defaultConfig = createDefaultAudioProjectConfig(resolveAudioGenerationKind(model));
@@ -405,6 +412,15 @@ export function formatPromptLimit(limit?: PromptLimitMeta): string {
 
 export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   GoogleAI: [
+    {
+      id: 'google-gemini-4-neon-text',
+      name: 'Gemini 4 Neon',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-4-neon',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536], supportsReferenceImages: true },
+    },
     {
       // `id` stays on the nano banana 2 name so projects pinned to the retired
       // gemini-3.1-flash-image land on 2.1 — same request shape, so only the
@@ -581,29 +597,39 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
     {
       id: 'google-veo-3.1-video',
-      name: 'Veo 3.1',
+      name: 'Gemini Omni 1.2 Flash',
       generatorId: 'GoogleAI',
-      modelId: 'veo-3.1-generate-preview',
+      modelId: 'gemini-omni-1.2-flash',
       category: 'video',
-      promptLimit: { value: 1024, unit: 'tokens' },
       options: {
         aspectRatios: ['16:9', '9:16'],
-        resolutions: ['720p', '1080p', '4k'],
-        durations: [4, 6, 8],
+        resolutions: ['720p', '1080p', '4k', '360p'],
+        durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
       },
     },
     {
       id: 'google-veo-3.1-lite-video',
-      name: 'Veo 3.1 Lite',
+      name: 'Gemini Omni 1.2 Flash (720p)',
       generatorId: 'GoogleAI',
-      modelId: 'veo-3.1-lite-generate-preview',
+      modelId: 'gemini-omni-1.2-flash',
       category: 'video',
-      promptLimit: { value: 1024, unit: 'tokens' },
       options: {
         aspectRatios: ['16:9', '9:16'],
-        resolutions: ['720p', '1080p'],
-        durations: [4, 6, 8],
+        resolutions: ['720p', '360p'],
+        durations: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
       },
+    },
+    {
+      id: 'google-lyria-3.5-audio',
+      name: 'Lyria 3.5',
+      generatorId: 'GoogleAI',
+      modelId: 'lyria-3.5',
+      category: 'audio',
+      options: { audioFormats: ['mp3', 'wav'], audioGenerationKind: 'music', supportsReferenceImages: true },
     },
     {
       id: 'google-lyria-3-clip-audio',
@@ -630,10 +656,24 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'google-gemini-3.1-flash-tts-audio',
-      name: 'Gemini 3.1 Flash TTS',
+      id: 'google-gemini-3.8-flash-tts-audio',
+      name: 'Gemini 3.8 Flash TTS',
       generatorId: 'GoogleAI',
-      modelId: 'gemini-3.1-flash-tts-preview',
+      modelId: 'gemini-3.8-flash-tts',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
+    {
+      id: 'google-gemini-3.1-flash-tts-audio',
+      name: 'Gemini 3.8 Flash-Lite TTS',
+      generatorId: 'GoogleAI',
+      modelId: 'gemini-3.8-flash-lite-tts',
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
@@ -673,6 +713,57 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   VertexAI: [
+    {
+      id: 'vertex-veo-3.1-video',
+      name: 'Veo 3.1 GA',
+      generatorId: 'VertexAI',
+      modelId: 'veo-3.1-generate-001',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p', '4k'],
+        durations: [4, 6, 8],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+      },
+    },
+    {
+      id: 'vertex-veo-3.1-fast-video',
+      name: 'Veo 3.1 Fast GA',
+      generatorId: 'VertexAI',
+      modelId: 'veo-3.1-fast-generate-001',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p', '4k'],
+        durations: [4, 6, 8],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+      },
+    },
+    {
+      id: 'vertex-veo-3.1-lite-video',
+      name: 'Veo 3.1 Lite GA',
+      generatorId: 'VertexAI',
+      modelId: 'veo-3.1-lite-generate-001',
+      category: 'video',
+      options: {
+        aspectRatios: ['16:9', '9:16'],
+        resolutions: ['720p', '1080p'],
+        durations: [4, 6, 8],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+      },
+    },
+    {
+      id: 'vertex-gemini-4-neon-text',
+      name: 'Gemini 4 Neon',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-4-neon',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536], supportsReferenceImages: true },
+    },
     {
       // `id` stays on the nano banana 2 name so projects pinned to the retired
       // gemini-3.1-flash-image land on 2.1 — same request shape, so only the
@@ -860,10 +951,24 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      id: 'vertex-gemini-3.1-flash-tts-audio',
-      name: 'Gemini 3.1 Flash TTS',
+      id: 'vertex-gemini-3.8-flash-tts-audio',
+      name: 'Gemini 3.8 Flash TTS',
       generatorId: 'VertexAI',
-      modelId: 'gemini-3.1-flash-tts-preview',
+      modelId: 'gemini-3.8-flash-tts',
+      category: 'audio',
+      promptLimit: { value: 32000, unit: 'tokens' },
+      options: {
+        audioFormats: ['wav', 'mp3', 'aac'],
+        audioGenerationKind: 'tts',
+        voices: [...GEMINI_TTS_VOICES],
+        supportsMultiSpeaker: true,
+      },
+    },
+    {
+      id: 'vertex-gemini-3.1-flash-tts-audio',
+      name: 'Gemini 3.8 Flash-Lite TTS',
+      generatorId: 'VertexAI',
+      modelId: 'gemini-3.8-flash-lite-tts',
       category: 'audio',
       promptLimit: { value: 32000, unit: 'tokens' },
       options: {
@@ -903,6 +1008,23 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   RunningHub: [
+    {
+      id: 'runninghub-seedance-2-5-token-video',
+      name: 'Seedance 2.5 Token',
+      generatorId: 'RunningHub',
+      modelId: 'bytedance/seedance-2.5-token/text-to-video',
+      category: 'video',
+      promptLimit: { value: 20480, unit: 'characters' },
+      options: { aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'], resolutions: ['720p', '480p'], durations: [4, 5, 6, 8, 10, 12, 15, 20, 25, 30, -1], sounds: ['on', 'off'], supportsReferenceImages: false },
+    },
+    {
+      id: 'runninghub-seedream-5-5-layer-decomposition',
+      name: 'Seedream 5.5 Layer Decomposition',
+      generatorId: 'RunningHub',
+      modelId: 'seedream-v5.5/layer-decomposition',
+      category: 'image',
+      options: { qualities: ['auto', '1K', '1.5K', '2K', '3K'], supportsReferenceImages: true },
+    },
     {
       id: 'runninghub-nano-banana-2',
       name: 'nano banana 2',
@@ -1304,6 +1426,48 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   OpenAI: [
     {
+      id: 'openai-gpt-image-2-6-sunburst',
+      name: 'GPT Image 2.6 Sunburst',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-image-2.6-sunburst',
+      category: 'image',
+      options: {
+        aspectRatios: ['1024x1024', '1536x1024', '1024x1536', '2048x2048', '2048x1152', '1152x2048', '3840x2160', '2160x3840', 'auto'],
+        qualities: ['low', 'medium', 'high', 'xhigh', 'max', 'auto'],
+        backgrounds: ['transparent', 'opaque', 'auto'],
+      },
+    },
+    {
+      id: 'openai-gpt-image-2-6-flare',
+      name: 'GPT Image 2.6 Flare',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-image-2.6-flare',
+      category: 'image',
+      options: {
+        aspectRatios: ['1024x1024', '1536x1024', '1024x1536', '2048x2048', '2048x1152', '1152x2048', '3840x2160', '2160x3840', 'auto'],
+        qualities: ['low', 'medium', 'high', 'xhigh', 'max', 'auto'],
+        backgrounds: ['transparent', 'opaque', 'auto'],
+      },
+    },
+    {
+      id: 'openai-gpt-6.2-astra-text',
+      name: 'GPT-6.2 Astra',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6.2-astra',
+      category: 'text',
+      promptLimit: { value: 1050000, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000], supportsReferenceImages: true },
+    },
+    {
+      id: 'openai-gpt-6.2-sol-text',
+      name: 'GPT-6.2 Sol',
+      generatorId: 'OpenAI',
+      modelId: 'gpt-6.2-sol',
+      category: 'text',
+      promptLimit: { value: 1050000, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 128000], supportsReferenceImages: true },
+    },
+    {
       id: 'openai-gpt-image-2-5-sunburst',
       name: 'GPT Image 2.5 Sunburst',
       generatorId: 'OpenAI',
@@ -1503,6 +1667,15 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   Grok: [
     {
+      id: 'grok-4.7-text',
+      name: 'Grok 4.7',
+      generatorId: 'Grok',
+      modelId: 'grok-4.7',
+      category: 'text',
+      promptLimit: { value: 500000, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768], supportsReferenceImages: true },
+    },
+    {
       id: 'grok-imagine-image-2.0',
       name: 'Grok Imagine Image 2.0',
       generatorId: 'Grok',
@@ -1527,18 +1700,15 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
       },
     },
     {
-      // `id` stays on the old name so saved projects keep their selection.
-      // `grok-imagine-image-pro` itself was retired by xAI in May 2026 and the
-      // quality tier is its migration target — same request shape, so only the
-      // model ID moves.
+      // Keep saved selections on xAI's legacy slug, which routes to 2.0 Low.
       id: 'grok-imagine-image-pro',
-      name: 'Grok Imagine Quality',
+      name: 'Grok Imagine Image 2.0 (Low legacy channel)',
       generatorId: 'Grok',
       modelId: 'grok-imagine-image-quality',
       category: 'image',
       options: {
         aspectRatios: ['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '9:19.5', '19.5:9', '9:20', '20:9', '1:2', '2:1', 'auto'],
-        qualities: ['low/1k', 'low/2k', 'medium/1k', 'medium/2k', 'high/1k', 'high/2k'],
+        qualities: ['low/1k', 'low/2k'],
       },
     },
     {
@@ -1775,6 +1945,23 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   BytePlus: [
     {
+      id: 'byteplus-seedream-5-5',
+      name: 'Seedream 5.5',
+      generatorId: 'BytePlus',
+      modelId: 'dola-seedream-5-5-261028',
+      category: 'image',
+      options: { aspectRatios: ['1:1', '4:3', '3:4', '16:9', '9:16', '3:2', '2:3', '21:9', 'auto'], qualities: ['2K', '1K', '1.5K'], supportsReferenceImages: true },
+    },
+    {
+      id: 'byteplus-seedance-2-5-flash-video',
+      name: 'Seedance 2.5 Flash',
+      generatorId: 'BytePlus',
+      modelId: 'dreamina-seedance-2-5-flash-261115',
+      category: 'video',
+      promptLimit: { value: 20480, unit: 'characters' },
+      options: { aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'], resolutions: ['720p', '480p'], durations: [4, 5, 6, 8, 10, 12, 15, 20, 25, 30, -1], sounds: ['on', 'off'], supportsReferenceImages: true, supportsReferenceVideo: true, supportsReferenceAudio: true },
+    },
+    {
       id: 'byteplus-seedream-5-0-pro',
       name: 'Seedream 5.0 Pro',
       generatorId: 'BytePlus',
@@ -1857,14 +2044,17 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
     {
       id: 'byteplus-seedance-1-5-pro-video',
-      name: 'Seedance 1.5 Pro',
+      name: 'Seedance 2.0 Mini',
       generatorId: 'BytePlus',
-      modelId: 'seedance-1-5-pro-251215',
+      modelId: 'dreamina-seedance-2-0-mini-260615',
       category: 'video',
       options: {
         aspectRatios: ['16:9', '4:3', '1:1', '3:4', '9:16', '21:9'],
         resolutions: ['480p', '720p', '1080p'],
         durations: [4, 5, 6, 8, 10, 12],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
       },
     },
     {
@@ -1893,6 +2083,37 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   Replicate: [
+    {
+      id: 'replicate-flux-3-video',
+      name: 'FLUX 3 Video (Early Access)',
+      generatorId: 'Replicate',
+      modelId: 'black-forest-labs/flux-3',
+      category: 'video',
+      options: {
+        aspectRatios: ['auto', '16:9', '9:16', '1:1', '4:3', '3:4', '2:1', '21:9'],
+        resolutions: ['720p', '1080p'],
+        durations: [5, 6, 8, 10, 12, 15, 20],
+        sounds: ['on', 'off'],
+        supportsReferenceImages: true,
+        supportsReferenceVideo: true,
+      },
+    },
+    {
+      id: 'replicate-flux-3-image',
+      name: 'FLUX 3 Image',
+      generatorId: 'Replicate',
+      modelId: 'black-forest-labs/flux-3-image',
+      category: 'image',
+      options: { aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'], qualities: ['1k', '1.5k', '2k', '4k'], supportsReferenceImages: true },
+    },
+    {
+      id: 'replicate-seedance-2-5-video',
+      name: 'Seedance 2.5',
+      generatorId: 'Replicate',
+      modelId: 'bytedance/seedance-2.5',
+      category: 'video',
+      options: { aspectRatios: ['adaptive', '16:9', '4:3', '1:1', '3:4', '9:16', '21:9'], resolutions: ['720p', '480p'], durations: [4, 5, 6, 8, 10, 12, 15, 20, 25, 30, -1], sounds: ['on', 'off'], supportsReferenceImages: true, supportsReferenceVideo: true, supportsReferenceAudio: true },
+    },
     {
       id: 'replicate-seedance-2-0-fast-video',
       name: 'Seedance 2.0 Fast',
@@ -1960,6 +2181,33 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   Alibabacloud: [
+    {
+      id: 'alibabacloud-qwen4-max-text',
+      name: 'Qwen4 Max',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen4-max',
+      category: 'text',
+      promptLimit: { value: 983616, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072], supportsReferenceImages: true },
+    },
+    {
+      id: 'alibabacloud-qwen3.8-flash-text',
+      name: 'Qwen3.8 Flash',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.8-flash',
+      category: 'text',
+      promptLimit: { value: 983616, unit: 'tokens' },
+      options: { temperatures: [0, 0.2, 0.5, 0.7, 1], maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072], supportsReferenceImages: true },
+    },
+    {
+      id: 'alibabacloud-qwen3.7-plus-text',
+      name: 'Qwen3.7 Plus',
+      generatorId: 'Alibabacloud',
+      modelId: 'qwen3.7-plus',
+      category: 'text',
+      promptLimit: { value: 983616, unit: 'tokens' },
+      options: { temperatures: [0, 0.2, 0.5, 0.7, 1], maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072], supportsReferenceImages: true },
+    },
     {
       id: 'alibabacloud-qwen3.8-max-text',
       name: 'Qwen3.8 Max',
@@ -2035,6 +2283,24 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   Kimi: [
     {
+      id: 'kimi-k3.1-pro-text',
+      name: 'Kimi K3.1 Pro',
+      generatorId: 'Kimi',
+      modelId: 'kimi-k3.1-pro',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768], supportsReferenceImages: true },
+    },
+    {
+      id: 'kimi-k3.1-pro-highspeed-text',
+      name: 'Kimi K3.1 Pro Highspeed',
+      generatorId: 'Kimi',
+      modelId: 'kimi-k3.1-pro-highspeed',
+      category: 'text',
+      promptLimit: { value: 1048576, unit: 'tokens' },
+      options: { maxTokenOptions: [256, 512, 1024, 2048, 4096, 8192, 16384, 32768], supportsReferenceImages: true },
+    },
+    {
       id: 'kimi-k3-text',
       name: 'Kimi K3',
       generatorId: 'Kimi',
@@ -2048,6 +2314,47 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
     },
   ],
   MiniMax: [
+    {
+      id: 'minimax-h3-image',
+      name: 'MiniMax H3 Image',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-H3-Image',
+      category: 'image',
+      promptLimit: { value: 32000, unit: 'characters' },
+      options: { aspectRatios: ['auto', '1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9', '9:21', '3:1', '1:3'], qualities: ['2K', '1K', '4K'], supportsReferenceImages: true },
+    },
+    {
+      id: 'minimax-h3-highspeed-video',
+      name: 'MiniMax Hailuo H3 Highspeed',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-H3-Highspeed',
+      category: 'video',
+      options: { aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'], resolutions: ['768P', '480P'], durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], supportsReferenceImages: true, supportsReferenceVideo: true, supportsReferenceAudio: true },
+    },
+    {
+      id: 'minimax-h3-lite-video',
+      name: 'MiniMax Hailuo H3 Lite',
+      generatorId: 'MiniMax',
+      modelId: 'MiniMax-H3-Lite',
+      category: 'video',
+      options: { aspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'], resolutions: ['768P', '480P'], durations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], supportsReferenceImages: true, supportsReferenceVideo: true, supportsReferenceAudio: true },
+    },
+    {
+      id: 'minimax-speech-2.8-hd',
+      name: 'MiniMax Speech 2.8 HD',
+      generatorId: 'MiniMax',
+      modelId: 'speech-2.8-hd',
+      category: 'audio',
+      options: { audioGenerationKind: 'tts', audioFormats: ['mp3', 'wav', 'aac'], voices: [...MINIMAX_TTS_VOICES], supportsMultiSpeaker: false },
+    },
+    {
+      id: 'minimax-speech-2.8-turbo',
+      name: 'MiniMax Speech 2.8 Turbo',
+      generatorId: 'MiniMax',
+      modelId: 'speech-2.8-turbo',
+      category: 'audio',
+      options: { audioGenerationKind: 'tts', audioFormats: ['mp3', 'wav', 'aac'], voices: [...MINIMAX_TTS_VOICES], supportsMultiSpeaker: false },
+    },
     {
       id: 'minimax-m3-text',
       name: 'MiniMax M3',
@@ -2191,6 +2498,22 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   ],
   BlackForestLabs: [
     {
+      id: 'bfl-flux-3-image',
+      name: 'FLUX 3 Image',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-3-image',
+      category: 'image',
+      options: { aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'], qualities: ['1k', '1.5k', '2k', '4k'], supportsReferenceImages: true },
+    },
+    {
+      id: 'bfl-flux-3-image-klein',
+      name: 'FLUX 3 Image Klein',
+      generatorId: 'BlackForestLabs',
+      modelId: 'flux-3-image-klein',
+      category: 'image',
+      options: { aspectRatios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '21:9'], qualities: ['1k', '1.5k', '2k', '4k'], supportsReferenceImages: true },
+    },
+    {
       id: 'bfl-flux-2-max',
       name: 'Flux 2 Max',
       generatorId: 'BlackForestLabs',
@@ -2281,6 +2604,35 @@ export const PROVIDER_MODELS_MAP: Record<ProviderType, ModelConfig[]> = {
   // fixed list, so the provider only holds the API token.
   Civitai: [],
   APIMart: [
+    {
+      id: 'apimart-kling-v4-image',
+      name: 'Kling Image 4.0',
+      generatorId: 'APIMart',
+      modelId: 'kling-v4-image',
+      category: 'image',
+      promptLimit: { value: 21000, unit: 'characters' },
+      options: { aspectRatios: ['auto', '16:9', '9:16', '1:1', '4:3', '3:4', '3:2', '2:3', '21:9'], qualities: ['2K', '4K', '8K'], supportsReferenceImages: true },
+    },
+    {
+      id: 'apimart-kling-v4-long-image',
+      name: 'Kling Image 4.0 Webpage',
+      generatorId: 'APIMart',
+      modelId: 'kling-v4-long-image',
+      modelVariant: 'webpage',
+      category: 'image',
+      promptLimit: { value: 71000, unit: 'characters' },
+      options: { qualities: ['1K', '2K'], supportsReferenceImages: true },
+    },
+    {
+      id: 'apimart-kling-v4-long-image-ecommerce',
+      name: 'Kling Image 4.0 E-commerce',
+      generatorId: 'APIMart',
+      modelId: 'kling-v4-long-image',
+      modelVariant: 'ecommerce',
+      category: 'image',
+      promptLimit: { value: 71000, unit: 'characters' },
+      options: { qualities: ['1K', '2K'], supportsReferenceImages: true },
+    },
     {
       id: 'apimart-nano-banana-2-1',
       name: 'nano banana 2.1',

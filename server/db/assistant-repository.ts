@@ -13,6 +13,8 @@ export type AssistantMessageStatus =
   | 'completed'
   | 'error'
   | 'awaiting_confirmation'
+  /** An assistant message whose `ask_user` call is waiting on the user's answers. */
+  | 'awaiting_input'
   | 'cancelled'
   | 'truncated';
 
@@ -27,6 +29,9 @@ export interface AssistantToolCall {
   name: string;
   arguments: unknown;
   thoughtSignature?: string;
+  openAIReasoning?: { id: string; encryptedContent: string }[];
+  kimiReasoningContent?: string;
+  kimiRawArguments?: string;
 }
 
 export interface AssistantConversationRecord {
@@ -385,6 +390,32 @@ export interface AssistantSettingsRecord {
 
 export type AssistantSettingsPatch = Partial<AssistantSettingsRecord>;
 
+/** A preset prompt inserted from the composer. */
+export interface AssistantSkillRecord {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AssistantSkillPage {
+  items: AssistantSkillRecord[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+function toSkill(row: { id: string; title: string; content: string; createdAt: Date; updatedAt: Date }): AssistantSkillRecord {
+  return {
+    id: row.id,
+    title: row.title,
+    content: row.content,
+    createdAt: row.createdAt.getTime(),
+    updatedAt: row.updatedAt.getTime(),
+  };
+}
+
 function toSettings(row: any): AssistantSettingsRecord {
   return {
     enabledProviderIds: row?.enabledProviderIds ?? [],
@@ -422,6 +453,55 @@ export class AssistantRepository {
       update: data,
     });
     return toSettings(row);
+  }
+
+  // ─── Skills ───
+
+  /** Newest first. `q` matches title or content; an out-of-range page is clamped to the last one. */
+  async listSkills(userId: string, page = 1, limit = 25, q?: string): Promise<AssistantSkillPage> {
+    const take = Math.min(Math.max(limit, 1), 100);
+    const query = q?.trim();
+    const where = {
+      userId,
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' as const } },
+              { content: { contains: query, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
+    const total = await this.prisma.assistantSkill.count({ where });
+    const pages = Math.max(1, Math.ceil(total / take));
+    const currentPage = Math.min(Math.max(page, 1), pages);
+    const rows = await this.prisma.assistantSkill.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      skip: (currentPage - 1) * take,
+      take,
+    });
+    return { items: rows.map(toSkill), total, page: currentPage, pages };
+  }
+
+  async createSkill(userId: string, input: { id?: string; title: string; content: string }): Promise<AssistantSkillRecord> {
+    const row = await this.prisma.assistantSkill.create({
+      data: { ...(input.id ? { id: input.id } : {}), userId, title: input.title, content: input.content },
+    });
+    return toSkill(row);
+  }
+
+  /** Returns null when the skill does not exist or belongs to someone else. */
+  async updateSkill(userId: string, id: string, patch: { title?: string; content?: string }): Promise<AssistantSkillRecord | null> {
+    const result = await this.prisma.assistantSkill.updateMany({ where: { id, userId }, data: patch });
+    if (result.count === 0) return null;
+    const row = await this.prisma.assistantSkill.findUnique({ where: { id } });
+    return row ? toSkill(row) : null;
+  }
+
+  async deleteSkill(userId: string, id: string): Promise<boolean> {
+    const result = await this.prisma.assistantSkill.deleteMany({ where: { id, userId } });
+    return result.count > 0;
   }
 
   // ─── Conversations ───

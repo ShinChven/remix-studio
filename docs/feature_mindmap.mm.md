@@ -79,7 +79,7 @@
       - Conversation Resources sidebar (entities the assistant touched, persisted and re-mentionable)
     - **Assistant Settings**
       - Manage Enabled Providers for the assistant
-      - Manage Assistant Skills (create/edit custom instructions stored as library items)
+      - Manage Assistant Skills (create/edit custom instructions stored per account, separate from libraries)
     - **Tool Calling (Agentic Capabilities)**
       - Discover available assistant tools (Read, Mutate, Destructive)
       - View Tool Schemas (properties, types)

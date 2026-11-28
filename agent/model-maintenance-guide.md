@@ -315,6 +315,29 @@ credentials, database, or paid generation requests.
 
 ---
 
+## November 28 model updates
+
+The current bundled profiles are listed in
+[Model Profiles](../docs-site/concepts/models.md). Keep the saved profile IDs
+when moving projects off retired upstream models:
+
+- Google AI Veo 3.1 Preview profiles now use Gemini Omni 1.2 Flash. Omni uses
+  background Interactions requests. In-flight Veo jobs still use the original
+  long-running operation poller. The Vertex AI provider adds the Veo 3.1 GA
+  family on Google Cloud project endpoints.
+- The Gemini 3.1 Flash TTS profile now uses Gemini 3.8 Flash-Lite TTS. Gemini 3.8
+  Flash TTS is a separate profile. Google AI Lyria 3.5 uses background
+  Interactions requests with detached audio polling.
+- BytePlus Seedance 1.5 Pro profiles resolve to Seedance 2.0 Mini. The original
+  xAI Grok Imagine Quality slug resolves upstream to 2.0 Low.
+- Native GPT-6.2 Sol and Astra text jobs use Chat Completions. Assistant tool
+  turns use Responses with encrypted reasoning replayed alongside tool outputs.
+- APIMart's added profiles include GPT-6.2, Gemini 4 Neon, Qwen4 Max, Fable 5.2,
+  Kling Image 4.0 and Seedance 2.5 Flash. The webpage and e-commerce profiles
+  share `kling-v4-long-image` and send their own `skill` and reference fields.
+
+The inventory below records the earlier November catalog and request contracts.
+
 ## Current Model Inventory (November 2026)
 
 ### Google AI / Vertex AI

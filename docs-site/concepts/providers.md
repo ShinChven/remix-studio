@@ -74,6 +74,20 @@ Compatibility is more than accepting the same API key. Streaming, async task pol
 
 URL validation rejects unsafe endpoint forms, including attempts to direct provider calls at private/internal network targets.
 
+## Vertex AI video and speech
+
+For the Veo 3.1 video profiles and Google Cloud text-to-speech, configure a
+Vertex AI provider with its project and location in the API URL, for example
+`https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT/locations/us-central1`.
+For a model served at the global location, use the global host
+`aiplatform.googleapis.com` and the path ending in `/locations/global`.
+
+In the credential field, use either a Google Cloud OAuth access token or the
+JSON credentials of a service account authorized to run inference on that project.
+An access token expires, while service account credentials allow the adapter to
+obtain fresh tokens. Use a separate provider record for workflows that use the
+Gemini Developer API credential and endpoint.
+
 ## Supported Families
 
 The repository includes generation adapters and bundled profiles across Google AI, Vertex AI, OpenAI, Grok, Claude, Alibaba Cloud, Kimi, MiniMax, RunningHub, BytePlus, Kling AI, Black Forest Labs, Replicate, and APIMart. Supported modalities differ by family and model; consult [Model Profiles](/concepts/models) rather than assuming every family supports text, image, video, and audio.

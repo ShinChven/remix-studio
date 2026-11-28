@@ -1234,6 +1234,7 @@ export class QueueManager {
     return {
       prompt: job.prompt,
       modelId: modelConfig?.modelId,
+      modelVariant: modelConfig?.modelVariant,
       apiUrl: modelConfig?.apiUrl,
       aspectRatio: resolveSupportedAspectRatio(job.aspectRatio, options?.aspectRatios) || '1:1',
       imageSize: resolveSupportedOption(job.quality, options?.qualities) || '1K',

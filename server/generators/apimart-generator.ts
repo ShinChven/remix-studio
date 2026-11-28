@@ -290,7 +290,16 @@ export class APIMartGenerator extends ImageGenerator {
       payload.resolution = MINIMAX_H3_RESOLUTIONS.includes(tier) ? tier : '2K';
     }
 
-    if (imageUrls.length > 0) {
+    if (model === 'kling-v4-long-image') {
+      delete payload.n;
+      delete payload.size;
+      payload.skill = req.modelVariant === 'ecommerce' ? 'ecommerce' : 'webpage';
+      if (payload.skill === 'ecommerce') {
+        payload.image_urls = imageUrls;
+      } else {
+        if (imageUrls.length) payload.image_with_roles = imageUrls.map((url, index) => ({ url, role: index === 0 ? 'style' : 'subject' }));
+      }
+    } else if (imageUrls.length > 0) {
       payload.image_urls = imageUrls;
     }
 
@@ -306,6 +315,17 @@ export class APIMartGenerator extends ImageGenerator {
       const refCount = (req.refImagesBase64?.length || 0) || (req.refImageUrls?.length || 0);
       if (isMinimaxH3Image(req.modelId) && refCount > 16) {
         return { ok: false, error: `MiniMax H3 Image accepts at most 16 reference images; got ${refCount}.` };
+      }
+      if (req.modelId === 'kling-v4-image' && refCount > 10) {
+        return { ok: false, error: 'Kling Image 4.0 accepts at most ten reference images' };
+      }
+      if (req.modelId === 'kling-v4-long-image') {
+        const ecommerce = req.modelVariant === 'ecommerce';
+        if (ecommerce ? refCount < 1 || refCount > 3 : refCount > 2) {
+          return { ok: false, error: ecommerce
+            ? 'Kling e-commerce long images require one to three product images'
+            : 'Kling webpage long images accept a style image and a subject image' };
+        }
       }
       const resolvedRefs = await this.resolveImageUrls(req);
       if (resolvedRefs.ok === false) {

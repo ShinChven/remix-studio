@@ -3,11 +3,12 @@ import {
   type AudioMusicProjectConfig,
   type AudioTtsProjectConfig,
 } from '../../src/types';
-import { AudioGenerator, AudioGenerateRequest, AudioGenerateResult } from './audio-generator';
+import { AudioGenerator, AudioGenerateRequest, AudioGenerateResult, AudioCheckStatusResult } from './audio-generator';
+import { GoogleInteractionsClient } from '../utils/google-interactions';
 import { ensureWavBuffer } from '../utils/audio-utils';
 
 const DEFAULT_BASE = 'https://generativelanguage.googleapis.com';
-const DEFAULT_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
+const DEFAULT_TTS_MODEL = 'gemini-3.8-flash-tts';
 
 export class GoogleAIAudioGenerator extends AudioGenerator {
   private apiKey: string;
@@ -20,17 +21,48 @@ export class GoogleAIAudioGenerator extends AudioGenerator {
   }
 
   async generate(req: AudioGenerateRequest): Promise<AudioGenerateResult> {
-    const model = req.modelId || DEFAULT_TTS_MODEL;
+    const model = req.modelId === 'gemini-3.1-flash-tts-preview'
+      ? 'gemini-3.8-flash-lite-tts'
+      : req.modelId || DEFAULT_TTS_MODEL;
+    if (model === 'lyria-3.5') return this.generateLyria35(req);
     return this.isLyriaModel(model)
       ? this.generateMusic(req, model)
       : this.generateTts(req, model);
+  }
+
+  private async generateLyria35(req: AudioGenerateRequest): Promise<AudioGenerateResult> {
+    try {
+      const instrumental = req.audioConfig.kind === 'remix-audio-music' && req.audioConfig.mode === 'instrumental';
+      const input = [
+        { type: 'text', text: instrumental ? `${req.prompt}\n\nInstrumental only, no vocals.` : req.prompt },
+        ...(req.refImages || []).slice(0, 10).map((image) => ({ type: 'image', data: image.data, mime_type: image.mimeType })),
+      ];
+      const result = await new GoogleInteractionsClient(this.apiKey, this.apiUrl).create({
+        model: 'lyria-3.5',
+        input,
+        response_format: { type: 'audio', ...(req.outputFormat === 'wav' ? { mime_type: 'audio/wav' } : {}) },
+      });
+      if (!result.id) throw new Error(result.error?.message || 'Lyria did not return an interaction ID');
+      return { ok: true, status: 'processing', taskId: result.id };
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
+  async checkStatus(taskId: string): Promise<AudioCheckStatusResult> {
+    const result = await new GoogleInteractionsClient(this.apiKey, this.apiUrl).check(taskId);
+    if (result.status !== 'completed') return result;
+    const audio = result.content.find((part) => part.type === 'audio' && part.data);
+    if (!audio?.data) return { status: 'failed', error: 'Lyria completed without audio data' };
+    const text = result.content.filter((part) => part.type === 'text' && part.text).map((part) => part.text).join('\n\n');
+    return { status: 'completed', audioBytes: Buffer.from(audio.data, 'base64'), mimeType: audio.mime_type || 'audio/mpeg', text: text || undefined };
   }
 
   private isLyriaModel(model: string): boolean {
     return model.startsWith('lyria-3-');
   }
 
-  private buildGenerateContentUrl(model: string, reqApiUrl?: string): string {
+  protected buildGenerateContentUrl(model: string, reqApiUrl?: string): string {
     if (reqApiUrl) return reqApiUrl;
 
     if (this.apiUrl.includes('/models/')) {
@@ -41,7 +73,7 @@ export class GoogleAIAudioGenerator extends AudioGenerator {
     return `${base}/v1beta/models/${model}:generateContent`;
   }
 
-  private async postGenerateContent(url: string, payload: unknown): Promise<any> {
+  protected async postGenerateContent(url: string, payload: unknown): Promise<any> {
     const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}key=${this.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -86,29 +118,26 @@ export class GoogleAIAudioGenerator extends AudioGenerator {
       ? req.audioConfig
       : createDefaultAudioProjectConfig('tts') as AudioTtsProjectConfig;
 
-    const speechConfig = audioConfig.mode === 'multi' && audioConfig.speakers[1]
+    const modern = /^gemini-3\.8-(?:flash|flash-lite)-tts/.test(model);
+    const [primary, secondary] = audioConfig.speakers;
+    const voiceConfig = (voice: string) => modern ? { voice } : { prebuiltVoiceConfig: { voiceName: voice } };
+    const multiSpeaker = audioConfig.mode === 'multi' && secondary && primary.name !== secondary.name;
+    const speechConfig = multiSpeaker
       ? {
           multiSpeakerVoiceConfig: {
-            speakerVoiceConfigs: audioConfig.speakers.map((speaker) => ({
-              speaker: speaker!.name,
-              voiceConfig: {
-                prebuiltVoiceConfig: {
-                  voiceName: speaker!.voice,
-                },
-              },
+            speakerVoiceConfigs: [primary, secondary].map((speaker) => ({
+              speaker: speaker.name,
+              voiceConfig: voiceConfig(speaker.voice),
             })),
           },
         }
-      : {
-          voiceConfig: {
-            prebuiltVoiceConfig: {
-              voiceName: audioConfig.speakers[0].voice,
-            },
-          },
-        };
+      : { voiceConfig: voiceConfig(primary.voice) };
 
+    const parts = modern && multiSpeaker
+      ? this.speechTurns(req.prompt, [primary.name, secondary.name])
+      : [{ text: req.prompt }];
     const payload = {
-      contents: [{ parts: [{ text: req.prompt }] }],
+      contents: [{ parts }],
       generationConfig: {
         responseModalities: ['AUDIO'],
         speechConfig,
@@ -143,6 +172,27 @@ export class GoogleAIAudioGenerator extends AudioGenerator {
     } catch (e: any) {
       return { ok: false, error: `${e?.name || 'Error'}: ${e?.message}` };
     }
+  }
+
+  private speechTurns(prompt: string, speakers: [string, string]) {
+    const turns: { text: string; speechMetadata: { speaker: string; style?: string } }[] = [];
+    let stageDirection = '';
+    for (const line of prompt.split(/\r?\n/)) {
+      const label = line.match(/^\s*([^:：]+)[:：]\s*(.*)$/);
+      const speaker = label && speakers.find((name) => name.toLowerCase() === label[1].trim().toLowerCase());
+      if (speaker) {
+        turns.push({ text: label[2], speechMetadata: { speaker } });
+      } else if (turns.length) {
+        turns[turns.length - 1].text += `\n${line}`;
+      } else {
+        stageDirection += `\n${line}`;
+      }
+    }
+
+    const dialogue = turns.filter((turn) => turn.text.trim());
+    if (!dialogue.length) return [{ text: prompt, speechMetadata: { speaker: speakers[0] } }];
+    if (stageDirection.trim()) dialogue[0].speechMetadata.style = stageDirection.trim();
+    return dialogue;
   }
 
   private async generateMusic(req: AudioGenerateRequest, model: string): Promise<AudioGenerateResult> {

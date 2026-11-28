@@ -33,6 +33,15 @@ import { toolParametersJsonSchema } from './providers/types';
 import { ASSISTANT_SYSTEM_PROMPT, SWARM_COORDINATOR_APPENDIX, wrapToolResult } from './system-prompt';
 import { estimateMessages, estimateToolDefinitions, sumCategories, type ContextCategories, type ToolDefinitionEstimate } from './context-estimate';
 import { extractAssistantResourceTarget } from './resource-target';
+import {
+  ASK_USER_DISMISSED_RESULT,
+  ASK_USER_SKIPPED_RESULT,
+  ASK_USER_TOOL_NAME,
+  buildAskUserResult,
+  createAskUserTool,
+  type AskUserAnswer,
+  type AskUserQuestion,
+} from './ask-user-tool';
 import { PROVIDER_MODELS_MAP } from '../../src/types';
 
 /**
@@ -100,6 +109,7 @@ export type AssistantStatusEvent =
   | ({ type: 'tool_call_started'; call: ToolCall } & SwarmEventContext)
   | ({ type: 'tool_call_finished'; call: ToolCall; isError: boolean } & SwarmEventContext)
   | ({ type: 'confirmation_required'; call: ToolCall; confirmationId: string } & SwarmEventContext)
+  | ({ type: 'input_required'; call: ToolCall } & SwarmEventContext)
   | ({ type: 'circuit_open'; reason: string } & SwarmEventContext)
   | ({ type: 'stop_requested' } & SwarmEventContext)
   | { type: 'swarm_started'; swarmRunId: string; goal: string }
@@ -164,6 +174,13 @@ export type TurnResult =
       assistantMessage: AssistantMessageRecord;
       confirmation: AssistantPendingConfirmationRecord;
     }
+  /** The model called `ask_user`; the turn waits for the user's answers. */
+  | {
+      kind: 'awaiting_input';
+      assistantMessage: AssistantMessageRecord;
+      toolCallId: string;
+      questions: AskUserQuestion[];
+    }
   | { kind: 'error'; error: string; partialMessage?: AssistantMessageRecord }
   /** The user pressed Stop; `stoppedMessage` is the transcript's note saying so. */
   | { kind: 'stopped'; stoppedMessage: AssistantMessageRecord };
@@ -174,6 +191,20 @@ export interface SendUserMessageInput {
   content: string;
   swarmMode?: boolean;
   webSearch?: boolean;
+  workerProviderId?: string | null;
+  workerModelId?: string | null;
+  abortSignal?: AbortSignal;
+  onStatusEvent?: (event: AssistantStatusEvent) => void;
+}
+
+export interface AnswerQuestionInput {
+  userId: string;
+  conversationId: string;
+  toolCallId: string;
+  /** One entry per question, in order. Ignored when `skipped`. */
+  answers: AskUserAnswer[];
+  skipped?: boolean;
+  swarmMode?: boolean;
   workerProviderId?: string | null;
   workerModelId?: string | null;
   abortSignal?: AbortSignal;
@@ -266,7 +297,10 @@ export class AssistantRunner {
     toolDeps: ToolDependencies,
   ) {
     this.storage = toolDeps.storage;
-    this.tools = createAssistantToolDefinitions(toolDeps).filter((tool) => !tool.mcpOnly);
+    this.tools = [
+      ...createAssistantToolDefinitions(toolDeps).filter((tool) => !tool.mcpOnly),
+      createAskUserTool(),
+    ];
     this.toolsByName = new Map(this.tools.map((t) => [t.name, t]));
   }
 
@@ -423,6 +457,10 @@ export class AssistantRunner {
 
       this.hydrateApprovedToolsCache(conversation.id, conversation.approvedTools);
 
+      // Replying in the chat while questions are open answers them in prose:
+      // close the call first so the history the model reads stays well-formed.
+      await this.dismissPendingQuestion(conversation.id);
+
       await this.repo.appendMessage({
         conversationId: conversation.id,
         role: 'user',
@@ -456,6 +494,107 @@ export class AssistantRunner {
         onStatusEvent: input.onStatusEvent,
         ...swarmExtras,
       });
+    });
+  }
+
+  /**
+   * Resume a turn the model paused with `ask_user`: record the user's answers
+   * (or that they skipped) as the call's result, then let the model go on.
+   */
+  async resumeAfterAnswer(input: AnswerQuestionInput): Promise<TurnResult> {
+    return this.withUserSlot(input.userId, async () => {
+      const conversation = await this.repo.getConversation(input.userId, input.conversationId);
+      if (!conversation) return errorResult('Conversation not found');
+      if (!conversation.providerId || !conversation.modelConfigId) {
+        return errorResult('Conversation is missing a provider or model selection');
+      }
+
+      const pending = await this.findPendingQuestion(conversation.id);
+      if (!pending || pending.call.id !== input.toolCallId) {
+        return errorResult('These questions were already answered');
+      }
+
+      this.hydrateApprovedToolsCache(conversation.id, conversation.approvedTools);
+
+      const payload = input.skipped
+        ? ASK_USER_SKIPPED_RESULT
+        : buildAskUserResult(pending.questions, input.answers);
+      await this.repo.updateMessageStatus(pending.message.id, 'completed');
+      await this.repo.appendMessage({
+        conversationId: conversation.id,
+        role: 'tool',
+        toolCallId: pending.call.id,
+        toolName: ASK_USER_TOOL_NAME,
+        toolArgsJson: pending.call.arguments,
+        content: wrapToolResult(ASK_USER_TOOL_NAME, JSON.stringify(payload)),
+        toolResultJson: payload,
+        status: input.skipped ? 'cancelled' : 'completed',
+      });
+      await this.repo.touchConversation(conversation.id);
+
+      const swarmExtras = input.swarmMode && this.swarmToolProvider
+        ? {
+            systemPromptOverride: `${ASSISTANT_SYSTEM_PROMPT}\n${SWARM_COORDINATOR_APPENDIX}`,
+            extraTools: this.swarmToolProvider.createCoordinatorTools({
+              userId: input.userId,
+              conversationId: conversation.id,
+              defaultProviderId: conversation.providerId,
+              defaultModelId: conversation.modelConfigId,
+              workerProviderId: input.workerProviderId,
+              workerModelId: input.workerModelId,
+              abortSignal: input.abortSignal,
+              onStatusEvent: input.onStatusEvent,
+            }),
+          }
+        : {};
+
+      return this.runLoop({
+        userId: input.userId,
+        conversationId: conversation.id,
+        providerId: conversation.providerId,
+        modelId: conversation.modelConfigId,
+        abortSignal: input.abortSignal,
+        onStatusEvent: input.onStatusEvent,
+        ...swarmExtras,
+      });
+    });
+  }
+
+  /** The coordinator's open `ask_user` call, if the conversation is waiting on one. */
+  private async findPendingQuestion(conversationId: string): Promise<{
+    message: AssistantMessageRecord;
+    call: AssistantToolCall;
+    questions: AskUserQuestion[];
+  } | null> {
+    const records = await this.repo.listMessages(conversationId);
+    for (let i = records.length - 1; i >= 0; i--) {
+      const record = records[i];
+      if (record.role === 'user') return null;
+      if (record.role !== 'assistant' || record.status !== 'awaiting_input') continue;
+      const call = (record.toolCalls ?? []).find((c) => c.name === ASK_USER_TOOL_NAME);
+      if (!call) return null;
+      const answered = records.slice(i + 1).some((r) => r.role === 'tool' && r.toolCallId === call.id);
+      if (answered) return null;
+      const args = call.arguments as { questions?: AskUserQuestion[] } | null;
+      return { message: record, call, questions: Array.isArray(args?.questions) ? args.questions : [] };
+    }
+    return null;
+  }
+
+  /** Close an unanswered `ask_user` call because the user wrote a message instead. */
+  private async dismissPendingQuestion(conversationId: string): Promise<void> {
+    const pending = await this.findPendingQuestion(conversationId);
+    if (!pending) return;
+    await this.repo.updateMessageStatus(pending.message.id, 'completed');
+    await this.repo.appendMessage({
+      conversationId,
+      role: 'tool',
+      toolCallId: pending.call.id,
+      toolName: ASK_USER_TOOL_NAME,
+      toolArgsJson: pending.call.arguments,
+      content: wrapToolResult(ASK_USER_TOOL_NAME, JSON.stringify(ASK_USER_DISMISSED_RESULT)),
+      toolResultJson: ASK_USER_DISMISSED_RESULT,
+      status: 'cancelled',
     });
   }
 
@@ -840,6 +979,10 @@ export class AssistantRunner {
 
     // Resolve the active tool set for this loop (Coordinator or scoped Worker).
     let activeTools: AssistantToolDefinition[] = this.tools;
+    // A swarm worker runs with nobody watching it, so it has nobody to ask.
+    if (swarmAgentId) {
+      activeTools = activeTools.filter((t) => t.name !== ASK_USER_TOOL_NAME);
+    }
     if (toolScope === 'read' || toolScope === 'propose') {
       activeTools = activeTools.filter((t) => t.category === 'read');
     }
@@ -1062,6 +1205,23 @@ export class AssistantRunner {
             });
             processedCalls.push(call);
             continue;
+          }
+
+          if (tool.name === ASK_USER_TOOL_NAME && !swarmAgentId) {
+            // Pause here for the user's answers. Calls after this one are
+            // dropped: the model re-plans once it knows what the user chose.
+            const askCall: ToolCall = { ...call, arguments: parsed.value };
+            const trimmedToolCalls = [...processedCalls, askCall];
+            await this.rewriteAssistantMessage(assistantMessage.id, { toolCalls: trimmedToolCalls });
+            await this.repo.updateMessageStatus(assistantMessage.id, 'awaiting_input');
+            emit(onStatusEvent, { type: 'input_required', call: askCall, ...eventCtx });
+            await this.repo.touchConversation(conversationId);
+            return {
+              kind: 'awaiting_input',
+              assistantMessage: { ...assistantMessage, toolCalls: trimmedToolCalls, status: 'awaiting_input' },
+              toolCallId: call.id,
+              questions: (parsed.value as { questions: AskUserQuestion[] }).questions,
+            };
           }
 
           if (toolRequiresConfirmation(tool)) {
@@ -1402,6 +1562,9 @@ export class AssistantRunner {
     const body: ChatMessage[] = [];
     for (const m of records) {
       if (m.status === 'awaiting_confirmation') continue; // skip halted-turn stubs
+      // An unanswered question has no tool result yet; every path that runs
+      // the model closes it first, so this only guards a stray call.
+      if (m.status === 'awaiting_input') continue;
       if (m.role === 'user') {
         const { textContent, images } = parseUserMessageImages(m.content);
         const timestamp = formatMessageTimestamp(m.createdAt);

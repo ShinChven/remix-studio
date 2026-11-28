@@ -63,6 +63,9 @@ export class RunningHubVideoGenerator extends VideoGenerator {
     const imageRefs = this.resolveImageReferences(req);
     const endpoint = configuredEndpoint || (imageRefs.length > 0 ? 'image-to-video' : 'text-to-video');
     const prompt = (req.prompt || '').trim();
+    if (model === 'bytedance/seedance-2.5-token' && (imageRefs.length || req.refVideoUrls?.length || req.refAudioUrls?.length)) {
+      return { ok: false, error: 'RunningHub Seedance 2.5 Token text-to-video accepts only a text prompt' };
+    }
 
     // Seedance only needs a prompt when it has no frame to animate; Hailuo H3
     // requires one on every request.
@@ -160,13 +163,14 @@ export class RunningHubVideoGenerator extends VideoGenerator {
       return this.buildHailuoPayload(req, endpoint, imageRefs);
     }
 
+    const isSeedance25Token = req.modelId?.includes('seedance-2.5-token');
     const payload: Record<string, unknown> = {
       prompt: req.prompt || '',
       resolution: req.resolution || '720p',
       duration: String(req.duration || 5),
       generateAudio: (req.sound || 'on') === 'on',
       ratio: req.aspectRatio || 'adaptive',
-      returnLastFrame: false,
+      ...(isSeedance25Token ? { watermark: false } : { returnLastFrame: false }),
     };
 
     if (endpoint === 'multimodal-video') {

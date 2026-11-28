@@ -25,6 +25,8 @@ import { normalizeWorkflowForStorage, stripToKey } from '../utils/storage-keys';
 import { UserRepository } from '../auth/user-repository';
 import type { ProviderRepository } from '../db/provider-repository';
 import { composeDraftJobs, seededRandom } from '../services/draft-jobs';
+import { buildRescaleJobs, readImageInfo } from '../services/rescale-drafts';
+import { RESCALE_SOURCE, normalizeImageFormat } from '../../src/lib/rescale-size';
 import { estimatePromptLength, isPromptOverLimit, truncatePromptToLimit } from '../../src/types';
 import type { WorkflowItem, Job, Project, LibraryItem, QueueMonitorView, AlbumItem, AlbumItemSort, ComfyWorkflow, CivitaiGenerationConfig } from '../../src/types';
 import { normalizeComfyAddress, parseComfyWorkflow } from '../../src/lib/comfyWorkflow';
@@ -48,6 +50,10 @@ const STORAGE_CONCURRENCY = 16;
 
 /** Most drafts one generate request may add. */
 const MAX_GENERATED_DRAFTS = 10000;
+/** Album items one rescale request may cover. */
+const MAX_RESCALE_ITEMS = 500;
+/** Image headers read at once when a rescale inspects its sources. */
+const RESCALE_INSPECT_CONCURRENCY = 8;
 
 /** Presign an S3 key if it looks like one (not already a URL), or re-sign an expired presigned URL */
 async function presignIfKey(value: string, storage: S3Storage): Promise<string> {
@@ -893,6 +899,96 @@ export function createProjectRouter(repository: IRepository, userRepository: Use
     } catch (e: any) {
       console.error('[POST /api/projects/:id/jobs/generate]', e);
       return c.json({ error: 'Failed to add drafts' }, 500);
+    }
+  });
+
+  /** The album items a rescale request names, in the order given; null when an id is not in the project. */
+  const loadRescaleItems = async (userId: string, projectId: string, body: any): Promise<AlbumItem[] | { error: string }> => {
+    const ids: string[] = Array.isArray(body?.itemIds)
+      ? [...new Set<string>(body.itemIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0))]
+      : [];
+    if (ids.length === 0 || ids.length > MAX_RESCALE_ITEMS) return { error: `itemIds must name 1 to ${MAX_RESCALE_ITEMS} album items` };
+    const items = await mapWithConcurrency(ids, STORAGE_CONCURRENCY, (id) => repository.getAlbumItem(userId, projectId, id));
+    const found = items.filter((item): item is AlbumItem => Boolean(item?.imageUrl));
+    if (found.length !== ids.length) return { error: 'Some album items were not found, or have no image' };
+    return found;
+  };
+
+  // Pixel size and format of the images a rescale would start from, read from
+  // their file headers; album items do not store them.
+  router.post('/api/projects/:id/album/rescale/inspect', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Not found' }, 404);
+      const items = await loadRescaleItems(user.userId, projectId, await c.req.json().catch(() => ({})));
+      if (!Array.isArray(items)) return c.json(items, 400);
+      const infos = await mapWithConcurrency(items, RESCALE_INSPECT_CONCURRENCY, (item) => readImageInfo(storage, item.imageUrl));
+      return c.json({
+        items: items.map((item, index) => ({ id: item.id, ...(infos[index] ?? {}) })),
+      });
+    } catch (e: any) {
+      console.error('[POST /api/projects/:id/album/rescale/inspect]', e);
+      return c.json({ error: 'Failed to read the images' }, 500);
+    }
+  });
+
+  // Stages one image-to-image draft per album item on the chosen model. The
+  // drafts land with the project's other drafts and run when started.
+  router.post('/api/projects/:id/album/rescale', authMiddleware, async (c) => {
+    try {
+      const user = c.get('user') as JwtPayload;
+      const projectId = c.req.param('id');
+      const body = await c.req.json().catch(() => ({}));
+      const project = await repository.getProject(user.userId, projectId);
+      if (!project) return c.json({ error: 'Not found' }, 404);
+      if ((project.type ?? 'image') !== 'image') return c.json({ error: 'Rescale works on image projects only' }, 400);
+
+      const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
+      if (!prompt) return c.json({ error: 'prompt is required' }, 400);
+      const providerId = typeof body?.providerId === 'string' ? body.providerId : '';
+      const modelConfigId = typeof body?.modelConfigId === 'string' ? body.modelConfigId : '';
+      const provider = providerId ? await providerRepository.getPublicProvider(user.userId, providerId) : null;
+      const model = provider?.models.find((m) => m.id === modelConfigId);
+      if (!model || (model.category && model.category !== 'image')) return c.json({ error: 'Pick an image model' }, 400);
+      const format = typeof body?.format === 'string' ? body.format : RESCALE_SOURCE;
+      if (format !== RESCALE_SOURCE && !normalizeImageFormat(format)) return c.json({ error: 'format must be png, jpeg, webp or source' }, 400);
+
+      const items = await loadRescaleItems(user.userId, projectId, body);
+      if (!Array.isArray(items)) return c.json(items, 400);
+
+      const aspectRatio = typeof body?.aspectRatio === 'string' && body.aspectRatio ? body.aspectRatio : RESCALE_SOURCE;
+      // Images only need reading when something follows the source.
+      const needsInfo = aspectRatio === RESCALE_SOURCE || format === RESCALE_SOURCE;
+      const infoList = needsInfo
+        ? await mapWithConcurrency(items, RESCALE_INSPECT_CONCURRENCY, (item) => readImageInfo(storage, item.imageUrl))
+        : [];
+      const infos = new Map(items.map((item, index) => [item.id, infoList[index]]));
+
+      const estimatedNewSize = items.length * 25 * 1024 * 1024;
+      const { allowed, currentUsage, limit } = await checkStorageLimit(user.userId, estimatedNewSize, userRepository, storage, exportStorage, repository);
+      if (!allowed) {
+        return c.json({
+          error: `Storage limit exceeded. Cannot add more drafts. Remaining: ${((limit - currentUsage) / (1024 * 1024)).toFixed(1)}MB. Required: ~${(estimatedNewSize / (1024 * 1024)).toFixed(0)}MB.`,
+        }, 403);
+      }
+
+      const jobs = buildRescaleJobs(project, items, infos, {
+        prompt,
+        providerId,
+        model,
+        aspectRatio,
+        quality: typeof body?.quality === 'string' ? body.quality : undefined,
+        format,
+        background: typeof body?.background === 'string' ? body.background : undefined,
+      });
+      const created = await repository.createProjectJobs(user.userId, projectId, normalizeJobsForStorage(jobs, storage.getBucketName()));
+      projectEvents?.notifyProjectChanged({ userId: user.userId, projectId, reason: 'jobs.changed' });
+      return c.json({ success: true, created });
+    } catch (e: any) {
+      console.error('[POST /api/projects/:id/album/rescale]', e);
+      return c.json({ error: 'Failed to add rescale drafts' }, 500);
     }
   });
 

@@ -756,6 +756,47 @@ export async function generateProjectDrafts(
   return { created: data.created ?? 0 };
 }
 
+export interface RescaleSourceInfo {
+  id: string;
+  width?: number;
+  height?: number;
+  format?: 'png' | 'jpeg' | 'webp';
+}
+
+/** Pixel size and format of album images, read from their files. */
+export async function inspectAlbumRescale(projectId: string, itemIds: string[], signal?: AbortSignal): Promise<RescaleSourceInfo[]> {
+  const res = await apiFetch(`/api/projects/${encodeURIComponent(projectId)}/album/rescale/inspect`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ itemIds }),
+    signal,
+  });
+  return (await handleResponse<{ items: RescaleSourceInfo[] }>(res, 'Failed to read the images')).items;
+}
+
+export interface AlbumRescaleRequest {
+  itemIds: string[];
+  prompt: string;
+  providerId: string;
+  modelConfigId: string;
+  /** A ratio the model offers, or `source` to match each image. */
+  aspectRatio: string;
+  quality?: string;
+  /** `png`, `jpeg`, `webp`, or `source` to keep each image's own. */
+  format: string;
+  background?: string;
+}
+
+/** Stage one image-to-image draft per album item. */
+export async function createAlbumRescaleDrafts(projectId: string, request: AlbumRescaleRequest): Promise<{ created: number }> {
+  const res = await apiFetch(`/api/projects/${encodeURIComponent(projectId)}/album/rescale`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(request),
+  });
+  return handleResponse<{ created: number }>(res, 'Failed to add rescale drafts');
+}
+
 export async function deleteProjectJobs(id: string, jobIds: string[]): Promise<{ deleted: number }> {
   const res = await apiFetch(`/api/projects/${id}/jobs/delete-batch`, {
     method: 'POST',
@@ -2030,9 +2071,26 @@ export interface AssistantStatusEvent {
   [key: string]: unknown;
 }
 
+/** One question the assistant asked through its `ask_user` tool. */
+export interface AssistantQuestion {
+  question: string;
+  header?: string;
+  options: { label: string; description?: string }[];
+  multiSelect?: boolean;
+}
+
+/** The user's answer to one `AssistantQuestion`. */
+export interface AssistantQuestionAnswer {
+  selected: string[];
+  other?: string;
+}
+
+export const ASSISTANT_ASK_USER_TOOL = 'ask_user';
+
 export type AssistantTurnResult =
   | { kind: 'final'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] }
   | { kind: 'awaiting_confirmation'; message: AssistantMessage; confirmation: AssistantPendingConfirmation; statusEvents: AssistantStatusEvent[] }
+  | { kind: 'awaiting_input'; message: AssistantMessage; toolCallId: string; questions: AssistantQuestion[]; statusEvents: AssistantStatusEvent[] }
   | { kind: 'error'; error: string; message: AssistantMessage | null; statusEvents: AssistantStatusEvent[] }
   | { kind: 'stopped'; message: AssistantMessage; statusEvents: AssistantStatusEvent[] };
 
@@ -2211,6 +2269,24 @@ export async function confirmAssistantTool(
   return handleAssistantTurnStream(res, onStatusEvent);
 }
 
+/** Send the answers to the assistant's open questions (or skip them) and resume its turn. */
+export async function answerAssistantQuestions(
+  conversationId: string,
+  toolCallId: string,
+  reply: { answers: AssistantQuestionAnswer[] } | { skipped: true },
+  onStatusEvent?: AssistantTurnStatusHandler,
+  signal?: AbortSignal,
+  swarmOptions?: AssistantTurnSwarmOptions,
+): Promise<AssistantTurnResult | null> {
+  const res = await apiFetch(`/api/assistant/conversations/${conversationId}/answer`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({ toolCallId, ...reply, ...(swarmOptions ?? {}) }),
+    signal,
+  });
+  return handleAssistantTurnStream(res, onStatusEvent);
+}
+
 export async function confirmAssistantToolsBatch(
   conversationId: string,
   confirmationIds: string[],
@@ -2354,6 +2430,48 @@ export async function updateAssistantSettings(patch: Partial<AssistantSettings>)
     body: JSON.stringify(patch),
   });
   return handleResponse<AssistantSettings>(res, 'Failed to save assistant settings');
+}
+
+/** A preset prompt inserted from the assistant composer. */
+export interface AssistantSkill {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function fetchAssistantSkills(page = 1, limit = 25, q?: string): Promise<PaginatedResult<AssistantSkill>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (q) params.set('q', q);
+  const res = await apiFetch(`/api/assistant/skills?${params}`, { headers: getHeaders(false) });
+  return handleResponse<PaginatedResult<AssistantSkill>>(res, 'Failed to load assistant skills');
+}
+
+export async function createAssistantSkill(skill: { id?: string; title: string; content: string }): Promise<AssistantSkill> {
+  const res = await apiFetch('/api/assistant/skills', {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(skill),
+  });
+  return handleResponse<AssistantSkill>(res, 'Failed to create assistant skill');
+}
+
+export async function updateAssistantSkill(id: string, patch: { title?: string; content?: string }): Promise<AssistantSkill> {
+  const res = await apiFetch(`/api/assistant/skills/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(patch),
+  });
+  return handleResponse<AssistantSkill>(res, 'Failed to update assistant skill');
+}
+
+export async function deleteAssistantSkill(id: string): Promise<void> {
+  const res = await apiFetch(`/api/assistant/skills/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getHeaders(false),
+  });
+  await handleResponse<{ success: boolean }>(res, 'Failed to delete assistant skill');
 }
 
 export async function fetchAssistantTools(): Promise<{ tools: AssistantToolMetadata[] }> {

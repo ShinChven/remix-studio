@@ -21,6 +21,7 @@ import { AutoTagProgress } from '../AutoTagProgress';
 import { TagDialog } from '../TagDialog';
 import { AlbumBatchTagDialog, AlbumDetailDialog, ExportPackageDialog, TextAlbumCompareDialog, TextAlbumDetailDialog, type AlbumBatchTagMode } from './AlbumDialogs';
 import { AlbumTransferDialog, albumFilename, type AlbumTransferAction } from './AlbumTransferDialog';
+import { RescaleDialog, type RescaleDefaults } from './RescaleDialog';
 import { shortDate } from './JobRow';
 import { SelectionBar, type SelectionAction } from '../../ui/SelectionBar';
 import { ResultsBar } from './ResultsBar';
@@ -76,6 +77,10 @@ export interface AlbumTabProps {
   onSelectedTagsChange: (tags: string[]) => void;
   onTagMatchChange: (match: AlbumTagMatch) => void;
   onUpdateAlbumItemTags: (itemId: string, tags: string[]) => Promise<AlbumItem>;
+  /** Image projects: the model and settings a rescale starts from. Leaving it out hides rescale. */
+  rescale?: RescaleDefaults;
+  /** Shows the drafts a rescale just staged. */
+  onShowDrafts?: () => void;
   onBatchUpdateAlbumTags: (options: { itemIds?: string[]; allAlbumItems?: boolean; add?: string[]; remove?: string[]; replace?: string[]; aspectRatios?: string[]; filterTags?: string[]; tagMatch?: AlbumTagMatch; q?: string }) => Promise<{ updated: number }>;
 }
 
@@ -148,6 +153,8 @@ export function AlbumTab(props: AlbumTabProps) {
   const [batchTagOpen, setBatchTagOpen] = useState(false);
   const [autoTagOpen, setAutoTagOpen] = useState(false);
   const [autoTagRunKey, setAutoTagRunKey] = useState(0);
+  const [rescaleItems, setRescaleItems] = useState<AlbumItem[] | null>(null);
+  const canRescale = Boolean(props.rescale) && mediaType === 'image';
   const audioRefs = useRef<Record<string, HTMLAudioElement | null>>({});
 
   const hasRatioFilter = selectedAspectRatios.length > 0;
@@ -329,6 +336,7 @@ export function AlbumTab(props: AlbumTabProps) {
       { key: 'chat', label: t('resourceRef.startChat'), icon: 'chat', onSelect: () => startResourceChat(navigate, resourceRef.albumItem(projectId, item.id)) },
       { key: 'ref', label: t('resourceRef.copy'), icon: 'tag', onSelect: () => void copyReference(item) },
       { key: 'original', hidden: !opts.media, divider: true, label: t('projectViewer.album.openOriginal'), icon: 'open_in_new', href: imageDisplayUrl(item.imageUrl), target: '_blank' },
+      { key: 'rescale', hidden: !opts.media || !canRescale, label: t('v2.rescale.action'), icon: 'photo_size_select_large', onSelect: () => setRescaleItems([item]) },
       { key: 'watermark', hidden: !opts.media || isVideo, label: t('projectViewer.album.quickWatermark'), icon: 'approval', href: `/project/${projectId}/album/${item.id}/watermark`, target: '_blank' },
       { key: 'delete', divider: true, danger: true, label: t('projectViewer.common.delete'), icon: 'delete', onSelect: () => deleteItems([item]) },
     ];
@@ -398,6 +406,7 @@ export function AlbumTab(props: AlbumTabProps) {
     { key: 'export', label: t('v2.project.selectionExport'), icon: 'folder_zip', onClick: () => openExport(false) },
     { key: 'tag', label: t('v2.project.selectionTag'), icon: 'sell', onClick: () => setBatchTagOpen(true) },
     { key: 'move', label: t('v2.project.selectionMove'), icon: 'drive_file_move', onClick: () => setTransferAction('move') },
+    { key: 'rescale', hidden: !canRescale, label: t('v2.rescale.action'), icon: 'photo_size_select_large', onClick: () => setRescaleItems(selectedItems) },
     { key: 'delete', label: t('projectViewer.common.delete'), icon: 'delete', danger: true, onClick: () => deleteItems(selectedItems) },
   ];
 
@@ -695,6 +704,18 @@ export function AlbumTab(props: AlbumTabProps) {
       )}
       <TagDialog open={tagItem !== null} initialTags={tagItem?.tags || []} title={t('projectViewer.album.editTags')} description={tagItem ? albumFilename(tagItem) : undefined} onClose={() => setTagItem(null)} onSave={saveItemTags} autoSave />
       <AlbumBatchTagDialog open={batchTagOpen} targetCount={hasSelection ? selectedIds.length : total} isAllScope={!hasSelection} suggestions={tagCounts} onClose={() => setBatchTagOpen(false)} onApply={applyBatchTags} />
+      {props.rescale && (
+        <RescaleDialog
+          open={rescaleItems !== null}
+          projectId={projectId}
+          items={rescaleItems || []}
+          defaults={props.rescale}
+          onClose={() => setRescaleItems(null)}
+          onDrafted={(created) =>
+            toast.success(t('v2.rescale.drafted', { count: created }), props.onShowDrafts ? { action: { label: t('v2.rescale.viewDrafts'), onClick: props.onShowDrafts } } : undefined)
+          }
+        />
+      )}
       <AutoTagDialog open={autoTagOpen} itemCount={hasSelection ? selectedIds.length : total} onClose={() => setAutoTagOpen(false)} onStart={startAlbumAutoTag} />
     </section>
   );
