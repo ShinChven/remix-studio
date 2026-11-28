@@ -78,6 +78,8 @@ export function Dialog({
 
   const [scroll, setScroll] = useState({ top: false, bottom: false })
   const contentRef = useRef<HTMLDivElement | null>(null)
+  const sizeAnimRef = useRef<Animation | null>(null)
+  const prevSizeRef = useRef<{ width: number; height: number } | null>(null)
   const measure = useCallback(() => {
     const el = contentRef.current
     if (!el) return
@@ -94,6 +96,55 @@ export function Dialog({
     ro.observe(el)
     return () => ro.disconnect()
   }, [mounted, measure])
+
+  // Smoothly animate width/height when dialog content changes while already open.
+  useIsoLayoutEffect(() => {
+    const el = containerRef.current
+    if (!mounted || !open || isFullScreen || !el) {
+      sizeAnimRef.current?.cancel()
+      sizeAnimRef.current = null
+      prevSizeRef.current = null
+      return
+    }
+
+    const prev = prevSizeRef.current
+    const currentRect = sizeAnimRef.current ? el.getBoundingClientRect() : null
+    if (sizeAnimRef.current) {
+      sizeAnimRef.current.cancel()
+      sizeAnimRef.current = null
+    }
+
+    const nextWidth = el.offsetWidth
+    const nextHeight = el.offsetHeight
+    prevSizeRef.current = { width: nextWidth, height: nextHeight }
+
+    if (!prev || typeof el.animate !== 'function') return
+    const reducedMotion =
+      typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reducedMotion) return
+
+    const fromWidth = currentRect ? currentRect.width : prev.width
+    const fromHeight = currentRect ? currentRect.height : prev.height
+    if (Math.abs(nextWidth - fromWidth) < 2 && Math.abs(nextHeight - fromHeight) < 2) return
+
+    const anim = el.animate(
+      [
+        { width: `${fromWidth}px`, height: `${fromHeight}px` },
+        { width: `${nextWidth}px`, height: `${nextHeight}px` },
+      ],
+      {
+        duration: 280,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      },
+    )
+    sizeAnimRef.current = anim
+    anim.onfinish = () => {
+      if (sizeAnimRef.current === anim) sizeAnimRef.current = null
+    }
+    anim.oncancel = () => {
+      if (sizeAnimRef.current === anim) sizeAnimRef.current = null
+    }
+  }, [mounted, open, isFullScreen, children, headline, actions, maxWidth])
 
   if (!mounted) return null
   return (

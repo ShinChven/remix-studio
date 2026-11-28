@@ -78,6 +78,10 @@ export interface AgentSidePanelProps {
   appViews: Record<string, string>;
   inspectedAgentId: string | null;
   onSelectAgent: (agentId: string | null) => void;
+  inspectedCoordinatorRunId?: string | null;
+  onSelectCoordinatorRun?: (runId: string | null) => void;
+  inspectedBlackboardRunId?: string | null;
+  onSelectBlackboardRun?: (runId: string | null) => void;
   onConfirmSingle: (confirmation: AssistantPendingConfirmation, decision: 'confirm' | 'confirm_tool' | 'cancel') => Promise<void>;
   onConfirmAll: (decision: 'confirm' | 'cancel') => Promise<void>;
   onMentionResource: (resource: AssistantConversationResource) => void;
@@ -227,6 +231,10 @@ export function AgentSidePanel({
   appViews,
   inspectedAgentId,
   onSelectAgent,
+  inspectedCoordinatorRunId = null,
+  onSelectCoordinatorRun,
+  inspectedBlackboardRunId = null,
+  onSelectBlackboardRun,
   onConfirmSingle,
   onConfirmAll,
   onMentionResource,
@@ -270,9 +278,40 @@ export function AgentSidePanel({
   const [approvedTools, setApprovedTools] = useState<string[]>([]);
   const [skills, setSkills] = useState<Array<{ id: string; title: string; content: string }>>([]);
   const [previewBoardEntry, setPreviewBoardEntry] = useState<AssistantSwarmBlackboardEntry | null>(null);
+  const [selectedBoardEntryId, setSelectedBoardEntryId] = useState<string | null>(null);
   const [previewPreset, setPreviewPreset] = useState<AssistantSwarmPreset | null>(null);
   const [deleteBoardTarget, setDeleteBoardTarget] = useState<AssistantSwarmBlackboardEntry | null>(null);
   const [graphDialogOpen, setGraphDialogOpen] = useState(false);
+
+  // Return targets so nested swarm dialogs (Graph → Coordinator / Blackboard / Worker) can navigate back.
+  type ReturnTarget =
+    | { kind: 'graph' }
+    | { kind: 'coordinator'; runId: string };
+  const [boardReturnTarget, setBoardReturnTarget] = useState<ReturnTarget | null>(null);
+  const [coordinatorReturnTarget, setCoordinatorReturnTarget] = useState<ReturnTarget | null>(null);
+  const [agentReturnTarget, setAgentReturnTarget] = useState<ReturnTarget | null>(null);
+
+  const navigateBackTo = useCallback((target: ReturnTarget) => {
+    setPreviewBoardEntry(null);
+    setSelectedBoardEntryId(null);
+    setBoardReturnTarget(null);
+    setCoordinatorReturnTarget(null);
+    setAgentReturnTarget(null);
+    onSelectAgent(null);
+    onSelectCoordinatorRun?.(null);
+    onSelectBlackboardRun?.(null);
+    setGraphDialogOpen(false);
+    if (target.kind === 'graph') {
+      setGraphDialogOpen(true);
+    } else if (target.kind === 'coordinator') {
+      onSelectCoordinatorRun?.(target.runId);
+    }
+  }, [onSelectAgent, onSelectBlackboardRun, onSelectCoordinatorRun]);
+
+  const returnTargetLabel = (target: ReturnTarget) => {
+    if (target.kind === 'graph') return t('v2.assistant.swarm.viewGraph', 'Architecture graph');
+    return t('v2.assistant.swarm.coordinator', 'Coordinator');
+  };
 
   const workerProvider = providers.find((p) => p.id === workerProviderId);
   const workerModel = workerProvider
@@ -373,6 +412,55 @@ export function AgentSidePanel({
   const visibleResources = showAllResources ? resources : resources.slice(0, 5);
   const visiblePresets = showAllPresets ? allPresets : allPresets.slice(0, 3);
   const visibleSkills = showAllSkills ? skills : skills.slice(0, 3);
+
+  const coordinatorModelLabel = useMemo(() => {
+    if (!selectedProviderId || !selectedModelId) return undefined;
+    const providerType = providers.find((p) => p.id === selectedProviderId)?.type ?? 'GoogleAI';
+    return getTextModelsForProvider(providerType).find((m) => m.id === selectedModelId)?.name;
+  }, [providers, selectedProviderId, selectedModelId]);
+
+  const inspectedCoordinatorRun = useMemo(
+    () => (inspectedCoordinatorRunId ? swarmRuns.find((r) => r.id === inspectedCoordinatorRunId) ?? null : null),
+    [inspectedCoordinatorRunId, swarmRuns],
+  );
+
+  const inspectedBlackboardRun = useMemo(
+    () => (inspectedBlackboardRunId ? swarmRuns.find((r) => r.id === inspectedBlackboardRunId) ?? null : null),
+    [inspectedBlackboardRunId, swarmRuns],
+  );
+
+  const inspectedBlackboardEntries = useMemo(() => {
+    if (!inspectedBlackboardRun) return [];
+    const agentNames = new Set(inspectedBlackboardRun.agents.map((a) => a.name));
+    return blackboardEntries.filter(
+      (entry) =>
+        (entry.swarmRunId && entry.swarmRunId === inspectedBlackboardRun.id) ||
+        agentNames.has(entry.authorName),
+    );
+  }, [blackboardEntries, inspectedBlackboardRun]);
+
+  const activeBoardEntries = useMemo(() => {
+    if (inspectedBlackboardRun) return inspectedBlackboardEntries;
+    if (previewBoardEntry) return [previewBoardEntry];
+    return [];
+  }, [inspectedBlackboardEntries, inspectedBlackboardRun, previewBoardEntry]);
+
+  const activeBoardEntry = useMemo(() => {
+    if (activeBoardEntries.length === 0) return null;
+    return activeBoardEntries.find((e) => e.id === selectedBoardEntryId) ?? activeBoardEntries[0];
+  }, [activeBoardEntries, selectedBoardEntryId]);
+
+  const closeSwarmModal = useCallback(() => {
+    setGraphDialogOpen(false);
+    setPreviewBoardEntry(null);
+    setSelectedBoardEntryId(null);
+    setBoardReturnTarget(null);
+    setCoordinatorReturnTarget(null);
+    setAgentReturnTarget(null);
+    onSelectAgent(null);
+    onSelectCoordinatorRun?.(null);
+    onSelectBlackboardRun?.(null);
+  }, [onSelectAgent, onSelectBlackboardRun, onSelectCoordinatorRun]);
 
   // ─── Worker Inspector Dialog data ───
   const inspectedLive = inspectedAgentId ? liveAgentActivity[inspectedAgentId] : undefined;
@@ -753,11 +841,8 @@ export function AgentSidePanel({
       </div>
 
       <Dialog
-        open={!!inspectedAgentId || (graphDialogOpen && !!latestSwarmRun)}
-        onClose={() => {
-          setGraphDialogOpen(false);
-          onSelectAgent(null);
-        }}
+        open={Boolean(inspectedAgentId || inspectedCoordinatorRun || activeBoardEntry || (graphDialogOpen && latestSwarmRun))}
+        onClose={closeSwarmModal}
         fullScreen="compact"
         showCloseButton
         describeContent={false}
@@ -765,19 +850,48 @@ export function AgentSidePanel({
         headline={
           inspectedAgentId
             ? (activeInspectedAgent?.name || 'Agent')
-            : t('v2.assistant.swarm.graphTitle', 'Agent architecture')
+            : inspectedCoordinatorRun
+              ? t('v2.assistant.swarm.coordinator', 'Coordinator')
+              : activeBoardEntry
+                ? (
+                    activeBoardEntries.length > 1
+                      ? t('v2.assistant.swarm.blackboardShort', 'Shared blackboard')
+                      : (activeBoardEntry.title || activeBoardEntry.key)
+                  )
+                : t('v2.assistant.swarm.graphTitle', 'Agent architecture')
         }
         confirmAction={
           inspectedAgentId && inspectedIsRunning ? (
             <Button variant="text" size="sm" onClick={() => void handleStopWorker(inspectedAgentId)}>
               {t('v2.assistant.swarm.stopWorker', 'Stop worker')}
             </Button>
+          ) : !inspectedAgentId && !inspectedCoordinatorRun && activeBoardEntry ? (
+            <Button
+              variant="text"
+              size="sm"
+              onClick={() => {
+                onInsertComposerText(activeBoardEntry.content);
+                closeSwarmModal();
+                onNavigate?.();
+              }}
+            >
+              {t('v2.assistant.swarm.insertIntoComposer', 'Insert into composer')}
+            </Button>
           ) : undefined
         }
         actions={
           inspectedAgentId ? (
             <>
-              {latestSwarmRun && (
+              {agentReturnTarget ? (
+                <Button
+                  variant="text"
+                  size="sm"
+                  icon="arrow_back"
+                  onClick={() => navigateBackTo(agentReturnTarget)}
+                >
+                  {returnTargetLabel(agentReturnTarget)}
+                </Button>
+              ) : latestSwarmRun ? (
                 <Button
                   variant="text"
                   size="sm"
@@ -789,7 +903,7 @@ export function AgentSidePanel({
                 >
                   {t('v2.assistant.swarm.viewGraph', 'Architecture graph')}
                 </Button>
-              )}
+              ) : null}
               {inspectedIsRunning && (
                 <Button variant="tonal" size="sm" icon="stop_circle" onClick={() => void handleStopWorker(inspectedAgentId)}>
                   {t('v2.assistant.swarm.stopWorker', 'Stop worker')}
@@ -799,11 +913,67 @@ export function AgentSidePanel({
                 {t('v2.assistant.swarm.refresh', 'Refresh')}
               </Button>
             </>
+          ) : inspectedCoordinatorRun ? (
+            coordinatorReturnTarget ? (
+              <Button
+                variant="text"
+                size="sm"
+                icon="arrow_back"
+                onClick={() => navigateBackTo(coordinatorReturnTarget)}
+              >
+                {returnTargetLabel(coordinatorReturnTarget)}
+              </Button>
+            ) : undefined
+          ) : activeBoardEntry ? (
+            <>
+              {boardReturnTarget && (
+                <Button
+                  variant="text"
+                  size="sm"
+                  icon="arrow_back"
+                  onClick={() => navigateBackTo(boardReturnTarget)}
+                >
+                  {returnTargetLabel(boardReturnTarget)}
+                </Button>
+              )}
+              <Button
+                variant="text"
+                size="sm"
+                icon="delete"
+                onClick={() => {
+                  const target = activeBoardEntry;
+                  closeSwarmModal();
+                  setDeleteBoardTarget(target);
+                }}
+              >
+                {t('v2.assistant.swarm.delete', 'Delete')}
+              </Button>
+              <Button
+                variant="tonal"
+                size="sm"
+                icon="content_copy"
+                onClick={() => void copyToClipboard(activeBoardEntry.content, t('v2.common.copied', 'Copied to clipboard'))}
+              >
+                {t('v2.assistant.copy', 'Copy text')}
+              </Button>
+              <Button
+                variant="filled"
+                size="sm"
+                icon="input"
+                onClick={() => {
+                  onInsertComposerText(activeBoardEntry.content);
+                  closeSwarmModal();
+                  onNavigate?.();
+                }}
+              >
+                {t('v2.assistant.swarm.insertIntoComposer', 'Insert into composer')}
+              </Button>
+            </>
           ) : undefined
         }
       >
         {inspectedAgentId ? (
-        <div className="flex flex-col gap-3">
+        <div key={`agent-${inspectedAgentId}`} className="v2-swarm-dialog-view flex flex-col gap-3">
           {activeInspectedAgent && (
             <>
               <div className="flex flex-wrap items-center gap-2">
@@ -930,8 +1100,130 @@ export function AgentSidePanel({
             </div>
           )}
         </div>
+        ) : inspectedCoordinatorRun ? (() => {
+          const totalIn = inspectedCoordinatorRun.agents.reduce((sum, a) => sum + a.inputTokens, 0);
+          const totalOut = inspectedCoordinatorRun.agents.reduce((sum, a) => sum + a.outputTokens, 0);
+          const agentNames = new Set(inspectedCoordinatorRun.agents.map((a) => a.name));
+          const runDrafts = blackboardEntries.filter(
+            (entry) =>
+              (entry.swarmRunId && entry.swarmRunId === inspectedCoordinatorRun.id) ||
+              agentNames.has(entry.authorName),
+          );
+          return (
+            <div key={`coord-${inspectedCoordinatorRun.id}`} className="v2-swarm-dialog-view flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="v2-swarm-status-pill" data-status={inspectedCoordinatorRun.status}>
+                  {inspectedCoordinatorRun.status}
+                </span>
+                <Text variant="label-small" className="text-on-surface-variant">
+                  {coordinatorModelLabel ? `${coordinatorModelLabel} · ` : ''}
+                  {inspectedCoordinatorRun.agents.length}{' '}
+                  {t('v2.assistant.swarm.shortLabel', 'Multi-agents')}
+                  {(totalIn > 0 || totalOut > 0) ? ` · ${formatTokens(totalIn)}↑ ${formatTokens(totalOut)}↓` : ''}
+                </Text>
+              </div>
+              {inspectedCoordinatorRun.goal && (
+                <div>
+                  <Text variant="label-small" className="text-on-surface-variant">
+                    {t('v2.assistant.swarm.coordinatorGoal', 'Goal')}
+                  </Text>
+                  <p className="v2-ap__brief">{inspectedCoordinatorRun.goal}</p>
+                </div>
+              )}
+              <div className="flex flex-col gap-1">
+                <Text variant="label-small" className="text-on-surface-variant">
+                  {t('v2.assistant.swarm.coordinatorAgents', 'Delegated agents')}
+                </Text>
+                {inspectedCoordinatorRun.agents.map((agent) => (
+                  <button
+                    key={agent.id}
+                    type="button"
+                    className="v2-ap__row v2-ap__row--interactive m3-focus-ring"
+                    onClick={() => {
+                      const runId = inspectedCoordinatorRun.id;
+                      onSelectCoordinatorRun?.(null);
+                      setAgentReturnTarget({ kind: 'coordinator', runId });
+                      onSelectAgent(agent.id);
+                    }}
+                  >
+                    <span className="v2-ap__lead" data-status={agent.status}>
+                      {agent.status === 'running' || agent.status === 'queued'
+                        ? <LoadingIndicator size={15} aria-hidden />
+                        : <Icon name={statusIcon(agent.status)} size={16} />}
+                    </span>
+                    <div className="min-w-0 flex-1 text-left">
+                      <div className="v2-ap__row-label v2-ellipsis">{agent.name}</div>
+                      <div className="v2-ap__row-sub v2-ellipsis">{agent.role}</div>
+                    </div>
+                    <Icon name="chevron_right" size={15} className="v2-ap__trail-icon" />
+                  </button>
+                ))}
+              </div>
+              {runDrafts.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <Text variant="label-small" className="text-on-surface-variant">
+                    {t('v2.assistant.swarm.blackboardShort', 'Shared blackboard')}
+                  </Text>
+                  {runDrafts.map((entry) => (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className="v2-ap__row v2-ap__row--interactive m3-focus-ring"
+                      onClick={() => {
+                        const runId = inspectedCoordinatorRun.id;
+                        onSelectCoordinatorRun?.(null);
+                        setBoardReturnTarget({ kind: 'coordinator', runId });
+                        setPreviewBoardEntry(entry);
+                      }}
+                    >
+                      <span className="v2-ap__lead"><Icon name="description" size={16} /></span>
+                      <span className="v2-ap__row-label v2-ellipsis">{entry.title || entry.key}</span>
+                      <span className="v2-ap__row-sub">{entry.authorName}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })() : activeBoardEntry ? (
+          <div key={`board-${inspectedBlackboardRun?.id ?? activeBoardEntry.id}`} className="v2-swarm-dialog-view flex flex-col gap-3">
+            {activeBoardEntries.length > 1 && (
+              <div className="v2-board-tabs" role="tablist">
+                {activeBoardEntries.map((entry) => {
+                  const selected = entry.id === activeBoardEntry.id;
+                  return (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      className="v2-board-tab m3-focus-ring"
+                      onClick={() => setSelectedBoardEntryId(entry.id)}
+                    >
+                      <Icon name="description" size={14} />
+                      <span className="v2-ellipsis">{entry.title || entry.key}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <Text variant="label-small" className="text-on-surface-variant">
+              {activeBoardEntry.authorName} · {activeBoardEntry.key}
+            </Text>
+            <Markdown className="v2-chat-markdown">{activeBoardEntry.content}</Markdown>
+            {activeBoardEntry.dataJson != null && (
+              <details className="v2-ap__disclosure v2-ap__json-disclosure">
+                <summary className="v2-ap__json-summary m3-focus-ring">
+                  <Icon name="data_object" size={16} />
+                  <span>{t('v2.assistant.swarm.structuredData', 'Structured data (JSON)')}</span>
+                  <Icon name="chevron_right" size={18} className="v2-ap__json-chevron" />
+                </summary>
+                <JsonView data={activeBoardEntry.dataJson} className="v2-json--unbounded" />
+              </details>
+            )}
+          </div>
         ) : latestSwarmRun ? (
-          <div className="flex flex-col gap-3">
+          <div key={`graph-${latestSwarmRun.id}`} className="v2-swarm-dialog-view flex flex-col gap-3">
             {latestSwarmRun.goal && (
               <Text variant="body-small" className="text-on-surface-variant">
                 {latestSwarmRun.goal}
@@ -939,101 +1231,27 @@ export function AgentSidePanel({
             )}
             <AgentGraph
               run={latestSwarmRun}
-              coordinatorModelLabel={
-                selectedProviderId && selectedModelId
-                  ? getTextModelsForProvider(
-                      providers.find((p) => p.id === selectedProviderId)?.type ?? 'GoogleAI',
-                    ).find((m) => m.id === selectedModelId)?.name
-                  : undefined
-              }
+              coordinatorModelLabel={coordinatorModelLabel}
               liveAgentActivity={liveAgentActivity}
               blackboardEntries={blackboardEntries}
-              onSelectAgent={(agentId) => onSelectAgent(agentId)}
+              onSelectAgent={(agentId) => {
+                setAgentReturnTarget({ kind: 'graph' });
+                onSelectAgent(agentId);
+              }}
+              onSelectCoordinator={(run) => {
+                setGraphDialogOpen(false);
+                setCoordinatorReturnTarget({ kind: 'graph' });
+                onSelectCoordinatorRun?.(run.id);
+              }}
+              onSelectBlackboard={(run) => {
+                setGraphDialogOpen(false);
+                setSelectedBoardEntryId(null);
+                setBoardReturnTarget({ kind: 'graph' });
+                onSelectBlackboardRun?.(run.id);
+              }}
             />
           </div>
         ) : null}
-      </Dialog>
-
-      <Dialog
-        open={!!previewBoardEntry}
-        onClose={() => setPreviewBoardEntry(null)}
-        fullScreen="compact"
-        showCloseButton
-        describeContent={false}
-        maxWidth={720}
-        headline={previewBoardEntry?.title || previewBoardEntry?.key || ''}
-        confirmAction={
-          previewBoardEntry ? (
-            <Button
-              variant="text"
-              size="sm"
-              onClick={() => {
-                onInsertComposerText(previewBoardEntry.content);
-                setPreviewBoardEntry(null);
-                onNavigate?.();
-              }}
-            >
-              {t('v2.assistant.swarm.insertIntoComposer', 'Insert into composer')}
-            </Button>
-          ) : undefined
-        }
-        actions={
-          previewBoardEntry ? (
-            <>
-              <Button
-                variant="text"
-                size="sm"
-                icon="delete"
-                onClick={() => {
-                  const target = previewBoardEntry;
-                  setPreviewBoardEntry(null);
-                  setDeleteBoardTarget(target);
-                }}
-              >
-                {t('v2.assistant.swarm.delete', 'Delete')}
-              </Button>
-              <Button
-                variant="tonal"
-                size="sm"
-                icon="content_copy"
-                onClick={() => void copyToClipboard(previewBoardEntry.content, t('v2.common.copied', 'Copied to clipboard'))}
-              >
-                {t('v2.assistant.copy', 'Copy text')}
-              </Button>
-              <Button
-                variant="filled"
-                size="sm"
-                icon="input"
-                onClick={() => {
-                  onInsertComposerText(previewBoardEntry.content);
-                  setPreviewBoardEntry(null);
-                  onNavigate?.();
-                }}
-              >
-                {t('v2.assistant.swarm.insertIntoComposer', 'Insert into composer')}
-              </Button>
-            </>
-          ) : undefined
-        }
-      >
-        {previewBoardEntry && (
-          <div className="flex flex-col gap-3">
-            <Text variant="label-small" className="text-on-surface-variant">
-              {previewBoardEntry.authorName} · {previewBoardEntry.key}
-            </Text>
-            <Markdown className="v2-chat-markdown">{previewBoardEntry.content}</Markdown>
-            {previewBoardEntry.dataJson != null && (
-              <details className="v2-ap__disclosure v2-ap__json-disclosure">
-                <summary className="v2-ap__json-summary m3-focus-ring">
-                  <Icon name="data_object" size={16} />
-                  <span>{t('v2.assistant.swarm.structuredData', 'Structured data (JSON)')}</span>
-                  <Icon name="chevron_right" size={18} className="v2-ap__json-chevron" />
-                </summary>
-                <JsonView data={previewBoardEntry.dataJson} className="v2-json--unbounded" />
-              </details>
-            )}
-          </div>
-        )}
       </Dialog>
 
       <Dialog
