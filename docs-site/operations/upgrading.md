@@ -28,7 +28,7 @@ See [Docker Deployment](/guide/docker-deployment) for image-tag details.
 Four migrations apply on startup:
 
 - `20261127120000_add_assistant_setting` — stores account-level default assistant provider/model preferences.
-- `20261128120000_add_assistant_swarm` — adds multi-agent swarm runs, worker states, and blackboard entries.
+- `20261128120000_add_assistant_swarm` — adds multi-agent runs, agent states, and blackboard entries.
 - `20261128130000_add_assistant_skill` — creates the `AssistantSkill` table and migrates existing `"Assistant Skills"` text library items into it (keeping their IDs and timestamps and leaving the original libraries untouched as ordinary text libraries).
 - `20261128160000_add_job_batch` — adds tracked `JobBatch` records for `start_jobs` and automatic assistant resume.
 

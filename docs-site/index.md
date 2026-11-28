@@ -23,7 +23,7 @@ hero:
 features:
   - icon: 🤖
     title: Multi-Agent Assistant
-    details: Run single-agent turns or /agents swarms with coordinator and parallel specialist workers, a shared blackboard, interactive architecture graph, step tracker, web search grounding, and generation batch auto-resume.
+    details: Run single-agent turns or /agents multi-agent teams with a coordinator and parallel specialist agents, a shared blackboard, interactive architecture graph, step tracker, web search grounding, and generation batch auto-resume.
     link: /concepts/assistant
     linkText: Explore the assistant
   - icon: 🪟
@@ -72,7 +72,7 @@ features:
 
 Remix Studio 2.0 runs text, image, video, and audio generation projects — plus ComfyUI workflows you host and Civitai models — from one Material 3 Expressive workspace. It combines four layers in one product:
 
-- A **Multi-Agent Assistant** with `/agents` swarms, inline **MCP Apps**, step tracking, web search, and batch auto-resume
+- A **Multi-Agent Assistant** with `/agents` multi-agent teams, inline **MCP Apps**, step tracking, web search, and batch auto-resume
 - A **project system** for composing workflows from library-backed and direct inputs
 - A **campaign workspace** for scheduling and publishing social posts
 - A **background execution stack** for queueing, batch tracking, storing, exporting, and delivering results

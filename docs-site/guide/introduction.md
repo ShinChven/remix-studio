@@ -6,7 +6,7 @@ Instead of prompting one asset at a time, you build workflows from reusable libr
 
 It combines four layers in one product:
 
-- A **Multi-Agent Assistant** with `/agents` swarms, inline **MCP Apps**, step tracking, web search, and batch auto-resume.
+- A **Multi-Agent Assistant** with `/agents` multi-agent teams, inline **MCP Apps**, step tracking, web search, and batch auto-resume.
 - A **project system** for composing workflows from library-backed and direct inputs.
 - A **campaign workspace** for scheduling and publishing social posts.
 - A **background execution stack** for queueing, tracked generation batches, storing, exporting, and delivering results.
@@ -29,7 +29,7 @@ The same shared tool layer and five `ui://` MCP App views also power external [M
 ## What Remix Studio Is For
 
 - Operate the completely rebuilt **Material 3 Expressive** interface with dynamic tonal palettes, customizable theme extraction, `Cmd/Ctrl+K` global search (with `@` settings jump), and virtualized queues.
-- Orchestrate single-agent turns or `/agents` multi-agent swarms with parallel specialist workers, a shared blackboard, interactive architecture graph, and multi-step task tracker.
+- Orchestrate single-agent turns or `/agents` multi-agent teams with parallel specialist agents, a shared blackboard, interactive architecture graph, and multi-step task tracker.
 - View interactive **MCP Apps** (`media-grid`, `project-preview`, `generation-batch`, `queue-monitor`, `post-preview`) inline inside assistant conversations and compatible external MCP clients.
 - Run text, image, video, and audio generation projects from one workspace.
 - Batch your own ComfyUI workflows on an instance you host, or generate images and videos with any checkpoint and LoRA on Civitai.
@@ -50,7 +50,7 @@ The same shared tool layer and five `ui://` MCP App views also power external [M
 
 1. Save prompt fragments, tags, and media inputs into reusable [libraries](/concepts/libraries), and save recurring prompt templates as [skills](/concepts/assistant#skills).
 2. Use the [Multi-Agent Assistant](/concepts/assistant) or an external [MCP client](/integrations/mcp) to inspect the workspace through the shared tool layer and inline MCP Apps—paste an item's **Copy ID for AI** reference or click **Start chat with AI** to point an agent at the exact item you mean.
-3. Let single-agent turns or `/agents` swarms read libraries, album summaries, model availability, and storage status before preparing project edits.
+3. Let single-agent turns or `/agents` multi-agent teams read libraries, album summaries, model availability, and storage status before preparing project edits.
 4. Build a [project](/concepts/projects) manually or ask the assistant to assemble and confirm a workflow for you.
 5. Mix direct inputs with library-backed inputs across text, image, video, and audio slots.
 6. Expand the workflow into draft permutations, or sample it with [shuffle mode](/concepts/workflows).

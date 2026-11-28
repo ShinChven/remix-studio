@@ -47,15 +47,15 @@ function build(t) {
     rect(x, y, 38, 38, bg, 'none', 12, 0);
     p.push(`<g transform="translate(${x + 9} ${y + 9}) scale(0.833)" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name]}</g>`);
   };
-  const chips = (x, y, list, { fill = t.chip, color = t.chipText } = {}) => {
+  const chips = (x, y, list, { fill = t.chip, color = t.chipText, gap = 8 } = {}) => {
     let cx = x;
     for (const c of list) {
       const w = chipW(c);
       rect(cx, y, w, 26, fill, 'none', 13, 0);
       text(cx + w / 2, y + 17.5, c, { size: 12, weight: 500, fill: color, anchor: 'middle' });
-      cx += w + 8;
+      cx += w + gap;
     }
-    return cx - 8 - x;
+    return cx - gap - x;
   };
   const label = (x, y, s) => text(x, y, s, { size: 11.5, weight: 700, fill: t.label, ls: 1.6 });
   const arrow = (x1, y1, x2, y2, accent = false) =>
@@ -73,39 +73,39 @@ function build(t) {
   // Row 1 — control surfaces
   label(40, 56, 'CONTROL SURFACES · v2.0');
   text(1160, 56, 'Humans, multi-agent teams, and MCP clients drive one workspace', { size: 12.5, fill: t.label, anchor: 'end' });
-  card(40, 72, 340, 152, 'person', 'Material 3 Studio', 'Rebuilt expressive UI · Cmd+K');
-  chips(62, 174, ['Libraries', 'Workflows', 'Campaigns']);
-  card(410, 72, 350, 152, 'chat', 'Multi-Agent Assistant', 'Swarms · MCP Apps · any provider', { accent: true });
-  chips(432, 174, ['Swarms', 'MCP Apps', 'Web Search', 'Skills'], { fill: t.accentChip, color: t.accentText });
-  card(790, 72, 370, 152, 'plug', 'MCP Clients', 'Claude · Codex · any agent', { accent: true });
-  chips(812, 174, ['Streamable HTTP', 'MCP Apps', 'OAuth 2.0'], { fill: t.accentChip, color: t.accentText });
+  card(40, 72, 320, 152, 'person', 'Material 3 Studio', 'Rebuilt expressive UI · Cmd+K');
+  chips(60, 174, ['Libraries', 'Workflows', 'Campaigns']);
+  card(384, 72, 400, 152, 'chat', 'Multi-Agent Assistant', 'Multi-agents · MCP Apps · any provider', { accent: true });
+  chips(404, 174, ['Multi-agents', 'MCP Apps', 'Web Search', 'Skills'], { fill: t.accentChip, color: t.accentText, gap: 6 });
+  card(808, 72, 352, 152, 'plug', 'MCP Clients', 'Claude · Codex · any agent', { accent: true });
+  chips(830, 174, ['Streamable HTTP', 'MCP Apps', 'OAuth 2.0'], { fill: t.accentChip, color: t.accentText });
 
   // Row 2 — shared tool layer + MCP Apps
-  arrow(585, 224, 585, 296, true);
-  arrow(975, 224, 975, 296, true);
-  label(410, 278, 'SHARED TOOL LAYER & MCP APPS (ui://)');
-  rect(410, 296, 750, 154, t.accentSoft, t.accentStroke, 20, 1.5);
-  icon('layers', 432, 318, { bg: t.accent, color: '#ffffff' });
-  text(484, 335, 'Account-scoped tools & interactive views', { size: 18, weight: 700, fill: t.accentText });
-  text(484, 355, 'Same tools, approvals, and sandboxed MCP App views in-app or over /mcp', { size: 13, fill: t.muted });
+  arrow(584, 224, 584, 296, true);
+  arrow(984, 224, 984, 296, true);
+  label(384, 278, 'SHARED TOOL LAYER & MCP APPS (ui://)');
+  rect(384, 296, 776, 154, t.accentSoft, t.accentStroke, 20, 1.5);
+  icon('layers', 406, 318, { bg: t.accent, color: '#ffffff' });
+  text(458, 335, 'Account-scoped tools & interactive views', { size: 18, weight: 700, fill: t.accentText });
+  text(458, 355, 'Same tools, approvals, and sandboxed MCP App views in-app or over /mcp', { size: 13, fill: t.muted });
   const lanes = [
     { c: t.green, b: 'Read + Views', s: '5 MCP Apps' },
     { c: t.amber, b: 'Write', s: 'preview & confirm' },
     { c: t.accent, b: 'Ownership', s: 'on every call' },
   ];
-  const lw = (750 - 44 - 24) / 3;
+  const lw = (776 - 44 - 24) / 3;
   lanes.forEach((l, i) => {
-    const x = 432 + i * (lw + 12);
+    const x = 406 + i * (lw + 12);
     rect(x, 378, lw, 50, t.lane, t.accentStroke, 14, 1);
     p.push(`<circle cx="${x + 20}" cy="403" r="5" fill="${l.c}"/>`);
     p.push(`<text x="${x + 34}" y="408" font-size="13.5" fill="${t.muted}"><tspan font-weight="700" fill="${t.text}">${esc(l.b)}</tspan>  ${esc(l.s)}</text>`);
   });
 
   // Studio goes straight to the workspace
-  arrow(210, 224, 210, 508);
-  p.push(`<rect x="146" y="352" width="128" height="24" rx="12" fill="${t.bg}"/>`);
-  text(210, 368, 'direct UI', { size: 12, weight: 500, fill: t.label, anchor: 'middle' });
-  arrow(785, 450, 785, 508, true);
+  arrow(200, 224, 200, 508);
+  p.push(`<rect x="136" y="352" width="128" height="24" rx="12" fill="${t.bg}"/>`);
+  text(200, 368, 'direct UI', { size: 12, weight: 500, fill: t.label, anchor: 'middle' });
+  arrow(772, 450, 772, 508, true);
 
   // Row 3 — workspace
   label(40, 498, 'LIVE WORKSPACE');
@@ -118,7 +118,7 @@ function build(t) {
   chips(1160 - 24 - wsW, 547, wsChips);
 
   // Row 4 — execution
-  arrow(210, 612, 210, 676);
+  arrow(200, 612, 200, 676);
   label(40, 666, 'EXECUTION');
   card(40, 676, 340, 96, 'shuffle', 'Combine / Shuffle', '3 × 4 × 2 → 24 reviewable drafts');
   arrow(380, 724, 408, 724);

@@ -20,14 +20,14 @@ Other provider families may generate project assets without being available as a
 
 Your default assistant provider and model are saved on your account, while each conversation stores the provider/model pair it uses.
 
-## Single-Agent Turns and Multi-Agent Swarms
+## Single-Agent Turns and Multi-Agent Teams
 
-Work directly with a single coordinator turn, or launch a **Multi-Agent Swarm** when a task benefits from parallel specialists:
+Work directly with a single coordinator turn, or switch on **Multi-agents** when a task benefits from parallel specialist agents:
 
-- **Slash commands & Presets** — Type `/agents` (or `/swarm`) in the composer, or pick a built-in team preset such as **Prompt Batch Shards**, **Campaign Copy & QA**, or **Workspace Audit Team**.
-- **Coordinator & Parallel Workers** — The coordinator assigns scoped briefs to named specialist workers that run concurrently and share intermediate findings on a conversation **blackboard**.
-- **Scoped Worker Permissions** — Each worker runs with an explicit tool scope (`read` for read-only inspection, `propose` for drafting and proposing changes) so parallel agents stay safe and predictable.
-- **Agent Side Panel & Interactive Architecture Graph** — Inspect active and completed swarm runs in the flat **Agent Side Panel**. An interactive **Multi-Agent Architecture Graph** visualizes the coordinator, workers, and live states; click any node to open its Dialog inspector with brief, scope, tool calls, and output.
+- **Slash command & Presets** — Type `/agents` in the composer, toggle **Multi-agents**, or pick a built-in team preset such as **Prompt Batch Shards**, **Campaign Copy & QA**, or **Workspace Audit Team**.
+- **Coordinator & Parallel Specialist Agents** — The Coordinator assigns scoped briefs to named specialist agents that run concurrently and share intermediate drafts on a conversation **blackboard**.
+- **Scoped Agent Permissions** — Each specialist agent runs with an explicit tool scope (`read` for read-only inspection, `propose` for drafting and proposing changes) so parallel agents stay safe and predictable.
+- **Agent Side Panel & Interactive Architecture Graph** — Inspect active and completed multi-agent runs in the flat **Agent Side Panel**. An interactive **Multi-Agent Architecture Graph** visualizes the Coordinator, specialist agents, and live states; click any node to open its Dialog inspector with brief, scope, tool calls, and output.
 - **Multi-Step Task Tracker** — For multi-phase requests, the assistant maintains a live step checklist (`update_steps`) showing pending, active, and completed milestones.
 
 ## Interactive MCP Apps in Chat
@@ -122,7 +122,7 @@ The right-hand sidebar (alongside the Agent Side Panel) lists what a conversatio
 
 ## Conversation History
 
-Messages, thought pills, tool calls, MCP App payloads, swarm runs, token counts, and pending confirmations persist separately from generation jobs. **Chat History** lets you search, reopen, archive, or delete past conversations (deleting a conversation does not revert workspace changes already executed).
+Messages, thought pills, tool calls, MCP App payloads, multi-agent runs, token counts, and pending confirmations persist separately from generation jobs. **Chat History** lets you search, reopen, archive, or delete past conversations (deleting a conversation does not revert workspace changes already executed).
 
 ## Assistant vs. MCP
 
@@ -130,9 +130,9 @@ Messages, thought pills, tool calls, MCP App payloads, swarm runs, token counts,
 | :--- | :--- | :--- |
 | Interface | Remix Studio `/assistant` workspace | Claude, Codex, or another MCP client |
 | Authentication | Logged-in Remix Studio session | OAuth 2.0 + PKCE or personal access token |
-| Orchestration | Single-agent turns & `/agents` multi-agent swarms | Driven by the external client |
+| Orchestration | Single-agent turns & `/agents` multi-agent teams | Driven by the external client |
 | Interactive views | Inline sandboxed MCP Apps (`ui://`) | Inline MCP Apps in compliant hosts |
-| Write confirmation | In-app confirmation; per-conversation approvals & worker scopes | Two-call preview and hash-confirmation protocol |
+| Write confirmation | In-app confirmation; per-conversation approvals & agent scopes | Two-call preview and hash-confirmation protocol |
 | Conversation storage | Stored by Remix Studio | Managed by the external client |
 
 Both paths enforce user ownership in every handler.

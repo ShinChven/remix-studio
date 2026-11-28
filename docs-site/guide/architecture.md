@@ -6,7 +6,7 @@ Remix Studio 2.0 is a single product made of cooperating subsystems. This page i
 
 | Layer | Technology |
 | :--- | :--- |
-| Multi-Agent Orchestration | Coordinator + parallel swarm workers (`SwarmOrchestrator`), shared blackboard, step tracker, `ask_user`, batch completion watcher, and shared MCP tool registry |
+| Multi-Agent Orchestration | Coordinator + parallel specialist agents, shared blackboard, step tracker, `ask_user`, batch completion watcher, and shared MCP tool registry |
 | Interactive MCP Views | Self-contained sandboxed HTML views (`src/mcp-apps` → `dist/mcp-apps`) rendered via `ui://` resources in-app and in MCP clients |
 | Frontend | React 19 + Vite + React Router (rebuilt Material 3 Expressive UI at `/`) |
 | Server | Hono on Node.js |
@@ -26,7 +26,7 @@ Remix Studio 2.0 is a single product made of cooperating subsystems. This page i
    ┌────────────────┴─────────────────┐
    ▼                                  ▼
 Multi-Agent Assistant         External Agent / MCP Client
-   │  (Swarms · Step Tracker          │  OAuth 2.0 + PKCE / PAT
+   │  (Multi-agents · Step Tracker    │  OAuth 2.0 + PKCE / PAT
    │   ask_user · Inline MCP Apps)    ▼
    │                            MCP Protocol (/mcp + ui:// Apps)
    └────────────────┬─────────────────┘
@@ -76,7 +76,7 @@ The same **shared tool layer** and **MCP Apps** views back both the built-in Mul
 | Libraries | Reusable text/image/video/audio inputs | [Libraries](/concepts/libraries) |
 | Projects & Albums | Compose workflows; hold generated media; rescale images; run ComfyUI and Civitai projects | [Projects](/concepts/projects) |
 | Workflow engine | Expand inputs into permutations or shuffle samples | [Workflows](/concepts/workflows) |
-| Multi-Agent Assistant | Single-agent turns, `/agents` swarms, step tracking, and inline MCP Apps | [Multi-Agent Assistant](/concepts/assistant) |
+| Multi-Agent Assistant | Single-agent turns, `/agents` multi-agent teams, step tracking, and inline MCP Apps | [Multi-Agent Assistant](/concepts/assistant) |
 | Providers | AI backends with encrypted credentials | [Providers](/concepts/providers) |
 | Queue | Recoverable, provider-grouped job execution; tracked batches; ComfyUI runner and detached pollers | [Queue](/concepts/queue) |
 | Exports & Delivery | ZIP archives and external delivery | [Exports](/concepts/exports) |
