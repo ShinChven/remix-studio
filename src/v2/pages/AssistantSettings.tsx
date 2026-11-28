@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router-dom';
-import { createLibraryItem, deleteLibraryItem, fetchAssistantProviders, fetchAssistantTools, fetchLibraryItems, updateLibraryItem, type AssistantToolMetadata } from '../../api';
+import { createAssistantSkill, deleteAssistantSkill, fetchAssistantProviders, fetchAssistantSkills, fetchAssistantTools, updateAssistantSkill, type AssistantSkill, type AssistantToolMetadata } from '../../api';
 import { loadAssistantSettings, normalizeAssistantProviderSelection, resolveEnabledAssistantProviderIds, saveAssistantSettings } from '../../lib/assistant-provider-settings';
-import { ensureAssistantSkillsLibrary } from '../../lib/assistant-skills';
 import { Button, ChipSet, Dialog, FilterChip, Icon, Tab, Tabs, Text, TextField } from '../../m3';
-import { getTextModelsForProvider, type Library, type LibraryItem, type Provider } from '../../types';
+import { getTextModelsForProvider, type Provider } from '../../types';
 import { McpConnections } from '../components/assistant/McpConnections';
 import { ProviderLogo } from '../components/ProviderLogo';
 import { usePaginationScroll } from '../lib/usePaginationScroll';
@@ -21,7 +20,7 @@ type AssistantSettingsTab = 'providers' | 'skills' | 'tools' | 'mcp';
 
 type SkillEditorState = {
   mode: 'create' | 'edit';
-  item: LibraryItem | null;
+  item: AssistantSkill | null;
 };
 
 const SKILLS_PAGE_SIZE = 8;
@@ -92,8 +91,7 @@ export function AssistantSettings() {
   const [isLoadingProviders, setIsLoadingProviders] = useState(true);
   const [isSavingProviders, setIsSavingProviders] = useState(false);
 
-  const [skillsLibrary, setSkillsLibrary] = useState<Library | null>(null);
-  const [skillItems, setSkillItems] = useState<LibraryItem[]>([]);
+  const [skillItems, setSkillItems] = useState<AssistantSkill[]>([]);
   const [skillPage, setSkillPage] = useState(1);
   const paginationRef = usePaginationScroll({ page: skillPage, enabled: activeTab === 'skills' });
   const [skillPages, setSkillPages] = useState(1);
@@ -103,7 +101,7 @@ export function AssistantSettings() {
   const [skillTitle, setSkillTitle] = useState('');
   const [skillContent, setSkillContent] = useState('');
   const [isSavingSkill, setIsSavingSkill] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<LibraryItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AssistantSkill | null>(null);
   const [isDeletingSkill, setIsDeletingSkill] = useState(false);
 
   const [tools, setTools] = useState<AssistantToolMetadata[]>([]);
@@ -169,32 +167,6 @@ export function AssistantSettings() {
   }, [t]);
 
   useEffect(() => {
-    if (activeTab !== 'skills' || skillsLibrary) return;
-
-    let active = true;
-
-    const loadLibrary = async () => {
-      try {
-        const library = await ensureAssistantSkillsLibrary();
-        if (active) {
-          setSkillsLibrary(library);
-        }
-      } catch (error) {
-        console.error('Failed to prepare assistant skills library:', error);
-        if (active) {
-          toast.error(t('assistant.errorOccurred', { defaultValue: 'Something went wrong. Try again.' }));
-        }
-      }
-    };
-
-    void loadLibrary();
-
-    return () => {
-      active = false;
-    };
-  }, [activeTab, skillsLibrary, t]);
-
-  useEffect(() => {
     if (activeTab !== 'tools' || tools.length > 0) return;
 
     let active = true;
@@ -225,12 +197,11 @@ export function AssistantSettings() {
 
   const skillsRequest = useRef(0);
   const loadSkills = useCallback(async (page: number) => {
-    if (!skillsLibrary) return;
     const request = ++skillsRequest.current;
 
     setIsLoadingSkills(true);
     try {
-      const result = await fetchLibraryItems(skillsLibrary.id, page, SKILLS_PAGE_SIZE);
+      const result = await fetchAssistantSkills(page, SKILLS_PAGE_SIZE);
       if (request !== skillsRequest.current) return;
       setSkillItems(result.items);
       setSkillTotal(result.total);
@@ -246,13 +217,13 @@ export function AssistantSettings() {
     } finally {
       if (request === skillsRequest.current) setIsLoadingSkills(false);
     }
-  }, [skillsLibrary, t]);
+  }, [t]);
 
   useEffect(() => {
-    if (activeTab !== 'skills' || !skillsLibrary) return;
+    if (activeTab !== 'skills') return;
     void loadSkills(skillPage);
     return () => { skillsRequest.current++; };
-  }, [activeTab, loadSkills, skillPage, skillsLibrary]);
+  }, [activeTab, loadSkills, skillPage]);
 
   const handleTabChange = (tab: AssistantSettingsTab) => {
     const next = new URLSearchParams(searchParams);
@@ -318,7 +289,7 @@ export function AssistantSettings() {
     }
   };
 
-  const openSkillEditor = (mode: 'create' | 'edit', item?: LibraryItem) => {
+  const openSkillEditor = (mode: 'create' | 'edit', item?: AssistantSkill) => {
     setEditorState({ mode, item: item || null });
     setSkillTitle(item?.title || '');
     setSkillContent(item?.content || '');
@@ -331,7 +302,7 @@ export function AssistantSettings() {
   };
 
   const handleSaveSkill = async () => {
-    if (!skillsLibrary || !editorState) return;
+    if (!editorState) return;
 
     const title = skillTitle.trim();
     const content = skillContent.trim();
@@ -348,19 +319,11 @@ export function AssistantSettings() {
     setIsSavingSkill(true);
     try {
       if (editorState.mode === 'create') {
-        await createLibraryItem(skillsLibrary.id, {
-          id: crypto.randomUUID(),
-          title,
-          content,
-          tags: [],
-        });
+        await createAssistantSkill({ title, content });
         setSkillPage(1);
         await loadSkills(1);
       } else if (editorState.item) {
-        await updateLibraryItem(skillsLibrary.id, editorState.item.id, {
-          title,
-          content,
-        });
+        await updateAssistantSkill(editorState.item.id, { title, content });
         await loadSkills(skillPage);
       }
 
@@ -379,11 +342,11 @@ export function AssistantSettings() {
   };
 
   const handleDeleteSkill = async () => {
-    if (!skillsLibrary || !deleteTarget) return;
+    if (!deleteTarget) return;
 
     setIsDeletingSkill(true);
     try {
-      await deleteLibraryItem(skillsLibrary.id, deleteTarget.id);
+      await deleteAssistantSkill(deleteTarget.id);
 
       const nextPage = skillItems.length === 1 && skillPage > 1
         ? skillPage - 1
@@ -478,18 +441,9 @@ export function AssistantSettings() {
           aria-busy={isLoadingSkills}
           variant="plain"
           title={t('v2.assistant.presetPromptsTitle', { defaultValue: 'Composer skills' })}
-          description={
-            <>
-              {t('v2.assistant.presetPromptsDescription', { defaultValue: 'Type ` in the chat box to open this list and insert a preset prompt into the current draft.' })}{' '}
-              {skillsLibrary && (
-                <Link to={`/library/${skillsLibrary.id}`} className="v2-link">
-                  {t('v2.assistant.openSkillsLibrary', { defaultValue: 'Open underlying text library' })}
-                </Link>
-              )}
-            </>
-          }
+          description={t('v2.assistant.presetPromptsDescription', { defaultValue: 'Type ` in the chat box to open this list and insert a preset prompt into the current draft.' })}
           actions={
-            <Button variant="filled" icon="add" disabled={!skillsLibrary} onClick={() => openSkillEditor('create')}>
+            <Button variant="filled" icon="add" onClick={() => openSkillEditor('create')}>
               {t('v2.assistant.newSkill', { defaultValue: 'New skill' })}
             </Button>
           }

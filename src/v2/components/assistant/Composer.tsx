@@ -12,8 +12,7 @@ import {
   type Ref,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchLibraries, fetchLibraryItems, fetchProjects, transcribeAssistantAudio } from '../../../api';
-import { resolveAssistantSkillsLibraryId } from '../../../lib/assistant-skills';
+import { fetchAssistantSkills, fetchLibraries, fetchProjects, transcribeAssistantAudio } from '../../../api';
 import {
   cx,
   Icon,
@@ -60,7 +59,7 @@ export type AttachedImage = {
   base64: string;
 };
 
-type SkillOption = { id: string; title: string; content: string; tags: string[] };
+type SkillOption = { id: string; title: string; content: string };
 
 export interface ComposerProps {
   initialInputText?: string;
@@ -257,20 +256,13 @@ export function Composer({
     setIsSearchingSkills(true);
     const timer = window.setTimeout(async () => {
       try {
-        const libraryId = await resolveAssistantSkillsLibraryId();
-        if (!active) return;
-        if (!libraryId) {
-          setSkillOptions([]);
-          return;
-        }
-        const result = await fetchLibraryItems(libraryId, 1, 10, skillSearch || undefined);
+        const result = await fetchAssistantSkills(1, 10, skillSearch || undefined);
         if (!active) return;
         setSkillOptions(
           result.items.map((item) => ({
             id: item.id,
             title: summarizeSkillTitle(item.title, item.content),
             content: item.content,
-            tags: item.tags || [],
           })),
         );
         setSelectedIndex(0);
@@ -638,7 +630,6 @@ export function Composer({
           label: (
             <span className="flex items-center gap-2">
               <span className="truncate">{o.title || t('v2.assistant.untitledSkill')}</span>
-              {o.tags[0] && <span className="v2-tag">{o.tags[0]}</span>}
             </span>
           ),
           supportingText: summarizeSkillContent(o.content),

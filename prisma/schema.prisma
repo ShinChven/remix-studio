@@ -47,6 +47,7 @@ model User {
   postWatermarkSetting    PostWatermarkSetting?
   autoTagSetting          AutoTagSetting?
   assistantSetting        AssistantSetting?
+  assistantSkills         AssistantSkill[]
   stores                  Store[]
   driveConnections        DriveConnection[]
   products                Product[]
@@ -893,6 +894,20 @@ model AssistantSetting {
   updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// A preset prompt the user inserts from the assistant composer by typing `.
+model AssistantSkill {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }
 
 model AutoTagSetting {

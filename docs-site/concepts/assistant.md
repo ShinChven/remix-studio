@@ -37,9 +37,9 @@ The composer also takes images: attach or paste them, and on Android pick a copi
 
 ## Skills
 
-Assistant skills are prompt templates stored in a dedicated text library. Manage them under **Assistant Settings → Skills**, then type `/` in the composer to search and insert one.
+Assistant skills are prompt templates saved on your account, separate from your libraries. Manage them under **Assistant Settings → Skills**, then type a backtick (`` ` ``) in the composer to search and insert one.
 
-Skills help standardize recurring instructions; they do not add server permissions or bypass tool confirmation. Editing or deleting a skill is the same kind of library-item operation as editing other reusable text.
+Skills help standardize recurring instructions; they do not add server permissions or bypass tool confirmation.
 
 ## Tools and What They Can Change
 
@@ -113,5 +113,5 @@ Both paths enforce user ownership in each handler. IDs supplied by a model do no
 ## Related
 
 - [MCP Support](/integrations/mcp) — authentication and the external confirmation protocol.
-- [Libraries & Prompts](/concepts/libraries) — reusable data and assistant skills.
+- [Libraries & Prompts](/concepts/libraries) — reusable data.
 - [Campaigns](/concepts/campaigns) — campaign/post tools available to the assistant.
