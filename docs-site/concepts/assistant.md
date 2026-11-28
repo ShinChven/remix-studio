@@ -39,7 +39,7 @@ The composer also takes images: attach or paste them, and on Android pick a copi
 
 Assistant skills are prompt templates saved on your account, separate from your libraries. Manage them under **Assistant Settings → Skills**, then type a backtick (`` ` ``) in the composer to search and insert one.
 
-Skills help standardize recurring instructions; they do not add server permissions or bypass tool confirmation.
+Skills help standardize recurring instructions; they do not add server permissions or bypass tool confirmation. The assistant, and any MCP client, can also list, create, edit and delete skills for you; creating, editing and deleting each ask for confirmation first, like other write tools.
 
 ## Tools and What They Can Change
 

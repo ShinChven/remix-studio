@@ -28,6 +28,8 @@ export interface AppUrlBuilder {
    * Pass "providers" for the tab that groups them by provider queue.
    */
   queue(view?: 'projects' | 'providers'): string;
+  /** Assistant Settings, on the tab that manages composer skills. */
+  assistantSkills(): string;
   campaign(campaignId: string): string;
   campaignPost(campaignId: string, postId: string): string;
   /** Where a create_upload client PUTs the file; the token is single-use. */
@@ -43,6 +45,7 @@ export function createAppUrlBuilder(requestOrigin?: string | null): AppUrlBuilde
     project: (projectId) => `${base}/project/${seg(projectId)}`,
     provider: (providerId) => `${base}/provider/${seg(providerId)}`,
     queue: (view) => `${base}/projects/queues${view === 'providers' ? '?view=providers' : ''}`,
+    assistantSkills: () => `${base}/assistant/settings?tab=skills`,
     campaign: (campaignId) => `${base}/campaigns/${seg(campaignId)}`,
     campaignPost: (campaignId, postId) => `${base}/campaigns/${seg(campaignId)}/posts/${seg(postId)}`,
     stagedUpload: (uploadId, token) => `${base}/api/staged-uploads/${seg(uploadId)}?token=${seg(token)}`,
