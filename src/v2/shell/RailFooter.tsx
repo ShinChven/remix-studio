@@ -83,9 +83,6 @@ export function RailFooter({ onOpenTheme }: { onOpenTheme: () => void }) {
       <MenuItem icon="person" href="/account">
         {t('v2.shell.account')}
       </MenuItem>
-      <MenuItem icon="palette" onSelect={onOpenTheme}>
-        {t('v2.theme.title')}
-      </MenuItem>
       <MenuDivider />
       <MenuItem icon="logout" onSelect={() => void logout()}>
         {t('v2.shell.signOut')}
