@@ -392,7 +392,7 @@ export function AssistantSettings() {
       />
       <Tabs value={activeTab} onChange={(v) => handleTabChange(v as AssistantSettingsTab)} variant="secondary" scrollable className="mb-4">
         <Tab value="providers" icon="key" inlineIcon label={t('v2.assistant.providersTab', { defaultValue: 'Providers' })} />
-        <Tab value="swarm" icon="hub" inlineIcon label={t('v2.assistant.swarmTab', { defaultValue: 'Swarm' })} />
+        <Tab value="swarm" icon="hub" inlineIcon label={t('v2.assistant.swarmTab', { defaultValue: 'Multi-agents' })} />
         <Tab value="skills" icon="auto_awesome" inlineIcon label={t('v2.assistant.skillsTab', { defaultValue: 'Skills' })} />
         <Tab value="tools" icon="build" inlineIcon label={t('v2.assistant.toolsTab', { defaultValue: 'Tools' })} />
         <Tab value="mcp" icon="hub" inlineIcon label={t('sidebar.mcp', { defaultValue: 'MCP' })} />

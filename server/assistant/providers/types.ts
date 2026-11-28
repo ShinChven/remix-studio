@@ -50,6 +50,12 @@ export interface ChatRequest {
    * `prompt_cache_key`) to maximize KV cache hit rates across turns.
    */
   cacheKey?: string;
+  /**
+   * Enable the provider's native Web Search / Grounding tool for this call
+   * (Google Search grounding on Gemini, `web_search` on OpenAI Responses API,
+   * `web_search_20250305` on Anthropic Claude).
+   */
+  webSearch?: boolean;
 }
 
 export type ChatStopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'error';

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import OpenAI from 'openai';
 import {
   ChatProvider,
@@ -24,6 +25,12 @@ function outputTokenParam(modelId: string, maxTokens: number): Record<string, nu
   const id = modelId.toLowerCase();
   const usesCompletionTokens = /^(gpt-[56]|o[1-9])/.test(id);
   return usesCompletionTokens ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens };
+}
+
+/** OpenAI enforces a 64-character limit on `prompt_cache_key`. */
+function normalizePromptCacheKey(key: string): string {
+  if (key.length <= 64) return key;
+  return crypto.createHash('sha256').update(key).digest('hex');
 }
 
 export class OpenAIChatProvider implements ChatProvider {
@@ -58,7 +65,12 @@ export class OpenAIChatProvider implements ChatProvider {
   }
 
   async chat(req: ChatRequest): Promise<ChatResponse> {
-    if (/^gpt-6\.2-(?:astra|sol)(?:-|$)/i.test(req.modelId)) return this.chatWithResponses(req);
+    if (
+      (this.supportsPromptCacheKey() && (req.webSearch || /^gpt-6/i.test(req.modelId))) ||
+      /^gpt-6\.2-(?:astra|sol)(?:-|$)/i.test(req.modelId)
+    ) {
+      return this.chatWithResponses(req);
+    }
     const kimiK31 = /^kimi-k3\.1-pro/i.test(req.modelId);
     const messages = mapMessages(req.messages, kimiK31);
     const tools = req.tools.length > 0 ? req.tools.map(mapTool) : undefined;
@@ -72,7 +84,7 @@ export class OpenAIChatProvider implements ChatProvider {
     };
 
     const cacheBody = req.cacheKey && this.supportsPromptCacheKey()
-      ? { prompt_cache_key: req.cacheKey }
+      ? { prompt_cache_key: normalizePromptCacheKey(req.cacheKey) }
       : {};
 
     const response = await this.client.chat.completions.create(
@@ -122,43 +134,85 @@ export class OpenAIChatProvider implements ChatProvider {
     };
   }
 
+  /**
+   * Uses OpenAI's Responses API for native Web Search and for GPT-6+ models
+   * (preserving encrypted reasoning items across tool loops and extracting URL citations).
+   */
   private async chatWithResponses(req: ChatRequest): Promise<ChatResponse> {
-    const tools: OpenAI.Responses.Tool[] = req.tools.map((tool) => ({
-      type: 'function',
-      name: tool.name,
-      description: tool.description,
-      parameters: toolParametersJsonSchema(tool),
-      strict: false,
-    }));
-    const response = await this.client.responses.create({
+    const tools: any[] = [
+      ...(req.webSearch ? [{ type: 'web_search', search_context_size: 'medium' }] : []),
+      ...req.tools.map((tool) => ({
+        type: 'function',
+        name: tool.name,
+        description: tool.description,
+        parameters: toolParametersJsonSchema(tool),
+        strict: false,
+      })),
+    ];
+    const response: any = await (this.client as any).responses.create({
       model: req.modelId,
       input: mapResponsesInput(req.messages),
       store: false,
       include: ['reasoning.encrypted_content'],
       ...(req.maxTokens !== undefined ? { max_output_tokens: req.maxTokens } : {}),
+      ...(req.cacheKey && this.supportsPromptCacheKey()
+        ? { prompt_cache_key: normalizePromptCacheKey(req.cacheKey) }
+        : {}),
       ...(tools.length > 0 ? { tools, tool_choice: 'auto' } : {}),
     }, { signal: req.abortSignal });
 
     const toolCalls: ToolCall[] = [];
     const reasoning: NonNullable<ToolCall['openAIReasoning']> = [];
-    for (const item of response.output) {
+    let text = '';
+    const sources: Array<{ title: string; url: string }> = [];
+    const seenUrls = new Set<string>();
+
+    for (const item of response.output ?? []) {
       if (item.type === 'reasoning' && item.encrypted_content) {
         reasoning.push({ id: item.id, encryptedContent: item.encrypted_content });
       } else if (item.type === 'function_call') {
-        toolCalls.push({ id: item.call_id, name: item.name, arguments: safeParseJsonArgs(item.arguments) });
+        toolCalls.push({ id: item.call_id || item.id, name: item.name, arguments: safeParseJsonArgs(item.arguments) });
+      } else if (item.type === 'message' && Array.isArray(item.content)) {
+        for (const part of item.content) {
+          if (part.type === 'output_text' && typeof part.text === 'string') {
+            text += part.text;
+            if (Array.isArray(part.annotations)) {
+              for (const ann of part.annotations) {
+                if (ann?.type === 'url_citation' && typeof ann.url === 'string' && !seenUrls.has(ann.url)) {
+                  seenUrls.add(ann.url);
+                  sources.push({ title: String(ann.title || ann.url), url: ann.url });
+                }
+              }
+            }
+          }
+        }
       }
     }
     if (toolCalls[0] && reasoning.length) toolCalls[0].openAIReasoning = reasoning;
 
+    if (!text && typeof response.output_text === 'string') {
+      text = response.output_text;
+    }
+    if (toolCalls.length === 0 && sources.length > 0) {
+      const links = sources.slice(0, 8).map((s) => `[${s.title.replace(/[\[\]]/g, '')}](${s.url})`).join(' · ');
+      text = `${text.trimEnd()}\n\n---\n**Sources:** ${links}`;
+    }
+
+    const usage = response.usage;
+    const cachedInputTokens = typeof usage?.input_tokens_details?.cached_tokens === 'number'
+      ? usage.input_tokens_details.cached_tokens
+      : undefined;
+
     return {
-      text: response.output_text || '',
+      text,
       toolCalls,
       stopReason: toolCalls.length > 0 ? 'tool_use'
-        : response.incomplete_details?.reason === 'max_output_tokens' ? 'max_tokens'
+        : response.incomplete_details?.reason === 'max_output_tokens' || response.status === 'incomplete' ? 'max_tokens'
         : response.status === 'completed' ? 'end_turn' : 'error',
-      usage: response.usage ? {
-        inputTokens: response.usage.input_tokens,
-        outputTokens: response.usage.output_tokens,
+      usage: usage ? {
+        inputTokens: usage.input_tokens,
+        outputTokens: usage.output_tokens,
+        ...(cachedInputTokens !== undefined ? { cachedInputTokens } : {}),
       } : undefined,
     };
   }

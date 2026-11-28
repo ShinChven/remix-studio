@@ -1,9 +1,11 @@
 import type { ComponentType } from 'react';
+import { RiOpenaiFill } from 'react-icons/ri';
 import { SiAlibabacloud, SiAnthropic, SiBytedance, SiGooglecloud, SiGooglegemini, SiMinimax, SiReplicate, SiX } from 'react-icons/si';
 import { cx } from '../../m3';
 import type { ProviderType } from '../../types';
 
 const BRAND: Partial<Record<ProviderType, ComponentType<{ size?: number; className?: string }>>> = {
+  OpenAI: RiOpenaiFill,
   GoogleAI: SiGooglegemini,
   VertexAI: SiGooglecloud,
   Claude: SiAnthropic,
@@ -15,7 +17,6 @@ const BRAND: Partial<Record<ProviderType, ComponentType<{ size?: number; classNa
 };
 
 const MONOGRAM: Partial<Record<ProviderType, string>> = {
-  OpenAI: 'AI',
   RunningHub: 'RH',
   KlingAI: 'K',
   BlackForestLabs: 'BFL',
